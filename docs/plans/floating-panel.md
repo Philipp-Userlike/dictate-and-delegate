@@ -82,7 +82,7 @@ You start a dictation the same way every time (tile or a volume key, your choice
    - Accessibility paste in common apps: Signal, WhatsApp, Firefox/Vanadium, Gmail/K-9, Termux, the bb PWA.
    - Replacing inserted text.
    - The ntfy broadcast action.
-   - Jev on GrapheneOS through OpenRouter.
+   - Jev on the phone through OpenRouter.
 
    Results go into this file: [Spike results](#spike-results).
 2. **Starts:** volume-key start and stop through the Accessibility service, with the settings above; the tile stays.
@@ -98,7 +98,7 @@ You start a dictation the same way every time (tile or a volume key, your choice
    - Unit tests for the Jev request and the decisions, plus the fakes (Jev in the fake OpenRouter, ntfy in a fake).
    - Device tests for the panel, Insert in the test pad app, auto-refine, and chief text back.
    - A real check on this Mac with bb and ntfy.
-   - Screenshots, then the APK for the Pixel.
+   - Screenshots, then the APK for the phone.
 
 Hands-free (screen off, earbuds): the explicit spoken address covers the chief; other choices wait for the panel or the note.
 
@@ -110,26 +110,26 @@ Hands-free (screen off, earbuds): the explicit spoken address covers the chief; 
 
 ## Spike results
 
-Done on the Android 16 emulator, and by Philipp on a Pixel 10 with GrapheneOS.
+Done on the Android 16 emulator, and by the user on a phone.
 
 - **Insert and replace in place** work in a native EditText, a Chrome textarea, a contenteditable, Chrome's address bar and the Settings search field: `findFocus(FOCUS_INPUT)`, then `ACTION_SET_TEXT` with the text spliced in at the selection, and the selection moved after it. Chrome builds its web accessibility tree only once a service has asked for events; in the end the service declares none (`res/xml/accessibility.xml`) and the insert still worked in the test. Signal, WhatsApp, Gmail/K-9, Termux and the bb PWA weren't tried (no internet or accounts on the emulator); Vanadium is Chromium, like Chrome. To check on the phone.
-- **Volume keys:** the accessibility key filter only sees real keyboard-source key events. Shell-injected keys (`input keyevent`, `input keyboard keyevent`, `emu event send`) never reach `onKeyEvent`, and this AVD has no input device for the volume keys. Device tests hand key events to `TalkAccessibility.onKeyEvent` directly. On the Pixel, holding the key starts and stops a dictation and a short press still changes the volume.
+- **Volume keys:** the accessibility key filter only sees real keyboard-source key events. Shell-injected keys (`input keyevent`, `input keyboard keyevent`, `emu event send`) never reach `onKeyEvent`, and this AVD has no input device for the volume keys. Device tests hand key events to `TalkAccessibility.onKeyEvent` directly. On the phone, holding the key starts and stops a dictation and a short press still changes the volume.
 - **ntfy's broadcast action** (`action=broadcast, intent=…, extras.request=…`) sends an implicit broadcast that the receiver registered by the Accessibility service gets (tested with `am broadcast`). It carries only the request ID; the text is fetched from the user's own topic, so another app can't put text on the clipboard. Without the service on, there's no receiver, and the notification's text can still be copied in the ntfy app.
-- **Jev** (`POST /api/alpha/decisions`): yes/no questions are `{"type": "noul", "instructions", "criteria": {"true", "false"}}`, choices are `{"type": "choice", "instructions", "criteria": {option: description}}`; answers come back as `noul` (a probability) and `choice`. About 0.3 s and $0.00003 per call. On the Pixel through OpenRouter it answers like on the Mac.
+- **Jev** (`POST /api/alpha/decisions`): yes/no questions are `{"type": "noul", "instructions", "criteria": {"true", "false"}}`, choices are `{"type": "choice", "instructions", "criteria": {option: description}}`; answers come back as `noul` (a probability) and `choice`. About 0.3 s and $0.00003 per call. On the phone through OpenRouter it answers like on the Mac.
 
 ## Outcome
 
-Built as planned, with these changes from the phone test of 2.2.0 (Philipp, Pixel 10):
+Built as planned, with these changes from the phone test of 2.2.0 (the user, on a phone):
 
-- **The chief is addressed by a name** the user sets (Settings → Chief of staff → Your chief's name, saved as you type with a visible ✓ Saved). "Chief of staff, …" cues weren't reliable: Philipp's own phrasings ("I want to talk to the chief of staff…", "this time it should go to the chief of staff as well") got Refine instead. Now Talk Router first checks whether the name (or Henri/Henrie/Henry's) comes up; only then Jev is asked, with the name in the question, whether the dictation is meant for the chief or only mentions them. Meant for the chief at ≥ 0.8 sends it there by itself and Refine doesn't start; 0.5–0.8, or Jev failing, only highlights 🧑‍💼. No name, no chief. The threshold went from 0.9 to 0.8 because the name check already filters: on the labelled set (`scripts/qa/jev-check.py`, report in `qa-out/jev-3.md`), 12–13 of 15 addresses are sent across runs, none of 9 mere mentions, and Philipp's two phrasings score 0.96–0.98.
+- **The chief is addressed by a name** the user sets (Settings → Chief of staff → Your chief's name, saved as you type with a visible ✓ Saved). "Chief of staff, …" cues weren't reliable: The user's own phrasings ("I want to talk to the chief of staff…", "this time it should go to the chief of staff as well") got Refine instead. Now Talk Router first checks whether the name (or Henri/Henrie/Henry's) comes up; only then Jev is asked, with the name in the question, whether the dictation is meant for the chief or only mentions them. Meant for the chief at ≥ 0.8 sends it there by itself and Refine doesn't start; 0.5–0.8, or Jev failing, only highlights 🧑‍💼. No name, no chief. The threshold went from 0.9 to 0.8 because the name check already filters: on the labelled set (`scripts/qa/jev-check.py`, report in `qa-out/jev-3.md`), 12–13 of 15 addresses are sent across runs, none of 9 mere mentions, and the user's two phrasings score 0.96–0.98.
 - **Refine** at ≥ 0.5 or a named template: 57 of 57 right on the labelled set, templates 63 of 63.
 - **The panel is compact:** icon buttons (named for TalkBack, long press shows the name) that wrap whole onto a second row if they ever don't fit; while recording only the timer and ⋯ show. The text labels had broken onto a second line in German.
 - **What goes to the chief goes as said:** a Refine that Jev started is dropped when the dictation goes to the chief (by name or by tap); a Refine you tapped yourself still runs.
 - **✕ while recording cancels**: the audio is deleted, nothing is transcribed or sent. Cancelling during transcription isn't offered: the audio is already uploaded and billed by then.
 - **Open chat ↗** sends `Browser.EXTRA_APPLICATION_ID`, so Chromium browsers reuse one tab instead of opening a new one each time. The chief's ntfy notification link opens through the ntfy app, which Talk Router doesn't control.
 - **Text back from the chief** works as planned: the JSON stream while the panel is open, ntfy's Copy broadcast when it's closed.
-- **Nothing goes on the clipboard by itself** (Philipp, after 2.2.1): not the transcript, not the refined text, not the chief's text. Insert sets the field's text directly; the clipboard is used only for an explicit Copy, or when Insert can't reach a field ("Copied instead"), or for an app that only accepts pastes.
+- **Nothing goes on the clipboard by itself** (the user, after 2.2.1): not the transcript, not the refined text, not the chief's text. Insert sets the field's text directly; the clipboard is used only for an explicit Copy, or when Insert can't reach a field ("Copied instead"), or for an app that only accepts pastes.
 - **Refine with your own Anthropic key** (2.2.3): Refine goes to Anthropic's Messages API directly, on the user's Anthropic credits, with OpenRouter as the fallback. Its cost is computed at list price and shown apart from the OpenRouter totals. Not checked against the real API yet: no Anthropic key on the test Mac.
-- **The chief's instructions became two bb user skills** (2.2.4): chief-of-staff (Philipp's wording: flat hierarchy, parallel child threads, delegating context, intent and what done looks like) and talk-router (request IDs, the notification and the paste message). Talk Router fills them in, installs them through a short bb thread and keeps them current with a content hash in each file, checked on connect, on setting changes and after app updates. The chief thread only gets one line. Not installed into the real `~/.bb/skills` on the test Mac; checked against the fake bb.
+- **The chief's instructions became two bb user skills** (2.2.4): chief-of-staff (the user's wording: flat hierarchy, parallel child threads, delegating context, intent and what done looks like) and talk-router (request IDs, the notification and the paste message). Talk Router fills them in, installs them through a short bb thread and keeps them current with a content hash in each file, checked on connect, on setting changes and after app updates. The chief thread only gets one line. Not installed into the real `~/.bb/skills` on the test Mac; checked against the fake bb.
 - **The recording panel shows all its buttons in one row** (■ timer ✨ 🧑‍💼 ✕ 📎); the ⋯ of 2.2.3 needed a second tap.
 

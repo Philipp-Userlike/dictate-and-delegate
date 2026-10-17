@@ -54,7 +54,7 @@ ROUTED = [
 TEMPLATE = ("Apartment application", "Dear Sir or Madam,\n\nI am very interested in the apartment"
             " at [address]. I am 34, work as a software developer with a permanent contract and a net"
             " income of 4,200 euros a month. I don't smoke and have no pets.\n\nI would be glad to"
-            " come to a viewing.\n\nKind regards\nPhilipp Weber")
+            " come to a viewing.\n\nKind regards\nJonas Becker")
 TEMPLATE_DICTATIONS = [
     "use my apartment application for the two room flat on Hauptstraße 5 the viewing is on"
     " Saturday at ten and say that I work from home two days a week",

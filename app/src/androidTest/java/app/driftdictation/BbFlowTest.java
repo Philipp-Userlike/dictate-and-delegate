@@ -255,7 +255,7 @@ public class BbFlowTest {
   @Test
   public void sayingItsForTheChiefByNameSendsItThereInsteadOfRefining() throws Exception {
     connectFake();
-    // Philipp's own phrasing; Jev also thinks it reads like a text to refine.
+    // The user's own phrasing; Jev also thinks it reads like a text to refine.
     TestServer.transcripts("Okay, so I want to talk to Henry about the hotel booking");
     TestServer.decide(0.92, 0.97, "none");
     TestServer.replies("Should not be refined.");
