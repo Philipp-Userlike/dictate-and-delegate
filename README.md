@@ -4,23 +4,22 @@
 
 Press a key and talk: dictation, text creation and independent agents, from one starting point.
 
-<p><b>Dictate while you look.</b> Talk about what's on screen; the text lands in your chat.</p>
-
-<video src="https://github.com/Philipp258/talk-router/raw/main/docs/videos/talk.mp4" poster="https://github.com/Philipp258/talk-router/raw/main/docs/videos/talk-poster.png" controls muted playsinline width="320">
-  <a href="docs/videos/talk.mp4"><img src="docs/videos/talk-poster.png" width="360" alt="A friend sends a café link; you talk about it while looking at the page, then insert the text into the chat. Click to play."></a>
-</video>
-
-<p><b>Refine with a template.</b> <i>"Use my application template, mention that I have no pets."</i> The finished text goes into the form.</p>
-
-<video src="https://github.com/Philipp258/talk-router/raw/main/docs/videos/refine.mp4" poster="https://github.com/Philipp258/talk-router/raw/main/docs/videos/refine-poster.png" controls muted playsinline width="320">
-  <a href="docs/videos/refine.mp4"><img src="docs/videos/refine-poster.png" width="360" alt="A template is saved in Talk Router; on an apartment listing you ask for an application from it, and the finished text goes into the contact form. Click to play."></a>
-</video>
-
-<p><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</p>
-
-<video src="https://github.com/Philipp258/talk-router/raw/main/docs/videos/agent.mp4" poster="https://github.com/Philipp258/talk-router/raw/main/docs/videos/agent-poster.png" controls muted playsinline width="640">
-  <a href="docs/videos/agent.mp4"><img src="docs/videos/agent-poster.png" width="360" alt="You ask your agent for a snake game; it builds it on your computer; while playing you ask for changes, and it updates the game. Click to play."></a>
-</video>
+<table>
+<tr>
+<td width="50%" valign="top"><img src="docs/images/anim-talk.gif" alt="A friend sends a café link; you talk about it while looking at the page, go back to the chat, insert the text and send it"></td>
+<td width="50%" valign="top"><img src="docs/images/anim-refine.gif" alt="A template is saved in Talk Router; on an apartment listing you ask for an application from it, and the finished text goes into the contact form"></td>
+</tr>
+<tr>
+<td valign="top"><b>Dictate while you look.</b> Talk about what's on screen; the text lands in your chat.</td>
+<td valign="top"><b>Refine with a template.</b> <i>"Use my application template, mention that I have no pets."</i> The finished text goes into the form.</td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/images/anim-agent.gif" alt="You ask your agent for a snake game; it builds it on your computer and sends a link; while playing you ask for changes, and it updates the game"></td>
+</tr>
+<tr>
+<td colspan="2"><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</td>
+</tr>
+</table>
 
 ## What it does
 
