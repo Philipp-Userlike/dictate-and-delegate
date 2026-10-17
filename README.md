@@ -1,66 +1,79 @@
 # Talk Router
 
-**Start anything by voice, from anywhere on your phone.** Tap the tile or hold a volume key, talk, stop. Your words come first, and a small floating panel lets you decide what happens with them:
+**Talk instead of type, anywhere on your phone, and hand real tasks to an agent on your own computer.**
 
-- **Insert** them where you're typing,
-- **✨ Refine** them into the text you need,
-- or hand them to your **🧑‍💼 chief**, an agent that takes care of it.
+Talk Router is an open-source Android app. Hold a volume key (or tap a Quick Settings tile) over any app, talk, stop. A small floating panel appears next to what you were doing, and you choose where your words go:
+
+- 📥 **Insert** them at the cursor, in whatever app you're typing in.
+- ✨ **Refine** them first: the message, email or reply you meant, then insert that.
+- 🧑‍💼 **Hand them to your chief of staff**, an agent running in [bb](https://getbb.app) on your computer, which does the work and pings you when it's done.
+
+No Talk Router account, no Talk Router server. Your own keys, MIT licensed.
 
 <p>
-  <img src="docs/images/note.png" width="30%" alt="A note written by the text model, with its cost">
-  <img src="docs/images/chief.png" width="30%" alt="A note handed to the chief of staff, with a link to its thread">
-  <img src="docs/images/connect-bb.png" width="30%" alt="Setup: connect bb to hand tasks to your agent">
+  <img src="docs/images/panel-recording.png" width="32%" alt="Recording over another app: the floating panel with timer, stop, Refine, cancel and attach">
+  <img src="docs/images/panel-refined.png" width="32%" alt="A rambling dictation became a short email to the landlord, inserted at the cursor">
+  <img src="docs/images/panel-chief.png" width="32%" alt="The panel after a task went to the chief of staff: the chief sent back text to insert">
 </p>
 
-## The idea
+## Why
 
-You already talk to agents all day: in chat apps, IDEs, terminals. Each has its own window and its own microphone button. Talk Router is the one place in front of all of them:
+Typing on a phone is slow, and most of what you type, you could just say. But built-in dictation writes down every "um" and gives up when you pause, and voice assistants only do what they were built for.
 
-- **It's always there.** A Quick Settings tile, or holding a volume key, starts it over any app. You keep reading, scrolling or switching apps while you talk; silence never ends a recording.
-- **You decide where your words go.** The floating panel offers Insert, Refine and Chief, even while you're still talking. A fast decision model starts Refine by itself when you ask for a text, and sends to your chief by itself only when you say it's for them, by name.
-- **It hands tasks off instead of doing them itself.** Real work happens in your agent ([bb](https://getbb.app), running on your own computer), where the thread is saved, visible and can continue later. Talk Router is only the entry point.
+Talk Router does three things:
 
-### Values
+- **It works everywhere.** Hold a volume key over any app and start talking. Keep scrolling, reading or switching apps while you talk; silence never cuts you off. Your words land where your cursor is.
+- **You say it once, and it comes out right.** A top speech model (MAI-Transcribe 2) writes down what you said, in whatever language you speak. Ask for "a short email", "more polite" or "my apartment application for this flat", and Claude turns your rambling into that text.
+- **It hands off real work.** "Ada, find three Italian places near the office and send me a short list." That goes to *your* agent, a bb thread on your own computer with your tools, files and accounts, not a chatbot in someone's cloud. It works as long as it needs, starts helper threads for bigger jobs, and sends you one notification when it's done, with a link to the thread. If you asked for text to paste, an **Insert from chief** button appears right on the panel.
 
-1. **Talk anywhere.** Start with your voice from any app.
-2. **Say it once, get it right.** The best speech and text models, so the text is right the first time.
-3. **One entry point.** Text right away, or handed to your agent.
-4. **Yours.** Open source, your own keys, no server in between.
+Talk Router is the entry point, not the agent. It doesn't try to do the work itself; it gets your words to the right place fast.
 
-## One start, three ways on
+## What it does
+
+| | |
+|---|---|
+| **Start anywhere** | Hold volume down or up (Accessibility), tap the Quick Settings tile, or use the button in the app. A short press still changes the volume. |
+| **Floating panel** | Appears over any app, never takes focus, and can be dragged anywhere. While you record: ■ stop, ✨ Refine, 🧑‍💼 Chief, ✕ cancel, 📎 attach. Tap ✨ or 🧑‍💼 while still talking, and it runs as soon as the transcript is ready. |
+| **📥 Insert** | Puts the text at the cursor of the app you're in. Talk Router never puts anything on your clipboard by itself; only if Insert can't reach a field does it copy instead, and the panel tells you. |
+| **✨ Refine** | One call to Claude Sonnet 5.5 works out what the text is for (message, email, note, reply), follows what you asked, fills in a template you named, and keeps your language and facts. **Insert refined** then replaces the raw transcript in place, if you haven't changed it. Runs through OpenRouter, or through Anthropic directly with your own Anthropic key. |
+| **Templates** | Texts you write again and again (an application, a standard reply). Say "use my apartment application for…" and Refine fills it in. |
+| **📎 Attach** | Talking about something, like a listing you're replying to? While you record, add what you copied, an image or a PDF. Refine reads it, and the chief gets it too. |
+| **🧑‍💼 Chief of staff** | Sends what you said, plus anything you attached with 📎 (copied text, images, PDFs), to a bb thread on your computer that acts for you: small things itself, bigger work in parallel child threads. It notifies you through [ntfy](https://ntfy.sh) when it's done or needs you. |
+| **Say its name** | Give your chief a name, say "Ada, …" or "this is for Ada", and the dictation goes there by itself. "Say hi to Ada" stays with you: a fast decision model (Jev) tells the two apart. |
+| **Text back** | When the chief writes something for you to paste, **Insert from chief** appears on the panel (or **Copy** on the notification). |
+| **Costs in view** | Every note shows what it cost, usually a fraction of a cent. Activity shows which model did what and how long it took. |
+| **Notes** | Every dictation is kept on the phone, encrypted: what you said and the refined version. Redo a note with a more accurate speech model. |
+
+Eight languages in the app: English, German, French, Spanish, Italian, Portuguese, Dutch, Polish. The speech model understands many more, and you can switch languages mid-sentence.
+
+<p>
+  <img src="docs/images/note.png" width="32%" alt="A note: the refined email, with Copy and its cost">
+  <img src="docs/images/home.png" width="32%" alt="Home: start dictating, this month's cost, recent notes">
+  <img src="docs/images/chief-name.png" width="32%" alt="Settings: your chief of staff and the name you call it by">
+</p>
+
+## How it works
+
+### One start, three ways on
 
 ```mermaid
 flowchart LR
-    rec["🎙️ You talk<br/>(tile or hold a volume key)"] --> stt["Speech model<br/>MAI-Transcribe 2"]
-    stt --> panel["Floating panel<br/>✕ · Insert · ✨ Refine · 🧑‍💼 Chief"]
+    rec["🎙️ You talk<br/>(volume key or tile, over any app)"] --> stt["Speech model<br/>MAI-Transcribe 2"]
+    stt --> panel["Floating panel<br/>✕ · 📥 Insert · ✨ Refine · 🧑‍💼 Chief"]
     stt --> jev{"Jev<br/>decision model"}
     jev -->|"'make this an email',<br/>'use my template…'"| x
     jev -->|"your chief's name, and<br/>it's meant for them"| c
-    panel -->|Insert| t["📝 Transcript<br/>at the cursor"]
+    panel -->|"📥 Insert"| t["📝 Transcript<br/>at the cursor"]
     panel -->|"✨ Refine"| x["✍️ Refined text<br/>Claude Sonnet 5.5<br/>→ Insert refined"]
-    panel -->|"🧑‍💼 Chief"| c["🧑‍💼 Your chief<br/>a bb thread<br/>→ Open chat ↗"]
-    c -.->|"text to paste,<br/>via ntfy"| back["Insert from chief"]
+    panel -->|"🧑‍💼 Chief"| c["🧑‍💼 Your chief<br/>a bb thread on your computer<br/>→ Open chat ↗"]
+    c -.->|"text to paste,<br/>via ntfy"| back["📥 Insert from chief"]
 ```
 
-| Button | Does | Then turns into |
-|---|---|---|
-| **Insert** | Puts what you said at the cursor of the app you're in (through Android's Accessibility service). Without that permission, or without a text field, it's copied instead, and the panel says so. Otherwise Talk Router never touches your clipboard. | – |
-| **✨ Refine** | One call to Claude Sonnet 5.5 makes the text you need: works out what it's for (message, email, note, reply), follows what you asked, fills in a template you named, keeps your language and facts. | **Insert refined**. If the transcript you inserted is still unchanged in the field, it's replaced in place. |
-| **🧑‍💼 Chief** | Sends what you said, plus pasted text, to your chief-of-staff thread in bb. | **Open chat ↗**, which opens the thread. If the chief sends text back for you to paste, **Insert from chief** appears. |
-| **✕** | While recording: cancels, nothing is transcribed or sent. Afterwards: closes the panel; the note stays in Talk Router. | – |
+After the transcript, Jev (about 0.3 s and $0.00003) answers a few questions: did you ask for a text or name a template? Then Refine starts by itself. Did your chief's name come up, and is the dictation meant for them? Then it goes to the chief by itself, as you said it. If Jev isn't sure, 🧑‍💼 is only highlighted; if Jev fails, nothing happens by itself and the buttons still work.
 
-The buttons are icons (📥 Insert, ✨ Refine, 🧑‍💼 Chief, ✕), named for TalkBack; a long press shows the name. While you record, one compact row shows ■ with the timer, ✨, 🧑‍💼, ✕ and 📎; tap ✨ or 🧑‍💼 while still talking and it runs once the transcript is ready. Drag the panel anywhere; it remembers the spot.
+### Who talks to whom
 
-**What happens by itself.** After the transcript, Jev (TypeSafe's decision model, about 0.3 s and $0.00003) answers a few questions:
-- Do you ask for a text, or name a template ("turn this into an email", "use my apartment application…")? Then Refine starts by itself.
-- Your chief has a name you choose in Settings, for example "Ada". Only when that name comes up does Jev decide whether the dictation is meant for the chief ("Ada, …", "this is for Ada", "I want to talk to Ada about…") or just mentions them ("say hi to Ada"). If it's meant for the chief, it goes there by itself and isn't refined; if Jev isn't sure, 🧑‍💼 is only highlighted.
-- If Jev fails, nothing happens by itself; the buttons still work.
-
-Templates (texts you reuse) and 📎 context (something you copied, an image, a PDF) go along with Refine. For the chief, pasted text goes in the message, and images and PDFs go along as attachments it can open.
-
-## How it fits together
-
-There is no Talk Router server. The phone talks directly to three services, each with your own account:
+There is no Talk Router server. The phone talks directly to the services you set up, with your own accounts:
 
 ```mermaid
 flowchart TB
@@ -70,28 +83,34 @@ flowchart TB
         pwa["bb in the browser"]
     end
     subgraph cloud["Internet"]
-        or["OpenRouter<br/>speech & text models"]
+        or["OpenRouter<br/>speech, Jev, Refine"]
+        an["Anthropic (optional)<br/>Refine with your own key"]
         connect["bb Connect<br/>&lt;handle&gt;.getbb.app"]
         ntfy["ntfy.sh<br/>(or your own ntfy server)"]
     end
     subgraph mac["💻 Your computer"]
         mcp["bb's MCP server<br/>(bb--mcp plugin)"]
+        skills["Skills: chief-of-staff,<br/>talk-router"]
         chief["Chief-of-staff thread"]
         kids["Child threads"]
     end
     app -- "audio & text,<br/>your OpenRouter key" --> or
+    app -. "Refine text,<br/>your Anthropic key" .-> an
     app -- "MCP over HTTPS,<br/>your bb sign-in" --> connect --> mcp
+    mcp -- "installs, keeps up to date" --> skills
     mcp -- "bb thread tell" --> chief
+    skills -. "instructions" .-> chief
     chief -- "bb thread spawn" --> kids
-    chief -- "curl: summary + link" --> ntfy --> ntfyapp
+    chief -- "curl: summary + link,<br/>text to paste" --> ntfy --> ntfyapp
+    ntfy -- "text to paste" --> app
     ntfyapp -- "tap" --> pwa
 ```
 
-- **OpenRouter:** speech, Jev's decision and Refine (with your own Anthropic key, Refine goes to Anthropic directly instead, on your Anthropic credits, with OpenRouter as the fallback). You pay OpenRouter directly for what you use; every note shows what it cost, and Settings → Activity shows which model did what, how long it took and what it cost.
-- **bb:** an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Talk Router uses bb's built-in MCP server and its `run` tool to create the chief-of-staff thread (`bb thread spawn`) and to send it your dictations (`bb thread tell`). The chief's instructions are two bb user skills Talk Router keeps up to date: **chief-of-staff** (how to work for you: small things itself, bigger work split into parallel child threads with context, intent and what done looks like) and **talk-router** (how to read dictations, notify you and send text back, with your ntfy topic and bb links filled in). The chief thread itself only gets one line: "You're my chief of staff. Use the chief-of-staff and talk-router skills."
-- **ntfy:** a simple notification service. The chief sends exactly one notification per request, with a summary it writes itself and a link to its thread. Text meant for you to paste goes as a second message tagged with the request's ID: while the panel is open, Talk Router reads your topic and shows **Insert from chief**; otherwise the notification's **Copy** button hands it to Talk Router. The topic is a long random name that only you know. Talk Router itself sends no notifications.
+- **OpenRouter** runs speech, Jev and Refine. You pay OpenRouter directly for what you use; a one-minute note usually costs well under a cent. With your own **Anthropic** key, Refine goes to Anthropic directly on your Anthropic credits, with OpenRouter as the fallback.
+- **bb** is an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Talk Router uses bb's built-in MCP server to create the chief-of-staff thread and send it your dictations. The chief's instructions are two bb skills that Talk Router installs and keeps up to date by itself: **chief-of-staff** (how to work for you: small things itself, bigger work split into child threads with context, intent and what done looks like) and **talk-router** (how to read dictations, notify you and send text back).
+- **ntfy** carries the chief's notification (one per request, with a summary and a link to the thread) and text meant for you to paste. Your topic is a long random name only you know. Talk Router itself sends no notifications.
 
-### What happens when you hand off a task
+### Handing off a task
 
 ```mermaid
 sequenceDiagram
@@ -104,12 +123,12 @@ sequenceDiagram
     You->>TR: "Ada, find three Italian places near the office"
     TR->>OR: transcribe, then ask Jev (the name came up)
     OR-->>TR: meant for the chief: 0.98
-    TR->>BB: run: bb thread tell (what you said + pasted text + [request: k3x9qa])
+    TR->>BB: bb thread tell (what you said + attachments + [request: k3x9qa])
     BB->>CoS: new message
     TR-->>You: panel: "Open chat ↗"
     CoS->>CoS: works, maybe with child threads
     opt text for you to paste
-        CoS->>N: message tagged talkrouter-paste, req-k3x9qa
+        CoS->>N: message tagged req-k3x9qa
         N-->>TR: panel open: "Insert from chief"
     end
     CoS->>N: one notification: summary + link to the thread
@@ -121,7 +140,7 @@ If bb can't be reached, the note keeps what you said, says why, and offers **Sen
 
 ### Signing in to bb
 
-Talk Router reaches your bb through bb Connect (`https://<handle>.getbb.app/mcp`), with OAuth 2.1 and PKCE: no password or secret ever goes into the app. bb has no app registration; instead, an app's ID is the address of a small public JSON file describing it. Talk Router's lives on this repo's GitHub Pages ([client.json](https://philipp258.github.io/talk-router/oauth/client.json)).
+Talk Router reaches your bb through bb Connect (`https://<handle>.getbb.app/mcp`) with OAuth 2.1 and PKCE: no password or secret goes into the app. bb has no app registration; an app's ID is the address of a small public JSON file describing it. Talk Router's lives on this repo's GitHub Pages ([client.json](https://philipp258.github.io/talk-router/oauth/client.json)).
 
 ```mermaid
 sequenceDiagram
@@ -142,44 +161,52 @@ sequenceDiagram
     TR->>BB: MCP calls with the token, refreshed when it expires
 ```
 
-The redirect goes through a page on GitHub Pages because bb only accepts an `https` address next to the client file. The code is useless without the verifier, which never leaves the phone.
-
-Instead of bb Connect you can also enter any address of bb's MCP server yourself, e.g. one on your tailnet (Tailscale Serve), with an optional token.
+The redirect goes through a page on GitHub Pages because bb only accepts an `https` address next to the client file. The code is useless without the verifier, which never leaves the phone. Instead of bb Connect you can enter any address of bb's MCP server yourself, for example one on your tailnet, with an optional token.
 
 ## Setup
 
 **You need:**
-- An Android phone, Android 14 or newer.
-- An [OpenRouter](https://openrouter.ai) account with a key and a few dollars of credits. A one-minute note usually costs well under one cent.
-- For the agent route (optional): [bb](https://getbb.app) on your computer, signed in to your bb account with bb Connect on, plus the [ntfy](https://ntfy.sh) app on your phone (Google Play or F-Droid).
+- An Android phone with Android 14 or newer.
+- An [OpenRouter](https://openrouter.ai) account with a key and a few dollars of credits.
+- For the agent (optional): [bb](https://getbb.app) on your computer, signed in with bb Connect on, and the [ntfy](https://ntfy.sh) app on your phone (Google Play or F-Droid).
 
 **Steps:**
 1. **Install** the APK from the [latest release](https://github.com/Philipp258/talk-router/releases/latest), or build it yourself ([Build & test](docs/DEVELOPMENT.md)).
-2. **Open Talk Router.** Setup asks for your OpenRouter key and checks it, asks for the microphone, and sets up how you start (the tile, or holding a volume key) and the floating panel. Insert and the volume key need Android's Accessibility permission for Talk Router; setup explains what it's used for.
-3. **Connect bb** (or tap *Later*):
+2. **Open Talk Router.** Setup asks for your OpenRouter key and checks it, asks for the microphone, and sets up how you start (volume key or tile) and the floating panel. Insert and the volume key need Android's Accessibility permission; setup explains exactly what it's used for. Then you try it once in a practice field.
+3. **Connect bb** (or tap *Later*; without bb, Talk Router is a dictation app):
    1. On your computer, turn on bb's MCP server once: `bb plugin enable bb--mcp`.
-   2. In Talk Router, enter your bb Connect handle (the `<handle>` in `<handle>.getbb.app`) and tap **Sign in with bb**. Approve Talk Router on the bb page.
-4. **Chief of staff:** tap **Create**. Talk Router installs the chief's two skills in bb (through a short thread it archives afterwards), then starts a thread called "Chief of staff" in your Personal project that uses them. You can also pick an existing thread.
-5. **Notifications:** tap **Open in ntfy** to subscribe to your topic in the ntfy app, then **Send test**.
-6. **Name your chief** in Settings → Chief of staff, for example "Ada".
+   2. In Talk Router, enter your bb Connect handle (the `<handle>` in `<handle>.getbb.app`), tap **Sign in with bb** and approve Talk Router on the bb page.
+4. **Chief of staff:** tap **Create**. Talk Router installs the two skills in bb, then starts a "Chief of staff" thread that uses them. You can also pick a thread you already have.
+5. **Notifications:** tap **Open in ntfy** to subscribe to your topic, then **Send test**.
+6. **Name your chief** in Settings, for example "Ada".
 7. **Try it:** "Ada, find three Italian places near the office and send me a short list."
 
-Everything can be changed later in Settings: the key, how you start, the speech model, Refine, words Talk Router should know, templates, bb and notifications.
+Everything can be changed later in Settings. Optional: your own Anthropic key for Refine, templates, words Talk Router should know, and a different speech model. More in [Using the app](docs/GUIDE.md).
 
 ## Privacy
 
-- Notes and audio stay on the phone, encrypted. There's no Talk Router account and no server.
-- When you dictate, audio and text go to OpenRouter and the model providers it uses (speech, Jev, and Claude when you Refine). With your Anthropic key set, Refine's text goes to Anthropic instead. When you hand off a task, what you said (and text you pasted) goes to your bb.
-- Your chief's notifications pass through ntfy.sh (or your own ntfy server) under your random topic.
-- Accessibility is used only for Insert and the volume key: Talk Router asks for no accessibility events and looks up the text field you're typing in only when you tap Insert. No screen reading.
+Talk Router has no server, no account, no analytics and no crash reporting. What leaves your phone goes straight to the provider you chose:
+
+| What | Goes to | When |
+|---|---|---|
+| Audio | OpenRouter and the speech model's provider | After you stop recording |
+| Transcript, your template names, your chief's name if it came up | OpenRouter → Jev (TypeSafe) | After every transcript |
+| Transcript, About you, your words, the template you asked for, attachments | OpenRouter → Anthropic (Claude), or Anthropic directly with your key | Only when Refine runs |
+| What you said, pasted text, attached images and PDFs | Your bb, through bb Connect or your own address | Only when it goes to your chief |
+| The chief's notifications and text to paste | ntfy.sh (or your own server), under your random topic | When the chief sends them, from your computer |
+
+- **On the phone:** notes, templates and keys are encrypted; audio is kept 7 days for redos (you can turn that off). Backups and device transfer are excluded.
+- **Accessibility** is used only for Insert and the volume key. Talk Router asks for no accessibility events and never reads the screen; it looks up the text field you're typing in only when you tap Insert.
+- **Clipboard:** written only when you tap Copy, or when Insert can't reach a field. Never by itself.
+- **Your agent** runs on your computer, with the model providers you chose in bb.
 
 Details: [Privacy & storage](docs/PRIVACY.md).
 
-## More
+## Open source
 
-[Using the app](docs/GUIDE.md) · [Build & test](docs/DEVELOPMENT.md) · Plans and decisions: [agents through bb](docs/plans/bb-bridge.md), [the floating panel](docs/plans/floating-panel.md)
+Talk Router is MIT licensed, and the whole app is in this repo: plain Java, no third-party runtime libraries, no analytics SDKs. Build it yourself, read what it sends, or change it. Issues and pull requests are welcome.
 
-Eight languages: English, German, French, Spanish, Italian, Portuguese, Dutch, Polish.
+[Using the app](docs/GUIDE.md) · [Build & test](docs/DEVELOPMENT.md) · [Privacy & storage](docs/PRIVACY.md) · [Release notes](docs/releases/3.0.0.md) · Design notes: [agents through bb](docs/plans/bb-bridge.md), [the floating panel](docs/plans/floating-panel.md)
 
 ## License
 
