@@ -912,12 +912,14 @@ public final class DictationService extends Service {
     String chief = bb.chiefId(), request = ChiefText.requestId();
     long asked = SystemClock.elapsedRealtime();
     String why = null;
+    BbBridge.Sent sent = null;
     try {
       if (chief.isEmpty() || !bb.connected())
         throw new IOException(tr("No chief of staff is set up. Set one up in Settings → bb."));
-      java.util.List<String> skipped = new java.util.ArrayList<>();
-      java.util.List<String[]> pasted = new Attachments(context).texts(entry.recordingId(), skipped);
-      bb.sendRequest(chief, BbBridge.message(said, pasted, skipped, request));
+      Attachments attachments = new Attachments(context);
+      sent =
+          bb.sendRequest(
+              chief, said, attachments.texts(entry.recordingId()), attachments.binaries(entry.recordingId()), request);
     } catch (Exception ex) {
       why =
           ex.getClass() == IOException.class && ex.getMessage() != null
@@ -925,13 +927,16 @@ public final class DictationService extends Service {
               : tr("bb couldn't be reached. Try again.");
     }
     String failed = why;
+    BbBridge.Sent files = sent;
     long ms = SystemClock.elapsedRealtime() - asked;
     try {
       update(
           context,
           id,
           e -> {
-            e.step(CHIEF_STEP, CHIEF_TARGET, ms, null, failed);
+            JSONObject step = e.step(CHIEF_STEP, CHIEF_TARGET, ms, null, failed);
+            // Activity: how many files went along, and how ("upload", or "base64" as a fallback).
+            if (files != null && files.files() > 0) step.put("files", files.files()).put("filesHow", files.how());
             e.json.put("route", "chief");
             if (failed != null) {
               e.json.put("chiefFailed", failed);

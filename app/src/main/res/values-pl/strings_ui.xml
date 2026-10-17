@@ -21,7 +21,6 @@
     <string name="t_08db7524" formatted="false">Od $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Zezwól na wyświetlanie nad innymi aplikacjami</string>
     <string name="t_0a7ebfef" formatted="false">Dodano</string>
-    <string name="t_0ae02e51" formatted="false">Twój szef sztabu otrzymuje wklejony tekst i pliki tekstowe; obrazy i pliki PDF trafiają na razie tylko do modelu tekstowego.</string>
     <string name="t_0ae539d0" formatted="false">Twoje słowa</string>
     <string name="t_0ae65fda" formatted="false">Rozpocznij dyktowanie</string>
     <string name="t_0b47c5cb" formatted="false">Podczas dyktowania mały panel wyświetla się nad innymi aplikacjami: dotknij ■, aby zatrzymać, a potem Wstaw, Dopracuj lub Szef. Aby zezwolić, wybierz Talk Router na liście aplikacji Androida, włącz opcję i wróć tutaj.</string>
@@ -71,7 +70,6 @@
     <string name="t_1fd08398" formatted="false">Spowoduje to usunięcie Twoich notatek, nagrań, szablonów, słów, sekcji O mnie, klucza OpenRouter, danych logowania bb i ustawień z tego telefonu. Tej operacji nie można cofnąć.</string>
     <string name="t_1fde91b3" formatted="false">Twoje środki w Anthropic się wyczerpały.</string>
     <string name="t_200afc5b" formatted="false">Edytuj szablon</string>
-    <string name="t_202ddf1f" formatted="false">Obrazy i pliki PDF nie są jeszcze wysyłane do szefa sztabu; wklejony tekst tak.</string>
     <string name="t_215d7d37" formatted="false">Zastąpiono dopracowanym tekstem</string>
     <string name="t_22747cc0" formatted="false">Wiadomości</string>
     <string name="t_22a3ef54" formatted="false">Prawo</string>
@@ -110,6 +108,7 @@
     <string name="t_30a4185d" formatted="false">Wydano</string>
     <string name="t_30a98a26" formatted="false">Nie udało się zaktualizować historii.</string>
     <string name="t_315f5fe4" formatted="false">Dopracowano</string>
+    <string name="t_320126db" formatted="false">bb jest teraz nieosiągalny. Czy Twój komputer jest włączony i bb działa?</string>
     <string name="t_324be3eb" formatted="false">Nie udało się usunąć szablonu</string>
     <string name="t_32a5138e" formatted="false">jak powiedziano</string>
     <string name="t_32c62f32" formatted="false">Twój klucz OpenRouter stracił ważność. Zmień go w Ustawieniach Talk Router.</string>
@@ -316,6 +315,7 @@
     <string name="t_90b266d0" formatted="false">Informacje prawne i pomoc</string>
     <string name="t_9153ca96" formatted="false">Dotychczas: %1$s</string>
     <string name="t_918020d9" formatted="false">identyfikator</string>
+    <string name="t_918ca436" formatted="false">bb nie mógł przyjąć załącznika (HTTP %1$d).</string>
     <string name="t_91d100de" formatted="false">Załączono</string>
     <string name="t_94476a26" formatted="false">bb nie zainstalowało umiejętności asystenta na czas. Spróbuj ponownie.</string>
     <string name="t_946ab421" formatted="false">Szukaj modeli</string>
@@ -405,6 +405,10 @@
     <string name="t_b5ae1bae" formatted="false">bb</string>
     <string name="t_b67d60c1" formatted="false">Nie udało się zapisać szablonu</string>
     <string name="t_b6a5c51b" formatted="false">Wysyłany jako token Bearer</string>
+    <string name="t_b6cac25b_few" formatted="false">%1$d pliki</string>
+    <string name="t_b6cac25b_many" formatted="false">%1$d plików</string>
+    <string name="t_b6cac25b_one" formatted="false">%1$d plik</string>
+    <string name="t_b6cac25b_other" formatted="false">%1$d pliku</string>
     <string name="t_b70ef253" formatted="false">Wystąpił problem u dostawcy modelu (HTTP %1$d). Nagranie zostało zachowane; spróbuj ponownie.</string>
     <string name="t_b7db5df4" formatted="false">Testuj połączenie</string>
     <string name="t_b80635d0" formatted="false">Zezwól na mikrofon</string>
@@ -472,6 +476,7 @@
     <string name="t_d024ef7f" formatted="false">Pływający panel</string>
     <string name="t_d1101d1a" formatted="false">Szukanie Twojego bb…</string>
     <string name="t_d1e4a3ee" formatted="false">Start</string>
+    <string name="t_d27e302d" formatted="false">Twój szef sztabu otrzymuje wszystko: wklejony tekst w wiadomości, obrazy i pliki PDF jako załączniki.</string>
     <string name="t_d2be46f0" formatted="false">Ta notatka kosztowała %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Zamknij</string>
     <string name="t_d37efb26" formatted="false">Powiadomienia</string>
@@ -541,6 +546,7 @@
     <string name="t_ed4646d0" formatted="false">Najpierw dokończ lub odrzuć oczekujące nagranie</string>
     <string name="t_ed783112" formatted="false">✓  Używa %1$s (%2$s). Poinstruowano o użyciu umiejętności.</string>
     <string name="t_ed8814bc" formatted="false">Kopiuj</string>
+    <string name="t_edd0c3d2" formatted="false">(jako base64)</string>
     <string name="t_edd9ff2d" formatted="false">Szablony</string>
     <string name="t_ee5fc561" formatted="false">Sprawdzanie umiejętności asystenta w bb…</string>
     <string name="t_eea7466f" formatted="false">Wstawia tekst w miejscu kursora, tam gdzie piszesz.</string>

@@ -21,7 +21,6 @@
     <string name="t_08db7524" formatted="false">Ab $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Über anderen Apps anzeigen erlauben</string>
     <string name="t_0a7ebfef" formatted="false">Hinzugefügt</string>
-    <string name="t_0ae02e51" formatted="false">Dein Chief of Staff erhält eingefügten Text und Textdateien; Bilder und PDFs gehen vorerst nur an das Textmodell.</string>
     <string name="t_0ae539d0" formatted="false">Deine Wörter</string>
     <string name="t_0ae65fda" formatted="false">Diktat starten</string>
     <string name="t_0b47c5cb" formatted="false">Beim Diktieren bleibt ein kleines Fenster über anderen Apps: Tippe auf ■ zum Beenden, dann auf Einfügen, Verfeinern oder Chief. Zur Aktivierung zeigt Android eine App-Liste: Tippe auf Talk Router, schalte es ein und kehre zurück.</string>
@@ -71,7 +70,6 @@
     <string name="t_1fd08398" formatted="false">Dadurch werden deine Notizen, Audiodaten, Vorlagen, Wörter, „Über dich“, dein OpenRouter-Schlüssel sowie deine bb-Anmeldung und -Einstellungen auf diesem Smartphone gelöscht. Dies kann nicht rückgängig gemacht werden.</string>
     <string name="t_1fde91b3" formatted="false">Dein Anthropic-Guthaben ist aufgebraucht.</string>
     <string name="t_200afc5b" formatted="false">Vorlage bearbeiten</string>
-    <string name="t_202ddf1f" formatted="false">Bilder und PDFs werden noch nicht an den Chief of Staff gesendet; eingefügter Text schon.</string>
     <string name="t_215d7d37" formatted="false">Durch verfeinerten Text ersetzt</string>
     <string name="t_22747cc0" formatted="false">Nachrichten</string>
     <string name="t_22a3ef54" formatted="false">Recht</string>
@@ -110,6 +108,7 @@
     <string name="t_30a4185d" formatted="false">Ausgegeben</string>
     <string name="t_30a98a26" formatted="false">Verlauf konnte nicht aktualisiert werden.</string>
     <string name="t_315f5fe4" formatted="false">Verfeinert</string>
+    <string name="t_320126db" formatted="false">bb ist gerade nicht erreichbar. Ist dein Computer an und läuft bb?</string>
     <string name="t_324be3eb" formatted="false">Vorlage konnte nicht gelöscht werden</string>
     <string name="t_32a5138e" formatted="false">wie gesprochen</string>
     <string name="t_32c62f32" formatted="false">Dein OpenRouter-Schlüssel ist nicht mehr gültig. Ändere ihn in den Einstellungen von Talk Router.</string>
@@ -312,6 +311,7 @@
     <string name="t_90b266d0" formatted="false">Rechtliches &amp; Support</string>
     <string name="t_9153ca96" formatted="false">%1$s bisher</string>
     <string name="t_918020d9" formatted="false">Handle</string>
+    <string name="t_918ca436" formatted="false">bb konnte den Anhang nicht annehmen (HTTP %1$d).</string>
     <string name="t_91d100de" formatted="false">Angehängt</string>
     <string name="t_94476a26" formatted="false">bb hat die Skills des Chiefs nicht rechtzeitig installiert. Versuche es erneut.</string>
     <string name="t_946ab421" formatted="false">Modelle suchen</string>
@@ -399,6 +399,8 @@
     <string name="t_b5ae1bae" formatted="false">bb</string>
     <string name="t_b67d60c1" formatted="false">Vorlage konnte nicht gespeichert werden</string>
     <string name="t_b6a5c51b" formatted="false">Wird als Bearer-Token gesendet</string>
+    <string name="t_b6cac25b_one" formatted="false">%1$d Datei</string>
+    <string name="t_b6cac25b_other" formatted="false">%1$d Dateien</string>
     <string name="t_b70ef253" formatted="false">Der Modellanbieter hatte ein Problem (HTTP %1$d). Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_b7db5df4" formatted="false">Verbindung testen</string>
     <string name="t_b80635d0" formatted="false">Mikrofon erlauben</string>
@@ -464,6 +466,7 @@
     <string name="t_d024ef7f" formatted="false">Schwebendes Fenster</string>
     <string name="t_d1101d1a" formatted="false">Dein bb wird gesucht…</string>
     <string name="t_d1e4a3ee" formatted="false">Start</string>
+    <string name="t_d27e302d" formatted="false">Dein Chief of Staff bekommt alles: eingefügten Text in der Nachricht, Bilder und PDFs als Anhänge.</string>
     <string name="t_d2be46f0" formatted="false">Diese Notiz hat %1$s gekostet.</string>
     <string name="t_d2c0aec0" formatted="false">Schließen</string>
     <string name="t_d37efb26" formatted="false">Benachrichtigungen</string>
@@ -533,6 +536,7 @@
     <string name="t_ed4646d0" formatted="false">Schließe ausstehende Aufnahme erst ab oder verwerfe sie</string>
     <string name="t_ed783112" formatted="false">✓  Verwendet %1$s (%2$s). Wurde angewiesen, die Skills zu nutzen.</string>
     <string name="t_ed8814bc" formatted="false">Kopieren</string>
+    <string name="t_edd0c3d2" formatted="false">(als Base64)</string>
     <string name="t_edd9ff2d" formatted="false">Vorlagen</string>
     <string name="t_ee5fc561" formatted="false">Skills des Chiefs in bb werden geprüft…</string>
     <string name="t_eea7466f" formatted="false">Fügt den Text an der Cursorposition ein, wo du gerade tippst.</string>

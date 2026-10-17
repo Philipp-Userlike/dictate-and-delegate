@@ -40,12 +40,31 @@ public class BbBridgeTest {
         BbBridge.message(
             " research flights to Lisbon ",
             List.<String[]>of(new String[] {"pasted text", "Dates: 3 to 7 May"}),
-            List.of("an image (map.jpg)"),
+            BbBridge.base64Note(List.of("map.jpg")),
             "k3x9qa");
-    assertTrue(m.endsWith("\n\n[request: k3x9qa]"));
+    assertTrue(m.endsWith("map.jpg.)\n\n[request: k3x9qa]"));
     assertTrue(m.startsWith("research flights to Lisbon\n\n<pasted name=\"pasted text\">\nDates: 3 to 7 May\n</pasted>"));
-    assertTrue(m.contains("an image (map.jpg)"));
-    assertEquals("just this", BbBridge.message("just this", List.of(), List.of(), ""));
+    assertTrue(m.contains("base64 -d <name>.b64 > <name>"));
+    assertEquals("just this", BbBridge.message("just this", List.of(), "", ""));
+  }
+
+  @Test
+  public void attachedFilesGetASafeNameWithTheirRealExtension() {
+    assertEquals("IMG_20261016.jpg", new Attachments.Binary("image", "IMG_20261016.HEIC", "image/jpeg", new byte[0]).fileName());
+    assertEquals("photo.jpg", new Attachments.Binary("image", "photo.jpg", "image/jpeg", new byte[0]).fileName());
+    assertEquals("offer__1_.pdf", new Attachments.Binary("pdf", "offer (1).pdf", "application/pdf", new byte[0]).fileName());
+  }
+
+  @Test
+  public void attachmentsGoWithTheTell() {
+    String code =
+        BbBridge.tellSnippet(
+            "thr_c", "look", List.of(new String[] {"--image", "img-1-a.jpg"}, new String[] {"--file", "offer-2-b.pdf"}));
+    assertTrue(
+        code,
+        code.contains(
+            "[\"thread\",\"tell\",\"thr_c\",\"--mode\",\"queue\",\"--message-file\",\"-\",\"--image\",\"img-1-a.jpg\",\"--file\",\"offer-2-b.pdf\"]"));
+    assertEquals(BbBridge.tellSnippet("thr_c", "look", List.of()), BbBridge.tellSnippet("thr_c", "look"));
   }
 
   @Test

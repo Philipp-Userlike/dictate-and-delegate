@@ -21,7 +21,6 @@
     <string name="t_08db7524" formatted="false">Desde $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Permitir sobreposição a outras apps</string>
     <string name="t_0a7ebfef" formatted="false">Adicionado</string>
-    <string name="t_0ae02e51" formatted="false">O teu chefe de gabinete recebe texto colado e ficheiros de texto; imagens e PDFs vão apenas para o modelo de texto por agora.</string>
     <string name="t_0ae539d0" formatted="false">As tuas palavras</string>
     <string name="t_0ae65fda" formatted="false">Iniciar ditado</string>
     <string name="t_0b47c5cb" formatted="false">Enquanto ditas, um pequeno painel fica sobre as outras apps: toca em ■ para parar e depois em Inserir, Refinar ou Chief. Para autorizar, o Android mostra uma lista de apps: toca em Talk Router, ativa-o e volta atrás.</string>
@@ -71,7 +70,6 @@
     <string name="t_1fd08398" formatted="false">Isto apaga as tuas notas, áudio, modelos, palavras, Sobre ti, a tua chave OpenRouter, a tua sessão do bb e definições neste telemóvel. Não pode ser anulado.</string>
     <string name="t_1fde91b3" formatted="false">Teus créditos da Anthropic acabaram.</string>
     <string name="t_200afc5b" formatted="false">Editar modelo</string>
-    <string name="t_202ddf1f" formatted="false">Imagens e PDFs ainda não são enviados ao chefe de gabinete; texto colado sim.</string>
     <string name="t_215d7d37" formatted="false">Substituído pelo texto refinado</string>
     <string name="t_22747cc0" formatted="false">Mensagens</string>
     <string name="t_22a3ef54" formatted="false">Direito</string>
@@ -110,6 +108,7 @@
     <string name="t_30a4185d" formatted="false">Gasto</string>
     <string name="t_30a98a26" formatted="false">Não foi possível atualizar o histórico.</string>
     <string name="t_315f5fe4" formatted="false">Refinado</string>
+    <string name="t_320126db" formatted="false">O bb não está acessível agora. O teu computador está ligado e o bb em execução?</string>
     <string name="t_324be3eb" formatted="false">Não foi possível eliminar o modelo</string>
     <string name="t_32a5138e" formatted="false">como dito</string>
     <string name="t_32c62f32" formatted="false">A tua chave do OpenRouter já não é válida. Altera-a nas definições do Talk Router.</string>
@@ -314,6 +313,7 @@
     <string name="t_90b266d0" formatted="false">Legal e suporte</string>
     <string name="t_9153ca96" formatted="false">%1$s até agora</string>
     <string name="t_918020d9" formatted="false">handle</string>
+    <string name="t_918ca436" formatted="false">O bb não conseguiu receber o anexo (HTTP %1$d).</string>
     <string name="t_91d100de" formatted="false">Anexado</string>
     <string name="t_94476a26" formatted="false">O bb não instalou as habilidades do chefe a tempo. Tenta novamente.</string>
     <string name="t_946ab421" formatted="false">Pesquisar modelos</string>
@@ -402,6 +402,9 @@
     <string name="t_b5ae1bae" formatted="false">bb</string>
     <string name="t_b67d60c1" formatted="false">Não foi possível guardar o modelo</string>
     <string name="t_b6a5c51b" formatted="false">Enviado como bearer token</string>
+    <string name="t_b6cac25b_many" formatted="false">%1$d de arquivos</string>
+    <string name="t_b6cac25b_one" formatted="false">%1$d arquivo</string>
+    <string name="t_b6cac25b_other" formatted="false">%1$d arquivos</string>
     <string name="t_b70ef253" formatted="false">O fornecedor do modelo teve um problema (HTTP %1$d). A gravação foi guardada; tenta novamente.</string>
     <string name="t_b7db5df4" formatted="false">Testar ligação</string>
     <string name="t_b80635d0" formatted="false">Permitir microfone</string>
@@ -468,6 +471,7 @@
     <string name="t_d024ef7f" formatted="false">Painel flutuante</string>
     <string name="t_d1101d1a" formatted="false">A encontrar o teu bb…</string>
     <string name="t_d1e4a3ee" formatted="false">Início</string>
+    <string name="t_d27e302d" formatted="false">O teu chefe de gabinete recebe tudo: texto colado na mensagem, imagens e PDFs como anexos.</string>
     <string name="t_d2be46f0" formatted="false">Esta nota custou %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Fechar</string>
     <string name="t_d37efb26" formatted="false">Notificações</string>
@@ -537,6 +541,7 @@
     <string name="t_ed4646d0" formatted="false">Termina ou descarta a gravação pendente primeiro</string>
     <string name="t_ed783112" formatted="false">✓  A utilizar %1$s (%2$s). Foi configurado para usar as habilidades.</string>
     <string name="t_ed8814bc" formatted="false">Copiar</string>
+    <string name="t_edd0c3d2" formatted="false">(em base64)</string>
     <string name="t_edd9ff2d" formatted="false">Modelos</string>
     <string name="t_ee5fc561" formatted="false">A verificar as habilidades do chefe no bb…</string>
     <string name="t_eea7466f" formatted="false">Coloca o texto no cursor, onde estás a escrever.</string>

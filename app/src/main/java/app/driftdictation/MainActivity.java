@@ -2005,18 +2005,10 @@ public final class MainActivity extends Activity {
     java.util.List<Attachments.Item> files = new Attachments(this).of(noteId);
     if (!files.isEmpty()) {
       StringBuilder names = new StringBuilder();
-      boolean unsent = false;
-      for (Attachments.Item f : files) {
+      for (Attachments.Item f : files)
         names.append(names.length() == 0 ? "" : ", ")
             .append(f.kind().equals("text") ? tr("pasted text") : f.name());
-        unsent |= f.kind().equals("image") || f.kind().equals("pdf");
-      }
       ui.add(content, ui.text("📎 " + names, 13, Ui.MUTED), 10);
-      if (chief && unsent)
-        ui.add(
-            content,
-            ui.text(tr("Images and PDFs aren't sent to the chief of staff yet; pasted text is."), 13, Ui.MUTED),
-            2);
     }
     ui.add(
         content,
@@ -2287,7 +2279,12 @@ public final class MainActivity extends Activity {
                 : "")
             + (step.optBoolean("approx") ? " " + tr("(Anthropic credits)") : "")
             + (failed ? " · " + detail : answer != null && !answer.isEmpty() ? " → " + answer : "")
-            + (step.has("fallback") ? " · " + tr("via OpenRouter: %1$s", step.optString("fallback")) : "");
+            + (step.has("fallback") ? " · " + tr("via OpenRouter: %1$s", step.optString("fallback")) : "")
+            + (step.has("files")
+                ? " · "
+                    + plural(step.optInt("files"), "%1$d file", "%1$d files")
+                    + ("base64".equals(step.optString("filesHow")) ? " " + tr("(as base64)") : "")
+                : "");
     TextView t = ui.text(line, 13, failed ? Ui.WARN : Ui.BODY);
     t.setContentDescription(line + " (" + model + ")");
     return t;

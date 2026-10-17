@@ -358,6 +358,69 @@ public class BbFlowTest {
     }
   }
 
+  static String sha256(byte[] data) throws Exception {
+    StringBuilder s = new StringBuilder();
+    for (byte b : java.security.MessageDigest.getInstance("SHA-256").digest(data)) s.append(String.format("%02x", b));
+    return s.toString();
+  }
+
+  @Test
+  public void imagesAndPdfsReachTheChiefAsAttachmentsImagesFirst() throws Exception {
+    connectFake();
+    byte[] pdf = "%PDF-1.4 fake offer".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    byte[] jpeg = new byte[] {(byte) 0xff, (byte) 0xd8, (byte) 0xff, (byte) 0xe0, 1, 2, 3, (byte) 0x80, (byte) 0xff, (byte) 0xd9};
+    Attachments a = new Attachments(context);
+    a.add("pdf", "offer (1).pdf", pdf, ".pdf");
+    a.add("image", "IMG_20261016_152137_426.jpg", jpeg, ".jpg");
+    a.addText("Flight TP 1234");
+    TestServer.transcripts("Henry, look at this flat and the offer");
+    TestServer.decide(0, 0.97, "none");
+    dictate("copied");
+    HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    JSONArray uploads = TestServer.bbUploads();
+    assertEquals(2, uploads.length());
+    // The image first, byte for byte, then the PDF; both through bb's REST upload.
+    assertEquals("IMG_20261016_152137_426.jpg", uploads.getJSONObject(0).getString("name"));
+    assertEquals("image/jpeg", uploads.getJSONObject(0).getString("mimeType"));
+    assertEquals(sha256(jpeg), uploads.getJSONObject(0).getString("sha256"));
+    assertEquals("offer__1_.pdf", uploads.getJSONObject(1).getString("name"));
+    assertEquals(sha256(pdf), uploads.getJSONObject(1).getString("sha256"));
+    assertEquals("rest", uploads.getJSONObject(1).getString("via"));
+    List<String> snippets = TestServer.bbSnippets();
+    String tell = snippets.get(snippets.size() - 1);
+    assertTrue(tell, tell.contains("\"--image\",\"" + uploads.getJSONObject(0).getString("path") + "\",\"--file\",\"" + uploads.getJSONObject(1).getString("path") + "\""));
+    assertTrue(tell, tell.contains("Flight TP 1234"));
+    assertFalse(tell, tell.contains("can't pass on"));
+    assertFalse(tell, tell.contains("base64"));
+    JSONArray steps = e.json.getJSONArray("steps");
+    JSONObject bb = steps.getJSONObject(steps.length() - 1);
+    assertEquals(2, bb.getInt("files"));
+    assertEquals("upload", bb.getString("filesHow"));
+  }
+
+  @Test
+  public void whenBbRefusesTheUploadFilesGoAsBase64ForTheChiefToDecode() throws Exception {
+    connectFake();
+    TestServer.bbUploadStatus(401);
+    byte[] jpeg = new byte[] {(byte) 0xff, (byte) 0xd8, 0, 1, (byte) 0xfe, (byte) 0xff, (byte) 0xd9};
+    new Attachments(context).add("image", "flat.jpg", jpeg, ".jpg");
+    TestServer.transcripts("Henry, what do you think of this flat");
+    TestServer.decide(0, 0.97, "none");
+    dictate("copied");
+    HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    JSONArray uploads = TestServer.bbUploads();
+    assertEquals(1, uploads.length());
+    assertEquals("mcp", uploads.getJSONObject(0).getString("via"));
+    assertEquals("flat.jpg.b64", uploads.getJSONObject(0).getString("name"));
+    assertEquals(sha256(jpeg), uploads.getJSONObject(0).getString("sha256"));
+    List<String> snippets = TestServer.bbSnippets();
+    String tell = snippets.get(snippets.size() - 1);
+    assertTrue(tell, tell.contains("\"--file\",\"" + uploads.getJSONObject(0).getString("path") + "\""));
+    assertTrue(tell, tell.contains("base64 -d <name>.b64 > <name>"));
+    assertTrue(tell, tell.contains("flat.jpg.)"));
+    assertEquals("base64", e.json.getJSONArray("steps").getJSONObject(e.json.getJSONArray("steps").length() - 1).getString("filesHow"));
+  }
+
   /** Scrolls the page to its end. */
   void toEnd() throws Exception {
     new UiScrollable(new UiSelector().scrollable(true)).scrollToEnd(5);

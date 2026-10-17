@@ -546,6 +546,49 @@ public class PanelTest {
     shot("real-3-inserted");
   }
 
+  /**
+   * Opt-in, like the test above (same -e real… arguments): a red picture goes to a real chief as
+   * an attachment, and its answer comes back to the panel.
+   */
+  @Test
+  public void realBbChiefSeesAnAttachedImage() throws Exception {
+    android.os.Bundle args = InstrumentationRegistry.getArguments();
+    Assume.assumeTrue(args.getString("realMcp") != null);
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(args.getString("realMcp"), "", args.getString("realLinks"));
+    bb.setNtfyServer(args.getString("realNtfy"));
+    TestServer.skillsCurrent(context);
+    java.util.Map<String, String> files = ChiefSkills.filled(context);
+    String prompt =
+        "For this test, follow these two skills as if they were installed, then reply \"ready\".\n\n"
+            + files.get(ChiefSkills.CHIEF)
+            + "\n"
+            + files.get(ChiefSkills.ROUTER);
+    JSONObject created =
+        bb.run(BbBridge.spawnSnippet(prompt).replace(JSONObject.quote(BbBridge.CHIEF_TITLE), JSONObject.quote(args.getString("realTitle"))));
+    android.util.Log.i("TalkRouterReal", "chief " + created.getString("id"));
+    bb.setChief(new BbBridge.ThreadInfo(created.getString("id"), args.getString("realTitle"), created.optString("status")));
+    prefs.edit().putString(Profile.CHIEF_NAME, "Henry").commit();
+    android.graphics.Bitmap red = android.graphics.Bitmap.createBitmap(64, 64, android.graphics.Bitmap.Config.ARGB_8888);
+    red.eraseColor(0xffff0000);
+    java.io.ByteArrayOutputStream jpeg = new java.io.ByteArrayOutputStream();
+    red.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, jpeg);
+    new Attachments(context).add("image", "colour.jpg", jpeg.toByteArray(), ".jpg");
+    TestServer.transcripts(
+        "Henry, look at the attached picture and send me just the name of its colour, in English, as text to paste.");
+    TestServer.decide(0.1, 0.97, "none");
+    pad("");
+    dictate();
+    find("Open chat ↗");
+    UiObject2 insert = device.wait(Until.findObject(By.desc("Insert from chief")), DictationService.PANEL_WAIT_MS);
+    assertNotNull("the chief's answer arrived while the panel waited", insert);
+    insert.click();
+    until("the answer is in the field", () -> padText().toLowerCase().contains("red"));
+    JSONArray steps = note().json.getJSONArray("steps");
+    android.util.Log.i("TalkRouterReal", "answer: " + padText() + " · " + steps.getJSONObject(steps.length() - 1));
+    shot("real-4-image-answer");
+  }
+
   @Test
   public void ntfysCopyButtonCopiesTheChiefsText() throws Exception {
     BbBridge bb = chief();

@@ -53,7 +53,7 @@ public final class AttachActivity extends Activity {
       ui.add(
           root,
           ui.text(
-              tr("Your chief of staff gets pasted text and text files; images and PDFs only go to the text model for now."),
+              tr("Your chief of staff gets all of it: pasted text in the message, images and PDFs as attachments."),
               12,
               Ui.MUTED),
           4);

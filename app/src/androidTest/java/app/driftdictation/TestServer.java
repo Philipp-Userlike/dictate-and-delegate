@@ -100,6 +100,21 @@ final class TestServer {
     postTo(bbRoot(), "/test/fail", new JSONObject().put("kind", kind).put("error", error));
   }
 
+  /** The fake's REST upload answers with this status (200 to take files). */
+  static void bbUploadStatus(int status) throws Exception {
+    postTo(bbRoot(), "/test/config", new JSONObject().put("uploadStatus", status));
+  }
+
+  /** Every upload the fake bb took: {"name", "mimeType", "size", "sha256", "via", "path"}. */
+  static JSONArray bbUploads() throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(bbRoot() + "/test/uploads").openConnection();
+    try (InputStream in = c.getInputStream()) {
+      return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8)).getJSONArray("uploads");
+    } finally {
+      c.disconnect();
+    }
+  }
+
   /** The fake requires this bearer token from now on ("" turns that off). */
   static void bbToken(String token) throws Exception {
     postTo(bbRoot(), "/test/config", new JSONObject().put("token", token));

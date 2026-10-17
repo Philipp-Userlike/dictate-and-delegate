@@ -56,7 +56,7 @@ The buttons are icons (📥 Insert, ✨ Refine, 🧑‍💼 Chief, ✕), named f
 - Your chief has a name you choose in Settings, for example "Ada". Only when that name comes up does Jev decide whether the dictation is meant for the chief ("Ada, …", "this is for Ada", "I want to talk to Ada about…") or just mentions them ("say hi to Ada"). If it's meant for the chief, it goes there by itself and isn't refined; if Jev isn't sure, 🧑‍💼 is only highlighted.
 - If Jev fails, nothing happens by itself; the buttons still work.
 
-Templates (texts you reuse) and 📎 context (something you copied, an image, a PDF) go along with Refine. For the chief, pasted text goes along; files don't yet.
+Templates (texts you reuse) and 📎 context (something you copied, an image, a PDF) go along with Refine. For the chief, pasted text goes in the message, and images and PDFs go along as attachments it can open.
 
 ## How it fits together
 

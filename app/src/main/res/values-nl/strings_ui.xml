@@ -21,7 +21,6 @@
     <string name="t_08db7524" formatted="false">Vanaf $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Weergeven over andere apps toestaan</string>
     <string name="t_0a7ebfef" formatted="false">Toegevoegd</string>
-    <string name="t_0ae02e51" formatted="false">Je stafchef ontvangt geplakte tekst en tekstbestanden; afbeeldingen en pdf\'s gaan nu alleen nog naar het tekstmodel.</string>
     <string name="t_0ae539d0" formatted="false">Jouw woorden</string>
     <string name="t_0ae65fda" formatted="false">Dicteren starten</string>
     <string name="t_0b47c5cb" formatted="false">Terwijl je dicteert, blijft een klein paneel boven andere apps zweven: tik op ■ om te stoppen, en daarna op Invoegen, Verfijn of Stafchef. Om dit toe te staan, toont Android een lijst met apps: tik op Talk Router, schakel het in en ga terug.</string>
@@ -71,7 +70,6 @@
     <string name="t_1fd08398" formatted="false">Dit verwijdert je notities, audio, sjablonen, woorden, Over jou, je OpenRouter-sleutel, je bb-aanmelding en instellingen op deze telefoon. Dit kan niet ongedaan worden gemaakt.</string>
     <string name="t_1fde91b3" formatted="false">Je Anthropic-tegoed is op.</string>
     <string name="t_200afc5b" formatted="false">Sjabloon bewerken</string>
-    <string name="t_202ddf1f" formatted="false">Afbeeldingen en pdf\'s worden nog niet naar de stafchef verzonden; geplakte tekst wel.</string>
     <string name="t_215d7d37" formatted="false">Vervangen door de verfijnde tekst</string>
     <string name="t_22747cc0" formatted="false">Berichten</string>
     <string name="t_22a3ef54" formatted="false">Juridisch</string>
@@ -110,6 +108,7 @@
     <string name="t_30a4185d" formatted="false">Besteed</string>
     <string name="t_30a98a26" formatted="false">Kon geschiedenis niet bijwerken.</string>
     <string name="t_315f5fe4" formatted="false">Verfijnd</string>
+    <string name="t_320126db" formatted="false">bb is momenteel niet bereikbaar. Staat je computer aan en draait bb?</string>
     <string name="t_324be3eb" formatted="false">Kon het sjabloon niet verwijderen</string>
     <string name="t_32a5138e" formatted="false">zoals gezegd</string>
     <string name="t_32c62f32" formatted="false">Je OpenRouter-sleutel is niet meer geldig. Wijzig deze in de instellingen van Talk Router.</string>
@@ -312,6 +311,7 @@
     <string name="t_90b266d0" formatted="false">Juridisch &amp; ondersteuning</string>
     <string name="t_9153ca96" formatted="false">%1$s tot nu toe</string>
     <string name="t_918020d9" formatted="false">gebruikersnaam</string>
+    <string name="t_918ca436" formatted="false">bb kon de bijlage niet aannemen (HTTP %1$d).</string>
     <string name="t_91d100de" formatted="false">Bijgevoegd</string>
     <string name="t_94476a26" formatted="false">bb heeft de skills van de stafchef niet op tijd geïnstalleerd. Probeer het opnieuw.</string>
     <string name="t_946ab421" formatted="false">Modellen zoeken</string>
@@ -399,6 +399,8 @@
     <string name="t_b5ae1bae" formatted="false">bb</string>
     <string name="t_b67d60c1" formatted="false">Kon het sjabloon niet opslaan</string>
     <string name="t_b6a5c51b" formatted="false">Verzonden als bearer-token</string>
+    <string name="t_b6cac25b_one" formatted="false">%1$d bestand</string>
+    <string name="t_b6cac25b_other" formatted="false">%1$d bestanden</string>
     <string name="t_b70ef253" formatted="false">Er was een probleem bij de modelprovider (HTTP %1$d). De opname is bewaard; probeer het opnieuw.</string>
     <string name="t_b7db5df4" formatted="false">Verbinding testen</string>
     <string name="t_b80635d0" formatted="false">Microfoon toestaan</string>
@@ -464,6 +466,7 @@
     <string name="t_d024ef7f" formatted="false">Zwevend paneel</string>
     <string name="t_d1101d1a" formatted="false">bb zoeken…</string>
     <string name="t_d1e4a3ee" formatted="false">Start</string>
+    <string name="t_d27e302d" formatted="false">Je stafchef krijgt alles: geplakte tekst in het bericht, afbeeldingen en pdf\'s als bijlagen.</string>
     <string name="t_d2be46f0" formatted="false">Deze notitie kostte %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Sluiten</string>
     <string name="t_d37efb26" formatted="false">Meldingen</string>
@@ -533,6 +536,7 @@
     <string name="t_ed4646d0" formatted="false">Rond eerst de openstaande opname af of verwijder deze</string>
     <string name="t_ed783112" formatted="false">✓  Gebruikt %1$s (%2$s). Geïnstrueerd om de skills te gebruiken.</string>
     <string name="t_ed8814bc" formatted="false">Kopiëren</string>
+    <string name="t_edd0c3d2" formatted="false">(als base64)</string>
     <string name="t_edd9ff2d" formatted="false">Sjablonen</string>
     <string name="t_ee5fc561" formatted="false">Skills van stafchef controleren in bb…</string>
     <string name="t_eea7466f" formatted="false">Plaatst de tekst bij de cursor, waar je typt.</string>

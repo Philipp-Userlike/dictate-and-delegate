@@ -17,6 +17,13 @@ Speaks MCP Streamable HTTP on POST /mcp and answers as an event stream, like bb 
                                 "thread","archive" -> {"archived": true}
                               anything else returns {}
 
+And bb's REST upload, as bb's own app uses it:
+
+  POST /api/v1/projects/<id>/attachments   multipart "file" -> {"type", "path", "name", "mimeType", "sizeBytes"}
+                                           (401 when /test/config {"uploadStatus": 401} says so)
+
+The MCP snippet "project","attachment","upload" (the base64 fallback) stores its stdin text too.
+
 Test control (not part of bb):
 
   POST /test/fail     {"kind": "spawn"|"tell"|"show"|"any", "error": "tool"|"http401"|"http503"|"rpc"}
@@ -27,6 +34,7 @@ Test control (not part of bb):
                       {"token": ""} turns that off
   POST /test/skills   {"installed": {"talk-router": "abc", ...}} sets what bb has ("" missing,
                       "old" unmarked); {"stall": true} makes the install thread never install
+  GET  /test/uploads  every upload: {"name", "mimeType", "size", "sha256", "via": "rest"|"mcp", "path"}
   GET  /test/skills   what's installed: {"installed": {...}, "files": {name: content}}
   POST /test/reset    empties failures, config, installed skills and the request log
   GET  /test/requests every MCP request since the last reset, oldest first:
@@ -35,6 +43,8 @@ Test control (not part of bb):
 Usage: python3 scripts/fakes/fake_bb_mcp.py [--port 8798]
 """
 import argparse
+import base64
+import hashlib
 import json
 import re
 import sys
@@ -53,7 +63,8 @@ TOOLS = [
 
 lock = threading.Lock()
 failures = []
-config = {"token": ""}
+config = {"token": "", "uploadStatus": 200}
+uploads = []
 skills = {"installed": {}, "files": {}, "stall": False}
 requests = []
 
@@ -64,6 +75,8 @@ def kind_of(code):
         return "skills"
     if '"thread","archive"' in flat:
         return "archive"
+    if '"project","attachment","upload"' in flat:
+        return "upload"
     for kind in ("spawn", "tell", "show"):
         if '"thread","%s"' % kind in code.replace(" ", ""):
             return kind
@@ -119,18 +132,26 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/test/skills":
             with lock:
                 return self.send_json(200, {"installed": skills["installed"], "files": skills["files"]})
+        if self.path == "/test/uploads":
+            with lock:
+                return self.send_json(200, {"uploads": list(uploads)})
         if self.path == "/test/requests":
             with lock:
                 return self.send_json(200, {"requests": list(requests)})
         self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
+        m = re.match(r"^/api/v1/projects/([^/]+)/attachments$", self.path)
+        if m:
+            return self.rest_upload()
         body = self.body()
         if self.path == "/test/reset":
             with lock:
                 failures.clear()
                 requests.clear()
                 config["token"] = ""
+                config["uploadStatus"] = 200
+                uploads.clear()
                 skills.update({"installed": {}, "files": {}, "stall": False})
             return self.send_json(200, {})
         if self.path == "/test/fail":
@@ -181,6 +202,33 @@ class Handler(BaseHTTPRequestHandler):
             return self.call(rid, code)
         self.send_event({"jsonrpc": "2.0", "id": rid, "error": {"code": -32601, "message": "Method not found"}})
 
+    def rest_upload(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        raw = self.rfile.read(length)
+        with lock:
+            status = config["uploadStatus"]
+            token = config["token"]
+        if token and self.headers.get("Authorization", "") != "Bearer " + token:
+            status = 401
+        if status != 200:
+            self.send_response(status)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        boundary = re.search(r"boundary=(\S+)", self.headers.get("Content-Type", "")).group(1).encode()
+        part = raw.split(b"--" + boundary)[1]
+        head, data = part.split(b"\r\n\r\n", 1)
+        data = data[:-2]  # the CRLF before the closing boundary
+        name = re.search(rb'filename="([^"]*)"', head).group(1).decode()
+        mime = re.search(rb"Content-Type: (\S+)", head).group(1).decode()
+        path = "%s-fake-%d" % (name, len(uploads))
+        with lock:
+            uploads.append({"name": name, "mimeType": mime, "size": len(data),
+                            "sha256": hashlib.sha256(data).hexdigest(), "via": "rest", "path": path})
+        self.send_json(200, {"type": "localImage" if mime.startswith("image/") else "localFile",
+                             "sourceProjectId": "proj_personal", "path": path, "name": name,
+                             "mimeType": mime, "sizeBytes": len(data)})
+
     def call(self, rid, code):
         kind = kind_of(code)
         failure = take_failure(kind)
@@ -197,7 +245,16 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_event({"jsonrpc": "2.0", "id": rid, "result": {
                 "content": [{"type": "text", "text": "Error: bb thread %s failed: thread not found" % kind}],
                 "isError": True}})
-        if kind == "skills":
+        if kind == "upload":
+            text = json.loads(re.search(r'\{stdin: ("(?:[^"\\]|\\.)*")\}', code).group(1))
+            name = re.search(r'"--filename","([^"]*)"', code.replace(" ", "")).group(1)
+            data = base64.b64decode(text)
+            path = "%s-fake-%d" % (name, len(uploads))
+            with lock:
+                uploads.append({"name": name, "mimeType": "text/plain", "size": len(data),
+                                "sha256": hashlib.sha256(data).hexdigest(), "via": "mcp", "path": path})
+            value = {"path": path}
+        elif kind == "skills":
             with lock:
                 value = {"skills": {n: skills["installed"].get(n, "") for n in ("chief-of-staff", "talk-router")}}
         elif kind == "archive":

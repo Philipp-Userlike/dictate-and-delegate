@@ -21,7 +21,6 @@
     <string name="t_08db7524" formatted="false">À partir de %1$s $ / min</string>
     <string name="t_08e77a0c" formatted="false">Autoriser la superposition</string>
     <string name="t_0a7ebfef" formatted="false">Ajouté</string>
-    <string name="t_0ae02e51" formatted="false">Ton chef de cabinet reçoit le texte collé et les fichiers texte ; pour l\'instant, les images et les PDF vont uniquement au modèle de texte.</string>
     <string name="t_0ae539d0" formatted="false">Tes mots</string>
     <string name="t_0ae65fda" formatted="false">Démarrer la dictée</string>
     <string name="t_0b47c5cb" formatted="false">Pendant que tu dictes, un petit panneau reste au-dessus des autres applis : appuie sur ■ pour arrêter, puis sur Insérer, Peaufiner ou Chef. Pour l\'autoriser, Android affiche une liste d\'applis : sélectionne Talk Router, active-le et reviens ici.</string>
@@ -71,7 +70,6 @@
     <string name="t_1fd08398" formatted="false">Cela supprimera tes notes, audios, modèles, mots, À propos de toi, ta clé OpenRouter, ta connexion bb et tes paramètres sur ce téléphone. Cette action est irréversible.</string>
     <string name="t_1fde91b3" formatted="false">Tes crédits Anthropic sont épuisés.</string>
     <string name="t_200afc5b" formatted="false">Modifier le modèle</string>
-    <string name="t_202ddf1f" formatted="false">Les images et les PDF ne sont pas encore envoyés au chef de cabinet ; le texte collé l\'est.</string>
     <string name="t_215d7d37" formatted="false">Remplacé par le texte peaufiné</string>
     <string name="t_22747cc0" formatted="false">Messages</string>
     <string name="t_22a3ef54" formatted="false">Juridique</string>
@@ -110,6 +108,7 @@
     <string name="t_30a4185d" formatted="false">Dépensé</string>
     <string name="t_30a98a26" formatted="false">Impossible de mettre à jour l\'historique.</string>
     <string name="t_315f5fe4" formatted="false">Peaufiné</string>
+    <string name="t_320126db" formatted="false">bb n\'est pas joignable pour le moment. Ton ordinateur est-il allumé et bb lancé ?</string>
     <string name="t_324be3eb" formatted="false">Impossible de supprimer le modèle</string>
     <string name="t_32a5138e" formatted="false">brut</string>
     <string name="t_32c62f32" formatted="false">Ta clé OpenRouter n\'est plus valide. Modifie-la dans les paramètres de Talk Router.</string>
@@ -314,6 +313,7 @@
     <string name="t_90b266d0" formatted="false">Mentions légales et support</string>
     <string name="t_9153ca96" formatted="false">%1$s jusqu\'ici</string>
     <string name="t_918020d9" formatted="false">identifiant</string>
+    <string name="t_918ca436" formatted="false">bb n\'a pas pu traiter la pièce jointe (HTTP %1$d).</string>
     <string name="t_91d100de" formatted="false">Joint</string>
     <string name="t_94476a26" formatted="false">bb n\'a pas installé les compétences du chef à temps. Réessaie.</string>
     <string name="t_946ab421" formatted="false">Rechercher des modèles</string>
@@ -402,6 +402,9 @@
     <string name="t_b5ae1bae" formatted="false">bb</string>
     <string name="t_b67d60c1" formatted="false">Impossible d\'enregistrer le modèle</string>
     <string name="t_b6a5c51b" formatted="false">Envoyé comme jeton Bearer</string>
+    <string name="t_b6cac25b_many" formatted="false">%1$d de fichiers</string>
+    <string name="t_b6cac25b_one" formatted="false">%1$d fichier</string>
+    <string name="t_b6cac25b_other" formatted="false">%1$d fichiers</string>
     <string name="t_b70ef253" formatted="false">Le fournisseur du modèle a rencontré un problème (HTTP %1$d). L\'enregistrement est conservé ; réessaie.</string>
     <string name="t_b7db5df4" formatted="false">Tester la connexion</string>
     <string name="t_b80635d0" formatted="false">Autoriser le micro</string>
@@ -468,6 +471,7 @@
     <string name="t_d024ef7f" formatted="false">Panneau flottant</string>
     <string name="t_d1101d1a" formatted="false">Recherche de ton bb…</string>
     <string name="t_d1e4a3ee" formatted="false">Accueil</string>
+    <string name="t_d27e302d" formatted="false">Ton bras droit reçoit tout : le texte collé dans le message, les images et les PDF en pièces jointes.</string>
     <string name="t_d2be46f0" formatted="false">Cette note a coûté %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Fermer</string>
     <string name="t_d37efb26" formatted="false">Notifications</string>
@@ -537,6 +541,7 @@
     <string name="t_ed4646d0" formatted="false">Termine ou supprime d\'abord l\'enregistrement en attente</string>
     <string name="t_ed783112" formatted="false">✓  Utilise %1$s (%2$s). Consigne donnée d\'utiliser les compétences.</string>
     <string name="t_ed8814bc" formatted="false">Copier</string>
+    <string name="t_edd0c3d2" formatted="false">(en base64)</string>
     <string name="t_edd9ff2d" formatted="false">Modèles</string>
     <string name="t_ee5fc561" formatted="false">Vérification des compétences du chef dans bb…</string>
     <string name="t_eea7466f" formatted="false">Place le texte au niveau du curseur, là où tu écris.</string>

@@ -156,17 +156,44 @@ final class Attachments {
    * For the chief of staff: pasted text and text files as {name, text}. Images and PDFs aren't
    * sent to it in this version; their names go to skipped.
    */
-  List<String[]> texts(String note, List<String> skipped) {
+  /** Pasted text and text files, for the chief: {name, text}. */
+  List<String[]> texts(String note) {
     List<String[]> out = new ArrayList<>();
     for (Item i : of(note)) {
       switch (i.kind()) {
         case "text" -> out.add(new String[] {"pasted text", readText(note, i)});
         case "file" -> out.add(new String[] {i.name(), readText(note, i)});
-        case "image" -> skipped.add("an image (" + i.name() + ")");
-        default -> skipped.add("a PDF (" + i.name() + ")");
+        default -> {}
       }
     }
     return out;
+  }
+
+  /** An image or PDF as bytes, for the chief. */
+  record Binary(String kind, String name, String mimeType, byte[] data) {
+    boolean image() {
+      return kind.equals("image");
+    }
+
+    /** The name with the extension its bytes have (images are stored as JPEG). */
+    String fileName() {
+      String ext = image() ? ".jpg" : ".pdf";
+      String base = name.replaceAll("[^A-Za-z0-9._-]", "_");
+      return base.toLowerCase().endsWith(ext) ? base : base.replaceFirst("\\.[A-Za-z0-9]+$", "") + ext;
+    }
+  }
+
+  /** Images, then PDFs: what goes to the chief as attachments. */
+  List<Binary> binaries(String note) throws IOException {
+    List<Binary> images = new ArrayList<>(), others = new ArrayList<>();
+    for (Item i : of(note)) {
+      if (!i.kind().equals("image") && !i.kind().equals("pdf")) continue;
+      byte[] data = Files.readAllBytes(new File(folder(note), i.file()).toPath());
+      if (i.kind().equals("image")) images.add(new Binary("image", i.name(), "image/jpeg", data));
+      else others.add(new Binary("pdf", i.name(), "application/pdf", data));
+    }
+    images.addAll(others);
+    return images;
   }
 
   /** Message parts for the model: text inline, images and PDFs as base64. */
@@ -223,7 +250,8 @@ final class Attachments {
     }
   }
 
-  private void add(String kind, String name, byte[] data, String suffix) throws Exception {
+  /** Also used by the device tests to attach bytes directly. */
+  void add(String kind, String name, byte[] data, String suffix) throws Exception {
     if (data.length > MAX_FILE) throw new IOException(tr("This file is too large (at most 10 MB)."));
     File f = folder("pending");
     List<Item> list = read(f);

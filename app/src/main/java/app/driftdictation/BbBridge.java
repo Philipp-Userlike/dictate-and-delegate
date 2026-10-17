@@ -205,9 +205,18 @@ final class BbBridge {
 
   /** The snippet that sends a message to a thread, queued behind a running turn, else started. */
   static String tellSnippet(String id, String message) {
+    return tellSnippet(id, message, List.of());
+  }
+
+  /** The same, with uploaded attachments: {"--image" or "--file", path inside bb's attachments}. */
+  static String tellSnippet(String id, String message, List<String[]> attachments) {
+    StringBuilder files = new StringBuilder();
+    for (String[] a : attachments) files.append(",").append(js(a[0])).append(",").append(js(a[1]));
     return "const r = await bb.json([\"thread\",\"tell\","
         + js(id)
-        + ",\"--mode\",\"queue\",\"--message-file\",\"-\"], {stdin: "
+        + ",\"--mode\",\"queue\",\"--message-file\",\"-\""
+        + files
+        + "], {stdin: "
         + js(message)
         + "});\nreturn {threadId: r.threadId, delivery: r.delivery};";
   }
@@ -245,10 +254,10 @@ final class BbBridge {
   }
 
   /**
-   * The message for the chief: the dictation as said, then pasted text as context. Images and
-   * PDFs aren't sent in this version; the chief hears that they existed.
+   * The message for the chief: the dictation as said, then pasted text as context, then a note
+   * about the attached files when there is one ("" for none), then the request ID.
    */
-  static String message(String said, List<String[]> pasted, List<String> notSent, String request) {
+  static String message(String said, List<String[]> pasted, String note, String request) {
     StringBuilder s = new StringBuilder(said.trim());
     for (String[] p : pasted)
       s.append("\n\n<pasted name=\"")
@@ -256,10 +265,7 @@ final class BbBridge {
           .append("\">\n")
           .append(p[1].trim())
           .append("\n</pasted>");
-    if (!notSent.isEmpty())
-      s.append("\n\n(I also attached ")
-          .append(String.join(", ", notSent))
-          .append(", which Talk Router can't pass on yet.)");
+    if (!note.isEmpty()) s.append("\n\n").append(note);
     if (!request.isEmpty()) s.append("\n\n[request: ").append(request).append("]");
     return s.toString();
   }
@@ -339,9 +345,123 @@ final class BbBridge {
     run(tellSnippet(chiefId, message));
   }
 
-  /** Sends a request to the chief. Its instructions come from the skills (ChiefSkills). */
-  void sendRequest(String chiefId, String message) throws Exception {
-    send(chiefId, message);
+  /** How the files reached the chief: "" (none), "upload" (bb attachments) or "base64". */
+  record Sent(int files, String how) {}
+
+  /**
+   * Sends a request to the chief (its instructions come from the skills): what was said, pasted
+   * text, and the images and PDFs, images first. Files are uploaded to bb's attachments and go
+   * with the message (--image, --file), so the chief sees them. If bb refuses the upload (bb
+   * Connect may not take the app's sign-in for it), they go as base64 text files through MCP,
+   * and the message tells the chief to decode them.
+   */
+  Sent sendRequest(String chiefId, String said, List<String[]> pasted, List<Attachments.Binary> files, String request)
+      throws Exception {
+    List<String[]> refs = new java.util.ArrayList<>();
+    String how = files.isEmpty() ? "" : "upload", note = "";
+    try {
+      for (Attachments.Binary b : files)
+        refs.add(new String[] {b.image() ? "--image" : "--file", upload(b.fileName(), b.mimeType(), b.data())});
+    } catch (UploadRefused ex) {
+      refs.clear();
+      how = "base64";
+      List<String> names = new java.util.ArrayList<>();
+      for (Attachments.Binary b : files) {
+        refs.add(new String[] {"--file", uploadBase64(b.fileName() + ".b64", b.data())});
+        names.add(b.fileName());
+      }
+      note = base64Note(names);
+    }
+    run(tellSnippet(chiefId, message(said, pasted, note, request), refs));
+    return new Sent(files.size(), how);
+  }
+
+  /** What the chief is told about files that came as base64 text. */
+  static String base64Note(List<String> names) {
+    return "(Talk Router couldn't upload my attachments directly, so they come as base64 text files:"
+        + " decode each one with `base64 -d <name>.b64 > <name>` before you look at it: "
+        + String.join(", ", names)
+        + ".)";
+  }
+
+  /** bb refused an upload (HTTP 401, 403, 404 or 405): the base64 way is used instead. */
+  static final class UploadRefused extends IOException {
+    UploadRefused(int status) {
+      super("HTTP " + status);
+    }
+  }
+
+  /** bb's own address for its REST API, next to the MCP address. */
+  String apiBase() {
+    if (mode().equals(CONNECT)) return handle().isEmpty() ? "" : BbOAuth.origin(handle());
+    String u = url().replaceAll("/+$", "");
+    if (u.endsWith("/api/v1/plugins/bb--mcp/http/mcp")) return u.substring(0, u.length() - "/api/v1/plugins/bb--mcp/http/mcp".length());
+    if (u.endsWith("/mcp")) return u.substring(0, u.length() - 4);
+    java.net.URI uri = java.net.URI.create(u);
+    return uri.getScheme() + "://" + uri.getRawAuthority();
+  }
+
+  /**
+   * Uploads a file to bb's attachments for Personal (POST /api/v1/projects/proj_personal/attachments,
+   * multipart, like bb's own app) and returns its path there, for bb thread tell.
+   */
+  String upload(String name, String mimeType, byte[] data) throws Exception {
+    boolean connect = mode().equals(CONNECT);
+    for (int attempt = 0; ; attempt++) {
+      String token = connect ? BbOAuth.accessToken(context, attempt > 0) : customToken();
+      java.net.HttpURLConnection c =
+          (java.net.HttpURLConnection) new java.net.URL(apiBase() + "/api/v1/projects/" + PROJECT + "/attachments").openConnection();
+      try {
+        String boundary = "talkrouter" + BbOAuth.random(12);
+        java.io.ByteArrayOutputStream body = new java.io.ByteArrayOutputStream();
+        body.write(
+            ("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" + name.replace("\"", "_")
+                    + "\"\r\nContent-Type: " + mimeType + "\r\n\r\n")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        body.write(data);
+        body.write(("\r\n--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] payload = body.toByteArray();
+        c.setConnectTimeout(15_000);
+        c.setReadTimeout(60_000);
+        c.setInstanceFollowRedirects(false);
+        c.setRequestMethod("POST");
+        c.setDoOutput(true);
+        c.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        if (!token.isEmpty()) c.setRequestProperty("Authorization", "Bearer " + token);
+        c.setFixedLengthStreamingMode(payload.length);
+        try (java.io.OutputStream out = c.getOutputStream()) {
+          out.write(payload);
+        }
+        int status = c.getResponseCode();
+        if (status == 401 && connect && attempt == 0) continue;
+        if (status == 401 || status == 403 || status == 404 || status == 405) throw new UploadRefused(status);
+        if (status >= 300) throw new IOException(tr("bb couldn't take the attachment (HTTP %1$d).", status));
+        try (java.io.InputStream in = c.getInputStream()) {
+          String path = new JSONObject(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)).optString("path");
+          if (path.isEmpty()) throw new IOException(tr("bb sent something unexpected. Update bb, then try again."));
+          return path;
+        }
+      } catch (java.net.UnknownHostException | java.net.ConnectException | java.net.SocketTimeoutException ex) {
+        throw new IOException(tr("bb isn't reachable right now. Is your computer on and bb running?"), ex);
+      } finally {
+        c.disconnect();
+      }
+    }
+  }
+
+  /** A file as base64 text, through MCP (bb.cli takes text only), for the chief to decode. */
+  String uploadBase64(String name, byte[] data) throws Exception {
+    String code =
+        "const a = await bb.json([\"project\",\"attachment\",\"upload\","
+            + js(PROJECT)
+            + ",\"--client-file\",\"/dev/stdin\",\"--filename\","
+            + js(name)
+            + ",\"--mime-type\",\"text/plain\"], {stdin: "
+            + js(java.util.Base64.getEncoder().encodeToString(data))
+            + "});\nreturn {path: a.path};";
+    String path = run(code).optString("path");
+    if (path.isEmpty()) throw new IOException(tr("bb sent something unexpected. Update bb, then try again."));
+    return path;
   }
 
   String threadLink(String id) {
