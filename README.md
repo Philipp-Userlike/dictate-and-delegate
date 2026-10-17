@@ -4,8 +4,11 @@
 
 Press a key and talk: dictation, text creation and independent agents, from one starting point.
 
+### Dictate while you do anything
+
+*Example: a friend sends a place, you talk while you look at it, and your words land in the chat.*
+
 <table>
-<tr><td colspan="4"><b>Dictate while you browse</b></td></tr>
 <tr>
 <td width="25%" valign="top"><img src="docs/images/steps/talk-1.png" width="200" alt="A chat with Sam, who sends a link to a café"></td>
 <td width="25%" valign="top"><img src="docs/images/steps/talk-2.png" width="200" alt="The café page, while you talk about it"></td>
@@ -18,7 +21,15 @@ Press a key and talk: dictation, text creation and independent agents, from one 
 <td valign="top">③ Your words appear in the chat.</td>
 <td valign="top">④ Send.</td>
 </tr>
-<tr><td colspan="4"><b>Write from your own template</b></td></tr>
+</table>
+
+### Turn your words into any text
+
+One fast step that follows your instructions, with templates if you like.
+
+*Example: an apartment application, from your template and what you see on the listing.*
+
+<table>
 <tr>
 <td width="25%" valign="top"><img src="docs/images/steps/refine-1.png" width="200" alt="An apartment application saved as a template"></td>
 <td width="25%" valign="top"><img src="docs/images/steps/refine-2.png" width="200" alt="An apartment listing, while you talk about it"></td>
@@ -33,10 +44,30 @@ Press a key and talk: dictation, text creation and independent agents, from one 
 </tr>
 </table>
 
-<p><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you make it better by talking while you play.</p>
+### Hand bigger tasks to an agent on its own machine
+
+It works independently on your computer or a server, and reports back.
+
+*Example: "Ada, build me a snake game", which you then improve while you play.*
+
+<table>
+<tr>
+<td width="25%" valign="top"><img src="docs/images/steps/agent-1.png" width="200" alt="On the phone, you ask Ada, your agent, for a snake game"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/agent-2.png" width="200" alt="The computer, where Ada plans, writes and tests the game"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/agent-3.png" width="200" alt="A notification on the phone: your game is ready"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/agent-4.png" width="200" alt="Playing the game while asking Ada for changes"></td>
+</tr>
+<tr>
+<td valign="top">① <i>"Ada, build me a little snake game."</i></td>
+<td valign="top">② Ada builds it on your computer.</td>
+<td valign="top">③ You get a message when it's ready.</td>
+<td valign="top">④ Play, and say what to change: <i>"Ada, make it faster each level."</i></td>
+</tr>
+</table>
+
+▶ **Watch it play out:**
 
 https://github.com/user-attachments/assets/1d1d507f-47d5-4513-99e1-ce83b8d83619
-
 
 ## What it does
 
