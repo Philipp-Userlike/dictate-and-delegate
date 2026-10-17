@@ -24,13 +24,19 @@ import org.json.JSONObject;
  * with PKCE (S256), no client secret. The client ID is the URL of our client metadata document
  * (oauth/client.json, served as JSON from the gh-pages branch by GitHub Pages; bb rejects the
  * text/plain of raw.githubusercontent.com); bb has no registration endpoint. The browser comes back
- * to talkrouter://oauth/callback (BbSignInActivity). Tokens are kept encrypted in Vault and
+ * to oauth/callback.html there, which opens talkrouter://oauth/callback (BbSignInActivity). Tokens are kept encrypted in Vault and
  * refreshed when they expire or bb answers 401.
  */
 final class BbOAuth {
   static final String CLIENT_ID =
       "https://philipp258.github.io/talk-router/oauth/client.json";
-  static final String REDIRECT = "talkrouter://oauth/callback", SCOPE = "bb";
+  /**
+   * bb only accepts an https redirect next to the client ID, not an app scheme: a static page there
+   * hands the code on to talkrouter://oauth/callback (BbSignInActivity). PKCE keeps the code useless
+   * to anyone else.
+   */
+  static final String REDIRECT = "https://philipp258.github.io/talk-router/oauth/callback.html",
+      SCOPE = "bb";
 
   /** bb's authorization server, used when its metadata can't be read. */
   static final String ISSUER = "https://getbb.app";

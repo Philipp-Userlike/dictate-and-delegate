@@ -41,7 +41,7 @@ public class BbOAuthTest {
     }
     assertEquals("code", q.get("response_type"));
     assertEquals(BbOAuth.CLIENT_ID, q.get("client_id"));
-    assertEquals("talkrouter://oauth/callback", q.get("redirect_uri"));
+    assertEquals("https://philipp258.github.io/talk-router/oauth/callback.html", q.get("redirect_uri"));
     assertEquals("bb", q.get("scope"));
     assertEquals("CHALLENGE", q.get("code_challenge"));
     assertEquals("S256", q.get("code_challenge_method"));

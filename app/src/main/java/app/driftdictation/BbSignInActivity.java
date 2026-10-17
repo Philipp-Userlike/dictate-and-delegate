@@ -15,7 +15,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 
 /**
- * Where the browser comes back after signing in to bb Connect: talkrouter://oauth/callback. Swaps
+ * Where the browser comes back after signing in to bb Connect: talkrouter://oauth/callback, opened
+ * by the redirect page (BbOAuth.REDIRECT). Swaps
  * the code for tokens (BbOAuth.complete), then returns to Settings → bb (or the setup page) with
  * the outcome.
  */
