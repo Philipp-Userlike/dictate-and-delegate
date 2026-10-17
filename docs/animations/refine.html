@@ -1,0 +1,167 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+  #stage { width: 360px; height: 680px; }
+  .view { position: absolute; top: 30px; left: 0; right: 0; bottom: 0; background: #fff; overflow: hidden; }
+
+  /* Talk Router: New template */
+  .tr { padding: 6px 18px; color: #0E1A16; }
+  .tr .back { font-size: 14px; color: #0B7A5E; font-weight: 600; }
+  .tr h2 { font-size: 22px; margin-top: 8px; }
+  .tr .lbl { font-size: 15px; font-weight: 700; margin-top: 16px; }
+  .tr .hint { font-size: 12.5px; color: #56635E; margin-top: 2px; }
+  .tr .in { margin-top: 7px; border: 1.5px solid #DCE4E1; border-radius: 10px; padding: 9px 11px; font-size: 14px; min-height: 40px; white-space: pre-wrap; line-height: 1.4; }
+  .tr .in.big { height: 236px; font-size: 13px; }
+  .tr .in.focus { border-color: #0B7A5E; }
+  .tr .in .ph { color: #9AA6A1; }
+  .tr .save { margin-top: 14px; height: 44px; border-radius: 22px; background: #0B7A5E; color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+  .toast { position: absolute; left: 50%; bottom: 30px; margin-left: -66px; background: #2F3833; color: #fff; font-size: 13px; padding: 9px 16px; border-radius: 18px; white-space: nowrap; }
+
+  /* The listing */
+  .urlbar { height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); background: #fff; position: relative; z-index: 3; }
+  .url { flex: 1; height: 32px; border-radius: 16px; background: #F1F2F5; font-size: 12.5px; color: #4A4F5C; display: flex; align-items: center; padding: 0 12px; }
+  .page { position: absolute; left: 0; right: 0; top: 48px; }
+  .photo { position: relative; height: 170px; overflow: hidden; background: #CDE8F7; }
+  .info { padding: 12px 14px 0; }
+  h1 { font-size: 18px; line-height: 1.25; }
+  .addr { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .price { font-size: 17px; font-weight: 800; color: var(--green); margin-top: 6px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .tags span { font-size: 12px; border: 1.5px solid var(--line); border-radius: 12px; padding: 3px 9px; }
+  .tags span.hl { border-color: var(--ink); background: var(--yellow); font-weight: 700; }
+  .form { margin: 14px 12px 0; border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .form b { font-size: 14px; }
+  .ta { margin-top: 8px; height: 238px; border: 2px solid #D3D6DD; border-radius: 10px; padding: 8px 10px; font-size: 12px; line-height: 1.4; white-space: pre-wrap; }
+  .ta .ph { color: #9AA0AE; }
+  .btn { margin-top: 10px; height: 42px; border-radius: 10px; background: var(--green); color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+</style>
+<div id="stage">
+  <div class="phone" style="left:22px;top:16px;width:312px;height:648px">
+    <div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i></i><i></i></span></div>
+
+      <div class="view" id="tplview">
+        <div class="tr">
+          <div class="back">‹ Back</div>
+          <h2>New template</h2>
+          <div class="lbl">Name</div>
+          <div class="in" id="tname"></div>
+          <div class="lbl">Text</div>
+          <div class="hint">Paste or type the text as you'd send it.</div>
+          <div class="in big" id="ttext"></div>
+          <div class="save" id="save">Save</div>
+        </div>
+        <div class="toast" id="toast">Template saved</div>
+      </div>
+
+      <div class="view" id="webview">
+        <div class="urlbar"><div class="url">🔒 homes.example/flat-2214</div><span style="font-size:18px;color:var(--muted)">⋮</span></div>
+        <div class="page" id="page">
+          <div class="photo">
+            <div class="abs" style="left:200px;top:18px;width:40px;height:40px;background:#FFD66B;border-radius:50%"></div>
+            <div class="abs" style="left:0;bottom:60px;width:60px;height:50px;background:#A9C4D6"></div>
+            <div class="abs" style="left:60px;bottom:60px;width:44px;height:74px;background:#94B3C8"></div>
+            <div class="abs" style="left:104px;bottom:60px;width:70px;height:40px;background:#A9C4D6"></div>
+            <div class="abs" style="left:174px;bottom:60px;width:50px;height:64px;background:#94B3C8"></div>
+            <div class="abs" style="left:224px;bottom:60px;width:72px;height:46px;background:#A9C4D6"></div>
+            <div class="abs" style="left:0;right:0;bottom:0;height:60px;background:#D9CBB4"></div>
+            <div class="abs" style="left:0;right:0;bottom:60px;height:5px;background:#3D4250"></div>
+            <div class="abs" style="left:0;right:0;bottom:38px;height:3px;background:#3D4250"></div>
+            <div class="abs" style="left:28px;bottom:18px;width:24px;height:30px;background:#B5653E;border-radius:0 0 6px 6px"></div>
+            <div class="abs" style="left:18px;bottom:42px;width:44px;height:44px;background:#4C9A6A;border-radius:50%"></div>
+            <div class="abs" style="left:150px;bottom:16px;width:46px;height:8px;background:#7A5638;border-radius:4px"></div>
+            <div class="abs" style="left:168px;bottom:0;width:8px;height:18px;background:#7A5638"></div>
+            <div class="abs" style="left:216px;bottom:10px;width:30px;height:38px;background:#E07A5F;border-radius:6px"></div>
+          </div>
+          <div class="info">
+            <h1>Bright 2-room flat with balcony</h1>
+            <div class="addr">Linden Street 12 · 3rd floor</div>
+            <div class="price">€1,150 / month</div>
+            <div class="tags"><span>2 rooms</span><span>68 m²</span><span id="g1">Balcony</span><span id="g2">No pets</span><span>From Dec 1</span></div>
+          </div>
+          <div class="form">
+            <b>Contact the landlord</b>
+            <div class="ta" id="ta"></div>
+            <div class="btn" id="btn">Send</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tp" id="pw" style="left:10px;top:470px"><div id="panel" style="transform:scale(.9);transform-origin:top left"></div></div>
+      <div class="balloon down" id="balloon" style="left:14px;right:14px;bottom:176px;--tail:44px"><div class="who">You say</div><div id="words"></div></div>
+    </div>
+  </div>
+  <div class="vkey" style="left:334px;top:170px"></div>
+  <div class="vkey-ring" style="left:324px;top:160px"></div>
+  <div class="vkey-label" style="left:344px;top:250px">PRESS</div>
+  <div class="tap" id="tap"></div>
+  <div class="fade"></div>
+</div>
+<script src="common.js"></script>
+<script>
+  const NAME = 'Apartment application';
+  const TEMPLATE = "Hello,\n\nI'm interested in your apartment.\nAbout me: Alex Example, 34, graphic designer, net income €3,900 a month.\nMove-in: from [date]\n\nI'd be glad to come to a viewing.\nBest regards,\nAlex Example";
+  const RESULT = "Hello,\n\nI'm interested in your 2-room flat, and I love the balcony. I have no pets.\nAbout me: Alex Example, 34, graphic designer, net income €3,900 a month.\nMove-in: from 1 December\n\nI'd be glad to come to a viewing.\nBest regards,\nAlex Example";
+  const SAID = 'Nice flat. Use my application template, mention that I have no pets and that I love the balcony.';
+  setupWords('#words', SAID);
+  window.DURATION = 18.6;
+  const SX = 30, SY = 24;  // screen origin on the stage
+
+  function field(sel, text, p, ph) {
+    const el = $(sel);
+    if (p <= 0) { el.innerHTML = ph ? `<span class="ph">${ph}</span>` : ''; return; }
+    typeText(el, text, p);
+  }
+
+  window.render = t => {
+    css('#tap', { opacity: 0 });
+
+    // 1. Write the template in Talk Router and save it.
+    if (t < 0.7) tap('#tap', t, 0.35, SX + 140, SY + 30 + 128);
+    field('#tname', NAME, ramp(t, 0.5, 1.2), 'For example: Apartment application');
+    if (t > 1.0 && t < 1.8) tap('#tap', t, 1.45, SX + 140, SY + 30 + 260);
+    field('#ttext', TEMPLATE, ramp(t, 1.6, 3.8), 'Your template');
+    $('#tname').classList.toggle('focus', t > 0.35 && t < 1.45);
+    $('#ttext').classList.toggle('focus', t >= 1.45 && t < 4.0);
+    if (t > 3.6 && t < 4.5) tap('#tap', t, 4.0, SX + 148, SY + 30 + 506);
+    appear('#toast', t, 4.1, 4.3, { c: 5.0, d: 5.2 });
+
+    // 2. Over to the listing; stop at "Balcony · No pets".
+    const web = eio(ramp(t, 5.0, 5.4));
+    css('#tplview', { transform: `translateX(${-90 * web}px)` });
+    css('#webview', { transform: `translateX(${296 * (1 - web)}px)`, visibility: web > 0 ? 'visible' : 'hidden' });
+    const scroll = 70 * eio(ramp(t, 5.7, 6.5)) + 150 * eio(ramp(t, 13.2, 13.9));
+    css('#page', { transform: `translateY(${-scroll}px)` });
+    $('#g1').classList.toggle('hl', t > 6.6);
+    $('#g2').classList.toggle('hl', t > 6.8);
+
+    // 3. Press, talk, press. The template is named, so ✨ starts by itself.
+    volumeKey(t, 7.0, 7.5) || volumeKey(t, 12.0, 12.5);
+    const REC = 7.5, STOP = 12.5, TEXT = 13.1, REFINED = 14.5, INSERT = 15.1, CLOSE = 16.1, SEND = 17.0;
+    appear('#pw', t, REC, REC + 0.25, { dy: 12, c: CLOSE + 0.1, d: CLOSE + 0.4 });
+    let p;
+    if (t < STOP) p = { rec: true, elapsed: t - REC + 2, status: 'Recording until you tap Stop. Switch apps freely.' };
+    else if (t < TEXT) p = { insert: 'wait', status: 'Transcribing… You can keep using other apps.' };
+    else if (t < REFINED) p = { insert: 'ready', refine: 'running', status: 'Your text is ready to insert' };
+    else if (t < INSERT) p = { insert: 'ready', refine: 'done', status: 'Refined' };
+    else p = { insert: 'ready', refine: 'done', status: 'Inserted' };
+    if (Math.abs(t - INSERT) < 0.2) p.press = 'refine';
+    if (Math.abs(t - CLOSE) < 0.2) p.press = 'close';
+    panel('#panel', p);
+    appear('#balloon', t, REC + 0.1, REC + 0.35, { dy: 8, c: STOP + 0.3, d: STOP + 0.6 });
+    revealWords('#words', t, REC + 0.3, STOP - 0.4);
+
+    // 4. Put the cursor in the contact form, tap ✨ 📥, close, send.
+    if (t > 13.5 && t < 14.4) tap('#tap', t, 13.95, SX + 148, SY + 30 + 48 + 330 - 150 + 60);
+    css('#ta', { borderColor: t >= 13.95 && t < SEND ? 'var(--green)' : '#D3D6DD' });
+    field('#ta', RESULT, ramp(t, INSERT + 0.05, INSERT + 0.4), 'Write your message…');
+    if (t > INSERT - 0.4 && t < INSERT + 0.5) tap('#tap', t, INSERT, ...pillAt('#panel', 'refine'));
+    if (t > CLOSE - 0.4 && t < CLOSE + 0.4) tap('#tap', t, CLOSE, ...pillAt('#panel', 'close'));
+    if (t > SEND - 0.4 && t < SEND + 0.5) tap('#tap', t, SEND, SX + 148, SY + 30 + 48 + 330 - 150 + 290);
+    $('#btn').textContent = t >= SEND + 0.1 ? 'Sent ✓' : 'Send';
+
+    loopFade(t, window.DURATION);
+  };
+  window.render(0);
+</script>

@@ -1,0 +1,165 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+  #stage { width: 360px; height: 680px; }
+  .view { position: absolute; top: 30px; left: 0; right: 0; bottom: 0; background: #fff; overflow: hidden; }
+  .header { height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--line); }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #8E7CC3; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .name { font-weight: 700; font-size: 15px; }
+  .online { font-size: 11px; color: var(--green); }
+  .chat { position: absolute; top: 56px; bottom: 0; left: 0; right: 0; background: #E9EEF4; display: flex; flex-direction: column; }
+  .msgs { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 12px 12px 74px; }
+  .msg { max-width: 80%; padding: 8px 12px; border-radius: 16px; font-size: 14px; line-height: 1.35; background: #fff; align-self: flex-start; border-bottom-left-radius: 4px; transform-origin: bottom left; }
+  .msg.me { align-self: flex-end; background: #3E7BFA; color: #fff; border-bottom-left-radius: 16px; border-bottom-right-radius: 4px; transform-origin: bottom right; }
+  .msg.link { padding: 0; overflow: hidden; width: 200px; }
+  .msg.link .pv { height: 92px; position: relative; overflow: hidden; }
+  .msg.link .tx { padding: 7px 11px 9px; }
+  .msg.link .tx b { font-size: 13.5px; display: block; }
+  .msg.link .tx span { font-size: 11.5px; color: var(--muted); }
+  .typing { display: flex; gap: 4px; padding: 12px 14px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: #9AA0AE; display: block; }
+  .inputbar { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; padding: 10px 10px 14px; display: flex; align-items: flex-end; gap: 8px; }
+  .field { flex: 1; min-height: 40px; border-radius: 20px; background: #F1F2F5; padding: 10px 14px; font-size: 14px; line-height: 1.4; position: relative; }
+  .field .ph { color: #9AA0AE; position: absolute; left: 14px; top: 10px; }
+  .field .caret { display: inline-block; width: 2px; height: 16px; background: #3E7BFA; vertical-align: -3px; }
+  .send { width: 40px; height: 40px; border-radius: 50%; background: #3E7BFA; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 17px; flex: none; }
+
+  .urlbar { height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); background: #fff; position: relative; z-index: 2; }
+  .url { flex: 1; height: 32px; border-radius: 16px; background: #F1F2F5; font-size: 12.5px; color: #4A4F5C; display: flex; align-items: center; padding: 0 12px; }
+  .page { position: absolute; top: 48px; left: 0; right: 0; }
+  .hero { height: 210px; position: relative; overflow: hidden; }
+  .info { padding: 12px 14px; }
+  h1 { font-size: 20px; }
+  .meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .desc { font-size: 13px; line-height: 1.45; margin-top: 8px; color: #3D4250; }
+  .thumbs { display: flex; gap: 8px; padding: 0 14px; }
+  .thumbs div { flex: 1; height: 96px; border-radius: 10px; position: relative; overflow: hidden; }
+  .book { margin: 14px; height: 42px; border-radius: 10px; background: #D1603D; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+</style>
+
+<!-- A rooftop terrace, used in the link preview and on the page -->
+<template id="terrace">
+  <div class="abs" style="inset:0;background:#F7C9A0"></div>
+  <div class="abs" style="left:0;right:0;bottom:0;height:34%;background:#B98A62"></div>
+  <div class="abs" style="left:-10%;right:-10%;top:12%;height:30%;border-top:2px solid #6B4F3A;border-radius:50%"></div>
+  <div class="abs" style="left:14%;top:21%;width:7px;height:7px;border-radius:50%;background:#FFE58A"></div>
+  <div class="abs" style="left:34%;top:26%;width:7px;height:7px;border-radius:50%;background:#FFE58A"></div>
+  <div class="abs" style="left:56%;top:26%;width:7px;height:7px;border-radius:50%;background:#FFE58A"></div>
+  <div class="abs" style="left:78%;top:21%;width:7px;height:7px;border-radius:50%;background:#FFE58A"></div>
+  <div class="abs" style="left:12%;bottom:30%;width:34%;height:18%;background:#3E8E5E;border-radius:50% 50% 0 0"></div>
+  <div class="abs" style="left:54%;top:40%;width:34%;height:14%;background:#E5484D;border-radius:50% 50% 4px 4px"></div>
+  <div class="abs" style="left:70.5%;top:52%;width:3px;height:22%;background:#6B4F3A"></div>
+  <div class="abs" style="left:58%;bottom:22%;width:28%;height:5%;background:#fff;border-radius:3px"></div>
+  <div class="abs" style="left:8%;bottom:6%;width:12%;height:18%;background:#B5653E;border-radius:0 0 5px 5px"></div>
+  <div class="abs" style="left:4%;bottom:20%;width:20%;height:20%;background:#4C9A6A;border-radius:50%"></div>
+</template>
+
+<div id="stage">
+  <div class="phone" style="left:22px;top:16px;width:312px;height:648px">
+    <div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i></i><i></i></span></div>
+      <div class="view" id="chatview">
+        <div class="header"><span style="font-size:22px;color:var(--muted)">‹</span><div class="avatar">S</div><div><div class="name">Sam</div><div class="online">online</div></div></div>
+        <div class="chat">
+          <div class="msgs">
+            <div class="msg me">Free on Saturday?</div>
+            <div class="msg">Yes!</div>
+            <div class="msg link" id="m1"><div class="pv terrace"></div><div class="tx"><b>Terrace Café</b><span>terrace-cafe.example</span></div></div>
+            <div class="msg" id="m2">Look at this place for Saturday?</div>
+            <div class="msg me" id="m3"></div>
+            <div class="msg typing" id="dots"><i></i><i></i><i></i></div>
+            <div class="msg" id="m4">Yay, can't wait! 🎉</div>
+          </div>
+          <div class="inputbar">
+            <div class="field"><span class="ph">Message</span><span id="typed"></span><span class="caret"></span></div>
+            <div class="send">➤</div>
+          </div>
+        </div>
+      </div>
+      <div class="view" id="webview">
+        <div class="urlbar"><span style="font-size:22px;color:var(--muted)">‹</span><div class="url">🔒 terrace-cafe.example</div></div>
+        <div class="page" id="page">
+          <div class="hero terrace"></div>
+          <div class="info">
+            <h1>Terrace Café</h1>
+            <div class="meta">★ 4.6 · Italian · €€</div>
+            <div class="desc">Rooftop terrace with a view over the city. Fresh pasta, open until midnight.</div>
+          </div>
+          <div class="thumbs">
+            <div style="background:#F3E3CF"><div class="abs" style="left:22%;top:20%;width:56%;height:60%;border-radius:50%;background:#fff"></div><div class="abs" style="left:32%;top:32%;width:36%;height:36%;border-radius:50%;background:#F2C14E"></div><div class="abs" style="left:44%;top:40%;width:10%;height:10%;border-radius:50%;background:#D1603D"></div></div>
+            <div style="background:#2B3044"><div class="abs" style="left:0;right:0;bottom:0;height:35%;background:#6B4F3A"></div><div class="abs" style="left:-10%;right:-10%;top:10%;height:40%;border-top:2px solid #FFE58A;border-radius:50%"></div><div class="abs" style="left:30%;top:42%;width:40%;height:18%;background:#E5484D;border-radius:50% 50% 3px 3px"></div></div>
+          </div>
+          <div class="book">Book a table</div>
+        </div>
+      </div>
+      <div class="tp" id="pw" style="left:10px;top:420px"><div id="panel" style="transform:scale(.9);transform-origin:top left"></div></div>
+      <div class="balloon down" id="balloon" style="left:14px;right:14px;bottom:226px;--tail:44px"><div class="who">You say</div><div id="words"></div></div>
+    </div>
+  </div>
+  <div class="vkey" style="left:334px;top:170px"></div>
+  <div class="vkey-ring" style="left:324px;top:160px"></div>
+  <div class="vkey-label" style="left:344px;top:250px">PRESS</div>
+  <div class="tap" id="tap"></div>
+  <div class="fade"></div>
+</div>
+<script src="common.js"></script>
+<script>
+  for (const el of $$('.terrace')) el.appendChild($('#terrace').content.cloneNode(true));
+  const SAID = "Looks great, I love the terrace. Saturday at eight works, I'll book.";
+  setupWords('#words', SAID);
+  window.DURATION = 13.6;
+
+  window.render = t => {
+    appear('#m1', t, 0.3, 0.6, { scale: 0.6 });
+    appear('#m2', t, 0.7, 1.0, { scale: 0.6 });
+    css('#tap', { opacity: 0 });
+
+    // Open the link and look around; later, back to the chat. The panel stays put.
+    if (t < 2.2) tap("#tap", t, 1.6, 30 + 112, 24 + 420);
+    const away = eio(ramp(t, 1.7, 2.1)) * (1 - eio(ramp(t, 8.0, 8.4)));
+    css('#chatview', { transform: `translateX(${-90 * away}px)` });
+    css('#webview', { transform: `translateX(${296 * (1 - away)}px)`, visibility: away > 0 ? 'visible' : 'hidden' });
+    css('#page', { transform: `translateY(${-150 * eio(ramp(t, 3.6, 6.8))}px)` });
+    if (t > 7.5 && t < 8.3) tap('#tap', t, 7.85, 30 + 22, 24 + 30 + 24);
+
+    // Press to start, talk freely, press again to stop.
+    volumeKey(t, 2.4, 2.9) || volumeKey(t, 7.0, 7.5);
+    const REC = 2.9, STOP = 7.5, READY = 8.3, INSERT = 9.1, CLOSE = 10.0;
+    appear('#pw', t, REC, REC + 0.25, { dy: -12, c: CLOSE + 0.1, d: CLOSE + 0.4 });
+    let p;
+    if (t < STOP) p = { rec: true, elapsed: t - REC + 3, status: 'Recording until you tap Stop. Switch apps freely.' };
+    else if (t < READY) p = { insert: 'wait', status: 'Transcribing… You can keep using other apps.' };
+    else if (t < INSERT) p = { insert: 'ready', status: 'Your text is ready to insert' };
+    else p = { insert: 'ready', status: 'Inserted' };
+    if (Math.abs(t - INSERT) < 0.2) p.press = 'insert';
+    if (Math.abs(t - CLOSE) < 0.2) p.press = 'close';
+    panel('#panel', p);
+    appear('#balloon', t, REC + 0.1, REC + 0.35, { dy: 8, c: INSERT, d: INSERT + 0.3 });
+    revealWords('#words', t, REC + 0.3, STOP - 0.3);
+
+    // 📥 Insert, close the panel, send.
+    if (t > INSERT - 0.4 && t < INSERT + 0.5) tap('#tap', t, INSERT, ...pillAt('#panel', 'insert'));
+    if (t > CLOSE - 0.4 && t < CLOSE + 0.4) tap('#tap', t, CLOSE, ...pillAt('#panel', 'close'));
+    const SEND = 10.9;
+    const sent = t >= SEND + 0.1;
+    const n = sent ? 0 : typeText('#typed', SAID, ramp(t, INSERT + 0.05, INSERT + 0.3));
+    if (sent) $('#typed').textContent = '';
+    css('.ph', { display: n ? 'none' : 'inline' });
+    css('.caret', { opacity: !sent && n && Math.floor(t * 2.5) % 2 ? 0 : 1 });
+    $('#m3').textContent = SAID;
+    css('#m3', { display: sent ? 'block' : 'none' });
+    appear('#m3', t, SEND + 0.1, SEND + 0.4, { scale: 0.6 });
+    if (t > SEND - 0.4 && t < SEND + 0.5) tap('#tap', t, SEND, 30 + 296 - 30, 24 + 632 - 34);
+
+    css('#dots', { display: t >= 11.5 && t < 12.2 ? 'flex' : 'none' });
+    $$('#dots i').forEach((d, i) => { d.style.opacity = 0.35 + 0.65 * Math.max(0, Math.sin(t * 7 - i * 0.8)); });
+    css('#m4', { display: t >= 12.2 ? 'block' : 'none' });
+    appear('#m4', t, 12.2, 12.5, { scale: 0.6 });
+
+    if (location.search.includes('still')) { revealWords('#words', 1, 0, 0.01); volumeKey(0, 1, 2); }
+
+    loopFade(t, window.DURATION);
+  };
+  window.render(0);
+</script>

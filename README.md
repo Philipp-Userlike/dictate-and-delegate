@@ -6,14 +6,18 @@ Press a key and talk: dictation, text creation and independent agents, from one 
 
 <table>
 <tr>
-<td width="33%" valign="top"><img src="docs/images/demo-insert.gif" alt="In a chat, the user dictates a reply and it lands in the message field, ready to send"></td>
-<td width="33%" valign="top"><img src="docs/images/demo-refine.gif" alt="On an apartment listing, a short spoken request becomes a polished application in the landlord form"></td>
-<td width="33%" valign="top"><img src="docs/images/demo-agent.gif" alt="From the home screen, a spoken task goes to the agent, which confirms by notification"></td>
+<td width="50%" valign="top"><img src="docs/images/anim-talk.gif" alt="A friend sends a café link; you talk about it while looking at the page, go back to the chat, insert the text and send it"></td>
+<td width="50%" valign="top"><img src="docs/images/anim-refine.gif" alt="A template is saved in Talk Router; on an apartment listing you ask for an application from it, and the finished text goes into the contact form"></td>
 </tr>
 <tr>
-<td valign="top"><b>Dictate.</b> Talk, and your words land in the field you're typing in.</td>
-<td valign="top"><b>Refine.</b> <i>"Use my standard application, stress that I have no pets."</i> A finished text appears.</td>
-<td valign="top"><b>Hand it off.</b> <i>"Ada, every morning at seven, send me a recipe."</i> Your agent takes it from there.</td>
+<td valign="top"><b>Dictate while you look.</b> Talk about what's on screen; the text lands in your chat.</td>
+<td valign="top"><b>Refine with a template.</b> <i>"Use my application template, mention that I have no pets."</i> The finished text goes into the form.</td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/images/anim-agent.gif" alt="You ask your agent for a snake game; it builds it on your computer and sends a link; while playing you ask for changes, and it updates the game"></td>
+</tr>
+<tr>
+<td colspan="2"><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</td>
 </tr>
 </table>
 
@@ -22,6 +26,8 @@ Press a key and talk: dictation, text creation and independent agents, from one 
 ### Dictate anywhere
 
 Press a key in any app and talk. A small floating panel stays next to whatever you're doing, so you can keep browsing, reading or testing while you speak. When you stop, **📥 Insert** puts the text at your cursor. Talk Router never touches your clipboard on its own.
+
+<img src="docs/images/panel-still.png" width="240" alt="The floating panel recording over a web page, with a speech bubble of what you say">
 
 ### Refine: one model call, any instruction
 

@@ -1,0 +1,339 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+  #stage { width: 760px; height: 524px; }
+  .caption { position: absolute; left: 0; right: 0; top: 18px; height: 34px; }
+  .caption > div { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 21px; font-weight: 800; white-space: nowrap; }
+  .caption .n { width: 30px; height: 30px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
+  .phone .screen { inset: 7px; border-radius: 28px; }
+  .statusbar { height: 26px; font-size: 11px; padding: 2px 20px 0; }
+  .app { position: absolute; inset: 0; }
+
+  /* Home screen */
+  .home { background: #CFE3DA; }
+  .home .clock { position: absolute; top: 50px; left: 0; right: 0; text-align: center; font-size: 44px; font-weight: 300; color: #1D3A2F; }
+  .home .date { position: absolute; top: 104px; left: 0; right: 0; text-align: center; font-size: 12px; color: #1D3A2F; opacity: .8; }
+  .home .grid { position: absolute; top: 250px; left: 22px; right: 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 14px; }
+  .home .grid i, .home .dock i { display: block; width: 100%; aspect-ratio: 1; border-radius: 12px; }
+  .home .dock { position: absolute; bottom: 14px; left: 14px; right: 14px; padding: 9px 12px; border-radius: 20px; background: rgba(255,255,255,.45); display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+  /* ntfy notification */
+  .notif { position: absolute; left: 8px; right: 8px; top: 30px; background: #fff; border-radius: 16px; padding: 10px 12px; z-index: 30; box-shadow: 0 6px 0 rgba(29,32,41,.12); border: 1.5px solid #E2E5EA; }
+  .notif .h { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--muted); }
+  .notif .h i { width: 16px; height: 16px; border-radius: 4px; background: #338574; display: block; }
+  .notif .t { font-size: 14px; font-weight: 800; margin-top: 5px; }
+  .notif .b { font-size: 12px; margin-top: 2px; line-height: 1.3; color: #3D4250; }
+
+  /* The agent's answer (illustrated, not bb's real UI) */
+  .answer { background: #F6F8F7; }
+  .answer .hd { position: absolute; top: 26px; left: 0; right: 0; height: 44px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; padding: 0 12px; font-weight: 700; font-size: 14px; }
+  .av { border-radius: 50%; background: var(--teal); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; width: 26px; height: 26px; font-size: 13px; }
+  .bub { position: absolute; left: 12px; right: 12px; border-radius: 14px; padding: 9px 11px; font-size: 12.5px; line-height: 1.4; }
+  .bub.me { left: 44px; background: #DDE7F6; }
+  .bub.ada { right: 30px; background: #fff; border: 1px solid var(--line); }
+  .link { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: var(--teal); color: #fff; border-radius: 10px; padding: 7px 12px; font-weight: 800; font-size: 13px; }
+
+  /* The game */
+  .game { background: #14231C; color: #fff; }
+  .game::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 26px; background: #fff; }
+  .game .bar { position: absolute; top: 26px; left: 0; right: 0; height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: #fff; }
+  .game .bar .u { flex: 1; height: 26px; border-radius: 13px; background: #F1F2F5; color: #4A4F5C; font-size: 11px; display: flex; align-items: center; padding: 0 10px; }
+  .game .bar .r { color: var(--ink); font-size: 17px; font-weight: 700; width: 22px; text-align: center; }
+  .game .title { position: absolute; top: 70px; left: 15px; font-size: 16px; font-weight: 800; color: #9BE15D; }
+  .game .hud { position: absolute; top: 312px; left: 15px; right: 15px; justify-content: center; font-size: 13px; font-weight: 700; display: flex; gap: 12px; font-variant-numeric: tabular-nums; }
+  .game .hud .new { color: #FFD66B; }
+  .board { position: absolute; top: 96px; left: 15px; width: 192px; height: 208px; background: #1E3328; border-radius: 6px; }
+  .board i { position: absolute; width: 14px; height: 14px; margin: 1px; border-radius: 4px; background: #9BE15D; display: block; }
+  .board i.head { background: #C6F28F; }
+  .board i.apple { background: #F2545B; border-radius: 50%; }
+  .lvl { position: absolute; top: 170px; left: 0; right: 0; text-align: center; font-size: 26px; font-weight: 900; color: #FFD66B; text-shadow: 0 2px 0 #14231C, 0 0 8px #14231C; }
+  .flash { position: absolute; inset: 62px 0 0 0; background: #fff; }
+
+  /* Laptop (illustrated) */
+  .bezel { position: absolute; background: var(--phone); border-radius: 14px; }
+  .lscreen { position: absolute; inset: 9px; background: #fff; border-radius: 5px; overflow: hidden; }
+  .titlebar { height: 24px; background: #EEF0F3; display: flex; align-items: center; gap: 5px; padding: 0 8px; font-size: 11px; color: var(--muted); font-weight: 600; }
+  .titlebar i { width: 8px; height: 8px; border-radius: 50%; background: #D3D6DD; display: block; }
+  .titlebar .cc { margin-left: auto; background: #F3E6DD; color: #A8542F; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 800; }
+  .idle { position: absolute; inset: 24px 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 12px; }
+  .idle .av { width: 44px; height: 44px; font-size: 20px; }
+  .work { position: absolute; inset: 24px 0 0 0; padding: 8px 10px; }
+  .task { background: var(--teal-soft); border-left: 3px solid var(--teal); border-radius: 6px; padding: 5px 8px; font-size: 11.5px; line-height: 1.3; }
+  .task b { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--teal); display: block; }
+  .step { display: flex; align-items: center; gap: 7px; height: 22px; font-size: 12px; }
+  .step .ic { width: 18px; text-align: center; }
+  .step .st { margin-left: auto; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+  .step .ok { color: var(--green); font-weight: 800; font-size: 13px; }
+  .step .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #D3D6DD; border-top-color: var(--teal); }
+  .code { margin-top: 5px; border-radius: 6px; background: #1D2029; color: #C9D1D9; font: 10px/1.5 ui-monospace, Menlo, monospace; padding: 5px 8px; height: 56px; overflow: hidden; white-space: pre; }
+  .code .ad { color: #7EE787; }
+  .base { position: absolute; background: #3A3F4C; border-radius: 0 0 12px 12px; }
+  .label { position: absolute; font-size: 13px; color: var(--muted); font-weight: 700; text-align: center; }
+  .skip { position: absolute; padding: 7px 14px; border-radius: 18px; background: var(--ink); color: #fff; font-size: 14px; font-weight: 800; white-space: nowrap; z-index: 60; }
+  .pkt { position: absolute; z-index: 50; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 800; color: #fff; white-space: nowrap; transform: translate(-50%, -50%); }
+  .phone .balloon { font-size: 14px; padding: 8px 11px; border-radius: 14px; }
+</style>
+<div id="stage">
+  <div class="caption"><div id="cap"><span class="n" id="capn">1</span><span id="capt"></span></div></div>
+
+  <div class="phone" style="left:26px;top:68px;width:236px;height:440px">
+    <div class="screen">
+      <div class="app home" id="home">
+        <div class="clock">9:41</div>
+        <div class="date">Saturday, 17 October</div>
+        <div class="grid">
+          <i style="background:#F2A65A"></i><i style="background:#5B8DEF"></i><i style="background:#E5484D"></i><i style="background:#8E7CC3"></i>
+          <i style="background:#3E8E5E"></i><i style="background:#F6C453"></i><i style="background:#2B3044"></i><i style="background:#12A594"></i>
+        </div>
+        <div class="dock"><i style="background:#3E7BFA"></i><i style="background:#2F7D4F"></i><i style="background:#D1603D"></i><i style="background:#6B7080"></i></div>
+      </div>
+
+      <div class="app answer" id="answer">
+        <div class="hd"><span class="av">A</span>Ada</div>
+        <div class="bub me" style="top:82px">Build me a little snake game I can play on my phone.</div>
+        <div class="bub ada" style="top:150px">Done! Your snake game is ready. Steer by swiping.<br><span class="link" id="play">▶ Play Snake</span></div>
+      </div>
+
+      <div class="app game" id="game">
+        <div class="bar"><div class="u">🔒 snake · shared by Ada</div><div class="r">↻</div></div>
+        <div class="title">SNAKE</div>
+        <div class="hud" id="hud"></div>
+        <div class="board" id="board"></div>
+        <div class="lvl" id="lvl">Level 2!</div>
+        <div class="flash" id="flash"></div>
+      </div>
+
+      <div class="statusbar" id="sbar"><span>9:41</span><span class="icons"><i></i><i></i></span></div>
+      <div class="notif" id="notif">
+        <div class="h"><i></i>ntfy · now</div>
+        <div class="t" id="ntitle"></div>
+        <div class="b" id="nbody"></div>
+      </div>
+
+      <div class="tp" id="pw" style="left:8px;top:344px"><div id="panel" style="transform:scale(.62);transform-origin:top left"></div></div>
+      <div class="balloon down" id="balloon" style="left:8px;right:8px;bottom:94px;--tail:30px"><div class="who">You say</div><div id="words"></div></div>
+    </div>
+  </div>
+  <div class="vkey" style="left:262px;top:170px;height:50px"></div>
+  <div class="vkey-ring" style="left:252px;top:160px;height:70px"></div>
+  <div class="vkey-label" style="left:272px;top:236px">PRESS</div>
+
+  <svg class="abs" style="left:0;top:0" width="760" height="524">
+    <path id="link" d="M 292 300 Q 340 170 386 222" fill="none" stroke="#B9B2A6" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+  </svg>
+  <div class="pkt" id="pkt"></div>
+
+  <div class="bezel" style="left:390px;top:92px;width:346px;height:262px">
+    <div class="lscreen">
+      <div class="titlebar"><i></i><i></i><i></i><span style="margin-left:6px">Ada, your chief of staff</span><span class="cc">Claude Code</span></div>
+      <div class="idle" id="idle"><span class="av">A</span>Ada is waiting for tasks</div>
+      <div class="work" id="work">
+        <div class="task"><b>From your phone</b><span id="tasktext"></span></div>
+        <div id="steps" style="margin-top:5px"></div>
+        <div class="code" id="code"></div>
+      </div>
+    </div>
+  </div>
+  <div class="base" style="left:368px;top:354px;width:390px;height:12px"></div>
+  <div class="label" style="left:390px;width:346px;top:376px">Your computer: bb + Claude Code</div>
+  <div class="skip" id="skip"></div>
+
+  <div class="tap" id="tap"></div>
+  <div class="fade"></div>
+</div>
+<script src="common.js"></script>
+<script>
+  window.DURATION = 25.4;
+  const PX = 26 + 7, PY = 68 + 7;  // phone screen origin on the stage
+  const path = $('#link');
+  const plen = path.getTotalLength();
+
+  // ---------------------------------------------------------------- the two rounds
+  const ROUNDS = [
+    {
+      said: 'Ada, build me a little snake game I can play on my phone.',
+      task: 'Build me a little snake game I can play on my phone.',
+      key: [0.5, 0.9, 3.6, 4.0],       // press to start, press to stop
+      chiefTap: null,                   // Ada was named: 🧑‍💼 starts by itself
+      steps: [['🧠', 'Planning the game'], ['⌨️', 'Writing the code'], ['🧪', 'Testing it'], ['🔗', 'Sharing a link to your phone']],
+      code: ['function step() {', '  snake.unshift(next(head));', '  if (eats(apple)) score++;', '  else snake.pop();', '}', 'onSwipe(dir => turn(dir));'],
+      skip: [6.4, 7.4, '⏩ 10 minutes later'],
+      notif: ['Your game is ready', 'Snake is done. Tap to see it.'],
+    },
+    {
+      said: 'Ada, make it faster each level and add a high score.',
+      task: 'Make it faster each level and add a high score.',
+      key: [12.0, 12.4, 15.2, 15.6],
+      chiefTap: null,
+      steps: [['🐍', 'Faster each level'], ['🏆', 'Added a high score'], ['🧪', 'Testing it'], ['🔗', 'Updated the link']],
+      code: ['+ level = 1 + Math.floor(score / 2);', '+ speed = 7 + 2 * level;', '+ best = Math.max(best, score);', '+ localStorage.best = best;'],
+      skip: [18.0, 19.0, '⏩ 5 minutes later'],
+      notif: ['Updated', 'Faster each level, plus a high score. Reload to play.'],
+    },
+  ];
+  // Timings relative to the round's stop key press.
+  function roundAt(t) { return t < 11.8 ? 0 : 1; }
+
+  // ---------------------------------------------------------------- snake
+  const COLS = 12, ROWS = 13, LOOP = [];
+  for (let b = 0; b < 6; b++) {
+    const row = 1 + 2 * b;
+    for (let i = 0; i < 10; i++) LOOP.push([b % 2 ? 10 - i : 1 + i, row]);
+    if (b < 5) LOOP.push([b % 2 ? 1 : 10, row + 1]);
+  }
+  for (let r = 11; r >= 1; r--) LOOP.push([0, r]);
+  const board = $('#board');
+  const cells = [];
+  for (let i = 0; i < 24; i++) { const c = document.createElement('i'); board.appendChild(c); cells.push(c); }
+  function snake(t, t0, v2) {
+    // Steps taken; v2 (the update) speeds up each level.
+    let steps, level = 1;
+    const dt = Math.max(0, t - t0);
+    if (!v2) steps = Math.floor(dt * 6);
+    else {
+      // Level 2 after 3 apples (step 35).
+      const s1 = dt * 10;
+      steps = Math.floor(s1 < 17 ? s1 : 17 + (dt - 17 / 10) * 14);
+      level = steps >= 17 ? 2 : 1;
+    }
+    const eaten = Math.max(0, Math.floor((steps - 8) / 9) + 1);
+    const len = 4 + eaten;
+    const apple = 8 + 9 * eaten;
+    cells.forEach((c, i) => {
+      if (i >= len) { c.style.display = 'none'; return; }
+      const [x, y] = LOOP[((steps - i) % LOOP.length + LOOP.length * 4) % LOOP.length];
+      css(c, { display: 'block', left: `${x * 16}px`, top: `${y * 16}px` });
+      c.className = i === 0 ? 'head' : '';
+    });
+    const a = cells[23];
+    const [ax, ay] = LOOP[apple % LOOP.length];
+    css(a, { display: 'block', left: `${ax * 16}px`, top: `${ay * 16}px` });
+    a.className = 'apple';
+    return { score: eaten, level, steps };
+  }
+
+  // ---------------------------------------------------------------- helpers
+  function slideUp(sel, t, at) {
+    const p = eout(ramp(t, at, at + 0.3));
+    css(sel, { opacity: 1, transform: `translateY(${(1 - p) * 426}px)`, visibility: 'visible' });
+  }
+  function packet(t, a, b, forward, label) {
+    const p = eio(ramp(t, a, b));
+    const pt = path.getPointAtLength(plen * (forward ? p : 1 - p));
+    css('#pkt', { left: `${pt.x}px`, top: `${pt.y}px`, opacity: 1, background: forward ? 'var(--teal)' : 'var(--green)' });
+    $('#pkt').textContent = label;
+  }
+  function caption(n, text, color) {
+    $('#capn').textContent = n;
+    $('#capn').style.background = color;
+    $('#capt').textContent = text;
+  }
+  let shown = null;
+  function setupRound(i) {
+    if (shown === i) return;
+    shown = i;
+    const r = ROUNDS[i];
+    setupWords('#words', r.said, ['Ada']);
+    $('#tasktext').textContent = ` “${r.task}”`;
+    $('#steps').innerHTML = r.steps.map(([ic, text]) =>
+      `<div class="step"><span class="ic">${ic}</span><span>${text}</span><span class="st"><span class="spin"></span><span class="ok">✓</span></span></div>`).join('');
+    $('#ntitle').textContent = r.notif[0];
+    $('#nbody').textContent = r.notif[1];
+  }
+
+  // ---------------------------------------------------------------- render
+  window.render = t => {
+    const ri = roundAt(t);
+    const r = ROUNDS[ri];
+    setupRound(ri);
+    const [k0, REC, k1, STOP] = r.key;
+    const TEXT = STOP + 0.4, SENDING = TEXT + 0.3, SENT = SENDING + 0.6, CLOSE = SENT + 0.5;
+    const WORK = SENT + 0.2, BACK = r.skip[1] + 0.7, NOTE = BACK + 0.7;
+    css('#tap', { opacity: 0 });
+
+    // Captions
+    const isR2 = ri === 1;
+    if (t < SENDING + 0.2) caption(1, isR2 ? 'Keep talking while you play' : 'Say it, from any app', 'var(--red)');
+    else if (t < BACK + 0.2) caption(2, 'Ada, your agent, works on your computer', 'var(--teal)');
+    else caption(3, isR2 ? '“Updated”: reload and play' : 'A notification when it’s done', 'var(--green)');
+
+    // Phone screens
+    const OPEN_ANSWER = 9.8, OPEN_GAME = 10.8, RELOAD = 21.9;
+    css('#home', { display: t < OPEN_ANSWER + 0.3 ? 'block' : 'none' });
+    css('#answer', { display: t >= OPEN_ANSWER && t < OPEN_GAME + 0.3 ? 'block' : 'none' });
+    slideUp('#answer', t, OPEN_ANSWER);
+    css('#game', { display: t >= OPEN_GAME ? 'block' : 'none' });
+    slideUp('#game', t, OPEN_GAME);
+    css('#sbar', { color: t >= OPEN_GAME + 0.15 ? 'var(--ink)' : 'var(--ink)' });
+
+    // The game: v1, then the update after reload.
+    const v2 = t >= RELOAD + 0.2;
+    const best = v2 ? snake(RELOAD, OPEN_GAME + 0.3, false).score : 0;
+    const g = snake(t, v2 ? RELOAD + 0.4 : OPEN_GAME + 0.3, v2);
+    if (!v2) $('#hud').innerHTML = `<span>Score ${g.score}</span>`;
+    else $('#hud').innerHTML = `<span class="new">Level ${g.level}</span><span>Score ${g.score}</span><span class="new">Best ${Math.max(best, g.score)}</span>`;
+    const lvlAt = RELOAD + 0.4 + 17 / 10;
+    appear('#lvl', t, lvlAt, lvlAt + 0.2, { scale: 0.5, c: lvlAt + 1.0, d: lvlAt + 1.3 });
+    css('#flash', { opacity: t >= RELOAD && t < RELOAD + 0.4 ? 1 - ramp(t, RELOAD + 0.1, RELOAD + 0.4) : 0 });
+
+    // Press, talk, press.
+    volumeKey(t, k0, REC) || volumeKey(t, k1, STOP);
+    appear('#pw', t, REC, REC + 0.25, { dy: 10, c: CLOSE + 0.1, d: CLOSE + 0.4 });
+    let p;
+    const chosen = r.chiefTap !== null && t >= r.chiefTap;
+    if (t < STOP) p = { rec: true, elapsed: t - REC + 1, chief: chosen ? 'queued' : 'idle', status: 'Recording until you tap Stop. Switch apps freely.' };
+    else if (t < TEXT) p = { insert: 'wait', chief: chosen ? 'queued' : 'idle', status: 'Transcribing… You can keep using other apps.' };
+    else if (t < SENDING) p = { insert: 'ready', chief: 'queued', status: 'Your text is ready to insert' };
+    else if (t < SENT) p = { insert: 'ready', chief: 'running', status: 'Your text is ready to insert' };
+    else p = { insert: 'ready', chief: 'done', status: 'Sent to your chief of staff' };
+    if (r.chiefTap !== null && Math.abs(t - r.chiefTap) < 0.2) p.press = 'chief';
+    if (Math.abs(t - CLOSE) < 0.2) p.press = 'close';
+    panel('#panel', p);
+    appear('#balloon', t, REC + 0.1, REC + 0.35, { dy: 8, c: STOP + 0.2, d: STOP + 0.5 });
+    revealWords('#words', t, REC + 0.2, k1 - 0.4);
+    if (r.chiefTap !== null && t > r.chiefTap - 0.4 && t < r.chiefTap + 0.5) tap('#tap', t, r.chiefTap, ...pillAt('#panel', 'chief'));
+    if (t > CLOSE - 0.4 && t < CLOSE + 0.4) tap('#tap', t, CLOSE, ...pillAt('#panel', 'close'));
+
+    // Phone -> computer, the work, computer -> phone.
+    css('#pkt', { opacity: 0 });
+    if (t >= SENDING && t <= SENT + 0.1) packet(t, SENDING, SENT, true, 'task →');
+    if (t >= BACK && t <= NOTE + 0.1) packet(t, BACK, NOTE, false, '← done');
+
+    const busy = (t >= 5.2 && t < 11.8) || t >= 16.8;  // after round 1, the screen keeps round 1's work
+    css('#idle', { display: busy ? 'none' : 'flex' });
+    css('#work', { display: busy ? 'block' : 'none' });
+    appear('#work', t, WORK - 0.3, WORK);
+    const stepAt = i => i < 2 ? WORK + 0.3 + i * 0.5 : r.skip[1] + (i - 2) * 0.3;
+    $$('#steps .step').forEach((row, i) => {
+      const a = stepAt(i);
+      appear(row, t, a, a + 0.2, { dx: -6 });
+      const done = i === 1 ? t >= r.skip[1] : t >= a + 0.45;
+      row.querySelector('.ok').style.display = done ? 'block' : 'none';
+      const spin = row.querySelector('.spin');
+      spin.style.display = done ? 'none' : 'block';
+      spin.style.transform = `rotate(${t * 540}deg)`;
+    });
+    const codeP = ramp(t, stepAt(1), r.skip[0] + 0.6);
+    const lines = r.code.slice(0, Math.ceil(codeP * r.code.length)).slice(-3);
+    $('#code').innerHTML = lines.map(l => `<div class="${l.startsWith('+') ? 'ad' : ''}">${l}</div>`).join('');
+    appear('#code', t, stepAt(1), stepAt(1) + 0.2);
+    $('#skip').textContent = r.skip[2];
+    css('#skip', { left: `${563 - $('#skip').offsetWidth / 2}px`, top: '412px' });
+    appear('#skip', t, r.skip[0], r.skip[0] + 0.25, { dy: 8, c: r.skip[1] - 0.2, d: r.skip[1] + 0.1 });
+
+    // The notification: round 1 opens Ada's answer, round 2 you just reload.
+    const tapNote = OPEN_ANSWER;
+    appear('#notif', t, NOTE, NOTE + 0.3, { dy: -30, c: ri === 0 ? tapNote + 0.05 : NOTE + 1.0, d: ri === 0 ? tapNote + 0.25 : NOTE + 1.3 });
+    if (ri === 0 && t > tapNote - 0.4 && t < tapNote + 0.4) tap('#tap', t, tapNote, PX + 111, PY + 70);
+    if (ri === 0 && t > OPEN_GAME - 0.4 && t < OPEN_GAME + 0.4) {
+      const r2 = $('#play').getBoundingClientRect(), s = $('#stage').getBoundingClientRect();
+      tap('#tap', t, OPEN_GAME, r2.left - s.left + r2.width / 2, r2.top - s.top + r2.height / 2);
+    }
+    if (t > RELOAD - 0.4 && t < RELOAD + 0.4) tap('#tap', t, RELOAD, PX + 222 - 21, PY + 44);
+
+    loopFade(t, window.DURATION, 0.4);
+  };
+  window.render(0);
+</script>
