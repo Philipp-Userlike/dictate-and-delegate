@@ -1,4 +1,4 @@
-# Talk Router
+# Dictate & Delegate
 
 **One intuitive shortcut to AI, from any app on your phone.**
 
@@ -91,7 +91,7 @@ Press a shortcut in any app and talk. A small floating panel stays next to whate
 
 ### Agents through bb
 
-Talk Router sends your dictation to an agent running on its own machine, your laptop or a server, through [bb](https://getbb.app), with Claude Code or Codex on your existing subscription. Usually you'd have a kind of "coordinator" or "chief of staff" agent there that routes and manages all larger independent work. This can include coding, research, recurring tasks and a lot of other things.
+Dictate & Delegate sends your dictation to an agent running on its own machine, your laptop or a server, through [bb](https://getbb.app), with Claude Code or Codex on your existing subscription. Usually you'd have a kind of "coordinator" or "chief of staff" agent there that routes and manages all larger independent work. This can include coding, research, recurring tasks and a lot of other things.
 
 ### Models and cost
 
@@ -99,18 +99,18 @@ The latest speech models: MAI-Transcribe 2 by default, 60 languages, and you can
 
 ### Open source
 
-It's MIT licensed, so you can read exactly what it sends, or build it yourself. Your voice and text go only to the providers you choose; there's no Talk Router server.
+It's MIT licensed, so you can read exactly what it sends, or build it yourself. Your voice and text go only to the providers you choose; there's no Dictate & Delegate server.
 
 ## Why bb
 
-bb runs Claude Code and Codex and adds nice extra features on top. It works with common subscriptions like Claude and ChatGPT, has full remote control, and gives Talk Router a nice interface to communicate with.
+bb runs Claude Code and Codex and adds nice extra features on top. It works with common subscriptions like Claude and ChatGPT, has full remote control, and gives Dictate & Delegate a nice interface to communicate with.
 
 ## Install
 
 **You need:** an [OpenRouter](https://openrouter.ai) key and an Android phone with Android 14 or newer. For agents: [bb](https://getbb.app) with Claude Code or Codex, and the free [ntfy](https://ntfy.sh) app for notifications.
 
-1. Download the APK from [Releases](https://github.com/Philipp258/talk-router/releases/latest) and open it on your phone.
-2. Open Talk Router and paste your OpenRouter key. Setup walks you through the microphone, the start key and Insert.
-3. Optional: in bb, run `bb plugin enable bb--mcp`, then sign in from Talk Router. It sets up your agent.
+1. Download the APK from [Releases](https://github.com/Philipp258/dictate-and-delegate/releases/latest) and open it on your phone.
+2. Open Dictate & Delegate and paste your OpenRouter key. Setup walks you through the microphone, the start key and Insert.
+3. Optional: in bb, run `bb plugin enable bb--mcp`, then sign in from Dictate & Delegate. It sets up your agent.
 
 [More on how it works](docs/HOW-IT-WORKS.md) · [Using the app](docs/GUIDE.md) · [Build & test](docs/DEVELOPMENT.md)

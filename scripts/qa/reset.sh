@@ -2,7 +2,7 @@
 # QA runs against the fake OpenRouter (scripted transcripts and replies, no provider calls) and the
 # fake bb MCP server on the next port (custom address http://127.0.0.1:$((QA_PORT + 1))/mcp).
 #   scripts/qa/reset.sh build   start the fake, build and install the app and the test pad
-#   scripts/qa/reset.sh fresh   wipe Talk Router on the emulator: a first start, like a new user
+#   scripts/qa/reset.sh fresh   wipe Dictate & Delegate on the emulator: a first start, like a new user
 # Uses ADB (default .tools/adb.sh, else adb) and QA_PORT (default 8798).
 set -eu
 cd "$(dirname "$0")/../.."
@@ -53,7 +53,7 @@ fresh)
     $ADB shell cmd statusbar collapse
     $ADB shell input keyevent KEYCODE_WAKEUP
     $ADB shell input keyevent KEYCODE_HOME
-    echo "Talk Router is wiped: the next launch is a first start."
+    echo "Dictate & Delegate is wiped: the next launch is a first start."
     ;;
 *)
     echo "Usage: $0 build|fresh" >&2

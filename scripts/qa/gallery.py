@@ -61,7 +61,7 @@ def persona(name):
 
 
 body = "\n".join(persona(p) for p in ("advanced",))
-page = """<!doctype html><meta charset="utf-8"><title>Talk Router QA · %s</title>
+page = """<!doctype html><meta charset="utf-8"><title>Dictate & Delegate QA · %s</title>
 <style>
 body{font:15px/1.45 system-ui,sans-serif;margin:24px;color:#14201c;max-width:1500px}
 h2{margin-top:40px;border-top:2px solid #0b7a5e;padding-top:12px}
@@ -72,6 +72,6 @@ td.blocker,td.major{color:#b3261e;font-weight:600}td.minor{color:#8a5a00}
 .steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
 figure{margin:0}img{width:100%%;border:1px solid #dde3df;border-radius:12px}
 figcaption{font-size:13px;color:#46524d}code{font-size:12px}
-</style><h1>Talk Router QA · %s</h1>%s""" % (esc(os.path.basename(ROUND)), esc(os.path.basename(ROUND)), body)
+</style><h1>Dictate & Delegate QA · %s</h1>%s""" % (esc(os.path.basename(ROUND)), esc(os.path.basename(ROUND)), body)
 open(os.path.join(ROUND, "index.html"), "w").write(page)
 print(os.path.join(ROUND, "index.html"))

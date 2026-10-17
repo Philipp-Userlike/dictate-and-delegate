@@ -47,7 +47,7 @@ body {
   writing-mode: vertical-rl; opacity: 0;
 }
 
-/* Floating Talk Router panel, as FloatingPanel.java draws it (dp sizes) */
+/* Floating Dictate & Delegate panel, as FloatingPanel.java draws it (dp sizes) */
 .tp { position: absolute; z-index: 20; transform-origin: top left; }
 .tp-bar { display: inline-flex; flex-direction: column; background: rgba(24, 36, 32, .95); border-radius: 24px; padding: 6px; box-shadow: 0 6px 0 rgba(29, 32, 41, .12); }
 .tp-row { display: flex; gap: 6px; }

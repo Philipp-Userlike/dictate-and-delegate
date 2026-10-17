@@ -5,7 +5,7 @@
   #stage { width: 360px; height: 680px; }
   .view { position: absolute; top: 30px; left: 0; right: 0; bottom: 0; background: #fff; overflow: hidden; }
 
-  /* Talk Router: New template */
+  /* Dictate & Delegate: New template */
   .tr { padding: 6px 18px; color: #0E1A16; }
   .tr .back { font-size: 14px; color: #0B7A5E; font-weight: 600; }
   .tr h2 { font-size: 22px; margin-top: 8px; }
@@ -117,7 +117,7 @@
   window.render = t => {
     css('#tap', { opacity: 0 });
 
-    // 1. Write the template in Talk Router and save it.
+    // 1. Write the template in Dictate & Delegate and save it.
     if (t < 0.7) tap('#tap', t, 0.35, SX + 140, SY + 30 + 128);
     field('#tname', NAME, ramp(t, 0.5, 1.2), 'For example: Apartment application');
     if (t > 1.0 && t < 1.8) tap('#tap', t, 1.45, SX + 140, SY + 30 + 260);

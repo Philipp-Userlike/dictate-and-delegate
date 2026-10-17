@@ -4,13 +4,13 @@ You're Alex, 34, a software developer. You dictate code review comments, Slack m
 
 ## Your tasks
 
-1. Open Talk Router and go through setup, with your OpenRouter key. Then tell Talk Router a little about you, and add the words "Kubernetes" and "Ljubljana".
-2. Check which models Talk Router uses for speech, Jev's decisions and Refine, and that the instructions for Refine are visible and editable. Change them slightly (e.g. ask it to keep technical terms in English) and make sure the change is kept.
+1. Open Dictate & Delegate and go through setup, with your OpenRouter key. Then tell Dictate & Delegate a little about you, and add the words "Kubernetes" and "Ljubljana".
+2. Check which models Dictate & Delegate uses for speech, Jev's decisions and Refine, and that the instructions for Refine are visible and editable. Change them slightly (e.g. ask it to keep technical terms in English) and make sure the change is kept.
 3. Dictate a review comment into the "Notes test field" app, starting from the tile or floating button while that app is open. For example: "so in the Kubernetes config, uh, the replica count should be three not two, and add a comment about Ljubljana's data center".
-4. Open that note in Talk Router. Check which models processed it and what it cost. Redo it with a smarter speech model and check the new cost.
+4. Open that note in Dictate & Delegate. Check which models processed it and what it cost. Redo it with a smarter speech model and check the new cost.
 5. Check Settings → Activity and Usage: can you see what each call cost and which model made it?
 6. You often answer recruiters the same way. Save a template named "Recruiter reply" with a short polite decline that mentions your current role, then dictate a reply that uses it for a specific company and role ("use my recruiter reply for Acme, they offered a staff engineer role in Berlin"). Check the result in the Notes test field and that the note's cost is still shown.
-7. Attach context while recording: copy a short text from the Notes test field, start a dictation, use the 📎 (floating button or Home) to paste it, ask Talk Router to summarise it in one sentence, and check that the note shows the attachment.
+7. Attach context while recording: copy a short text from the Notes test field, start a dictation, use the 📎 (floating button or Home) to paste it, ask Dictate & Delegate to summarise it in one sentence, and check that the note shows the attachment.
 8. Replace your OpenRouter key in Settings, then remove it: what happens when you try to dictate without one?
 
-Judge Talk Router as Alex would: Is everything you'd want to configure there, without digging? Is anything hidden or vague (models, prices, what's sent where)? Does the detail clutter the everyday flow?
+Judge Dictate & Delegate as Alex would: Is everything you'd want to configure there, without digging? Is anything hidden or vague (models, prices, what's sent where)? Does the detail clutter the everyday flow?

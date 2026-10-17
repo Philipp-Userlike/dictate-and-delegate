@@ -1,6 +1,6 @@
 # Plan: Drift becomes an open-source voice entry point for bb (Android)
 
-Drift is now called **Talk Router** (app label and texts; package id, class names and stored keys stay). This plan keeps the old name where it describes the past.
+Drift was renamed Talk Router, and is now called **Dictate & Delegate** (app label and texts; package id, class names and stored keys stay). This plan keeps the old name where it describes the past.
 
 Status: in progress (parts 1 and 2 done). Android only. The Mac app was removed and stays in Git history.
 

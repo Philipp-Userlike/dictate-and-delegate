@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Drives Talk Router on the emulator for a QA agent. Every command saves a numbered screenshot.
+"""Drives Dictate & Delegate on the emulator for a QA agent. Every command saves a numbered screenshot.
 
   drive.py <command> [arguments] [--note "what you are doing and why"]
 
 Commands:
-  launch                 open Talk Router (as a user would from the launcher)
+  launch                 open Dictate & Delegate (as a user would from the launcher)
   screen                 just look: screenshot plus the list of what is on screen
   tap TEXT | tap #N | tap X,Y
                          tap the element with this text or description (exact, else contains),
@@ -14,16 +14,16 @@ Commands:
   key BACK|HOME|ENTER|PASTE|RECENTS
   swipe up|down          scroll the page (up shows what is further down)
   swipe left|right       next / previous page, e.g. of Quick Settings
-  quicksettings          pull down Quick Settings (where the Talk Router tile is once added)
+  quicksettings          pull down Quick Settings (where the Dictate & Delegate tile is once added)
   collapse               close Quick Settings / the notification shade
-  bubble                 tap Talk Router's floating button (start, or stop while recording)
+  bubble                 tap Dictate & Delegate's floating button (start, or stop while recording)
   pad                    open "Notes test field", another app with a text box to paste into
   say SAID [PROCESSED]   decide what the next recording "contains": the speech model will return
-                         SAID; with PROCESSED, Talk Router treats it as a request and returns PROCESSED,
+                         SAID; with PROCESSED, Dictate & Delegate treats it as a request and returns PROCESSED,
                          otherwise as a plain transcript
   task SAID              the next recording transcribes to SAID and the request check hands it to
                          the chief of staff in bb (needs bb connected and a chief set)
-  state                  Talk Router's dictation state, e.g. recording, uploading, copied
+  state                  Dictate & Delegate's dictation state, e.g. recording, uploading, copied
   wait SECONDS
   note TEXT              write down an observation (with a screenshot), no action
 
@@ -63,7 +63,7 @@ def density():
 
 
 def prefs():
-    """Talk Router's settings, readable because the debug build is debuggable."""
+    """Dictate & Delegate's settings, readable because the debug build is debuggable."""
     xml = adb("exec-out", "run-as", PACKAGE, "cat", "shared_prefs/settings.xml")
     values = {}
     try:
@@ -150,7 +150,7 @@ def record(command, note, settle=1.2):
     with open(os.path.join(RUN, "steps.jsonl"), "a") as f:
         f.write(json.dumps(step, ensure_ascii=False) + "\n")
     print("Step %d · screenshot %s" % (n, os.path.join(RUN, shot)))
-    print("Talk Router state: %s %s" % (p.get("state", "-"), ("· " + p["detail"]) if p.get("detail") else ""))
+    print("Dictate & Delegate state: %s %s" % (p.get("state", "-"), ("· " + p["detail"]) if p.get("detail") else ""))
     print("On screen (tap by text or #N):")
     for i, e in enumerate(items):
         extra = (" [" + ", ".join(e["flags"]) + "]") if e["flags"] else ""
@@ -255,7 +255,7 @@ def main():
         return
     if cmd == "state":
         p = prefs()
-        print("Talk Router state: %s · %s" % (p.get("state", "-"), p.get("detail", "")))
+        print("Dictate & Delegate state: %s · %s" % (p.get("state", "-"), p.get("detail", "")))
         return
     if cmd == "wait":
         time.sleep(float(rest[0]) if rest else 2)

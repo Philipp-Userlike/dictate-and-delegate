@@ -1,4 +1,4 @@
-# How Talk Router works
+# How Dictate & Delegate works
 
 The short version is in the [README](../README.md). This page has the details: every feature, the diagrams, and how sign-in to bb works.
 
@@ -7,7 +7,7 @@ The short version is in the [README](../README.md). This page has the details: e
 |---|---|
 | **Start anywhere** | Hold volume down or up (Accessibility), tap the Quick Settings tile, or use the button in the app. A short press still changes the volume. |
 | **Floating panel** | Appears over any app, never takes focus, and can be dragged anywhere. While you record: ■ stop, ✨ Refine, 🧑‍💼 Chief, ✕ cancel, 📎 attach. Tap ✨ or 🧑‍💼 while still talking, and it runs as soon as the transcript is ready. |
-| **📥 Insert** | Puts the text at the cursor of the app you're in. Talk Router never puts anything on your clipboard by itself; only if Insert can't reach a field does it copy instead, and the panel tells you. |
+| **📥 Insert** | Puts the text at the cursor of the app you're in. Dictate & Delegate never puts anything on your clipboard by itself; only if Insert can't reach a field does it copy instead, and the panel tells you. |
 | **✨ Refine** | One call to Claude Sonnet 5.5 (or the model you pick) works out what the text is for (message, email, note, reply), follows what you asked, fills in a template you named, and keeps your language and facts. **Insert refined** then replaces the raw transcript in place, if you haven't changed it. Runs through OpenRouter, or through Anthropic directly with your own Anthropic key. |
 | **Templates** | Texts you write again and again (an application, a standard reply). Say "use my apartment application for…" and Refine fills it in. |
 | **📎 Attach** | Talking about something, like a listing you're replying to? While you record, add what you copied, an image or a PDF. Refine reads it, and the chief gets it too. |
@@ -39,12 +39,12 @@ After the transcript, Jev (about 0.3 s and $0.00003) answers a few questions: di
 
 ## Who talks to whom
 
-There is no Talk Router server. The phone talks directly to the services you set up, with your own accounts:
+There is no Dictate & Delegate server. The phone talks directly to the services you set up, with your own accounts:
 
 ```mermaid
 flowchart TB
     subgraph phone["📱 Your phone"]
-        app["Talk Router"]
+        app["Dictate & Delegate"]
         ntfyapp["ntfy app"]
         pwa["bb in the browser"]
     end
@@ -56,7 +56,7 @@ flowchart TB
     end
     subgraph mac["💻 Your computer"]
         mcp["bb's MCP server<br/>(bb--mcp plugin)"]
-        skills["Skills: chief-of-staff,<br/>talk-router"]
+        skills["Skills: chief-of-staff,<br/>dictate-and-delegate"]
         chief["Chief-of-staff thread"]
         kids["Child threads"]
     end
@@ -73,15 +73,15 @@ flowchart TB
 ```
 
 - **OpenRouter** runs speech, Jev and Refine. You pay OpenRouter directly for what you use; a one-minute note usually costs well under a cent. With your own **Anthropic** key, Refine goes to Anthropic directly on your Anthropic credits, with OpenRouter as the fallback.
-- **bb** is an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Talk Router uses bb's built-in MCP server to create the chief-of-staff thread and send it your dictations. The chief's instructions are two bb skills that Talk Router installs and keeps up to date by itself: **chief-of-staff** (how to work for you: small things itself, bigger work split into child threads with context, intent and what done looks like) and **talk-router** (how to read dictations, notify you and send text back).
-- **ntfy** carries the chief's notification (one per request, with a summary and a link to the thread) and text meant for you to paste. Your topic is a long random name only you know. Talk Router itself sends no notifications.
+- **bb** is an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Dictate & Delegate uses bb's built-in MCP server to create the chief-of-staff thread and send it your dictations. The chief's instructions are two bb skills that Dictate & Delegate installs and keeps up to date by itself: **chief-of-staff** (how to work for you: small things itself, bigger work split into child threads with context, intent and what done looks like) and **dictate-and-delegate** (how to read dictations, notify you and send text back).
+- **ntfy** carries the chief's notification (one per request, with a summary and a link to the thread) and text meant for you to paste. Your topic is a long random name only you know. Dictate & Delegate itself sends no notifications.
 
 ## Handing off a task
 
 ```mermaid
 sequenceDiagram
     actor You
-    participant TR as Talk Router
+    participant TR as Dictate & Delegate
     participant OR as OpenRouter
     participant BB as bb (MCP)
     participant CoS as Chief of staff
@@ -106,18 +106,18 @@ If bb can't be reached, the note keeps what you said, says why, and offers **Sen
 
 ## Signing in to bb
 
-Talk Router reaches your bb through bb Connect (`https://<handle>.getbb.app/mcp`) with OAuth 2.1 and PKCE: no password or secret goes into the app. bb has no app registration; an app's ID is the address of a small public JSON file describing it. Talk Router's lives on this repo's GitHub Pages ([client.json](https://philipp258.github.io/talk-router/oauth/client.json)).
+Dictate & Delegate reaches your bb through bb Connect (`https://<handle>.getbb.app/mcp`) with OAuth 2.1 and PKCE: no password or secret goes into the app. bb has no app registration; an app's ID is the address of a small public JSON file describing it. Dictate & Delegate's lives on this repo's GitHub Pages ([client.json](https://philipp258.github.io/dictate-and-delegate/oauth/client.json)).
 
 ```mermaid
 sequenceDiagram
     actor You
-    participant TR as Talk Router
+    participant TR as Dictate & Delegate
     participant Browser
     participant BB as getbb.app
     participant GH as GitHub Pages
     TR->>Browser: open /oauth/authorize (client ID = client.json URL, PKCE challenge)
     BB->>GH: fetch client.json (name, allowed redirect)
-    You->>Browser: sign in and approve Talk Router
+    You->>Browser: sign in and approve Dictate & Delegate
     BB->>Browser: redirect to callback.html with a one-time code
     Browser->>GH: load callback.html
     GH-->>Browser: the page opens talkrouter://oauth/callback with the code

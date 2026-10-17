@@ -76,7 +76,7 @@ def java_string(name, file):
 def post(path, body):
     req = urllib.request.Request(OPENROUTER + path, json.dumps(body).encode(), {
         "Authorization": "Bearer " + os.environ["OPENROUTER_API_KEY"],
-        "Content-Type": "application/json", "X-Title": "Talk Router"})
+        "Content-Type": "application/json", "X-Title": "Dictate & Delegate"})
     started = time.time()
     try:
         r = json.loads(urllib.request.urlopen(req, timeout=120).read())

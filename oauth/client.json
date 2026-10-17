@@ -1,9 +1,9 @@
 {
-  "client_id": "https://philipp258.github.io/talk-router/oauth/client.json",
-  "client_name": "Talk Router",
-  "client_uri": "https://github.com/Philipp258/talk-router",
+  "client_id": "https://philipp258.github.io/dictate-and-delegate/oauth/client.json",
+  "client_name": "Dictate & Delegate",
+  "client_uri": "https://github.com/Philipp258/dictate-and-delegate",
   "redirect_uris": [
-    "https://philipp258.github.io/talk-router/oauth/callback.html"
+    "https://philipp258.github.io/dictate-and-delegate/oauth/callback.html"
   ],
   "grant_types": [
     "authorization_code",
