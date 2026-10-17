@@ -29,6 +29,7 @@ public final class DictationService extends Service {
       RETRY = "retry",
       HIDE = "hide",
       DISCARD = "discard",
+      CANCEL = "cancel",
       CONFIGURE = "configure",
       COMPARE = "compare";
   static final String READY = "ready",
@@ -140,6 +141,7 @@ public final class DictationService extends Service {
         update();
       } else if (RECORD.equals(action)) startRecording();
       else if (STOP.equals(action)) stopRecording(true);
+      else if (CANCEL.equals(action)) cancelRecording();
       else if (COMPARE.equals(action) && !isBusy()) {
         if (audio(this).exists())
           throw new IOException(tr("Finish or discard the pending recording first."));
@@ -319,7 +321,8 @@ public final class DictationService extends Service {
             this,
             new FloatingPanel.Actions() {
               public void close() {
-                closePanel();
+                if (RECORDING.equals(state)) cancelRecording();
+                else closePanel();
               }
 
               public void stop() {
@@ -455,6 +458,12 @@ public final class DictationService extends Service {
     return instance != null && instance.bubble != null;
   }
 
+  /** Whether the panel shows every button whole and on screen (for the device tests). */
+  static boolean panelFits() {
+    DictationService s = instance;
+    return s != null && s.bubble != null && s.bubble.fits();
+  }
+
   private void closePanel() {
     if ("always".equals(mode())) {
       newSession();
@@ -497,8 +506,7 @@ public final class DictationService extends Service {
         else
           try {
             startActivity(
-                new Intent(Intent.ACTION_VIEW, Uri.parse(s.chiefLink))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                BbBridge.view(s.chiefLink));
           } catch (ActivityNotFoundException ex) {
             say(tr("No browser available"));
           }
@@ -555,19 +563,22 @@ public final class DictationService extends Service {
     Profile profile = new Profile(prefs);
     boolean chiefReady = BbBridge.ready(this);
     java.util.List<String> templates = new Templates(this).names();
-    if (s.redo || (!profile.autoRefine() && !chiefReady && templates.isEmpty())) {
+    String said = s.transcript;
+    // The chief is only asked about when its name comes up.
+    boolean named = chiefReady && Jev.mentions(said, profile.chiefName());
+    if (s.redo || (!profile.autoRefine() && !named && templates.isEmpty())) {
       s.decided = true;
       startQueued();
       return;
     }
-    String id = s.noteId, said = s.transcript;
+    String id = s.noteId;
     work(
         () -> {
           Jev.Answers a = null;
           String failed = null;
           long asked = SystemClock.elapsedRealtime();
           try {
-            a = Jev.ask(this, said, templates, profile.autoRefine(), chiefReady);
+            a = Jev.ask(this, said, templates, profile.autoRefine(), named ? profile.chiefName() : "");
           } catch (Exception ex) {
             failed = friendly(ex);
           }
@@ -589,7 +600,8 @@ public final class DictationService extends Service {
           } catch (Exception ignored) {
             /* The note keeps the transcript; Activity just lacks this step. */
           }
-          Jev.Decision d = Jev.decide(answers, profile.autoRefine(), profile.autoChief(), chiefReady);
+          Jev.Decision d =
+              Jev.decide(answers, profile.autoRefine(), profile.autoChief(), chiefReady, named);
           main.post(
               () -> {
                 if (session != s) return;
@@ -982,6 +994,34 @@ public final class DictationService extends Service {
                           ? tr("Recording interrupted. Saved audio can be retried.")
                           : friendly(failure));
                 } else upload();
+              });
+        });
+  }
+
+  /** ✕ while recording: the audio is thrown away, nothing is transcribed or sent, so it costs nothing. */
+  private void cancelRecording() {
+    if (!RECORDING.equals(state)) return;
+    transition(STOPPING, tr("Cancelling…"));
+    main.removeCallbacks(ticker);
+    PcmRecorder current = recorder;
+    recorder = null;
+    worker.execute(
+        () -> {
+          current.stop();
+          main.post(
+              () -> {
+                if (!alive) return;
+                if (wake.isHeld()) wake.release();
+                foreground(false);
+                new Attachments(this).clearPending();
+                try {
+                  clearPending();
+                } catch (IOException ex) {
+                  transition(ERROR, friendly(ex));
+                  return;
+                }
+                Toast.makeText(this, tr("Cancelled. Nothing was transcribed or sent."), Toast.LENGTH_SHORT).show();
+                transition(READY, tr("Tap the bubble to record"));
               });
         });
   }

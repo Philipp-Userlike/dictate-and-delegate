@@ -132,6 +132,7 @@ public class BbFlowTest {
     BbBridge bb = new BbBridge(context);
     bb.useCustom(TestServer.bbUrl(), "", LINKS);
     bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
+    prefs.edit().putString(Profile.CHIEF_NAME, "Henry").commit();
   }
 
   @Before
@@ -231,26 +232,92 @@ public class BbFlowTest {
   }
 
   @Test
+  public void sayingItsForTheChiefByNameSendsItThereInsteadOfRefining() throws Exception {
+    connectFake();
+    // Philipp's own phrasing; Jev also thinks it reads like a text to refine.
+    TestServer.transcripts("Okay, so I want to talk to Henry about the hotel booking");
+    TestServer.decide(0.92, 0.97, "none");
+    TestServer.replies("Should not be refined.");
+    dictate("copied");
+    HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    assertEquals(DictationService.DONE, DictationService.session().chief);
+    assertTrue(sent("text").isEmpty());
+    assertEquals(DictationService.IDLE, DictationService.session().refine);
+    // Jev was asked about Henry by name.
+    assertTrue(
+        sent("decide").get(0).getJSONObject("questions").getJSONObject("chief").getString("instructions").contains("is called Henry."));
+    List<String> snippets = TestServer.bbSnippets();
+    String tell = snippets.get(snippets.size() - 1);
+    assertTrue(tell, tell.contains("I want to talk to Henry about the hotel booking"));
+    assertTrue(tell, tell.contains("[request: " + e.json.optString("chiefRequest") + "]"));
+    find("Open chat ↗");
+  }
+
+  @Test
+  public void theNameOnlyMentionedInTheMessageStaysHere() throws Exception {
+    connectFake();
+    TestServer.transcripts("hey Tom, Henry will send you the contract tomorrow");
+    TestServer.decide(0.05, 0.04, "none");
+    dictate("copied");
+    waitDecided();
+    assertTrue(sent("decide").get(0).getJSONObject("questions").has("chief"));
+    assertEquals(DictationService.IDLE, DictationService.session().chief);
+    assertFalse(DictationService.session().hint);
+    assertTrue(TestServer.bbSnippets().isEmpty());
+  }
+
+  @Test
+  public void withoutTheNameTheChiefIsntAskedAbout() throws Exception {
+    connectFake();
+    TestServer.transcripts("chief of staff, book a table for four");
+    TestServer.decide(0.05, 0.99, "none");
+    dictate("copied");
+    waitDecided();
+    assertFalse(sent("decide").get(0).getJSONObject("questions").has("chief"));
+    assertEquals(DictationService.IDLE, DictationService.session().chief);
+    assertFalse(DictationService.session().hint);
+    assertTrue(TestServer.bbSnippets().isEmpty());
+  }
+
+  @Test
+  public void whenJevFailsWithTheNameChiefIsOnlySuggested() throws Exception {
+    connectFake();
+    TestServer.transcripts("Henry, book a table for four");
+    TestServer.error("decide", "provider");
+    dictate("copied");
+    waitDecided();
+    assertEquals(DictationService.IDLE, DictationService.session().chief);
+    assertTrue(DictationService.session().hint);
+    assertTrue(TestServer.bbSnippets().isEmpty());
+    find(By.desc("Chief, suggested: this may be a task for your chief of staff"), "the hint");
+  }
+
+  void waitDecided() throws Exception {
+    long deadline = SystemClock.elapsedRealtime() + 8000;
+    while (!DictationService.session().decided && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
+    Thread.sleep(500);
+  }
+
+  @Test
   public void addressedExplicitlyTheTaskGoesToTheChiefWithThePastedText() throws Exception {
     connectFake();
     new Attachments(context).addText("Flights: TP 1234 on 3 May, FR 88 on 4 May");
-    TestServer.transcripts("tell my chief of staff to find the cheapest of these flights");
+    TestServer.transcripts("Henry, find the cheapest of these flights");
     TestServer.decide(0.05, 0.97, "none");
     dictate("copied");
     HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
     assertEquals(DictationService.DONE, DictationService.session().chief);
 
-    // Jev was asked about the chief; Refine didn't run; the transcript came first, copied.
+    // Jev was asked about the chief; Refine didn't run. The transcript is copied (checked below).
     assertTrue(sent("decide").get(0).getJSONObject("questions").has("chief"));
     assertTrue(sent("text").isEmpty());
-    assertEquals("tell my chief of staff to find the cheapest of these flights", clipboard());
 
     // One tell to the chief, queued, with what was said, the pasted text and a request ID.
     List<String> snippets = TestServer.bbSnippets();
     assertEquals(1, snippets.size());
     String tell = snippets.get(0);
     assertTrue(tell, tell.contains("\"thread\",\"tell\",\"" + TestServer.CHIEF + "\",\"--mode\",\"queue\""));
-    assertTrue(tell, tell.contains("tell my chief of staff to find the cheapest of these flights"));
+    assertTrue(tell, tell.contains("Henry, find the cheapest of these flights"));
     assertTrue(tell, tell.contains("Flights: TP 1234 on 3 May, FR 88 on 4 May"));
     String request = e.json.optString("chiefRequest");
     assertTrue(request, request.matches("[a-z0-9]{6}"));
@@ -273,7 +340,9 @@ public class BbFlowTest {
     send(DictationService.HIDE);
     Thread.sleep(500);
     launch();
-    tap("tell my chief of staff to find the cheapest of these flights");
+    // In front now, so the test may read the clipboard.
+    assertEquals("Henry, find the cheapest of these flights", clipboard());
+    tap("Henry, find the cheapest of these flights");
     find("Sent to chief of staff ↗");
     find("What you said");
 
@@ -285,7 +354,7 @@ public class BbFlowTest {
 
     // The link opens the thread in the browser.
     launch();
-    tap("tell my chief of staff to find the cheapest of these flights");
+    tap("Henry, find the cheapest of these flights");
     find("Sent to chief of staff ↗").click();
     assertTrue(
         "the browser opens",
@@ -294,9 +363,9 @@ public class BbFlowTest {
   }
 
   @Test
-  public void aBareImperativeIsNotSentButChiefIsSuggested() throws Exception {
+  public void unsureAboutTheNameItIsNotSentButChiefIsSuggested() throws Exception {
     connectFake();
-    TestServer.transcripts("look into why the nightly build failed and fix it");
+    TestServer.transcripts("Henry could look into why the nightly build failed");
     TestServer.decide(0.05, 0.62, "none");
     dictate("copied");
     long deadline = SystemClock.elapsedRealtime() + 8000;
@@ -332,7 +401,7 @@ public class BbFlowTest {
   public void aChiefFromBeforeIsToldOnceHowToSendTextBack() throws Exception {
     connectFake();
     prefs.edit().remove(BbBridge.CHIEF_KNOWS_PASTE).commit();
-    TestServer.transcripts("chief of staff, book a table", "chief of staff, call the plumber");
+    TestServer.transcripts("Henry, book a table", "Henry, call the plumber");
     TestServer.decide(0, 0.98, "none");
     TestServer.decide(0, 0.98, "none");
     dictate("copied");
@@ -352,7 +421,7 @@ public class BbFlowTest {
   public void whenBbFailsTheNoteKeepsWhatYouSaidAndSendsAgain() throws Exception {
     connectFake();
     TestServer.bbFail("tell", "http503");
-    TestServer.transcripts("ask my agent to book the table for Friday");
+    TestServer.transcripts("Henry, book the table for Friday");
     TestServer.decide(0, 0.95, "none");
     dictate("copied");
     HistoryEntry e = latestOnce(n -> n.json.has("chiefFailed"), "the failure");
@@ -366,8 +435,8 @@ public class BbFlowTest {
     send(DictationService.HIDE);
     Thread.sleep(500);
     launch();
-    assertEquals("ask my agent to book the table for Friday", clipboard());
-    tap("ask my agent to book the table for Friday");
+    assertEquals("Henry, book the table for Friday", clipboard());
+    tap("Henry, book the table for Friday");
     find(By.textStartsWith("Not sent to your chief of staff:"), "the failure");
     find("Copy");
     tap("Send again");
@@ -376,7 +445,7 @@ public class BbFlowTest {
     assertFalse(e.json.has("chiefFailed"));
     assertEquals(CHIEF_LINK, e.json.optString("chiefLink"));
     List<String> snippets = TestServer.bbSnippets();
-    assertTrue(snippets.get(snippets.size() - 1).contains("ask my agent to book the table for Friday"));
+    assertTrue(snippets.get(snippets.size() - 1).contains("Henry, book the table for Friday"));
   }
 
   @Test

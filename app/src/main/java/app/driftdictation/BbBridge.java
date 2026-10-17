@@ -437,6 +437,16 @@ final class BbBridge {
     return threadLink(linkBase(), id);
   }
 
+  /**
+   * Opens a bb link in the browser. Chromium browsers (Chrome, Vanadium) reuse the tab they last
+   * opened for the same application ID, so the bb tab doesn't pile up with every Open chat.
+   */
+  static android.content.Intent view(String link) {
+    return new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link))
+        .putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, "app.driftdictation.bb")
+        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+  }
+
   // ------------------------------------------------------------------ transport
 
   private interface Call<T> {

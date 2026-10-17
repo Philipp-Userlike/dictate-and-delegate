@@ -4,6 +4,7 @@ import android.content.Context;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 /**
@@ -22,8 +23,8 @@ final class Jev {
   /** Refine starts by itself at this probability (or when a template is named). */
   static final double REFINE_AT = 0.5;
 
-  /** Sent to the chief by itself only this sure that it was addressed; never on a guess. */
-  static final double CHIEF_AT = 0.9;
+  /** Sent to the chief by itself only this sure that it is meant for it (its name came up first). */
+  static final double CHIEF_AT = 0.8;
 
   /** Between this and CHIEF_AT the 🧑‍💼 button is highlighted as a hint, nothing is sent. */
   static final double HINT_AT = 0.5;
@@ -52,19 +53,53 @@ final class Jev {
   static final String TEMPLATE_OPTION = "The speaker asks to use their saved template \"%s\".";
 
   static final String CHIEF =
-      "Does the speaker talk to their own chief of staff or AI agent and give it a task or a"
-          + " question, for example \"chief of staff, …\", \"hey chief, …\", \"tell my chief of"
-          + " staff to …\", \"ask my agent to …\", \"agent, …\" or \"let the agent handle"
-          + " this\", in any language (German: \"Chief of Staff, …\", \"frag meinen Agenten …\")?";
+      "The speaker's chief of staff, an AI agent, is called %1$s. Is the dictation, or part of"
+          + " it, meant for %1$s: does the speaker talk to %1$s or say that this should go to"
+          + " %1$s, for example \"%1$s, …\", \"hey %1$s, …\", \"this is for %1$s\", \"send"
+          + " this to %1$s\", \"I want to talk to %1$s about …\", \"%1$s should look at this as"
+          + " well\", in any language (German: \"%1$s, …\", \"das ist für %1$s\", \"schick das"
+          + " an %1$s\")?";
   static final String CHIEF_YES =
-      "The speaker addresses the chief of staff or their agent directly (\"chief, …\", \"hey"
-          + " agent, …\") or tells someone to pass the task to it (\"tell my chief of staff\","
-          + " \"send my agent …\"), and says what it should do or answer.";
+      "The speaker addresses %1$s directly or says the dictation should go to %1$s or be handled"
+          + " by %1$s: an instruction about where this dictation goes.";
   static final String CHIEF_NO =
-      "Nobody is addressed as the chief of staff or agent: a plain instruction or to-do (\"look"
-          + " into why the build failed\") is not an address, nor is a message to another person,"
-          + " nor a mention of a chief of staff or agent who is not being asked to do something"
-          + " (\"my chief of staff will send you the contract\", \"ask your agent\").";
+      "%1$s only comes up in what the dictation says: a message to someone else that mentions"
+          + " %1$s (\"I'll bring %1$s along\", \"%1$s and I met yesterday\", \"say hi to %1$s"
+          + " from me\"), a text to be written for %1$s as its reader (\"write a thank-you note to"
+          + " %1$s\"), or a note about %1$s, without asking for this to go to %1$s.";
+
+  /**
+   * Whether the chief's name comes up in the dictation: case-insensitive, as a whole word, also
+   * with a possessive ("Henry's", "Henrys") and as speech models mishear it ("Henri", "Henrie").
+   * Only then is Jev asked whether the dictation is meant for the chief. No name, no chief.
+   */
+  static boolean mentions(String dictation, String name) {
+    if (dictation == null || name == null || name.isBlank()) return false;
+    return namePattern(name).matcher(dictation).find();
+  }
+
+  static Pattern namePattern(String name) {
+    String n = name.trim().toLowerCase(Locale.ROOT);
+    java.util.Set<String> forms = new java.util.LinkedHashSet<>();
+    forms.add(n);
+    if (n.endsWith("y")) {
+      String stem = n.substring(0, n.length() - 1);
+      forms.add(stem + "i");
+      forms.add(stem + "ie");
+      forms.add(stem + "ey");
+    } else if (n.endsWith("ie")) forms.add(n.substring(0, n.length() - 2) + "y");
+    else if (n.endsWith("i")) forms.add(n.substring(0, n.length() - 1) + "y");
+    StringBuilder alt = new StringBuilder();
+    for (String f : forms) {
+      if (alt.length() > 0) alt.append('|');
+      // Spaces and hyphens in a name match either: "chief of staff", "chief-of-staff".
+      String[] parts = f.split("[\\s-]+");
+      for (int i = 0; i < parts.length; i++) alt.append(i > 0 ? "[\\s-]+" : "").append(Pattern.quote(parts[i]));
+    }
+    return Pattern.compile(
+        "(?<![\\p{L}\\p{N}])(?:" + alt + ")(?:'s|’s|s)?(?![\\p{L}\\p{N}])",
+        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+  }
 
   /** What Jev answered: a probability per noul (null when not asked), the template, the cost. */
   record Answers(Double refine, String template, Double chief, BigDecimal cost) {}
@@ -75,9 +110,9 @@ final class Jev {
   /**
    * The request: the dictation as state, and only the questions that matter now: refine when
    * Refine may start by itself, template when there are templates (a tapped Refine uses it too),
-   * chief when there is a chief to send to.
+   * chief when there is a chief to send to and its name (chiefName, else empty) comes up.
    */
-  static JSONObject body(String dictation, List<String> templates, boolean refine, boolean chief)
+  static JSONObject body(String dictation, List<String> templates, boolean refine, String chiefName)
       throws Exception {
     JSONObject questions = new JSONObject();
     if (refine) questions.put("refine", noul(REFINE, REFINE_YES, REFINE_NO));
@@ -88,7 +123,13 @@ final class Jev {
       questions.put(
           "template",
           new JSONObject().put("type", "choice").put("instructions", TEMPLATE).put("criteria", options));
-    if (chief) questions.put("chief", noul(CHIEF, CHIEF_YES, CHIEF_NO));
+    if (!chiefName.isEmpty())
+      questions.put(
+          "chief",
+          noul(
+              String.format(Locale.ROOT, CHIEF, chiefName),
+              String.format(Locale.ROOT, CHIEF_YES, chiefName),
+              String.format(Locale.ROOT, CHIEF_NO, chiefName)));
     return new JSONObject()
         .put("model", MODEL)
         .put("state", new JSONObject().put("dictation", dictation))
@@ -126,15 +167,18 @@ final class Jev {
 
   /**
    * autoRefine and autoChief are the two switches in Settings → Refine; chiefReady: bb is
-   * connected and a chief is set. The chief is never sent to below CHIEF_AT.
+   * connected and a chief is set; named: the chief's name comes up (mentions). Only then can it go
+   * to the chief, at CHIEF_AT; between HINT_AT and CHIEF_AT, or when Jev failed, 🧑‍💼 is only
+   * highlighted. What goes to the chief isn't refined by itself.
    */
-  static Decision decide(Answers a, boolean autoRefine, boolean autoChief, boolean chiefReady) {
-    if (a == null) return new Decision(false, "", false, false);
+  static Decision decide(Answers a, boolean autoRefine, boolean autoChief, boolean chiefReady, boolean named) {
+    boolean ask = chiefReady && named;
+    if (a == null) return new Decision(false, "", false, ask);
+    Double c = a.chief();
+    boolean chief = ask && autoChief && c != null && c >= CHIEF_AT;
+    boolean hint = ask && !chief && (c == null || c >= HINT_AT);
     boolean template = !a.template().isEmpty();
-    boolean refine = autoRefine && (template || (a.refine() != null && a.refine() >= REFINE_AT));
-    double c = a.chief() == null ? 0 : a.chief();
-    boolean chief = chiefReady && autoChief && c >= CHIEF_AT;
-    boolean hint = chiefReady && !chief && c >= HINT_AT;
+    boolean refine = !chief && autoRefine && (template || (a.refine() != null && a.refine() >= REFINE_AT));
     return new Decision(refine, a.template(), chief, hint);
   }
 
@@ -149,9 +193,9 @@ final class Jev {
   }
 
   /** Asks Jev; throws when it fails or takes longer than TIMEOUT_MS. */
-  static Answers ask(Context context, String dictation, List<String> templates, boolean refine, boolean chief)
+  static Answers ask(Context context, String dictation, List<String> templates, boolean refine, String chiefName)
       throws Exception {
-    JSONObject r = new OpenRouter(context).decide(body(dictation, templates, refine, chief), TIMEOUT_MS);
+    JSONObject r = new OpenRouter(context).decide(body(dictation, templates, refine, chiefName), TIMEOUT_MS);
     return parse(r, templates);
   }
 }

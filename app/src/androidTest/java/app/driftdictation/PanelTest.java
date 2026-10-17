@@ -76,6 +76,12 @@ public class PanelTest {
     return found;
   }
 
+  int notes() throws Exception {
+    try (HistoryStore h = new HistoryStore(context)) {
+      return h.all().size();
+    }
+  }
+
   HistoryEntry latest() throws Exception {
     try (HistoryStore h = new HistoryStore(context)) {
       return h.list(1, 0).get(0);
@@ -300,6 +306,21 @@ public class PanelTest {
   }
 
   @Test
+  public void cancelWhileRecordingThrowsItAwayAndCostsNothing() throws Exception {
+    TestServer.transcripts("should never be transcribed");
+    int notes = notes();
+    send(DictationService.RECORD);
+    waitFor("recording");
+    Thread.sleep(800);
+    find(By.desc("Cancel: nothing is transcribed or sent"), "✕").click();
+    until("the panel is gone", () -> !DictationService.bubbleVisible());
+    until("ready again", () -> DictationService.READY.equals(prefs.getString("state", "")) || DictationService.instance == null);
+    assertEquals(0, TestServer.requests().length());
+    assertFalse(DictationService.audio(context).exists());
+    assertEquals(notes, notes());
+  }
+
+  @Test
   public void closeHidesThePanelAndTheNoteStays() throws Exception {
     TestServer.transcripts("a note to keep");
     dictate();
@@ -315,13 +336,14 @@ public class PanelTest {
     bb.useCustom(TestServer.bbUrl(), "", LINKS);
     bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
     bb.setNtfyServer(TestServer.ntfyRoot());
+    prefs.edit().putString(Profile.CHIEF_NAME, "Henry").commit();
     return bb;
   }
 
   @Test
   public void theChiefsTextBackAppearsInThePanelAndInserts() throws Exception {
     BbBridge bb = chief();
-    TestServer.transcripts("chief of staff, write Tom that I'm running late");
+    TestServer.transcripts("Henry, write Tom that I'm running late");
     TestServer.decide(0.3, 0.96, "none");
     pad("");
     dictate();
@@ -360,6 +382,39 @@ public class PanelTest {
   }
 
   @Test
+  public void refineThenChiefWrapsWholeButtonsInsteadOfSqueezingThem() throws Exception {
+    // German, where Insert refined and Open chat ↗ are long: four buttons don't fit one row.
+    shell("cmd locale set-app-locales " + context.getPackageName() + " --locales de-DE");
+    try {
+      chief();
+      TestServer.transcripts("sag Tom, dass ich mich verspäte, und mach es höflich");
+      TestServer.decide(0.1, 0.2, "none");
+      TestServer.replies("Hallo Tom, ich verspäte mich etwas. Entschuldige!");
+      dictate();
+      find("✨ Verfeinern").click();
+      find("Verfeinertes einfügen");
+      find("🧑‍💼 Chief").click();
+      find("Chat öffnen ↗");
+      shot("7-refined-and-chief-de");
+      for (String label : new String[] {"Einfügen", "Verfeinertes einfügen", "Chat öffnen ↗"}) {
+        android.graphics.Rect r = find(label).getVisibleBounds();
+        assertTrue(label + " is on screen: " + r, r.left >= 0 && r.right <= device.getDisplayWidth());
+      }
+      boolean[] fits = {false};
+      InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> fits[0] = DictationService.panelFits());
+      assertTrue("every button shows its whole label", fits[0]);
+      // The chief got what was said, not the refined text, with its request ID.
+      List<String> snippets = TestServer.bbSnippets();
+      String tell = snippets.get(snippets.size() - 1);
+      assertTrue(tell, tell.contains("sag Tom, dass ich mich verspäte"));
+      assertFalse(tell, tell.contains("Entschuldige!"));
+      assertTrue(tell, tell.contains("[request: " + note().json.optString("chiefRequest") + "]"));
+    } finally {
+      shell("cmd locale set-app-locales " + context.getPackageName() + " --locales en-US");
+    }
+  }
+
+  @Test
   public void ntfysCopyButtonCopiesTheChiefsText() throws Exception {
     BbBridge bb = chief();
     TestServer.ntfyPaste(bb.ntfyTopic(), "abc234", "The text from the notification.");
@@ -384,6 +439,27 @@ public class PanelTest {
   }
 
   @Test
+  public void aVolumeKeyStartAfterAnotherDictationShowsTheRecordingPanel() throws Exception {
+    TestServer.transcripts("the first one", "the second one");
+    prefs.edit().putString(TalkAccessibility.VOLUME_KEY, TalkAccessibility.DOWN).putInt(TalkAccessibility.HOLD_MS, 300).commit();
+    pad("");
+    dictate();
+    find("Insert");
+    assertTrue(key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN));
+    Thread.sleep(500);
+    assertTrue(key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOLUME_DOWN));
+    waitFor("recording");
+    find(By.desc("Stop recording"), "the stop button");
+    find("✨ Refine");
+    shot("0b-volume-recording-again");
+    assertTrue(key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN));
+    Thread.sleep(100);
+    assertTrue(key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOLUME_DOWN));
+    waitFor("copied");
+    find("Insert");
+  }
+
+  @Test
   public void holdingTheVolumeKeyStartsAndStopsAShortPressIsTheVolume() throws Exception {
     TestServer.transcripts("started with the volume key");
     prefs.edit().putString(TalkAccessibility.VOLUME_KEY, TalkAccessibility.DOWN).putInt(TalkAccessibility.HOLD_MS, 300).commit();
@@ -402,6 +478,10 @@ public class PanelTest {
     Thread.sleep(500);
     assertTrue(key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOLUME_DOWN));
     waitFor("recording");
+    // The panel is there while recording, so Refine and Chief can be chosen while talking.
+    find(By.desc("Stop recording"), "the stop button");
+    find("✨ Refine");
+    shot("0-volume-recording");
     Thread.sleep(1000);
     assertTrue(key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN));
     Thread.sleep(500);

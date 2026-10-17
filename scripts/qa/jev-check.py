@@ -23,8 +23,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 URL = os.environ.get("OPENROUTER_DECISIONS", "https://openrouter.ai/api/alpha/decisions")
 JEV = os.path.join(ROOT, "app/src/main/java/app/driftdictation/Jev.java")
 TEMPLATES = ["Apartment application", "Weekly update", "Absage Termin"]
+NAME = "Henry"  # The chief's name in Settings → Refine.
+# Jev.mentions, roughly: the name, its possessive and its -i/-ie mishearings.
+NAMED = re.compile(r"(?<![^\W\d_])(?:henry|henri|henrie|henrey)(?:'s|’s|s)?(?![^\W\d_])", re.I)
 
-# (dictation, refine, template, chief). refine None: either answer is fine.
+# (dictation, refine, template, chief). refine None: either answer is fine. The chief is only
+# asked about when NAME comes up, as in the app; otherwise it counts as 0.
 LABELLED = [
     # Plain messages and notes: nothing happens by itself.
     ("hi Marco can you bring two more boxes of tulips tomorrow, the yellow ones, thanks", False, "", False),
@@ -65,34 +69,36 @@ LABELLED = [
     ("use the apartment application template but for the place on Lindenstraße", True, "Apartment application", False),
     ("Nutze meine Vorlage Absage Termin für den Zahnarzt am Dienstag", True, "Absage Termin", False),
     ("Fülle mein Weekly update aus: Panel fertig, zwei Abstürze behoben", True, "Weekly update", False),
-    # The chief, explicitly addressed: sent by itself.
-    ("chief of staff, book a table for four at Lisboa on Friday at eight", False, "", True),
-    ("tell my chief of staff to look into why the nightly build failed and fix it", False, "", True),
-    ("ask my agent to compare the three flight offers I pasted and pick the cheapest", None, "", True),
-    ("let the agent handle this: update the dependencies in the drift repo and open a PR", False, "", True),
-    ("my agent, draft a reply to Sarah saying I can't make it Thursday", None, "", True),
-    ("chief of staff, write a polite email to the landlord about the broken heating and send me the text", None, "", True),
-    ("hey agent, what's the weather tomorrow", False, "", True),
-    ("hey chief, check whether the invoice from Hetzner arrived and pay it", False, "", True),
-    ("chief of staff: what's on my calendar tomorrow?", False, "", True),
-    ("Chief of Staff, buch mir einen Tisch für vier Personen am Freitag um acht im Lisboa", False, "", True),
-    ("Sag meinem Chief of Staff, er soll herausfinden, warum der Nightly-Build fehlgeschlagen ist", False, "", True),
-    ("Frag meinen Agenten, welches der drei Angebote am günstigsten ist", False, "", True),
-    ("Lass den Agenten das erledigen: die Abhängigkeiten im Repo aktualisieren und einen PR aufmachen", False, "", True),
-    ("Chief of Staff, schreib eine kurze Absage an das Team für das Offsite und schick mir den Text", None, "", True),
-    ("Agent, bitte prüf, ob die Rechnung von Hetzner da ist", False, "", True),
-    ("Schick meinem Agenten: bitte den Flug nach Lissabon umbuchen", False, "", True),
-    # Tasks without an address, and mentions that aren't one: never sent.
+    # Meant for the chief, by name: sent by itself, not refined.
+    ("Henry, book a table for four at Lisboa on Friday at eight", False, "", True),
+    ("Okay, so I want to talk to Henry about why the nightly build failed, he should fix it", None, "", True),
+    ("this time it should go to Henry as well, compare the three flight offers I pasted", None, "", True),
+    ("this is for Henry: update the dependencies in the drift repo and open a PR", False, "", True),
+    ("send this to Henry, draft a reply to Sarah saying I can't make it Thursday", None, "", True),
+    ("hey Henry, what's the weather tomorrow", False, "", True),
+    ("Henry should look at this too: check whether the Hetzner invoice arrived and pay it", False, "", True),
+    ("Henry: what's on my calendar tomorrow?", False, "", True),
+    ("so um Henri, can you find out when the Lisbon flight leaves", False, "", True),
+    ("I want Henry to write a polite email to the landlord about the heating and send me the text", None, "", True),
+    ("Henry, buch mir einen Tisch für vier Personen am Freitag um acht im Lisboa", False, "", True),
+    ("Das ist für Henry: finde heraus, warum der Nightly-Build fehlgeschlagen ist", False, "", True),
+    ("Schick das an Henry, er soll die drei Angebote vergleichen", False, "", True),
+    ("Okay, das soll diesmal auch an Henry gehen, bitte den Flug nach Lissabon umbuchen", False, "", True),
+    ("Henry, schreib eine kurze Absage an das Team für das Offsite und schick mir den Text", None, "", True),
+    # Henry only mentioned in what's said: never sent.
+    ("hey Tom, Henry will send you the contract tomorrow", False, "", False),
+    ("hi Sarah, I'll bring Henry along to the party on Saturday", False, "", False),
+    ("Henry and I met the landlord yesterday, the flat looks good", False, "", False),
+    ("say hi to Henry from me and tell him the boxes are in the garage", False, "", False),
+    ("write a short thank-you note to Henry for the birthday present", True, "", False),
+    ("note to self: ask Henry's sister about the spare key", False, "", False),
+    ("Hallo Jana, Henry kommt morgen auch mit zum Essen", False, "", False),
+    ("Grüß Henry von mir, wir sehen uns Sonntag", False, "", False),
+    ("Henrys Geburtstag ist am Freitag, Geschenk besorgen", False, "", False),
+    # Tasks without the name: the chief isn't asked.
     ("look into why the nightly build failed and fix it", False, "", False),
     ("research the best open-source speech models right now and summarise them", None, "", False),
-    ("schedule a call with the design team next week", False, "", False),
-    ("hey Tom, my chief of staff will send you the contract tomorrow", False, "", False),
-    ("can you ask your agent to call me back about the offer", False, "", False),
-    ("I think the chief of staff role at the company should be redefined", False, "", False),
-    ("Finde heraus, warum der Nightly-Build fehlgeschlagen ist, und behebe es", False, "", False),
-    ("Mein Chief of Staff schickt dir morgen den Vertrag", False, "", False),
-    ("Recherchier, welche Spracherkennungsmodelle gerade am besten sind", None, "", False),
-    ("Ich überlege, ob wir einen Chief of Staff einstellen sollten", False, "", False),
+    ("chief of staff, book a table for four", False, "", False),
 ]
 
 
@@ -110,17 +116,18 @@ def java_number(name):
 
 
 def body(dictation):
-    """Jev.body(dictation, TEMPLATES, true, true), as the app builds it."""
-    noul = lambda q, yes, no: {"type": "noul", "instructions": java_constant(q),
-                               "criteria": {"true": java_constant(yes), "false": java_constant(no)}}
+    """Jev.body(dictation, TEMPLATES, true, NAME or ""), as the app builds it."""
+    named = lambda q: java_constant(q).replace("%1$s", NAME)
+    noul = lambda q, yes, no: {"type": "noul", "instructions": named(q),
+                               "criteria": {"true": named(yes), "false": named(no)}}
     options = {"none": java_constant("TEMPLATE_NONE")}
     for name in TEMPLATES:
         options[name] = java_constant("TEMPLATE_OPTION").replace("%s", name)
     return {"model": java_constant("MODEL"), "state": {"dictation": dictation},
-            "questions": {"refine": noul("REFINE", "REFINE_YES", "REFINE_NO"),
-                          "template": {"type": "choice", "instructions": java_constant("TEMPLATE"),
-                                       "criteria": options},
-                          "chief": noul("CHIEF", "CHIEF_YES", "CHIEF_NO")}}
+            "questions": dict({"refine": noul("REFINE", "REFINE_YES", "REFINE_NO"),
+                               "template": {"type": "choice", "instructions": java_constant("TEMPLATE"),
+                                            "criteria": options}},
+                              **({"chief": noul("CHIEF", "CHIEF_YES", "CHIEF_NO")} if NAMED.search(dictation) else {}))}
 
 
 def ask(dictation):
@@ -152,7 +159,7 @@ def main():
         seconds.append(s)
         choice = a.get("template", {}).get("choice", "none")
         rows.append((said, refine, template, chief, a["refine"]["noul"], "" if choice == "none" else choice,
-                     a["chief"]["noul"], ""))
+                     a["chief"]["noul"] if "chief" in a else 0.0, ""))
     ok = [r for r in rows if r[4] is not None]
     lines = ["# Jev check", "", "Model `%s`, %d dictations (%d failed), $%.6f in total, median %.2f s."
              % (java_constant("MODEL"), len(rows), failed, cost, sorted(seconds)[len(seconds) // 2]), ""]

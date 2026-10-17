@@ -100,6 +100,17 @@ final class Profile {
     return prefs.getBoolean(AUTO_CHIEF, true);
   }
 
+  static final String CHIEF_NAME = "chiefName";
+
+  /** The chief's name, the word that sends a dictation to it ("Henry, …"); empty: only 🧑‍💼. */
+  String chiefName() {
+    return prefs.getString(CHIEF_NAME, "").trim();
+  }
+
+  void setChiefName(String name) {
+    prefs.edit().putString(CHIEF_NAME, name.trim()).apply();
+  }
+
   /** Refine's instructions: the user's own, or the default. */
   String refinePrompt() {
     String value = prefs.getString("processingPrompt", "").trim();

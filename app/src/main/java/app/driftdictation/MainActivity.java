@@ -1303,7 +1303,7 @@ public final class MainActivity extends Activity {
       ui.add(card, ui.mono(id, 12, Ui.MUTED), 4);
       String link = bb.threadLink(id);
       if (!link.isEmpty())
-        ui.add(card, ui.button(tr("Open in bb ↗"), Ui.Kind.QUIET, v -> openUrl(link)), 4);
+        ui.add(card, ui.button(tr("Open in bb ↗"), Ui.Kind.QUIET, v -> openBb(link)), 4);
       if (!changingChief)
         ui.add(
             content,
@@ -1917,7 +1917,7 @@ public final class MainActivity extends Activity {
               Ui.Kind.PRIMARY,
               v -> {
                 if (link.isEmpty()) toast(tr("Set the bb web address for links in Settings → bb."));
-                else openUrl(link);
+                else openBb(link);
               }),
           16);
       ui.add(
@@ -2926,9 +2926,22 @@ public final class MainActivity extends Activity {
     card.addView(
         ui.row(
             tr("Send to chief when addressed"),
-            tr("Only when you clearly speak to your chief of staff or agent; otherwise tap 🧑‍💼"),
+            tr("When you speak to your chief by name, or say it's for them; otherwise tap 🧑‍💼"),
             chief,
             null));
+    card.addView(ui.divider());
+    ui.add(card, ui.strong(tr("Your chief's name"), 15), 12);
+    ui.add(
+        card,
+        ui.text(
+            tr("Say it to send a dictation to your chief: \"Ada, …\", \"this is for Ada\". Just mentioning the name in a message doesn't send it. Without a name, tap 🧑‍💼."),
+            13,
+            Ui.MUTED),
+        4);
+    EditText name = ui.input(profile.chiefName(), tr("For example: Ada"), false);
+    name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(40)});
+    name.addTextChangedListener(after(t -> profile.setChiefName(t)));
+    ui.add(card, name, 8);
     card.addView(ui.divider());
     card.addView(ui.row(tr("Decides"), "Jev · " + Jev.MODEL, null, null));
     card.addView(ui.divider());
@@ -3218,6 +3231,14 @@ public final class MainActivity extends Activity {
         new Intent(
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
             Uri.parse("package:" + getPackageName())));
+  }
+
+  private void openBb(String link) {
+    try {
+      startActivity(BbBridge.view(link));
+    } catch (Exception ex) {
+      toast(tr("No browser available"));
+    }
   }
 
   private void openUrl(String url) {

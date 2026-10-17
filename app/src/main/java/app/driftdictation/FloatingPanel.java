@@ -10,8 +10,8 @@ import android.view.*;
 import android.widget.*;
 
 /**
- * The floating panel over other apps. While recording: 📎, the timer with stop, and Refine and
- * Chief to choose ahead. Afterwards: ✕, Insert, Refine (then Insert refined), Chief (then Open chat
+ * The floating panel over other apps. While recording: 📎, the timer with stop, ✕ to cancel, and
+ * Refine and Chief to choose ahead. Afterwards: ✕, Insert, Refine (then Insert refined), Chief (then Open chat
  * ↗), and Insert from chief when the chief sent text back. Ready, error and empty show the small
  * icon instead. Its window never takes focus, so the cursor stays in the app you're in; drag it
  * anywhere.
@@ -84,9 +84,8 @@ final class FloatingPanel extends FrameLayout {
     bg.setColor(INK);
     bg.setCornerRadius(dp(24));
     bar.setBackground(bg);
-    LinearLayout row = new LinearLayout(context);
-    row.setGravity(Gravity.CENTER_VERTICAL);
-    bar.addView(row);
+    Row row = new Row(context, dp(6));
+    bar.addView(row, new LinearLayout.LayoutParams(-2, -2)); // Its own width: it sets the panel's.
     attach = pill(row, "📎", v -> actions.attach());
     attach.setContentDescription(tr("Add context to this dictation"));
     timer = pill(row, "", v -> actions.stop());
@@ -119,7 +118,7 @@ final class FloatingPanel extends FrameLayout {
     return Math.round(n * density);
   }
 
-  private TextView pill(LinearLayout row, String text, View.OnClickListener click) {
+  private TextView pill(ViewGroup row, String text, View.OnClickListener click) {
     TextView t = new TextView(getContext());
     t.setText(text);
     t.setTextSize(14);
@@ -131,9 +130,12 @@ final class FloatingPanel extends FrameLayout {
     t.setMinWidth(dp(40));
     t.setPadding(dp(12), 0, dp(12), 0);
     t.setOnClickListener(click);
-    LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-2, dp(40));
-    if (row.getChildCount() > 0) l.leftMargin = dp(6);
-    row.addView(t, l);
+    if (row instanceof Row) row.addView(t, new ViewGroup.LayoutParams(-2, dp(40)));
+    else {
+      LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-2, dp(40));
+      if (row.getChildCount() > 0) l.leftMargin = dp(6);
+      row.addView(t, l);
+    }
     style(t, PILL, 0);
     return t;
   }
@@ -149,6 +151,72 @@ final class FloatingPanel extends FrameLayout {
   /** Whether the small icon is shown (and taps on it count). */
   boolean small() {
     return small;
+  }
+
+  /** Whether every shown button has room for its whole label (for the device tests). */
+  boolean fits() {
+    for (TextView t : new TextView[] {attach, timer, close, insert, refine, chief, fromChief}) {
+      if (t.getVisibility() != VISIBLE || t.getLayout() == null) continue;
+      float need = t.getPaint().measureText(t.getText().toString()) + t.getPaddingLeft() + t.getPaddingRight();
+      if (t.getWidth() + 1 < need) return false;
+      int[] at = new int[2];
+      t.getLocationOnScreen(at);
+      if (at[0] < 0 || at[0] + t.getWidth() > getResources().getDisplayMetrics().widthPixels) return false;
+    }
+    return true;
+  }
+
+  /**
+   * The buttons in a row that wraps whole buttons to the next line when they don't fit, such as
+   * Insert refined and Open chat ↗ in a longer language.
+   */
+  private static final class Row extends ViewGroup {
+    private final int gap;
+
+    Row(Context context, int gap) {
+      super(context);
+      this.gap = gap;
+    }
+
+    @Override
+    protected void onMeasure(int widthSpec, int heightSpec) {
+      int max = MeasureSpec.getMode(widthSpec) == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize(widthSpec);
+      int x = 0, y = 0, line = 0, width = 0;
+      for (int i = 0; i < getChildCount(); i++) {
+        View c = getChildAt(i);
+        if (c.getVisibility() == GONE) continue;
+        c.measure(MeasureSpec.makeMeasureSpec(max, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(c.getLayoutParams().height, MeasureSpec.EXACTLY));
+        int w = c.getMeasuredWidth();
+        if (x > 0 && x + gap + w > max) {
+          y += line + gap;
+          x = 0;
+          line = 0;
+        }
+        x += (x > 0 ? gap : 0) + w;
+        line = Math.max(line, c.getMeasuredHeight());
+        width = Math.max(width, x);
+      }
+      setMeasuredDimension(resolveSize(width, widthSpec), resolveSize(y + line, heightSpec));
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+      int max = r - l, x = 0, y = 0, line = 0;
+      for (int i = 0; i < getChildCount(); i++) {
+        View c = getChildAt(i);
+        if (c.getVisibility() == GONE) continue;
+        int w = c.getMeasuredWidth(), h = c.getMeasuredHeight();
+        if (x > 0 && x + gap + w > max) {
+          y += line + gap;
+          x = 0;
+          line = 0;
+        }
+        if (x > 0) x += gap;
+        c.layout(x, y, x + w, y + h);
+        x += w;
+        line = Math.max(line, h);
+      }
+    }
   }
 
   void render(Model m) {
@@ -169,7 +237,8 @@ final class FloatingPanel extends FrameLayout {
     timer.setVisibility(recording ? VISIBLE : GONE);
     timer.setText("● " + AudioFiles.elapsed(m.elapsed()) + "  ■");
     style(timer, 0xffe5484d, 0);
-    close.setVisibility(recording ? GONE : VISIBLE);
+    close.setVisibility(working ? GONE : VISIBLE);
+    close.setContentDescription(recording ? tr("Cancel: nothing is transcribed or sent") : tr("Close"));
     insert.setVisibility(recording ? GONE : VISIBLE);
     insert.setText(working ? tr("Transcribing…") : tr("Insert"));
     insert.setEnabled(ready);
