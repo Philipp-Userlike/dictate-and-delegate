@@ -176,12 +176,12 @@ final class OpenRouter {
 
   private JSONObject call(String path, JSONObject body) throws Exception {
     String key = vault.get(KEY);
-    if (key.isBlank()) throw new IOException(tr("Add your OpenRouter key in Drift's Settings first."));
+    if (key.isBlank()) throw new IOException(tr("Add your OpenRouter key in Talk Router's Settings first."));
     for (int attempt = 0; ; attempt++) {
       try {
         return send("POST", path, body, key);
       } catch (Unauthorized ex) {
-        throw new IOException(tr("Your OpenRouter key isn't valid anymore. Change it in Drift's Settings."), ex);
+        throw new IOException(tr("Your OpenRouter key isn't valid anymore. Change it in Talk Router's Settings."), ex);
       } catch (Busy ex) {
         // Some hosts answer 429 in bursts; the same request usually passes a moment later.
         if (attempt >= 2) throw new IOException(busy(), ex);
@@ -208,7 +208,7 @@ final class OpenRouter {
       c.setInstanceFollowRedirects(false);
       c.setRequestMethod(method);
       c.setRequestProperty("Authorization", "Bearer " + key);
-      c.setRequestProperty("X-Title", "Drift"); // OpenRouter's app attribution
+      c.setRequestProperty("X-Title", "Talk Router"); // OpenRouter's app attribution
       if (body != null) {
         byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
         c.setDoOutput(true);
@@ -244,7 +244,7 @@ final class OpenRouter {
     }
   }
 
-  /** OpenRouter's own message is English and technical; Drift's users can read it. */
+  /** OpenRouter's own message is English and technical; Talk Router's users can read it. */
   static String error(int status, String message) {
     String detail = message.length() > 300 ? message.substring(0, 300) + "…" : message;
     return switch (status) {

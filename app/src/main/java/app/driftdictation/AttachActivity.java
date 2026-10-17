@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * The 📎 of the floating button and of Home: add context to the dictation being recorded (or the
  * next one): paste what you copied, or attach a file. A small window over the app you are in, so
- * Android lets Drift read the clipboard; recording keeps going behind it. The clipboard is read
+ * Android lets Talk Router read the clipboard; recording keeps going behind it. The clipboard is read
  * only when you tap Paste: Android announces every read.
  */
 public final class AttachActivity extends Activity {
@@ -41,7 +41,7 @@ public final class AttachActivity extends Activity {
     ui.add(
         root,
         ui.text(
-            tr("Give Drift what you're talking about, like the offer you're replying to. It's used when you ask for something."),
+            tr("Give Talk Router what you're talking about, like the offer you're replying to. It's used when you ask for something."),
             14,
             Ui.MUTED),
         6);
@@ -49,6 +49,14 @@ public final class AttachActivity extends Activity {
     paste.setMinHeight(ui.dp(52));
     ui.add(root, ui.button(tr("Attach a file"), Ui.Kind.OUTLINE, v -> pick()), 10);
     ui.add(root, ui.text(tr("Images, PDFs or text files, up to 10 MB."), 12, Ui.MUTED), 4);
+    if (BbBridge.ready(this))
+      ui.add(
+          root,
+          ui.text(
+              tr("Your chief of staff gets pasted text and text files; images and PDFs only go to the text model for now."),
+              12,
+              Ui.MUTED),
+          4);
     list = ui.add(root, ui.vertical(), 12);
     Button done = ui.button(tr("Done"), Ui.Kind.QUIET, v -> finish());
     ui.add(root, done, 8);

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Real models, real money (a few cents, on your own OpenRouter key): recordings through the
 default speech model, then each dictation through the request check and, when it asks for
-something, the text model, the way the app calls OpenRouter. Writes a Markdown report.
+something, the text model, the way the app calls OpenRouter. The check runs as for a user with a
+chief of staff in bb; dictations meant for the chief are only routed, not sent. Writes a Markdown
+report.
 
   set -a; . .tools/openrouter.env; set +a   # OPENROUTER_API_KEY
   scripts/qa/real-check.py out.md [rec1.wav rec2.wav …]
@@ -34,6 +36,21 @@ DICTATIONS = [  # What people say, as a speech model writes it down.
 ]
 
 
+# Dictations with the route the check should pick when a chief of staff is set up.
+ROUTED = [
+    ("tell my chief of staff to look into why the nightly build failed and fix it", "chief"),
+    ("chief of staff, book a table for four at Lisboa on Friday at eight", "chief"),
+    ("let the agent handle this, update the dependencies in the drift repo and open a PR", "chief"),
+    ("ask my agent to compare the three flight offers I pasted and pick the cheapest", "chief"),
+    ("research what the best open-source speech models are right now and summarise them for me",
+     "chief"),
+    ("research shows that people sleep better in cold rooms, so turn the heating down tonight",
+     "transcript"),
+    ("hi Tom, my chief of staff will send you the contract tomorrow", "transcript"),
+    ("write an email to my landlord that the heating is broken, polite", "text"),
+    ("can you ask your agent to call me back about the offer", "transcript"),
+]
+
 TEMPLATE = ("Apartment application", "Dear Sir or Madam,\n\nI am very interested in the apartment"
             " at [address]. I am 34, work as a software developer with a permanent contract and a net"
             " income of 4,200 euros a month. I don't smoke and have no pets.\n\nI would be glad to"
@@ -59,7 +76,7 @@ def java_string(name, file):
 def post(path, body):
     req = urllib.request.Request(OPENROUTER + path, json.dumps(body).encode(), {
         "Authorization": "Bearer " + os.environ["OPENROUTER_API_KEY"],
-        "Content-Type": "application/json", "X-Title": "Drift"})
+        "Content-Type": "application/json", "X-Title": "Talk Router"})
     started = time.time()
     try:
         r = json.loads(urllib.request.urlopen(req, timeout=120).read())
@@ -90,7 +107,8 @@ def main():
         sys.exit(__doc__)
     out, recordings = sys.argv[1], sys.argv[2:]
     router, text_model = java_string("MODEL", "Router.java"), java_string("MODEL", "TextModel.java")
-    check_prompt = java_constant("PROMPT", "Router.java") + "\n\nThe user's templates: " + TEMPLATE[0]
+    check_prompt = (java_constant("PROMPT", "Router.java").replace("%s", java_constant("CHIEF_ROUTE", "Router.java"))
+                    + "\n\nThe user's templates: " + TEMPLATE[0])
     prompt = java_constant("DEFAULT_PROMPT")
     template = ("\n\n" + java_constant("INSTRUCTIONS", "Templates.java")
                 + "\n\n<template name=\"%s\">\n%s\n</template>" % TEMPLATE)
@@ -107,21 +125,30 @@ def main():
                   "Transcript (%.1f s, %s): %s" % (seconds, money(cost), r.get("text", r)), ""]
         if "text" in r:
             inputs.append(r["text"])
-    inputs += DICTATIONS + TEMPLATE_DICTATIONS
+    expected = dict(ROUTED)
+    inputs += DICTATIONS + TEMPLATE_DICTATIONS + [d for d, _ in ROUTED]
     lines += ["| Dictation | Check | Result |", "| --- | --- | --- |"]
+    right = 0
     for said in inputs:
         answer, seconds, cost = chat(router, check_prompt, said, 200, fast=True)
         total += cost or 0
         check = "%s (%.1f s, %s)" % (answer, seconds, money(cost))
+        if said in expected:
+            ok = '"%s"' % expected[said] in answer
+            right += ok
+            check += " %s expected %s" % ("✓" if ok else "✗", expected[said])
         result = said
-        if '"text"' in answer:
+        if '"chief"' in answer:
+            result = "→ chief of staff (not sent by this check)"
+        elif '"text"' in answer:
             system = prompt + (template if TEMPLATE[0].lower() in answer.lower() else "")
             result, seconds, cost = chat(text_model, system, said, 4096)
             total += cost or 0
             result = "%s (%.1f s, %s)" % (result, seconds, money(cost))
         cells = [c.replace("\n", "<br>").replace("|", "\\|") for c in (said, check, result)]
         lines.append("| %s | %s | %s |" % tuple(cells))
-    lines += ["", "Reported cost in total: $%.6f." % total]
+    lines += ["", "Chief cues: %d of %d routed as expected." % (right, len(ROUTED)),
+              "", "Reported cost in total: $%.6f." % total]
     open(out, "w").write("\n".join(lines) + "\n")
     print(out)
 

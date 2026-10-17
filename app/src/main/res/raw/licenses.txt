@@ -1,4 +1,4 @@
 Open-source notices
-Drift uses no third-party libraries in the app. It is built on the Android platform (Android Open Source Project, Apache License 2.0).
+Talk Router uses no third-party libraries in the app. It is built on the Android platform (Android Open Source Project, Apache License 2.0).
 
 Speech and text models are provided by third parties through OpenRouter under their own terms.

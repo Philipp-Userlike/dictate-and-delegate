@@ -38,7 +38,7 @@ final class ModelRanking {
     return price <= .0005 ? 1 : price <= .002 ? 2 : price <= .004 ? 3 : price <= .008 ? 4 : 5;
   }
 
-  /** Language coverage as the catalog states it, e.g. "🌐 60 languages"; Drift never filters by it. */
+  /** Language coverage as the catalog states it, e.g. "🌐 60 languages"; Talk Router never filters by it. */
   static String languages(JSONObject m) {
     String value = m.optString("languages").trim();
     return value.isEmpty() ? "—" : value;

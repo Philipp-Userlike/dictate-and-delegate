@@ -78,6 +78,57 @@ final class TestServer {
     }
   }
 
+  // ------------------------------------------------------------------ the fake bb MCP server
+
+  /** The fake bb (scripts/fakes/fake_bb_mcp.py) listens on the OpenRouter fake's port + 1. */
+  static String bbRoot() {
+    java.net.URI u = java.net.URI.create(root());
+    return u.getScheme() + "://" + u.getHost() + ":" + (u.getPort() + 1);
+  }
+
+  /** The custom MCP address the app uses for the fake. */
+  static String bbUrl() {
+    return bbRoot() + "/mcp";
+  }
+
+  /** The chief id the fake hands out when a thread is spawned. */
+  static final String CHIEF = "thr_fakechief";
+
+  static void bbReset() throws Exception {
+    postTo(bbRoot(), "/test/reset", new JSONObject());
+  }
+
+  /** Queues one failure for the next "spawn", "tell", "show" (or "any") call: "tool", "http503"… */
+  static void bbFail(String kind, String error) throws Exception {
+    postTo(bbRoot(), "/test/fail", new JSONObject().put("kind", kind).put("error", error));
+  }
+
+  /** The fake requires this bearer token from now on ("" turns that off). */
+  static void bbToken(String token) throws Exception {
+    postTo(bbRoot(), "/test/config", new JSONObject().put("token", token));
+  }
+
+  /** MCP requests the fake received since the last reset: {"method", "tool", "code", "auth"}. */
+  static JSONArray bbRequests() throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(bbRoot() + "/test/requests").openConnection();
+    try (InputStream in = c.getInputStream()) {
+      return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8))
+          .getJSONArray("requests");
+    } finally {
+      c.disconnect();
+    }
+  }
+
+  /** The snippets sent with the run tool, oldest first. */
+  static java.util.List<String> bbSnippets() throws Exception {
+    java.util.List<String> out = new java.util.ArrayList<>();
+    JSONArray all = bbRequests();
+    for (int i = 0; i < all.length(); i++)
+      if (all.getJSONObject(i).optString("tool").equals("run"))
+        out.add(all.getJSONObject(i).getString("code"));
+    return out;
+  }
+
   private static JSONArray answers(String... texts) throws JSONException {
     JSONArray list = new JSONArray();
     for (String t : texts)
@@ -86,7 +137,11 @@ final class TestServer {
   }
 
   private static void post(String path, JSONObject body) throws Exception {
-    HttpURLConnection c = (HttpURLConnection) new URL(root() + path).openConnection();
+    postTo(root(), path, body);
+  }
+
+  private static void postTo(String root, String path, JSONObject body) throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(root + path).openConnection();
     try {
       byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
       c.setRequestMethod("POST");

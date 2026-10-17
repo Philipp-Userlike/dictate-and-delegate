@@ -14,8 +14,7 @@ import org.json.JSONObject;
 
 /**
  * A small client for MCP servers over Streamable HTTP: initialize, list tools, call a tool. An
- * optional token is sent as a bearer header. Not used at the moment: in-app agents were removed,
- * and the bridge to bb will build on it.
+ * optional token is sent as a bearer header. BbBridge uses it to talk to bb's MCP server.
  */
 final class Mcp {
   static final String PROTOCOL = "2025-06-18";
@@ -25,10 +24,20 @@ final class Mcp {
 
   record Tool(String name, String description, JSONObject schema) {}
 
-  /** Drift's own message about a server; anything else from the network gets one. */
+  /**
+   * Talk Router's own message about a server; anything else from the network gets one. status is the
+   * HTTP status when the server answered with an error, otherwise 0.
+   */
   static final class McpException extends IOException {
+    final int status;
+
     McpException(String message) {
+      this(message, 0);
+    }
+
+    McpException(String message, int status) {
       super(message);
+      this.status = status;
     }
   }
 
@@ -50,7 +59,7 @@ final class Mcp {
               .put("capabilities", new JSONObject())
               .put(
                   "clientInfo",
-                  new JSONObject().put("name", "Drift").put("version", BuildConfig.VERSION_NAME)));
+                  new JSONObject().put("name", "Talk Router").put("version", BuildConfig.VERSION_NAME)));
       notify("notifications/initialized");
     }
 
@@ -77,10 +86,19 @@ final class Mcp {
       return out;
     }
 
-    /** The tool's text result; errors come back as text too, so the model can react to them. */
+    /** The tool's text result; errors come back as text too, prefixed with "Error: ". */
     String call(String tool, JSONObject arguments) throws Exception {
-      JSONObject result =
-          request("tools/call", new JSONObject().put("name", tool).put("arguments", arguments));
+      JSONObject result = callResult(tool, arguments);
+      return (result.optBoolean("isError") ? "Error: " : "") + text(result);
+    }
+
+    /** The raw result of tools/call: {"content": [...], "isError": …}. */
+    JSONObject callResult(String tool, JSONObject arguments) throws Exception {
+      return request("tools/call", new JSONObject().put("name", tool).put("arguments", arguments));
+    }
+
+    /** A tool result's content as text, parts joined by line breaks. */
+    static String text(JSONObject result) throws Exception {
       StringBuilder s = new StringBuilder();
       JSONArray content = result.optJSONArray("content");
       for (int i = 0; content != null && i < content.length(); i++) {
@@ -97,7 +115,7 @@ final class Mcp {
       }
       if (s.length() == 0 && result.has("structuredContent"))
         s.append(result.get("structuredContent").toString());
-      return (result.optBoolean("isError") ? "Error: " : "") + s;
+      return s.toString();
     }
 
     private void notify(String method) throws Exception {
@@ -120,10 +138,24 @@ final class Mcp {
       return reply.optJSONObject("result") == null ? new JSONObject() : reply.getJSONObject("result");
     }
 
-    /** One JSON-RPC message; the answer comes as JSON or as an event stream. */
+    /**
+     * One JSON-RPC message; the answer comes as JSON or as an event stream. A connection that
+     * broke off (often a kept-alive one the server had closed) is tried once more, except for
+     * tools/call: that one may have run already.
+     */
     private JSONObject post(JSONObject message) throws Exception {
       try {
-        return send(message);
+        try {
+          return send(message);
+        } catch (McpException ex) {
+          throw ex;
+        } catch (IOException ex) {
+          if (message.optString("method").equals("tools/call")
+              || ex instanceof java.net.ConnectException
+              || ex instanceof java.net.SocketTimeoutException
+              || ex instanceof java.net.UnknownHostException) throw ex;
+          return send(message);
+        }
       } catch (McpException ex) {
         throw ex;
       } catch (IOException ex) {
@@ -143,7 +175,8 @@ final class Mcp {
       HttpURLConnection c = (HttpURLConnection) new URL(server.url()).openConnection();
       try {
         c.setConnectTimeout(10_000);
-        c.setReadTimeout(90_000);
+        c.setReadTimeout(60_000);
+        c.setInstanceFollowRedirects(false);
         c.setRequestMethod("POST");
         c.setRequestProperty("Content-Type", "application/json");
         c.setRequestProperty("Accept", "application/json, text/event-stream");
@@ -161,8 +194,12 @@ final class Mcp {
         String id = c.getHeaderField("Mcp-Session-Id");
         if (id != null && !id.isBlank()) session = id;
         if (status == 202 || status == 204) return null;
+        if (status >= 300 && status < 400)
+          throw new McpException(
+              tr("%1$s answered with a redirect (HTTP %2$d). Check the address.", server.name(), status),
+              status);
         if (status >= 400)
-          throw new McpException(tr("%1$s answered with HTTP %2$d.", server.name(), status));
+          throw new McpException(tr("%1$s answered with HTTP %2$d.", server.name(), status), status);
         String type = String.valueOf(c.getContentType());
         String body = read(c.getInputStream());
         if (type.contains("text/event-stream")) return fromStream(body, message.opt("id"));
@@ -172,11 +209,14 @@ final class Mcp {
       }
     }
 
-    /** The event that answers this request; servers may send notifications before it. */
-    private static JSONObject fromStream(String stream, Object id) throws Exception {
+    /**
+     * The event that answers this request; servers may send notifications before it. Events end
+     * with a blank line (split keeps the trailing empty lines with limit -1).
+     */
+    static JSONObject fromStream(String stream, Object id) throws Exception {
       JSONObject last = null;
       StringBuilder data = new StringBuilder();
-      for (String line : (stream + "\n\n").split("\n")) {
+      for (String line : (stream.replace("\r\n", "\n") + "\n\n").split("\n", -1)) {
         if (line.startsWith("data:")) data.append(line.substring(5).trim());
         else if (line.isBlank() && data.length() > 0) {
           JSONObject event = new JSONObject(data.toString());

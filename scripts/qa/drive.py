@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Drives Drift on the emulator for a QA agent. Every command saves a numbered screenshot.
+"""Drives Talk Router on the emulator for a QA agent. Every command saves a numbered screenshot.
 
   drive.py <command> [arguments] [--note "what you are doing and why"]
 
 Commands:
-  launch                 open Drift (as a user would from the launcher)
+  launch                 open Talk Router (as a user would from the launcher)
   screen                 just look: screenshot plus the list of what is on screen
   tap TEXT | tap #N | tap X,Y
                          tap the element with this text or description (exact, else contains),
@@ -14,14 +14,16 @@ Commands:
   key BACK|HOME|ENTER|PASTE|RECENTS
   swipe up|down          scroll the page (up shows what is further down)
   swipe left|right       next / previous page, e.g. of Quick Settings
-  quicksettings          pull down Quick Settings (where the Drift tile is once added)
+  quicksettings          pull down Quick Settings (where the Talk Router tile is once added)
   collapse               close Quick Settings / the notification shade
-  bubble                 tap Drift's floating button (start, or stop while recording)
+  bubble                 tap Talk Router's floating button (start, or stop while recording)
   pad                    open "Notes test field", another app with a text box to paste into
   say SAID [PROCESSED]   decide what the next recording "contains": the speech model will return
-                         SAID; with PROCESSED, Drift treats it as a request and returns PROCESSED,
+                         SAID; with PROCESSED, Talk Router treats it as a request and returns PROCESSED,
                          otherwise as a plain transcript
-  state                  Drift's dictation state, e.g. recording, uploading, copied
+  task SAID              the next recording transcribes to SAID and the request check hands it to
+                         the chief of staff in bb (needs bb connected and a chief set)
+  state                  Talk Router's dictation state, e.g. recording, uploading, copied
   wait SECONDS
   note TEXT              write down an observation (with a screenshot), no action
 
@@ -61,7 +63,7 @@ def density():
 
 
 def prefs():
-    """Drift's settings, readable because the debug build is debuggable."""
+    """Talk Router's settings, readable because the debug build is debuggable."""
     xml = adb("exec-out", "run-as", PACKAGE, "cat", "shared_prefs/settings.xml")
     values = {}
     try:
@@ -148,7 +150,7 @@ def record(command, note, settle=1.2):
     with open(os.path.join(RUN, "steps.jsonl"), "a") as f:
         f.write(json.dumps(step, ensure_ascii=False) + "\n")
     print("Step %d · screenshot %s" % (n, os.path.join(RUN, shot)))
-    print("Drift state: %s %s" % (p.get("state", "-"), ("· " + p["detail"]) if p.get("detail") else ""))
+    print("Talk Router state: %s %s" % (p.get("state", "-"), ("· " + p["detail"]) if p.get("detail") else ""))
     print("On screen (tap by text or #N):")
     for i, e in enumerate(items):
         extra = (" [" + ", ".join(e["flags"]) + "]") if e["flags"] else ""
@@ -161,6 +163,11 @@ def queue(body):
     req = urllib.request.Request(SERVER + "/test/script", json.dumps(body).encode(),
                                  {"Content-Type": "application/json"})
     urllib.request.urlopen(req, timeout=10).read()
+
+
+def script_task(said):
+    queue({"transcribe": [{"text": said}],
+           "route": [{"text": '{"route": "chief", "template": ""}'}]})
 
 
 def script_fake(said, processed):
@@ -240,9 +247,15 @@ def main():
         print("Queued: the next recording transcribes to %r%s." % (
             rest[0], "" if len(rest) < 2 else " and processes to %r" % rest[1]))
         return
+    if cmd == "task":
+        if not rest:
+            sys.exit('task needs what the recording contains, e.g. task "tell my chief of staff to…"')
+        script_task(rest[0])
+        print("Queued: the next recording transcribes to %r and goes to the chief of staff." % rest[0])
+        return
     if cmd == "state":
         p = prefs()
-        print("Drift state: %s · %s" % (p.get("state", "-"), p.get("detail", "")))
+        print("Talk Router state: %s · %s" % (p.get("state", "-"), p.get("detail", "")))
         return
     if cmd == "wait":
         time.sleep(float(rest[0]) if rest else 2)

@@ -178,7 +178,11 @@ public class MvpFlowTest {
     box.click();
     device.pressKeyCode(android.view.KeyEvent.KEYCODE_PASTE);
     find("Hi Jana, see you at ten.");
-    tap("Start using Drift");
+    tap("Continue");
+    // bb is optional: "Later" ends setup, and the app works as a dictation app.
+    find("Connect bb");
+    find("bb Connect");
+    tap("Later");
     find("Start dictating");
     assertTrue(prefs.getBoolean("onboarded", false));
     find("Speech model");
@@ -275,7 +279,7 @@ public class MvpFlowTest {
     Thread.sleep(500);
     launch();
     find("Hi Jana, see you at ten.").click();
-    find("Drift's version");
+    find("Talk Router's version");
     find("What you said").click();
     find("um hi Jana see you at ten");
     tap("Copy");
@@ -303,7 +307,7 @@ public class MvpFlowTest {
         device.wait(
             Until.findObject(By.textStartsWith("Text · " + TextModel.NAME + " · ")), 5000));
     tap("Hi Jana, see you at ten.");
-    find("Drift's version");
+    find("Talk Router's version");
   }
 
   @Test

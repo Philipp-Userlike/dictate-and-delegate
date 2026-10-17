@@ -140,7 +140,7 @@ public class DeviceFlowTest {
         context.getSystemService(android.app.NotificationManager.class).areNotificationsEnabled());
     device.openNotification();
     device.waitForIdle();
-    assertFalse(device.hasObject(By.text("Drift is running")));
+    assertFalse(device.hasObject(By.text("Talk Router is running")));
     assertFalse(device.hasObject(By.text("Ready to paste")));
     device.pressBack();
   }

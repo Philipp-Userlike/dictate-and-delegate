@@ -46,6 +46,10 @@ public final class MainActivity extends Activity {
   private boolean applying;
   /** The open note shows what you said instead of its tidied-up text; only while you look. */
   private boolean showOriginal;
+  /** Settings → bb: the mode being looked at, a result to show once, and "change the chief". */
+  private String bbModeShown = "";
+  private String bbNotice = "";
+  private boolean bbNoticeOk, changingChief;
   private final Runnable refresh =
       new Runnable() {
         public void run() {
@@ -119,9 +123,23 @@ public final class MainActivity extends Activity {
     openFromIntent(intent);
   }
 
-  /** The tile or the floating button open Drift on a page, e.g. the key when there is none. */
+  /** The tile or the floating button open Talk Router on a page, e.g. the key when there is none. */
   private void openFromIntent(Intent intent) {
     String target = intent == null ? null : intent.getStringExtra("open");
+    if ("bb".equals(target)) {
+      // Back from signing in to bb Connect in the browser (BbSignInActivity).
+      bbNotice = String.valueOf(intent.getStringExtra("bbResult"));
+      bbNoticeOk = intent.getBooleanExtra("bbOk", false);
+      bbModeShown = BbBridge.CONNECT;
+      intent.removeExtra("open");
+      if (prefs.getBoolean("onboarded", false)) {
+        stack.clear();
+        stack.push("home");
+        stack.push("settings");
+        show("bb");
+      } else show("bb1");
+      return;
+    }
     if (target != null && prefs.getBoolean("onboarded", false)) {
       // From the tile: recording isn't possible right now, e.g. without a key.
       String message = intent.getStringExtra("message");
@@ -259,6 +277,12 @@ public final class MainActivity extends Activity {
       case "how1" -> howPage();
       case "start1" -> startPage();
       case "try1" -> tryPage();
+      case "bb1" -> bbPage(true);
+      case "chief1" -> chiefPage(true);
+      case "ntfy1" -> ntfyPage(true);
+      case "bb" -> bbPage(false);
+      case "chief" -> chiefPage(false);
+      case "ntfy" -> ntfyPage(false);
       case "setup" -> setupPage();
       case "notes" -> notesPage();
       case "note" -> notePage();
@@ -293,8 +317,9 @@ public final class MainActivity extends Activity {
     if (subtitle != null) ui.add(content, ui.text(subtitle, 15, Ui.MUTED), 8);
   }
 
-  /** Setup pages in order, after the welcome page. */
-  private static final List<String> SETUP = List.of("key1", "allow1", "how1", "start1", "try1");
+  /** Setup pages in order, after the welcome page; the last three (bb) are optional. */
+  private static final List<String> SETUP =
+      List.of("key1", "allow1", "how1", "start1", "try1", "bb1", "chief1", "ntfy1");
 
   /** Progress dots for the setup page shown now, and an optional Skip to the next page. */
   private void steps(boolean skippable) {
@@ -367,14 +392,14 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("Start Drift, then keep using any app: read, look things up, switch. When you stop, your words are written down and copied, ready to paste. Ask for more, like “make this an email” or “reply to this offer”, and you get that text instead."),
+            tr("Start Talk Router, then keep using any app: read, look things up, switch. When you stop, your words are written down and copied, ready to paste. Ask for more, like “make this an email” or “reply to this offer”, and you get that text instead."),
             16,
             Ui.MUTED),
         12);
     spacer();
     ui.add(content, ui.button(tr("Get started"), Ui.Kind.PRIMARY, v -> open(SETUP.get(0))), 24);
     TextView note =
-        ui.text(tr("Open source. Your own OpenRouter key, no Drift server in between."), 13, Ui.MUTED);
+        ui.text(tr("Open source. Your own OpenRouter key, no Talk Router server in between."), 13, Ui.MUTED);
     note.setGravity(Gravity.CENTER);
     ui.add(content, note, 12);
   }
@@ -387,12 +412,12 @@ public final class MainActivity extends Activity {
       heading(
           null,
           tr("Your OpenRouter key"),
-          tr("Drift calls the speech and text models through OpenRouter, with your own key. You pay OpenRouter for what you use; Drift has no server and takes no cut."));
+          tr("Talk Router calls the speech and text models through OpenRouter, with your own key. You pay OpenRouter for what you use; Talk Router has no server and takes no cut."));
     } else
       heading(
           tr("Settings"),
           tr("OpenRouter key"),
-          tr("Drift calls the speech and text models through OpenRouter with this key."));
+          tr("Talk Router calls the speech and text models through OpenRouter with this key."));
     if (saved)
       ui.add(content, ui.text(tr("✓  A key is saved on this phone, encrypted."), 14, Ui.TEAL), 16);
     EditText input = ui.input("", saved ? tr("Paste a new key to replace it") : "sk-or-v1-…", false);
@@ -438,7 +463,7 @@ public final class MainActivity extends Activity {
               v ->
                   new AlertDialog.Builder(this)
                       .setTitle(tr("Remove your OpenRouter key?"))
-                      .setMessage(tr("Drift can't dictate until you add a key again."))
+                      .setMessage(tr("Talk Router can't dictate until you add a key again."))
                       .setPositiveButton(
                           tr("Remove"),
                           (d, w) -> {
@@ -529,7 +554,7 @@ public final class MainActivity extends Activity {
     ui.add(
         data,
         ui.text(
-            tr("• Your notes, audio, words and templates stay on this phone.\n• To write down what you said, your recording goes straight to OpenRouter with your key, and on to the speech model's provider. The text goes the same way to a fast model that checks whether you asked for something. If you did, it goes to the text model, with what you told Drift about you, your words, the template you asked for and what you attached.\n• Drift has no server and collects nothing. OpenRouter and the model providers handle the data under their own policies."),
+            tr("• Your notes, audio, words and templates stay on this phone.\n• To write down what you said, your recording goes straight to OpenRouter with your key, and on to the speech model's provider. The text goes the same way to a fast model that checks whether you asked for something. If you did, it goes to the text model, with what you told Talk Router about you, your words, the template you asked for and what you attached.\n• If you connect bb, a task you hand to your chief of staff goes to your bb, with the text you pasted.\n• Talk Router has no server and collects nothing. OpenRouter and the model providers handle the data under their own policies."),
             14,
             Ui.BODY),
         6);
@@ -541,7 +566,7 @@ public final class MainActivity extends Activity {
     heading(
         tr("Settings"),
         tr("About you"),
-        tr("Helps Drift spell names right and process each note for its purpose."));
+        tr("Helps Talk Router spell names right and process each note for its purpose."));
     ui.add(content, ui.strong(tr("What you usually dictate"), 15), 20);
     Ui.Flow topics = ui.add(content, ui.flow(), 12);
     for (String t : Profile.TOPICS) {
@@ -556,11 +581,11 @@ public final class MainActivity extends Activity {
           });
       topics.addView(chip);
     }
-    ui.add(content, ui.strong(tr("Anything else Drift should know?"), 15), 22);
+    ui.add(content, ui.strong(tr("Anything else Talk Router should know?"), 15), 22);
     EditText about =
         ui.input(
             profile.about(),
-            tr("For example: I build an app called Drift. Jana is a colleague. Write numbers as digits."),
+            tr("For example: I build an app called Talk Router. Jana is a colleague. Write numbers as digits."),
             true);
     about.setFilters(new InputFilter[] {new InputFilter.LengthFilter(2000)});
     about.addTextChangedListener(after(s -> profile.setAbout(s)));
@@ -629,13 +654,13 @@ public final class MainActivity extends Activity {
     return tr("Dear Mr. Weber,\n\nI would like to let you know that the bathroom tap has been dripping since Monday.");
   }
 
-  /** What Drift makes of a dictation: the transcript, or the text asked for. */
+  /** What Talk Router makes of a dictation: the transcript, or the text asked for. */
   private void howPage() {
     steps(false);
     heading(
         null,
         tr("Transcript or text"),
-        tr("Drift writes down what you say and copies it, ready to paste. Ask for more in the same breath, like “make this an email”, “reply to this offer” or “use my apartment application”: a quick check notices, and %1$s writes that text instead.", TextModel.NAME));
+        tr("Talk Router writes down what you say and copies it, ready to paste. Ask for more in the same breath, like “make this an email”, “reply to this offer” or “use my apartment application”: a quick check notices, and %1$s writes that text instead.", TextModel.NAME));
     example();
     LinearLayout more = ui.add(content, ui.card(Ui.BG, Ui.LINE), 16);
     more.addView(ui.strong(tr("📎 Context"), 15));
@@ -670,20 +695,20 @@ public final class MainActivity extends Activity {
     heading(
         null,
         tr("Start from any app"),
-        tr("You don't need to open Drift. Start and stop wherever you are."));
+        tr("You don't need to open Talk Router. Start and stop wherever you are."));
     LinearLayout tile = ui.add(content, ui.card(Ui.BG, Ui.LINE), 16);
     tile.addView(ui.strong(tr("1 · Quick Settings tile"), 16));
     ui.add(
         tile,
         ui.text(
-            tr("Swipe down from the top of the screen and tap Drift to start, tap it again to stop. Android adds new tiles at the end: swipe left to the last page, or tap the pencil and drag Drift to the front."),
+            tr("Swipe down from the top of the screen and tap Talk Router to start, tap it again to stop. Android adds new tiles at the end: swipe left to the last page, or tap the pencil and drag Talk Router to the front."),
             14,
             Ui.MUTED),
         4);
     if (prefs.getBoolean("tileAdded", false))
       ui.add(tile, ui.text(tr("✓  Added"), 14, Ui.TEAL), 8);
     else
-      ui.add(tile, ui.button(tr("Add Drift to Quick Settings"), Ui.Kind.PRIMARY, v -> addTile()), 10);
+      ui.add(tile, ui.button(tr("Add Talk Router to Quick Settings"), Ui.Kind.PRIMARY, v -> addTile()), 10);
     overlayCard(tr("2 · Floating stop button"));
     continueButton(tr("Continue"));
   }
@@ -694,7 +719,7 @@ public final class MainActivity extends Activity {
     ui.add(
         overlay,
         ui.text(
-            tr("While you record, a small red button stays on top of other apps. Tap it to stop. When your text is ready, it says “Ready to paste”. Android then shows a list of apps: tap Drift Dictation, switch it on, and come back."),
+            tr("While you record, a small red button stays on top of other apps. Tap it to stop. When your text is ready, it says “Ready to paste”. Android then shows a list of apps: tap Talk Router, switch it on, and come back."),
             14,
             Ui.MUTED),
         4);
@@ -729,7 +754,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Drift writes it down and copies it.\n3. When you see “Ready to paste”, touch and hold the box below, then tap Paste."),
+            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Talk Router writes it down and copies it.\n3. When you see “Ready to paste”, touch and hold the box below, then tap Paste."),
             15,
             Ui.BODY),
         12);
@@ -746,13 +771,13 @@ public final class MainActivity extends Activity {
         ui.add(
             content,
             ui.text(
-                tr("That's it. It works the same in any app: start, talk, stop, paste. Your notes are saved in Drift, where you can also switch back to exactly what you said."),
+                tr("That's it. It works the same in any app: start, talk, stop, paste. Your notes are saved in Talk Router, where you can also switch back to exactly what you said."),
                 15,
                 Ui.TEAL),
             12);
     done.setVisibility(View.GONE);
-    Button finish = ui.button(tr("Start using Drift"), Ui.Kind.PRIMARY, v -> finishSetup());
-    Button skip = ui.button(tr("Skip and finish"), Ui.Kind.QUIET, v -> finishSetup());
+    Button finish = ui.button(tr("Continue"), Ui.Kind.PRIMARY, v -> nextSetupPage());
+    Button skip = ui.button(tr("Skip"), Ui.Kind.QUIET, v -> nextSetupPage());
     finish.setVisibility(View.GONE);
     practice.addTextChangedListener(
         after(
@@ -772,7 +797,7 @@ public final class MainActivity extends Activity {
     before.addView(ui.label(tr("You say")));
     ui.add(before, ui.text(tr("“%1$s”", exampleBefore()), 14, Ui.BODY), 6);
     LinearLayout after = ui.add(content, ui.card(Ui.TEAL_TINT, Ui.BAR), 8);
-    after.addView(ui.label(tr("Drift writes")));
+    after.addView(ui.label(tr("Talk Router writes")));
     ui.add(after, ui.text(exampleAfter(), 14, Ui.INK), 6);
   }
 
@@ -806,11 +831,531 @@ public final class MainActivity extends Activity {
     if (page.equals("setup") || page.equals("allow1")) show(page);
   }
 
+  // ---------------------------------------------------------------- bb
+
+  /** Settings → bb: connection, chief of staff and notifications, each a page. */
+  private void bbRows() {
+    BbBridge bb = new BbBridge(this);
+    ui.add(content, ui.label(tr("bb")), 22);
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, 0), 8);
+    card.setPadding(0, 0, 0, 0);
+    card.addView(ui.row(tr("Connection"), connectionLabel(bb), null, v -> open("bb")));
+    card.addView(ui.divider());
+    card.addView(
+        ui.row(
+            tr("Chief of staff"),
+            bb.chiefId().isEmpty()
+                ? tr("Not set")
+                : (bb.chiefTitle().isEmpty() ? tr("Chief of staff") : bb.chiefTitle()) + " · " + bb.chiefId(),
+            null,
+            v -> open("chief")));
+    card.addView(ui.divider());
+    card.addView(
+        ui.row(
+            tr("Notifications"),
+            "ntfy · " + bb.ntfyServer().replaceFirst("^https?://", ""),
+            null,
+            v -> open("ntfy")));
+  }
+
+  private String connectionLabel(BbBridge bb) {
+    if (!bb.connected()) return tr("Not connected");
+    return bb.mode().equals(BbBridge.CUSTOM)
+        ? tr("Custom address · %1$s", Uri.parse(bb.url()).getAuthority())
+        : tr("bb Connect · %1$s.getbb.app", bb.handle());
+  }
+
+  /** A line under a bb action: what happened, in green or as a warning. */
+  private TextView bbResultLine() {
+    TextView result = ui.add(content, ui.text("", 14, Ui.MUTED), 10);
+    if (bbNotice.isEmpty()) result.setVisibility(View.GONE);
+    else {
+      result.setText(bbNotice);
+      result.setTextColor(bbNoticeOk ? Ui.TEAL : Ui.WARN);
+      bbNotice = "";
+    }
+    return result;
+  }
+
+  /** Runs a bb call off the main thread, then shows its outcome on this page. */
+  private void bbAction(Button button, TextView result, String working, BbTask task) {
+    button.setEnabled(false);
+    result.setVisibility(View.VISIBLE);
+    result.setTextColor(Ui.MUTED);
+    result.setText(working);
+    String shown = page;
+    io.execute(
+        () -> {
+          String message;
+          boolean ok;
+          try {
+            message = task.run();
+            ok = true;
+          } catch (Exception ex) {
+            message =
+                ex.getClass() == IOException.class && ex.getMessage() != null
+                    ? ex.getMessage()
+                    : DictationService.friendly(ex);
+            ok = false;
+          }
+          String text = message;
+          boolean success = ok;
+          main.post(
+              () -> {
+                if (!page.equals(shown)) {
+                  toast(text);
+                  return;
+                }
+                bbNotice = text;
+                bbNoticeOk = success;
+                show(page);
+              });
+        });
+  }
+
+  private interface BbTask {
+    String run() throws Exception;
+  }
+
+  /** "Later" on the optional bb setup pages: setup ends, and Talk Router is a dictation app. */
+  private void laterButton() {
+    ui.add(content, ui.button(tr("Later"), Ui.Kind.QUIET, v -> finishSetup()), 4);
+  }
+
+  /** Connect bb: bb Connect with a sign-in, or a custom MCP address. Setup page and Settings. */
+  private void bbPage(boolean onboarding) {
+    BbBridge bb = new BbBridge(this);
+    if (bbModeShown.isEmpty()) bbModeShown = bb.mode();
+    if (onboarding) {
+      steps(false);
+      heading(
+          null,
+          tr("Connect bb"),
+          tr("Optional. bb (getbb.app) runs coding agents on your own computer. Connected, Talk Router hands a task you speak to your chief-of-staff thread there. Without bb, Talk Router is a dictation app."));
+    } else
+      heading(
+          tr("Settings"),
+          tr("bb"),
+          tr("Talk Router reaches bb through bb's MCP server (plugin bb--mcp), which has to be on in bb."));
+    boolean connected = bb.connected() && bb.mode().equals(bbModeShown);
+    Ui.Flow modes = ui.add(content, ui.flow(), 16);
+    modes.addView(
+        ui.chip(
+            tr("bb Connect"),
+            bbModeShown.equals(BbBridge.CONNECT),
+            v -> {
+              bbModeShown = BbBridge.CONNECT;
+              show(page);
+            }));
+    modes.addView(
+        ui.chip(
+            tr("Custom address"),
+            bbModeShown.equals(BbBridge.CUSTOM),
+            v -> {
+              bbModeShown = BbBridge.CUSTOM;
+              show(page);
+            }));
+    if (bbModeShown.equals(BbBridge.CONNECT)) connectCard(bb, connected);
+    else customCard(bb, connected);
+    if (onboarding) {
+      spacer();
+      if (bb.connected())
+        ui.add(content, ui.button(tr("Continue"), Ui.Kind.PRIMARY, v -> nextSetupPage()), 24);
+      laterButton();
+    }
+  }
+
+  private void connectCard(BbBridge bb, boolean connected) {
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 14);
+    if (connected) {
+      card.addView(ui.strong(tr("✓  Signed in to %1$s.getbb.app", bb.handle()), 16));
+      TextView result = bbResultLine();
+      Button[] test = {null};
+      test[0] =
+          ui.add(
+              content,
+              ui.button(
+                  tr("Test connection"),
+                  Ui.Kind.OUTLINE,
+                  v ->
+                      bbAction(
+                          test[0],
+                          result,
+                          tr("Asking bb…"),
+                          () -> {
+                            bb.test();
+                            return tr("✓  bb answers.");
+                          })),
+              10);
+      Button out =
+          ui.button(
+              tr("Sign out"),
+              Ui.Kind.QUIET,
+              v ->
+                  bbAction(
+                      test[0],
+                      result,
+                      tr("Signing out…"),
+                      () -> {
+                        bb.disconnect();
+                        return tr("Signed out of bb.");
+                      }));
+      out.setTextColor(Ui.WARN);
+      ui.add(content, out, 4);
+      return;
+    }
+    card.addView(ui.strong(tr("Your bb Connect handle"), 16));
+    ui.add(
+        card,
+        ui.text(
+            tr("The name in your bb address: <handle>.getbb.app. Your browser opens bb's account page; approve Talk Router there."),
+            14,
+            Ui.MUTED),
+        4);
+    LinearLayout row = ui.horizontal();
+    row.setGravity(Gravity.CENTER_VERTICAL);
+    EditText handle = ui.input(bb.handle(), tr("handle"), false);
+    handle.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    row.addView(handle, new LinearLayout.LayoutParams(0, -2, 1));
+    TextView suffix = ui.text(".getbb.app", 16, Ui.MUTED);
+    suffix.setPadding(ui.dp(8), 0, 0, 0);
+    row.addView(suffix);
+    ui.add(card, row, 12);
+    TextView result = bbResultLine();
+    Button[] signIn = {null};
+    signIn[0] =
+        ui.add(
+            content,
+            ui.button(
+                tr("Sign in with bb"),
+                Ui.Kind.PRIMARY,
+                v -> {
+                  String h = BbOAuth.handle(handle.getText().toString());
+                  if (h.isEmpty()) {
+                    toast(tr("Enter your bb Connect handle"));
+                    return;
+                  }
+                  signIn[0].setEnabled(false);
+                  result.setVisibility(View.VISIBLE);
+                  result.setTextColor(Ui.MUTED);
+                  result.setText(tr("Finding your bb…"));
+                  io.execute(
+                      () -> {
+                        String url = null, failed = null;
+                        try {
+                          url = BbOAuth.begin(this, h);
+                        } catch (Exception ex) {
+                          failed =
+                              ex.getClass() == IOException.class && ex.getMessage() != null
+                                  ? ex.getMessage()
+                                  : DictationService.friendly(ex);
+                        }
+                        String address = url, message = failed;
+                        main.post(
+                            () -> {
+                              signIn[0].setEnabled(true);
+                              if (message != null) {
+                                result.setTextColor(Ui.WARN);
+                                result.setText(message);
+                              } else {
+                                result.setText(tr("Approve Talk Router in your browser, then come back."));
+                                openUrl(address);
+                              }
+                            });
+                      });
+                }),
+            12);
+  }
+
+  private void customCard(BbBridge bb, boolean connected) {
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 14);
+    card.addView(ui.strong(tr("MCP address"), 16));
+    ui.add(
+        card,
+        ui.text(
+            tr("bb's local address is http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Reach it from the phone through your tailnet (Tailscale Serve, HTTPS) or adb reverse."),
+            13,
+            Ui.MUTED),
+        4);
+    EditText url =
+        ui.input(bb.mode().equals(BbBridge.CUSTOM) ? bb.url() : "", "https://…/mcp", false);
+    url.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    ui.add(card, url, 10);
+    ui.add(card, ui.strong(tr("Token (optional)"), 15), 14);
+    EditText token = ui.input(bb.customToken(), tr("Sent as a bearer token"), false);
+    android.graphics.Typeface face = token.getTypeface();
+    token.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+    token.setTypeface(face);
+    ui.add(card, token, 8);
+    ui.add(card, ui.strong(tr("bb web address for links"), 15), 14);
+    ui.add(
+        card,
+        ui.text(tr("Where thread links open, usually https://<handle>.getbb.app."), 13, Ui.MUTED),
+        2);
+    EditText links =
+        ui.input(
+            bb.mode().equals(BbBridge.CUSTOM) ? bb.linkBase() : bb.handle().isEmpty() ? "" : BbOAuth.origin(bb.handle()),
+            "https://<handle>.getbb.app",
+            false);
+    links.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    ui.add(card, links, 8);
+    if (connected) ui.add(card, ui.text(tr("✓  Saved"), 14, Ui.TEAL), 10);
+    TextView result = bbResultLine();
+    Button[] save = {null};
+    save[0] =
+        ui.add(
+            content,
+            ui.button(
+                tr("Save and test"),
+                connected ? Ui.Kind.OUTLINE : Ui.Kind.PRIMARY,
+                v -> {
+                  String address = url.getText().toString().trim();
+                  String base = links.getText().toString().trim();
+                  if (!address.matches("(?i)https?://\\S+")) {
+                    toast(tr("Enter the MCP address, starting with https:// or http://"));
+                    return;
+                  }
+                  if (!base.isEmpty() && !base.matches("(?i)https?://\\S+")) {
+                    toast(tr("The web address starts with https://"));
+                    return;
+                  }
+                  String oldBase = bb.linkBase();
+                  bbAction(
+                      save[0],
+                      result,
+                      tr("Asking bb…"),
+                      () -> {
+                        bb.useCustom(address, token.getText().toString(), base);
+                        bb.test();
+                        if (!bb.chiefId().isEmpty() && !bb.linkBase().equals(oldBase)) {
+                          bb.updateChief();
+                          return tr("✓  bb answers. Your chief of staff was told the new links.");
+                        }
+                        return tr("✓  bb answers.");
+                      });
+                }),
+            12);
+    if (connected) {
+      Button forget =
+          ui.button(
+              tr("Forget this address"),
+              Ui.Kind.QUIET,
+              v -> {
+                bb.disconnect();
+                show(page);
+              });
+      forget.setTextColor(Ui.WARN);
+      ui.add(content, forget, 4);
+    }
+  }
+
+  /** The chief of staff: create one in bb, use an existing thread, or open it. */
+  private void chiefPage(boolean onboarding) {
+    BbBridge bb = new BbBridge(this);
+    if (onboarding) steps(false);
+    heading(
+        onboarding ? null : tr("Settings"),
+        tr("Chief of staff"),
+        tr("One bb thread gets every task you hand over by voice. It does small things itself, starts child threads for bigger work, and notifies you through ntfy when it's done or needs you."));
+    if (!bb.connected()) {
+      ui.add(content, ui.text(tr("Connect bb first."), 15, Ui.WARN), 16);
+      ui.add(
+          content,
+          ui.button(tr("Connect bb"), Ui.Kind.OUTLINE, v -> open(onboarding ? "bb1" : "bb")),
+          10);
+      if (onboarding) {
+        spacer();
+        laterButton();
+      }
+      return;
+    }
+    String id = bb.chiefId();
+    if (!id.isEmpty()) {
+      LinearLayout card = ui.add(content, ui.card(Ui.TEAL_TINT, Ui.BAR), 16);
+      card.addView(ui.strong(bb.chiefTitle().isEmpty() ? tr("Chief of staff") : bb.chiefTitle(), 16));
+      ui.add(card, ui.mono(id, 12, Ui.MUTED), 4);
+      String link = bb.threadLink(id);
+      if (!link.isEmpty())
+        ui.add(card, ui.button(tr("Open in bb ↗"), Ui.Kind.QUIET, v -> openUrl(link)), 4);
+      if (!changingChief)
+        ui.add(
+            content,
+            ui.button(
+                tr("Change"),
+                Ui.Kind.OUTLINE,
+                v -> {
+                  changingChief = true;
+                  show(page);
+                }),
+            10);
+    }
+    TextView result = bbResultLine();
+    if (id.isEmpty() || changingChief) {
+      Button[] create = {null};
+      create[0] =
+          ui.add(
+              content,
+              ui.button(
+                  tr("Create chief of staff"),
+                  id.isEmpty() ? Ui.Kind.PRIMARY : Ui.Kind.OUTLINE,
+                  v ->
+                      bbAction(
+                          create[0],
+                          result,
+                          tr("Creating the thread in bb…"),
+                          () -> {
+                            BbBridge.ThreadInfo t = bb.createChief();
+                            changingChief = false;
+                            return tr("✓  Created %1$s (%2$s).", t.title(), t.id());
+                          })),
+              14);
+      ui.add(
+          content,
+          ui.text(
+              tr("Creates a thread called “Chief of staff” in Personal (no project), with standing instructions that include your ntfy topic."),
+              13,
+              Ui.MUTED),
+          4);
+      ui.add(content, ui.strong(tr("Or use a thread you have"), 15), 20);
+      EditText existing = ui.input("", tr("Thread link or id (thr_…)"), false);
+      existing.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+      ui.add(content, existing, 8);
+      Button[] use = {null};
+      use[0] =
+          ui.add(
+              content,
+              ui.button(
+                  tr("Use this thread"),
+                  Ui.Kind.OUTLINE,
+                  v -> {
+                    String input = existing.getText().toString();
+                    bbAction(
+                        use[0],
+                        result,
+                        tr("Checking the thread in bb…"),
+                        () -> {
+                          BbBridge.ThreadInfo t = bb.useExistingChief(input);
+                          changingChief = false;
+                          return tr("✓  Using %1$s (%2$s). It was told where to send notifications.", t.title().isEmpty() ? t.id() : t.title(), t.id());
+                        });
+                  }),
+              8);
+    }
+    if (onboarding) {
+      spacer();
+      if (!id.isEmpty())
+        ui.add(content, ui.button(tr("Continue"), Ui.Kind.PRIMARY, v -> nextSetupPage()), 24);
+      laterButton();
+    }
+  }
+
+  /** ntfy: where the chief's notifications go, with a link to subscribe and a test. */
+  private void ntfyPage(boolean onboarding) {
+    BbBridge bb = new BbBridge(this);
+    if (onboarding) steps(false);
+    heading(
+        onboarding ? null : tr("Settings"),
+        tr("Notifications"),
+        tr("Your chief of staff notifies you through ntfy; tapping a notification opens its thread in bb. Talk Router itself sends none. Install the ntfy app and subscribe to your topic."));
+    String topic;
+    try {
+      topic = bb.ntfyTopic();
+    } catch (Exception ex) {
+      topic = "";
+    }
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 16);
+    card.addView(ui.label(tr("Your topic")));
+    TextView shown = ui.mono(topic, 14, Ui.INK);
+    shown.setTextIsSelectable(true);
+    ui.add(card, shown, 6);
+    ui.add(card, ui.mono(bb.ntfyServer(), 12, Ui.MUTED), 4);
+    ui.add(
+        card,
+        ui.text(
+            tr("Anyone who knows the topic can read these notifications, so it's long and random. Keep it to yourself."),
+            13,
+            Ui.MUTED),
+        8);
+    String link = BbBridge.ntfyLink(bb.ntfyServer(), topic);
+    ui.add(content, ui.button(tr("Open in ntfy"), Ui.Kind.PRIMARY, v -> openNtfy(link)), 14);
+    TextView result = bbResultLine();
+    Button[] test = {null};
+    test[0] =
+        ui.add(
+            content,
+            ui.button(
+                tr("Send test"),
+                Ui.Kind.OUTLINE,
+                v ->
+                    bbAction(
+                        test[0],
+                        result,
+                        tr("Sending…"),
+                        () -> {
+                          bb.ntfyTest();
+                          return tr("✓  Sent. It should show up in the ntfy app.");
+                        })),
+            10);
+    ui.add(content, ui.strong(tr("ntfy server"), 15), 22);
+    ui.add(content, ui.text(tr("ntfy.sh, or your own ntfy server."), 13, Ui.MUTED), 2);
+    EditText server = ui.input(bb.ntfyServer(), BbBridge.NTFY_DEFAULT, false);
+    server.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    ui.add(content, server, 8);
+    Button[] save = {null};
+    save[0] =
+        ui.add(
+            content,
+            ui.button(
+                tr("Save server"),
+                Ui.Kind.QUIET,
+                v -> {
+                  String value = server.getText().toString().trim();
+                  if (!value.isEmpty() && !value.matches("(?i)https?://\\S+")) {
+                    toast(tr("The server address starts with https://"));
+                    return;
+                  }
+                  bbAction(
+                      save[0],
+                      result,
+                      tr("Saving…"),
+                      () -> {
+                        bb.setNtfyServer(value);
+                        if (bb.connected() && !bb.chiefId().isEmpty()) {
+                          bb.updateChief();
+                          return tr("✓  Saved. Your chief of staff was told.");
+                        }
+                        return tr("✓  Saved.");
+                      });
+                }),
+            4);
+    if (onboarding) {
+      spacer();
+      ui.add(content, ui.button(tr("Done"), Ui.Kind.PRIMARY, v -> finishSetup()), 24);
+    }
+  }
+
+  /** Subscribes in the ntfy app; without it, where to get it. */
+  private void openNtfy(String link) {
+    try {
+      startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(link)));
+    } catch (ActivityNotFoundException ex) {
+      new AlertDialog.Builder(this)
+          .setTitle(tr("Get the ntfy app"))
+          .setMessage(tr("ntfy is free and open source. Install it, then tap Open in ntfy again."))
+          .setPositiveButton(
+              "Google Play",
+              (d, w) -> openUrl("https://play.google.com/store/apps/details?id=io.heckel.ntfy"))
+          .setNeutralButton("F-Droid", (d, w) -> openUrl("https://f-droid.org/packages/io.heckel.ntfy/"))
+          .setNegativeButton(tr("Cancel"), null)
+          .show();
+    }
+  }
+
   // ---------------------------------------------------------------- home
 
   private void homePage() {
     LinearLayout top = ui.horizontal();
-    top.addView(ui.title("drift", 26), new LinearLayout.LayoutParams(0, -2, 1));
+    top.addView(ui.title("Talk Router", 26), new LinearLayout.LayoutParams(0, -2, 1));
     top.addView(ui.button(tr("Settings"), Ui.Kind.QUIET, v -> open("settings")));
     content.addView(top);
     if (!OpenRouter.hasKey(this)) {
@@ -869,7 +1414,7 @@ public final class MainActivity extends Activity {
     if (!prefs.getBoolean("tileAdded", false)) {
       LinearLayout tile = ui.horizontal();
       tile.addView(
-          ui.text(tr("Start from any app: add Drift to Quick Settings."), 13, Ui.MUTED),
+          ui.text(tr("Start from any app: add Talk Router to Quick Settings."), 13, Ui.MUTED),
           new LinearLayout.LayoutParams(0, -2, 1));
       tile.addView(ui.button(tr("Add tile"), Ui.Kind.QUIET, v -> addTile()));
       ui.add(content, tile, 2);
@@ -1058,6 +1603,8 @@ public final class MainActivity extends Activity {
         case "no speech" -> tr("no speech");
         default -> tr("unfinished");
       };
+    if (Router.CHIEF.equals(n.shown().json.optString("route")))
+      return DictationService.sentToChief(n.shown()) ? tr("chief of staff") : tr("not sent");
     if (n.versions().size() > 1) return tr("redone");
     return "original".equals(n.shown().json.optString("version")) ? tr("as said") : null;
   }
@@ -1122,6 +1669,9 @@ public final class MainActivity extends Activity {
               14,
               Ui.WARN));
     }
+    boolean chief = Router.CHIEF.equals(e.json.optString("route"));
+    boolean sent = chief && DictationService.sentToChief(e);
+    if (chief) chiefBanner(e, sent);
     if (e.json.has("processingFailed")) {
       ui.add(
           content,
@@ -1135,42 +1685,62 @@ public final class MainActivity extends Activity {
       ui.add(content, ui.button(tr("Process again"), Ui.Kind.OUTLINE, v -> processAgain()), 8);
     }
     boolean twoVersions =
-        e.json.has("processed")
+        !sent
+            && e.json.has("processed")
             && !e.json.optString("processed").equals(e.json.optString("original"));
     boolean original =
         twoVersions && (showOriginal || "original".equals(e.json.optString("version")));
     String shown = original ? e.json.optString("original", e.raw()) : e.text();
     if (twoVersions) {
       Ui.Flow versions = ui.add(content, ui.flow(), 14);
-      versions.addView(ui.chip(tr("Drift's version"), !original, v -> switchVersion(false)));
+      versions.addView(ui.chip(tr("Talk Router's version"), !original, v -> switchVersion(false)));
       versions.addView(ui.chip(tr("What you said"), original, v -> switchVersion(true)));
     }
-    editor = ui.input(shown, tr("No text yet"), true);
-    editor.setTextSize(18);
-    editor.setLineSpacing(0, 1.3f);
-    editor.setMinLines(6);
-    editor.setBackground(ui.shape(Ui.PANEL, 0, 16));
-    editor.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
-    editorBase = shown;
-    ui.add(content, editor, 14);
-    ui.add(
-        content,
-        ui.button(
-            tr("Copy"),
-            Ui.Kind.PRIMARY,
-            v -> {
-              saveEdits();
-              DictationService.copy(this, editor.getText().toString());
-              toast(tr("Copied"));
-            }),
-        14);
+    if (sent) {
+      // Sent: the chief of staff has it; what was said stays readable, with nothing to paste.
+      ui.add(content, ui.strong(tr("What you said"), 15), 18);
+      TextView said = ui.text(e.json.optString("original", e.text()), 17, Ui.INK);
+      said.setTextIsSelectable(true);
+      said.setLineSpacing(0, 1.3f);
+      said.setBackground(ui.shape(Ui.PANEL, 0, 16));
+      said.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
+      ui.add(content, said, 8);
+    } else {
+      editor = ui.input(shown, tr("No text yet"), true);
+      editor.setTextSize(18);
+      editor.setLineSpacing(0, 1.3f);
+      editor.setMinLines(6);
+      editor.setBackground(ui.shape(Ui.PANEL, 0, 16));
+      editor.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
+      editorBase = shown;
+      ui.add(content, editor, 14);
+      ui.add(
+          content,
+          ui.button(
+              tr("Copy"),
+              Ui.Kind.PRIMARY,
+              v -> {
+                saveEdits();
+                DictationService.copy(this, editor.getText().toString());
+                toast(tr("Copied"));
+              }),
+          14);
+    }
     java.util.List<Attachments.Item> files = new Attachments(this).of(noteId);
     if (!files.isEmpty()) {
       StringBuilder names = new StringBuilder();
-      for (Attachments.Item f : files)
+      boolean unsent = false;
+      for (Attachments.Item f : files) {
         names.append(names.length() == 0 ? "" : ", ")
             .append(f.kind().equals("text") ? tr("pasted text") : f.name());
+        unsent |= f.kind().equals("image") || f.kind().equals("pdf");
+      }
       ui.add(content, ui.text("📎 " + names, 13, Ui.MUTED), 10);
+      if (chief && unsent)
+        ui.add(
+            content,
+            ui.text(tr("Images and PDFs aren't sent to the chief of staff yet; pasted text is."), 13, Ui.MUTED),
+            2);
     }
     ui.add(
         content,
@@ -1190,6 +1760,72 @@ public final class MainActivity extends Activity {
     delete.setTextColor(Ui.WARN);
     links.addView(delete);
     ui.add(content, links, 8);
+  }
+
+  /**
+   * A chief-of-staff note: "Sent to chief of staff ↗" opens the thread in the bb web app; when
+   * sending failed, why, and Send again.
+   */
+  private void chiefBanner(HistoryEntry e, boolean sent) {
+    if (sent) {
+      String link = e.json.optString("chiefLink");
+      ui.add(
+          content,
+          ui.button(
+              tr("Sent to chief of staff ↗"),
+              Ui.Kind.PRIMARY,
+              v -> {
+                if (link.isEmpty()) toast(tr("Set the bb web address for links in Settings → bb."));
+                else openUrl(link);
+              }),
+          16);
+      ui.add(
+          content,
+          ui.text(
+              tr("Your chief of staff works on it in bb and notifies you through ntfy when it's done or needs you. The button opens the thread."),
+              13,
+              Ui.MUTED),
+          6);
+      return;
+    }
+    ui.add(
+        content,
+        ui.text(
+            tr("Not sent to your chief of staff: %1$s Below is what you said.", e.json.optString("chiefFailed")),
+            14,
+            Ui.WARN),
+        12);
+    ui.add(content, ui.button(tr("Send again"), Ui.Kind.OUTLINE, v -> sendAgain()), 8);
+  }
+
+  /** Sends a note to the chief of staff once more, after sending failed. */
+  private void sendAgain() {
+    if (applying) return;
+    applying = true;
+    toast(tr("Sending to your chief of staff…"));
+    io.execute(
+        () -> {
+          String failed = null;
+          try (HistoryStore h = new HistoryStore(this)) {
+            NoteList.Note n = currentNote();
+            if (n == null) throw new IOException(tr("This note was deleted."));
+            HistoryEntry e = h.get(n.shown().id());
+            DictationService.sendToChief(this, e);
+            h.save(e);
+            failed = e.json.optString("chiefFailed", null);
+            prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
+          } catch (Exception ex) {
+            failed = DictationService.friendly(ex);
+          } finally {
+            String message = failed;
+            main.post(
+                () -> {
+                  applying = false;
+                  toast(message == null ? tr("Sent to chief of staff") : message);
+                  if (page.equals("note")) show("note");
+                });
+          }
+        });
   }
 
   /** Redo with a smarter model, the models used, and the saved audio. */
@@ -1319,12 +1955,15 @@ public final class MainActivity extends Activity {
           case "check" -> tr("Request check");
           // "simple" and "smart": notes from before there was one text model.
           case Router.TEXT, "simple", "smart" -> tr("Text");
+          case DictationService.CHIEF_STEP -> "bb";
           default -> kind;
         };
     String name =
         kind.equals("speech")
             ? modelName(model)
-            : kind.equals("check") ? Router.NAME : textModelName(model);
+            : kind.equals("check")
+                ? Router.NAME
+                : kind.equals(DictationService.CHIEF_STEP) ? tr("Chief of staff") : textModelName(model);
     // A step's detail is an error, except the check's answer.
     String answer = kind.equals("check") ? checkDetail(detail) : null;
     boolean failed = !detail.isEmpty() && answer == null;
@@ -1348,6 +1987,7 @@ public final class MainActivity extends Activity {
     return switch (cut < 0 ? detail : detail.substring(0, cut)) {
       case Router.TRANSCRIPT -> tr("Transcript only") + rest;
       case Router.TEXT, "simple", "smart" -> tr("Text") + rest;
+      case Router.CHIEF -> tr("Chief of staff");
       default -> null;
     };
   }
@@ -1356,6 +1996,8 @@ public final class MainActivity extends Activity {
   private static String routeLabel(HistoryEntry e) {
     if (e.json.has("routeFailed")) return tr("Request check failed, kept as said");
     return switch (e.json.optString("route")) {
+      case Router.CHIEF ->
+          DictationService.sentToChief(e) ? tr("Sent to chief of staff") : tr("Not sent to chief of staff");
       case Router.TEXT, "simple", "smart" -> tr("Text");
       case Router.TRANSCRIPT -> tr("Transcript only");
       default -> tr("Processed");
@@ -1413,6 +2055,7 @@ public final class MainActivity extends Activity {
     io.execute(
         () -> {
           String failed = null;
+          boolean sent = false;
           try (HistoryStore h = new HistoryStore(this)) {
             NoteList.Note n = currentNote();
             if (n == null) throw new IOException(tr("This note was deleted."));
@@ -1420,16 +2063,22 @@ public final class MainActivity extends Activity {
             DictationService.process(this, e, profile);
             h.save(e);
             failed = e.json.optString("processingFailed", null);
-            if (failed == null) DictationService.copy(this, e.text());
+            if (failed == null) failed = e.json.optString("chiefFailed", null);
+            sent = DictationService.sentToChief(e);
+            if (failed == null && !sent) DictationService.copy(this, e.text());
             prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
           } catch (Exception ex) {
             failed = DictationService.friendly(ex);
           } finally {
             String message = failed;
+            boolean toChief = sent;
             main.post(
                 () -> {
                   applying = false;
-                  toast(message == null ? tr("Processed · copied") : message);
+                  toast(
+                      message != null
+                          ? message
+                          : toChief ? tr("Sent to chief of staff") : tr("Processed · copied"));
                   if (page.equals("note")) show("note");
                 });
           }
@@ -1652,6 +2301,7 @@ public final class MainActivity extends Activity {
             tr("Which model did what, how long it took, what it cost"),
             null,
             v -> open("activity")));
+    bbRows();
     ui.add(content, ui.label(tr("Dictation")), 22);
     LinearLayout dictation = ui.add(content, ui.card(Ui.BG, 0), 8);
     dictation.setPadding(0, 0, 0, 0);
@@ -1686,7 +2336,7 @@ public final class MainActivity extends Activity {
                 : String.join(", ", topics.stream().map(I18n::tr).toList()),
             null,
             v -> open("about")));
-    ui.add(content, ui.label(tr("Using Drift")), 22);
+    ui.add(content, ui.label(tr("Using Talk Router")), 22);
     LinearLayout using = ui.add(content, ui.card(Ui.BG, 0), 8);
     using.setPadding(0, 0, 0, 0);
     using.addView(ui.row(tr("Floating button"), bubbleLabel(), null, v -> bubbleOptions()));
@@ -1712,13 +2362,13 @@ public final class MainActivity extends Activity {
             getResources().getConfiguration().getLocales().get(0).getDisplayLanguage(),
             null,
             v -> {
-              // Android keeps the per-app language; this opens its picker for Drift.
+              // Android keeps the per-app language; this opens its picker for Talk Router.
               try {
                 startActivity(
                     new Intent(Settings.ACTION_APP_LOCALE_SETTINGS)
                         .setData(Uri.fromParts("package", getPackageName(), null)));
               } catch (ActivityNotFoundException ex) {
-                toast(tr("Change the language in Android settings → Apps → Drift."));
+                toast(tr("Change the language in Android settings → Apps → Talk Router."));
               }
             }));
     app.addView(ui.divider());
@@ -1728,7 +2378,7 @@ public final class MainActivity extends Activity {
     wipe.setPadding(ui.dp(16), ui.dp(16), ui.dp(16), ui.dp(16));
     wipe.setOnClickListener(v -> deleteAllData());
     app.addView(wipe);
-    TextView version = ui.text("Drift " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
+    TextView version = ui.text("Talk Router " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
     version.setGravity(Gravity.CENTER);
     ui.add(content, version, 18);
   }
@@ -1771,7 +2421,7 @@ public final class MainActivity extends Activity {
   }
 
   private void modelsPage() {
-    heading(tr("Back"), tr("Speech model"), tr("Drift uses this model for every note."));
+    heading(tr("Back"), tr("Speech model"), tr("Talk Router uses this model for every note."));
     Ui.Flow sorts = ui.add(content, ui.flow(), 14);
     String[][] options = {
       {"recommended", tr("Best overall")},
@@ -1845,7 +2495,7 @@ public final class MainActivity extends Activity {
               return;
             }
             prefs.edit().putString("model", m.optString("id")).apply();
-            toast(tr("Drift now always uses %1$s", ModelRanking.name(m)));
+            toast(tr("Talk Router now always uses %1$s", ModelRanking.name(m)));
             goBack();
           });
       ui.add(modelList, row, 8);
@@ -1869,7 +2519,7 @@ public final class MainActivity extends Activity {
     LinearLayout help = ui.add(content, ui.card(Ui.BG, Ui.LINE), 12);
     help.setPadding(0, 0, 0, 0);
     help.addView(ui.row(tr("Send feedback"), SUPPORT_EMAIL, null, v -> feedback()));
-    TextView version = ui.text("Drift " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
+    TextView version = ui.text("Talk Router " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
     version.setGravity(Gravity.CENTER);
     ui.add(content, version, 18);
   }
@@ -1903,7 +2553,7 @@ public final class MainActivity extends Activity {
   /** Opens the mail app; the user sees and sends the message themselves. */
   private void feedback() {
     String body =
-        "\n\n—\nDrift "
+        "\n\n—\nTalk Router "
             + BuildConfig.VERSION_NAME
             + " · Android "
             + Build.VERSION.RELEASE
@@ -1912,7 +2562,7 @@ public final class MainActivity extends Activity {
     Intent mail =
         new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
             .putExtra(Intent.EXTRA_EMAIL, new String[] {SUPPORT_EMAIL})
-            .putExtra(Intent.EXTRA_SUBJECT, tr("Drift feedback"))
+            .putExtra(Intent.EXTRA_SUBJECT, tr("Talk Router feedback"))
             .putExtra(Intent.EXTRA_TEXT, body);
     try {
       startActivity(mail);
@@ -1929,7 +2579,7 @@ public final class MainActivity extends Activity {
     new AlertDialog.Builder(this)
         .setTitle(tr("Delete all your data?"))
         .setMessage(
-            tr("This deletes your notes, audio, templates, words, About you, your OpenRouter key and settings on this phone. It can't be undone."))
+            tr("This deletes your notes, audio, templates, words, About you, your OpenRouter key, your bb sign-in and settings on this phone. It can't be undone."))
         .setPositiveButton(
             tr("Delete everything"),
             (d, w) -> {
@@ -1942,6 +2592,7 @@ public final class MainActivity extends Activity {
                 new Attachments(this).deleteAll();
                 vault.remove("transcript");
                 vault.remove("progress");
+                BbBridge.forgetAll(this);
               } catch (Exception ignored) {
                 /* Continue with what can be removed. */
               }
@@ -1958,7 +2609,7 @@ public final class MainActivity extends Activity {
     heading(
         tr("Back"),
         tr("Requests"),
-        tr("Drift writes down what you say. When you ask for more, like “clean this up”, “make it an email” or “use my apartment application”, a fast check sends it to the text model. Otherwise your note is the transcript, as you said it."));
+        tr("Talk Router writes down what you say. When you ask for more, like “clean this up”, “make it an email” or “use my apartment application”, a fast check sends it to the text model. Otherwise your note is the transcript, as you said it."));
     LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 18);
     card.setPadding(0, 0, 0, 0);
     requestRows(card);
@@ -2008,7 +2659,7 @@ public final class MainActivity extends Activity {
     ui.add(
         example,
         ui.text(
-            tr("Drift writes your application with these details, ready to paste."), 14, Ui.MUTED),
+            tr("Talk Router writes your application with these details, ready to paste."), 14, Ui.MUTED),
         6);
     if (!profile.processing())
       ui.add(
@@ -2128,7 +2779,7 @@ public final class MainActivity extends Activity {
   private void requestRows(LinearLayout card) {
     Switch on = ui.toggle(profile.processing());
     on.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean("processing", c).apply());
-    card.addView(ui.row(tr("Act on requests"), tr("When off, Drift only writes down what you say"), on, null));
+    card.addView(ui.row(tr("Act on requests"), tr("When off, Talk Router only writes down what you say"), on, null));
     card.addView(ui.divider());
     card.addView(ui.row(tr("Request check"), Router.NAME + " · " + Router.MODEL, null, null));
     card.addView(ui.divider());
@@ -2179,19 +2830,19 @@ public final class MainActivity extends Activity {
       getSystemService(StatusBarManager.class)
           .requestAddTileService(
               new ComponentName(this, DictationTile.class),
-              tr("Drift"),
+              tr("Talk Router"),
               android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_drift),
               getMainExecutor(),
               result -> {
                 if (result == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED
                     || result == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
                   prefs.edit().putBoolean("tileAdded", true).apply();
-                  toast(tr("Drift is in Quick Settings, at the end. Swipe down, then left to find it."));
+                  toast(tr("Talk Router is in Quick Settings, at the end. Swipe down, then left to find it."));
                   if (page.equals("start1") || page.equals("home")) show(page);
-                } else toast(tr("You can also add Drift using the Quick Settings edit button."));
+                } else toast(tr("You can also add Talk Router using the Quick Settings edit button."));
               });
     } catch (RuntimeException ex) {
-      toast(tr("Swipe down, edit Quick Settings, then add Drift."));
+      toast(tr("Swipe down, edit Quick Settings, then add Talk Router."));
     }
   }
 

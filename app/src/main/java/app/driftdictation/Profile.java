@@ -4,7 +4,7 @@ import android.content.SharedPreferences;
 import java.util.*;
 import org.json.*;
 
-/** What the user told Drift about themselves, and how Drift handles their dictations. */
+/** What the user told Talk Router about themselves, and how Talk Router handles their dictations. */
 final class Profile {
   static final String[] TOPICS = {
     "Messages",
@@ -80,7 +80,7 @@ final class Profile {
     return words();
   }
 
-  /** Drift acts on requests in a dictation unless the user turned it off; then it only transcribes. */
+  /** Talk Router acts on requests in a dictation unless the user turned it off; then it only transcribes. */
   boolean processing() {
     return prefs.getBoolean("processing", true);
   }

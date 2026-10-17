@@ -3,8 +3,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation,UnusedResources">
     <string name="t_0011aaad" formatted="false">plus Anweisungsprüfung</string>
     <string name="t_002ff4bf" formatted="false">Füge während der Aufnahme hinzu, worum es geht: eingefügten Text, ein Bild oder ein PDF. Das Textmodell liest es zusammen mit deiner Anweisung.</string>
-    <string name="t_00f10fe3" formatted="false">Überspringen und fertig</string>
-    <string name="t_01baa3dd" formatted="false">Drift nutzt jetzt immer %1$s</string>
+    <string name="t_0155a025" formatted="false">Du kannst Talk Router auch über das Stift-Symbol der Schnelleinstellungen hinzufügen.</string>
+    <string name="t_0174ec90" formatted="false">Wer das Thema kennt, kann diese Benachrichtigungen lesen, deshalb ist es lang und zufällig. Behalte es für dich.</string>
     <string name="t_01e4f1a8" formatted="false">Alles löschen</string>
     <string name="t_0255636d" formatted="false">OpenRouter-Schlüssel</string>
     <string name="t_02986d74" formatted="false">Zum Beispiel: Wohnungsbewerbung</string>
@@ -13,115 +13,156 @@
     <string name="t_04fc2b5b" formatted="false">Bild</string>
     <string name="t_05db04e6" formatted="false">Kein Preis verfügbar · siehe Quelle</string>
     <string name="t_05ff3c07" formatted="false">Nichts zum Einfügen: Kopiere zuerst etwas Text.</string>
+    <string name="t_07290dc9" formatted="false">Talk Router nutzt dieses Modell für jede Notiz.</string>
     <string name="t_07ee7593" formatted="false">Geht es um etwas Bestimmtes? Füge es hinzu, z. B. ein Angebot, auf das du antwortest.</string>
     <string name="t_08db7524" formatted="false">Ab $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Über anderen Apps anzeigen erlauben</string>
     <string name="t_0a7ebfef" formatted="false">Hinzugefügt</string>
+    <string name="t_0ae02e51" formatted="false">Dein Chief of Staff erhält eingefügten Text und Textdateien; Bilder und PDFs gehen vorerst nur an das Textmodell.</string>
     <string name="t_0ae539d0" formatted="false">Deine Wörter</string>
     <string name="t_0ae65fda" formatted="false">Diktat starten</string>
-    <string name="t_0b689c19" formatted="false">Drift konnte Dateien nicht lesen oder schreiben. Speicherplatz prüfen und erneut versuchen.</string>
     <string name="t_0c4f3914" formatted="false">Aufnahmewiederherstellung öffnen</string>
     <string name="t_0c8b88ef" formatted="false">%1$s hat mit HTTP %2$d geantwortet.</string>
+    <string name="t_0cf56167" formatted="false">Der Anmeldeserver von bb hat eine unerwartete Antwort gesendet.</string>
     <string name="t_0d35d152" formatted="false">Deine Vorlagen bleiben auf diesem Gerät. Nur die angeforderte Vorlage wird zusammen mit deinem Diktat an die KI gesendet.</string>
     <string name="t_0dc541d5" formatted="false">Auf Standard zurücksetzen</string>
+    <string name="t_0e1c0935" formatted="false">bb antwortet, bietet aber das run-Tool nicht an. Aktualisiere bb und prüfe, ob das MCP-Plugin aktiviert ist.</string>
+    <string name="t_0f4b7ef4" formatted="false">Talk Router erstellt deine Bewerbung mit diesen Details – direkt bereit zum Einfügen.</string>
     <string name="t_0f756679" formatted="false">Gespeicherte Aufnahme wiederholen</string>
+    <string name="t_10aef2d8" formatted="false">Chief of Staff</string>
     <string name="t_112a7174" formatted="false">Nutzung</string>
     <string name="t_115acf0a" formatted="false">Erlaube zuerst das Mikrofon</string>
     <string name="t_115f8e33" formatted="false">Noch keine Wörter.</string>
     <string name="t_13f11ba3" formatted="false">Aus</string>
-    <string name="t_14d8fd6b" formatted="false">Zum Beispiel: Ich entwickle Drift. Jana ist eine Kollegin. Zahlen als Ziffern schreiben.</string>
     <string name="t_1515cfb6" formatted="false">Keine Treffer.</string>
     <string name="t_15e6cda1" formatted="false">Schwebender Stopp-Button · optional</string>
     <string name="t_16666fb3" formatted="false">keine Antwort in der Zeit</string>
+    <string name="t_1680b9fc" formatted="false">Zum Beispiel: Ich entwickle Talk Router. Jana ist eine Kollegin. Zahlen als Ziffern schreiben.</string>
+    <string name="t_16831791" formatted="false">Talk Router läuft</string>
+    <string name="t_174fc48a" formatted="false">nicht gesendet</string>
+    <string name="t_176867d3" formatted="false">ntfy-App holen</string>
+    <string name="t_18d0ca78" formatted="false">MCP-Adresse</string>
     <string name="t_1964b988" formatted="false">Stopp</string>
+    <string name="t_19dbaa70" formatted="false">Talk Router erreicht bb über den MCP-Server von bb (Plugin bb--mcp), der in bb aktiv sein muss.</string>
     <string name="t_1a0dd3f6" formatted="false">Anweisungsprüfung · %1$s</string>
     <string name="t_1a2e2aa9" formatted="false">Eine gespeicherte Aufnahme muss erst wiederholt oder verworfen werden.</string>
     <string name="t_1b81f4cf" formatted="false">Später ›</string>
-    <string name="t_1be61561" formatted="false">Du musst Drift nicht öffnen. Starte und stoppe direkt dort, wo du gerade bist.</string>
+    <string name="t_1beba025" formatted="false">Eigene Adresse · %1$s</string>
     <string name="t_1c33c293" formatted="false">Einstellungen</string>
     <string name="t_1c7aaf33" formatted="false">Hier erscheint deine erste Notiz.</string>
     <string name="t_1c987601" formatted="false">Kein Audio erfasst. Bereit für neuen Versuch.</string>
+    <string name="t_1c9d89f5" formatted="false">Wird gesendet…</string>
     <string name="t_1ca48dd6" formatted="false">Anweisungsprüfung fehlgeschlagen, im Wortlaut behalten</string>
+    <string name="t_1e4ae9cd" formatted="false">Oder bestehenden Thread nutzen</string>
+    <string name="t_1e528165" formatted="false">%1$s.getbb.app hat mit HTTP %2$d geantwortet. Versuche es gleich noch einmal.</string>
+    <string name="t_1e84d6d1" formatted="false">Noch etwas, das Talk Router wissen sollte?</string>
+    <string name="t_1e8f2a1c" formatted="false">Diese Adresse vergessen</string>
     <string name="t_1f0e3297" formatted="false">Sprachmodell</string>
     <string name="t_1f3603cf" formatted="false">Aus jeder App starten</string>
+    <string name="t_1fd08398" formatted="false">Dadurch werden deine Notizen, Audiodaten, Vorlagen, Wörter, „Über dich“, dein OpenRouter-Schlüssel sowie deine bb-Anmeldung und -Einstellungen auf diesem Smartphone gelöscht. Dies kann nicht rückgängig gemacht werden.</string>
     <string name="t_200afc5b" formatted="false">Vorlage bearbeiten</string>
+    <string name="t_202ddf1f" formatted="false">Bilder und PDFs werden noch nicht an den Chief of Staff gesendet; eingefügter Text schon.</string>
     <string name="t_22747cc0" formatted="false">Nachrichten</string>
     <string name="t_22a3ef54" formatted="false">Recht</string>
     <string name="t_22d9f0fb" formatted="false">Hier einfügen</string>
-    <string name="t_230edb6c" formatted="false">Drift-Version</string>
     <string name="t_236a5def" formatted="false">Was du gesagt hast</string>
     <string name="t_23cf179d" formatted="false">Jede Notiz zeigt, was sie gekostet hat, so wie OpenRouter es meldet. Die Anweisungsprüfung kostet etwa 0,00003 $, eine Minute Sprache mit dem Standardmodell etwa 0,002 $.</string>
     <string name="t_2427c428" formatted="false">Alle Notizen</string>
     <string name="t_244d0dc6" formatted="false">„Nimm meine Wohnungsbewerbung für die 2-Zimmer-Wohnung in der Hauptstraße 5, die Besichtigung ist am Samstag, und erwähne, dass ich im Homeoffice arbeite.“</string>
     <string name="t_248af959" formatted="false">Eine Aufnahme wurde gespeichert, aber nicht transkribiert.</string>
+    <string name="t_24c47eae" formatted="false">Kein MCP-Server unter dieser Adresse (HTTP 404). Prüfe die Adresse und ob das MCP-Plugin von bb aktiv ist.</string>
     <string name="t_24c7367a" formatted="false">Kopierten Text einfügen</string>
-    <string name="t_258889d8" formatted="false">Während der Aufnahme bleibt ein kleiner roter Button über anderen Apps sichtbar. Tippe darauf zum Stoppen. Sobald dein Text fertig ist, steht dort „Bereit zum Einfügen“. Android zeigt dir gleich eine App-Liste: Tippe auf Drift Dictation, aktiviere es und kehre zurück.</string>
+    <string name="t_24cd899e" formatted="false">Dein Chief of Staff benachrichtigt dich per ntfy; Antippen öffnet den Thread in bb. Talk Router selbst sendet keine. Installiere die ntfy-App und abonniere dein Thema.</string>
+    <string name="t_262860bd" formatted="false">Mit bb anmelden</string>
     <string name="t_2652688c" formatted="false">Mikrofon</string>
     <string name="t_26643376" formatted="false">Wird geprüft…</string>
+    <string name="t_26f01951" formatted="false">Talk Router ist in den Schnelleinstellungen ganz hinten. Wische nach unten und dann nach links, um es zu finden.</string>
+    <string name="t_27a92292" formatted="false">bb hat die Anmeldung nicht erlaubt.</string>
     <string name="t_27c5b8ea" formatted="false">Schlüssel entfernen</string>
     <string name="t_2893e4d7" formatted="false">Anweisungsprüfung</string>
     <string name="t_296a6921" formatted="false">Das Modell hat zu lange gebraucht. Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_2994b473" formatted="false">‹ Früher</string>
     <string name="t_29a545af" formatted="false">Sehr geehrter Herr Weber, äh, der Hahn in der Küche, nein eigentlich im Bad, tropft seit Montag. Ach und mach das bitte etwas förmlicher.</string>
-    <string name="t_2b2d2d25" formatted="false">Das löscht deine Notizen, Audio, Vorlagen, Wörter, „Über dich“, deinen OpenRouter-Schlüssel und die Einstellungen auf diesem Gerät. Das lässt sich nicht rückgängig machen.</string>
     <string name="t_2b61782b" formatted="false">Impressum</string>
+    <string name="t_2c113272" formatted="false">Dein bb Connect-Handle</string>
     <string name="t_2c467e9e" formatted="false">Tippen zum Stoppen</string>
     <string name="t_2cad992e" formatted="false">Datei</string>
     <string name="t_2d53863e" formatted="false">Zu diesem Diktat hinzufügen</string>
     <string name="t_2dad13e3" formatted="false">Sprache</string>
+    <string name="t_2dc29d4d" formatted="false">Später</string>
     <string name="t_2dd159ed" formatted="false">Kein Browser vorhanden</string>
+    <string name="t_2ef3166c" formatted="false">ntfy-Server</string>
     <string name="t_2f0e0829" formatted="false">2 · Schwebender Stopp-Button</string>
-    <string name="t_2f4bb7d7" formatted="false">Drift nutzt dieses Modell für jede Notiz.</string>
     <string name="t_2f79a315" formatted="false">Sehr geehrter Herr Weber,\n\nich möchte Ihnen mitteilen, dass der Wasserhahn im Badezimmer seit Montag tropft.</string>
     <string name="t_2fc562b8" formatted="false">Notiz nicht gefunden</string>
     <string name="t_30a4185d" formatted="false">Ausgegeben</string>
     <string name="t_30a98a26" formatted="false">Verlauf konnte nicht aktualisiert werden.</string>
     <string name="t_324be3eb" formatted="false">Vorlage konnte nicht gelöscht werden</string>
     <string name="t_32a5138e" formatted="false">wie gesprochen</string>
+    <string name="t_32c62f32" formatted="false">Dein OpenRouter-Schlüssel ist nicht mehr gültig. Ändere ihn in den Einstellungen von Talk Router.</string>
+    <string name="t_32cb8094" formatted="false">Das ist kein bb-Thread-Link oder keine ID (beginnt mit thr_).</string>
     <string name="t_34087440" formatted="false">Textmodell</string>
+    <string name="t_345d171c" formatted="false">Der Anmeldeserver von bb hat mit HTTP %1$d geantwortet.</string>
+    <string name="t_348a26a4" formatted="false">✓  bb antwortet. Dein Chief of Staff hat die neuen Links erhalten.</string>
     <string name="t_3500e6d8" formatted="false">Texte, die du immer wieder schreibst, per Sprache angepasst. Füge sie unter Einstellungen → Vorlagen hinzu.</string>
-    <string name="t_358a70c9" formatted="false">Noch etwas, das Drift wissen sollte?</string>
+    <string name="t_370bef97" formatted="false">Token (optional)</string>
     <string name="t_373d8b92" formatted="false">Tippe auf die Blase, um aufzunehmen</string>
-    <string name="t_37af41b7" formatted="false">Drift schreibt auf, was du sagst. Bittest du um mehr, etwa „räum das auf“, „mach eine E-Mail daraus“ oder „nimm meine Wohnungsbewerbung“, schickt eine schnelle Prüfung es an das Textmodell. Sonst ist deine Notiz das Transkript, so wie du es gesagt hast.</string>
-    <string name="t_3a843e4e" formatted="false">Drift läuft</string>
+    <string name="t_38a07146" formatted="false">bb-Webadresse für Links</string>
+    <string name="t_3b499729" formatted="false">Talk Router kann nicht diktieren, bis du wieder einen Schlüssel hinzufügst.</string>
     <string name="t_3b71f15b" formatted="false">Bester Allrounder</string>
+    <string name="t_3b809382" formatted="false">Erlaube Talk Router zuerst den Zugriff auf das Mikrofon.</string>
+    <string name="t_3b9793b3" formatted="false">%1$s hat nicht rechtzeitig geantwortet. Versuche es erneut.</string>
     <string name="t_3b9938d1" formatted="false">Diese Vorlage löschen?</string>
+    <string name="t_3d344edd" formatted="false">Thread wird in bb erstellt…</string>
     <string name="t_3d38c7ad" formatted="false">Aufnahme wird gespeichert…</string>
+    <string name="t_3d87ec49" formatted="false">Diktat kopiert. Nicht an deinen Chief of Staff gesendet: %1$s</string>
     <string name="t_3dbe79b1" formatted="false">Löschen</string>
     <string name="t_3e12df1c" formatted="false">Datei anhängen</string>
     <string name="t_3e15b1f4" formatted="false">$%1$s in / $%2$s out pro 1 Mio. Token</string>
+    <string name="t_3e458553" formatted="false">bb wird gefragt…</string>
     <string name="t_3e5678cd" formatted="false">Am schnellsten</string>
+    <string name="t_3e9a070d" formatted="false">Gespeichertes Audio konnte nicht gelöscht werden. Starte Talk Router neu und versuche es erneut.</string>
     <string name="t_3eef8148_one" formatted="false">%1$d Version</string>
     <string name="t_3eef8148_other" formatted="false">%1$d Versionen</string>
+    <string name="t_3f77ee75" formatted="false">Wird gespeichert…</string>
     <string name="t_3f983199" formatted="false">%1$s Die Aufnahme wurde gespeichert.</string>
     <string name="t_400b4b63" formatted="false">Du sagst</string>
+    <string name="t_4023fa4b" formatted="false">Nach unten wischen, Schnelleinstellungen bearbeiten und Talk Router hinzufügen.</string>
     <string name="t_40ddec3d" formatted="false">Datenschutzerklärung lesen</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon erlaubt</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">%1$s entfernen</string>
+    <string name="t_45cb3322" formatted="false">Test senden</string>
     <string name="t_45d08313" formatted="false">OpenRouter konnte diese Anfrage nicht ausführen (HTTP %1$d).</string>
     <string name="t_46202182" formatted="false">Keine Sprache erkannt. Bereit für neuen Versuch.</string>
+    <string name="t_46783a6e" formatted="false">Chief of Staff erstellen</string>
     <string name="t_467f1c34" formatted="false">Aufnahme stoppen</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_47fbfb16" formatted="false">Ändern</string>
     <string name="t_481510cc" formatted="false">Was OpenRouter für jeden Aufruf berechnet hat.</string>
+    <string name="t_4a05992c" formatted="false">Aus jeder App starten: Talk Router zu den Schnelleinstellungen hinzufügen.</string>
     <string name="t_4a473e6c" formatted="false">Gespeicherte Daten konnten nicht geladen werden. Deine Daten wurden nicht gelöscht.</string>
     <string name="t_4a881de5" formatted="false">Beende erst Aufnahme oder Upload</string>
     <string name="t_4ae2821e" formatted="false">in Bearbeitung</string>
     <string name="t_4b2ded64" formatted="false">E-Mails</string>
     <string name="t_4bfe4352" formatted="false">Wiederherstellung öffnen</string>
-    <string name="t_4c80130f" formatted="false">Los geht’s</string>
     <string name="t_4c8985b5" formatted="false">Monatliche Kosten</string>
+    <string name="t_4d67a5d5" formatted="false">Angemeldet bei %1$s.getbb.app</string>
     <string name="t_4da08f61" formatted="false">Welches Modell was erledigt hat, wie lange es dauerte, was es kostete</string>
     <string name="t_4ef77ff2" formatted="false">Aufnahme unterbrochen. Gespeichertes Audio kann wiederholt werden.</string>
-    <string name="t_4f356689" formatted="false">Gib Drift den Kontext, z. B. das Angebot, auf das du antwortest. Wird genutzt, wenn du etwas anfragst.</string>
+    <string name="t_4f95835a" formatted="false">Die Webadresse beginnt mit https://</string>
     <string name="t_4fcbfdd0" formatted="false">Diese Datei ist zu groß (maximal 10 MB).</string>
+    <string name="t_4feae27e" formatted="false">Erneut senden</string>
     <string name="t_503970b4" formatted="false">Ohne Titel</string>
     <string name="t_503e7474" formatted="false">Audio verworfen</string>
     <string name="t_5048970e" formatted="false">Teilweiser Text und erfasste Kosten bleiben in den Notizen.</string>
     <string name="t_51bac044" formatted="false">Abbrechen</string>
+    <string name="t_52316b96" formatted="false">Der Name in deiner bb-Adresse: &lt;handle&gt;.getbb.app. Dein Browser öffnet die bb-Kontoseite; bestätige Talk Router dort.</string>
+    <string name="t_523a6999" formatted="false">Die Verbindung zu bb wurde unterbrochen. Versuche es erneut.</string>
     <string name="t_525e2e9d" formatted="false">Vorheriger Monat</string>
     <string name="t_5265d3ae" formatted="false">Am genauesten</string>
     <string name="t_5292360c" formatted="false">Vorherige Version · Modell unbekannt</string>
+    <string name="t_5292aca5" formatted="false">bb hat den Token abgelehnt (HTTP 401). Prüfe den Token unter Einstellungen → bb.</string>
     <string name="t_52ee42ed" formatted="false">Diese Notiz löschen?</string>
     <string name="t_5300e89a" formatted="false">Audio 7 Tage behalten</string>
     <string name="t_55026b0c" formatted="false">Aktivität</string>
@@ -131,79 +172,108 @@
     <string name="t_5851ec64" formatted="false">Mikrofon und Datenschutz</string>
     <string name="t_5945bfc8" formatted="false">Mikrofon unterstützt kein 16-kHz-Audio.</string>
     <string name="t_597ec35a" formatted="false">✓  Hinzugefügt</string>
-    <string name="t_5ab79907" formatted="false">Drift schreibt</string>
-    <string name="t_5b3be83e" formatted="false">• Deine Notizen, Audio, Wörter und Vorlagen bleiben auf diesem Gerät.\n• Damit aufgeschrieben wird, was du gesagt hast, geht deine Aufnahme mit deinem Schlüssel direkt an OpenRouter und weiter an den Anbieter des Sprachmodells. Der Text geht auf demselben Weg an ein schnelles Modell, das prüft, ob du Drift um etwas gebeten hast. Wenn ja, geht er an das Textmodell, zusammen mit dem, was du Drift über dich erzählt hast, deinen Wörtern, der gewünschten Vorlage und deinen Anhängen.\n• Drift hat keinen Server und sammelt nichts. OpenRouter und die Modellanbieter verarbeiten die Daten nach ihren eigenen Richtlinien.</string>
-    <string name="t_5baa7e68" formatted="false">Nutze den Button oder öffne Drift, um das Diktat zu steuern.</string>
     <string name="t_5c53b93a" formatted="false">Mikrofon wurde unterbrochen. Gespeichertes Audio kann wiederholt werden.</string>
-    <string name="t_5ca7cd19" formatted="false">Drift zu Schnelleinstellungen hinzufügen</string>
+    <string name="t_5cab269d" formatted="false">Dein Chief of Staff bearbeitet es in bb und benachrichtigt dich per ntfy, wenn er fertig ist oder dich braucht. Der Button öffnet den Thread.</string>
     <string name="t_5d00536d" formatted="false">Kopiert</string>
     <string name="t_5da707be" formatted="false">Nächster Monat</string>
     <string name="t_5e317218" formatted="false">Start fehlgeschlagen. Deine Notiz ist sicher.</string>
     <string name="t_5e84bb28" formatted="false">%1$s/Min.</string>
     <string name="t_5eb87a8b" formatted="false">Start</string>
+    <string name="t_5eff4869" formatted="false">Optional. bb (getbb.app) führt Coding-Agenten auf deinem eigenen Computer aus. Ist bb verbunden, übergibt Talk Router gesprochene Aufgaben an deinen Chief-of-Staff-Thread dort. Ohne bb ist Talk Router eine Diktier-App.</string>
     <string name="t_5f1cb221" formatted="false">Was du meistens diktierst</string>
     <string name="t_61710ff3" formatted="false">Nach Modell</string>
+    <string name="t_62bfeb04" formatted="false">Die Anmeldeantwort von bb enthielt keinen Token.</string>
     <string name="t_6358935d" formatted="false">Schlüssel gespeichert</string>
     <string name="t_6361c341" formatted="false">die Verbindung brach ab; ist es ein MCP-Server (Streamable HTTP)?</string>
+    <string name="t_6418f0e2" formatted="false">Gib dein bb Connect-Handle ein</string>
+    <string name="t_64ad54e9" formatted="false">Erstellt einen Thread namens „Chief of staff“ in Personal (kein Projekt) mit Daueranweisungen inklusive deines ntfy-Themas.</string>
+    <string name="t_64d60911" formatted="false">Los geht’s</string>
+    <string name="t_65211030" formatted="false">Die Serveradresse beginnt mit https://</string>
     <string name="t_65579ecd" formatted="false">Diese Notiz hat bisher %1$s gekostet.</string>
+    <string name="t_6575c78f" formatted="false">Talk Router ruft die Sprach- und Textmodelle über OpenRouter auf, mit deinem eigenen Schlüssel. Du bezahlst OpenRouter für das, was du nutzt; Talk Router hat keinen Server und verdient nichts daran.</string>
     <string name="t_657ce781" formatted="false">Keine passenden Modelle.</string>
     <string name="t_65c84835" formatted="false">Keine Sprache erkannt</string>
+    <string name="t_66aa70b6" formatted="false">Verbindung</string>
     <string name="t_67c5a895" formatted="false">Gestern</string>
     <string name="t_694eaa92" formatted="false">%1$s hat nicht geantwortet.</string>
     <string name="t_69b90bc7" formatted="false">Audio konnte nicht gelöscht werden</string>
+    <string name="t_69ee1c02" formatted="false">bb ist gerade nicht erreichbar (HTTP %1$d). Ist dein Computer an und bb geöffnet?</string>
     <string name="t_6a21d63f" formatted="false">Diktat starten</string>
     <string name="t_6a71543d" formatted="false">Schwebender Button</string>
     <string name="t_6acf5248" formatted="false">Zuletzt</string>
+    <string name="t_6b228094" formatted="false">✓  Gespeichert</string>
     <string name="t_6bc2e735" formatted="false">Behalten</string>
     <string name="t_6cf58428" formatted="false">Nur während der Aufnahme.</string>
     <string name="t_6d7c0d41" formatted="false">Preis wird danach angezeigt</string>
     <string name="t_6f2c1806" formatted="false">Entfernen</string>
     <string name="t_70b67665" formatted="false">Anweisungen sind deaktiviert, daher werden keine Vorlagen verwendet. Aktiviere sie unter Einstellungen → Anweisungen.</string>
+    <string name="t_70c25729" formatted="false">Thread in bb wird geprüft…</string>
+    <string name="t_71cc04b4" formatted="false">bb hat keinen Anmeldecode gesendet. Starte sie erneut.</string>
     <string name="t_721589c1" formatted="false">Heute</string>
+    <string name="t_7382e59f" formatted="false">Abmelden…</string>
     <string name="t_748c88bc" formatted="false">Open-Source-Hinweise</string>
+    <string name="t_75cfcf01" formatted="false">Abmelden</string>
+    <string name="t_76b8be2f" formatted="false">Gespeicherte Aufnahme gefunden. Öffne Talk Router zum Wiederholen oder Verwerfen.</string>
     <string name="t_77083f49" formatted="false">Was dein Smartphone verlässt</string>
     <string name="t_77a2a807" formatted="false">Notiz löschen</string>
+    <string name="t_77e5aff2" formatted="false">An Chief of Staff gesendet ↗</string>
+    <string name="t_781df68b" formatted="false">✓  Gespeichert. Dein Chief of Staff wurde informiert.</string>
     <string name="t_783d9fbc" formatted="false">Bild konnte nicht gelesen werden.</string>
     <string name="t_7a933498" formatted="false">Konnte nicht alle Audios löschen</string>
+    <string name="t_7b017d1c" formatted="false">Test von Talk Router. So sehen Benachrichtigungen deines Chief of Staff aus.</string>
     <string name="t_7bd974ca" formatted="false">Nimmt auf, bis du auf Stopp tippst. Du kannst Apps frei wechseln.</string>
+    <string name="t_7c160dc5" formatted="false">Gib die MCP-Adresse ein, beginnend mit https:// oder http://</string>
+    <string name="t_7c9185dc" formatted="false">Füge zuerst deinen OpenRouter-Schlüssel in den Einstellungen von Talk Router hinzu.</string>
+    <string name="t_7ca59c81" formatted="false">ntfy.sh oder dein eigener ntfy-Server.</string>
     <string name="t_7ce906f2" formatted="false">Verarbeitet · kopiert</string>
-    <string name="t_7f89daa5" formatted="false">Drift ruft die Sprach- und Textmodelle über OpenRouter auf, mit deinem eigenen Schlüssel. Du bezahlst OpenRouter für das, was du nutzt; Drift hat keinen Server und verdient nichts daran.</string>
+    <string name="t_7ea6be49" formatted="false">Nutze den Button oder öffne Talk Router, um das Diktat zu steuern.</string>
     <string name="t_7fd53415_one" formatted="false">%1$d Vorlage</string>
     <string name="t_7fd53415_other" formatted="false">%1$d Vorlagen</string>
     <string name="t_81e2a271" formatted="false">Transkription</string>
+    <string name="t_8250ae9b" formatted="false">Bei bb anmelden…</string>
     <string name="t_82a7b056" formatted="false">Das Textmodell lieferte kein Ergebnis. Bitte erneut versuchen.</string>
+    <string name="t_82bad7d7" formatted="false">Diese Anmeldung stimmt nicht mit der hier gestarteten überein. Starte sie erneut.</string>
     <string name="t_82f3b407" formatted="false">Anweisungen</string>
+    <string name="t_832a1910" formatted="false">Talk Router nutzt jetzt immer %1$s</string>
     <string name="t_840ca484" formatted="false">Nicht benötigt: Bedienungshilfen, Bildschirmaufnahme, Benachrichtigungen, Kontakte, Standort.</string>
     <string name="t_84119bba" formatted="false">Verschlüsselte Daten konnten nicht gespeichert werden.</string>
     <string name="t_842cec6c" formatted="false">Ungültige Aufnahme-ID</string>
     <string name="t_84e5353d" formatted="false">Gespeichertes Audio verwerfen</string>
     <string name="t_85004d41" formatted="false">Tippen zur Aufnahme</string>
+    <string name="t_853800ea" formatted="false">Du musst Talk Router nicht öffnen. Starte und stoppe direkt dort, wo du gerade bist.</string>
     <string name="t_859034c6" formatted="false">Optional. Wenn Android das Aktivieren blockiert, öffne App-Info → ⋮ → Eingeschränkte Einstellungen zulassen und versuche es erneut.</string>
+    <string name="t_86889c2c" formatted="false">✓  %1$s (%2$s) erstellt.</string>
     <string name="t_874caa6a" formatted="false">Mikrofon nicht verfügbar.</string>
-    <string name="t_88a3281a" formatted="false">Im Verlauf gespeichert. Öffne Drift zum Kopieren.</string>
+    <string name="t_8860ef62" formatted="false">%1$s konnte nicht erreicht werden. Prüfe die Adresse und deine Verbindung.</string>
     <string name="t_88ea76d0" formatted="false">Schließe zuerst die ausstehende Aufnahme ab oder verwerfe sie.</string>
-    <string name="t_89aee828" formatted="false">Drift</string>
+    <string name="t_8ab1eddb" formatted="false">✓  Angemeldet bei %1$s.getbb.app</string>
     <string name="t_8b1b3957" formatted="false">Maximal %1$d Anhänge pro Diktat.</string>
+    <string name="t_8b5e3cce" formatted="false">Server speichern</string>
     <string name="t_8bec24cc" formatted="false">Prüfen und speichern</string>
     <string name="t_8bf10d56" formatted="false">Verwerfen</string>
-    <string name="t_8c16d2f2" formatted="false">Wische vom oberen Bildschirmrand nach unten und tippe auf Drift zum Starten, tippe erneut zum Stoppen. Android hängt neue Kacheln hinten an: Wische nach links zur letzten Seite oder tippe auf den Stift und ziehe Drift nach vorne.</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Hinzufügen</string>
     <string name="t_8cf782ec" formatted="false">Erneut verarbeiten</string>
-    <string name="t_8ec7d35c" formatted="false">Erlaube Drift zuerst den Zugriff auf das Mikrofon.</string>
     <string name="t_8edfe30e" formatted="false">erfordert Aufmerksamkeit</string>
     <string name="t_8fe78547" formatted="false">keine Sprache</string>
     <string name="t_900e8667" formatted="false">Diesen Monat nichts.</string>
     <string name="t_903c36b9" formatted="false">importiert</string>
     <string name="t_90b266d0" formatted="false">Rechtliches &amp; Support</string>
     <string name="t_9153ca96" formatted="false">%1$s bisher</string>
+    <string name="t_918020d9" formatted="false">Handle</string>
     <string name="t_91d100de" formatted="false">Angehängt</string>
+    <string name="t_929aee80" formatted="false">1. Tippe auf Start und sprich einen Satz.\n2. Tippe auf Stopp. Talk Router schreibt ihn auf und kopiert ihn.\n3. Wenn „Bereit zum Einfügen“ erscheint, halte das Feld unten gedrückt und tippe auf Einfügen.</string>
     <string name="t_946ab421" formatted="false">Modelle suchen</string>
-    <string name="t_94c4fe70" formatted="false">Drift-Feedback</string>
+    <string name="t_9493d3a2" formatted="false">Nicht an deinen Chief of Staff gesendet: %1$s Unten ist dein Diktat.</string>
+    <string name="t_9500493c" formatted="false">bb hat nicht mitgeteilt, welcher Thread erstellt wurde.</string>
+    <string name="t_95bed80b" formatted="false">Lege die bb-Webadresse für Links unter Einstellungen → bb fest.</string>
+    <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">neu gemacht</string>
+    <string name="t_980e859d" formatted="false">Talk-Router-Feedback</string>
     <string name="t_9931e57c" formatted="false">Konnte nicht starten. Berechtigungen prüfen und erneut versuchen.</string>
     <string name="t_9aefa862" formatted="false">Schlüssel auf openrouter.ai holen</string>
     <string name="t_9b464b7c_one" formatted="false">%1$d Anhang für dieses Diktat</string>
     <string name="t_9b464b7c_other" formatted="false">%1$d Anhänge für dieses Diktat</string>
+    <string name="t_9b6568b2" formatted="false">bb Connect</string>
     <string name="t_9ba06205" formatted="false">Wiederkehrende Texte, per Sprache angepasst</string>
     <string name="t_9ba10d41" formatted="false">Wird transkribiert…</string>
     <string name="t_9bb908f9" formatted="false">Text</string>
@@ -211,107 +281,147 @@
     <string name="t_9c7b6819" formatted="false">Audio löschen</string>
     <string name="t_9c9743f1" formatted="false">Nötig zur Wiederholung mit klügerem Modell</string>
     <string name="t_9cc96167" formatted="false">Arbeitsnotizen</string>
-    <string name="t_9cd47265" formatted="false">Du kannst Drift auch über das Stift-Symbol der Schnelleinstellungen hinzufügen.</string>
+    <string name="t_9cfcb36b" formatted="false">Wische vom oberen Bildschirmrand nach unten und tippe auf Talk Router zum Starten, tippe erneut zum Stoppen. Android hängt neue Kacheln hinten an: Wische nach links zur letzten Seite oder tippe auf den Stift und ziehe Talk Router nach vorne.</string>
     <string name="t_9dbafb52" formatted="false">Wird noch transkribiert.</string>
-    <string name="t_9e801ec5" formatted="false">Nach unten wischen, Schnelleinstellungen bearbeiten und Drift hinzufügen.</string>
+    <string name="t_9de58cbc" formatted="false">Eine neu gemachte Fassung wird nicht von selbst gesendet. Tippe auf „Erneut senden“.</string>
     <string name="t_9ed229fb" formatted="false">Was OpenRouter für jeden Aufruf berechnet hat. Für einige Aufrufe wurden keine Kosten gemeldet, daher liegt der tatsächliche Gesamtbetrag etwas höher.</string>
+    <string name="t_9f58abd6" formatted="false">bb ist nicht verbunden. Verbinde es unter Einstellungen → bb.</string>
     <string name="t_9feb71c0" formatted="false">OpenRouter-Schlüssel entfernen?</string>
     <string name="t_a035c0e5" formatted="false">Wörter %1$s  Tempo %2$s</string>
-    <string name="t_a1845f4d" formatted="false">Dein OpenRouter-Schlüssel ist nicht mehr gültig. Ändere ihn in den Einstellungen von Drift.</string>
-    <string name="t_a2242617" formatted="false">Drift ist in den Schnelleinstellungen ganz hinten. Wische nach unten und dann nach links, um es zu finden.</string>
+    <string name="t_a0d36cf7" formatted="false">Der Anmeldeserver von bb hat mit HTTP %1$d geantwortet: %2$s</string>
     <string name="t_a26731c2" formatted="false">Die Schritte jeder Notiz: welches Modell was erledigt hat, wie lange es dauerte und was es kostete. Bleibt mit deinen Notizen auf diesem Gerät; die Zeiten schließen die Verbindung ein.</string>
     <string name="t_a2878767" formatted="false">Wähle zuerst ein Modell.</string>
     <string name="t_a2dc1b11" formatted="false">Gespeichertes Audio löschen</string>
+    <string name="t_a3b4d495" formatted="false">bb hat die Anfrage abgelehnt (HTTP 403). Darf diese Adresse den MCP-Server von bb nutzen?</string>
     <string name="t_a42608c9" formatted="false">unvollständig</string>
     <string name="t_a43d1375" formatted="false">Speichere Texte, die du immer wieder schreibst – z. B. eine Wohnungsbewerbung. Diktiere dann einfach, welche Vorlage du nutzen willst und was sich diesmal ändert.</string>
     <string name="t_a475c571" formatted="false">Aufnahme nicht abgeschlossen (%1$s). Auf Startseite wiederholen.</string>
     <string name="t_a47dbae1" formatted="false">Diese Notiz hat bereits das genaueste Modell verwendet.</string>
     <string name="t_a50a9928" formatted="false">Verarbeitet</string>
-    <string name="t_a56de4fd" formatted="false">1. Tippe auf Start und sprich einen Satz.\n2. Tippe auf Stopp. Drift schreibt ihn auf und kopiert ihn.\n3. Wenn „Bereit zum Einfügen“ erscheint, halte das Feld unten gedrückt und tippe auf Einfügen.</string>
+    <string name="t_a599a01d" formatted="false">Open Source. Dein eigener OpenRouter-Schlüssel, kein Talk-Router-Server dazwischen.</string>
+    <string name="t_a5f9f49f" formatted="false">bb verbinden</string>
+    <string name="t_a61f511e" formatted="false">Talk Router konnte Dateien nicht lesen oder schreiben. Speicherplatz prüfen und erneut versuchen.</string>
     <string name="t_a64719cc" formatted="false">Anweisungen ausführen</string>
+    <string name="t_a6ab7640" formatted="false">Du bist bei bb abgemeldet. Melde dich unter Einstellungen → bb wieder an.</string>
+    <string name="t_a6ee4edb" formatted="false">Wird an deinen Chief of Staff gesendet…</string>
     <string name="t_a75a18d5" formatted="false">%1$s unter %2$s nicht erreichbar: %3$s.</string>
     <string name="t_a75b1302" formatted="false">unbekannte Adresse</string>
     <string name="t_aadc023e" formatted="false">Mikrofon konnte nicht gestartet werden.</string>
     <string name="t_aafc2622" formatted="false">Noch keine Notizen.</string>
     <string name="t_ab7143b8" formatted="false">Berechtigungen</string>
+    <string name="t_ac66579e" formatted="false">bb konnte nicht erreicht werden. Versuche es erneut.</string>
     <string name="t_ad395bc2" formatted="false">Neuen Schlüssel einfügen, um ihn zu ersetzen</string>
-    <string name="t_ad450270" formatted="false">Open Source. Dein eigener OpenRouter-Schlüssel, kein Drift-Server dazwischen.</string>
+    <string name="t_ad6a2fb1" formatted="false">Gib Talk Router den Kontext, z. B. das Angebot, auf das du antwortest. Wird genutzt, wenn du etwas anfragst.</string>
     <string name="t_ae112605" formatted="false">Notizen durchsuchen</string>
     <string name="t_ae60251c" formatted="false">Gespeichert, verschlüsselt</string>
     <string name="t_ae754c67" formatted="false">Über dich</string>
+    <string name="t_aec69fc2" formatted="false">✓  bb antwortet.</string>
     <string name="t_b01f4f95" formatted="false">Fertig</string>
+    <string name="t_b048967b" formatted="false">Verbinde zuerst bb.</string>
     <string name="t_b085f3f0" formatted="false">Diktat stoppen</string>
     <string name="t_b0ad5840" formatted="false">Noch keine Vorlagen vorhanden.</string>
     <string name="t_b0bc3188" formatted="false">Wörter</string>
     <string name="t_b1489b01" formatted="false">Mit klügerem Modell wiederholt und kopiert</string>
+    <string name="t_b15fa13c" formatted="false">Keine Verbindung zu %1$s. Prüfe deine Internetverbindung.</string>
+    <string name="t_b203fda8" formatted="false">Eigene Adresse</string>
     <string name="t_b214280c" formatted="false">Vorlage löschen</string>
+    <string name="t_b23ea214" formatted="false">✓  %1$s (%2$s) ist jetzt dein Chief of Staff. Er weiß, wohin Benachrichtigungen gehen.</string>
     <string name="t_b4211199" formatted="false">Preiseinheit unbestätigt · siehe Quelle</string>
     <string name="t_b561b378" formatted="false">1 · Kachel in den Schnelleinstellungen</string>
+    <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b660acda" formatted="false">Talk Router schreibt auf, was du sagst. Bittest du um mehr, etwa „räum das auf“, „mach eine E-Mail daraus“ oder „nimm meine Wohnungsbewerbung“, schickt eine schnelle Prüfung es an das Textmodell. Sonst ist deine Notiz das Transkript, so wie du es gesagt hast.</string>
     <string name="t_b67d60c1" formatted="false">Vorlage konnte nicht gespeichert werden</string>
+    <string name="t_b6a5c51b" formatted="false">Wird als Bearer-Token gesendet</string>
     <string name="t_b70ef253" formatted="false">Der Modellanbieter hatte ein Problem (HTTP %1$d). Die Aufnahme bleibt erhalten; versuche es erneut.</string>
+    <string name="t_b7db5df4" formatted="false">Verbindung testen</string>
     <string name="t_b80635d0" formatted="false">Mikrofon erlauben</string>
     <string name="t_b80c02ec" formatted="false">Diese Notiz wurde gelöscht.</string>
     <string name="t_b846c414" formatted="false">📎 Kontext</string>
     <string name="t_b8663ec6" formatted="false">Medizin</string>
     <string name="t_b8d84684" formatted="false">Mikrofon nicht erlaubt</string>
+    <string name="t_b942a462" formatted="false">keine Details</string>
+    <string name="t_b9c5766f" formatted="false">Talk Router ruft die Sprach- und Textmodelle über OpenRouter mit diesem Schlüssel auf.</string>
     <string name="t_bbef8fd1" formatted="false">Schnelleinstellungs-Kachel hinzufügen</string>
-    <string name="t_bc2a0606" formatted="false">Aus jeder App starten: Drift zu den Schnelleinstellungen hinzufügen.</string>
+    <string name="t_bc1b2887" formatted="false">Der ntfy-Server hat mit HTTP %1$d geantwortet.</string>
     <string name="t_bca19ecd" formatted="false">Suche nach Anweisungen…</string>
-    <string name="t_bd564588" formatted="false">Drift erstellt deine Bewerbung mit diesen Details – direkt bereit zum Einfügen.</string>
     <string name="t_bdae2794" formatted="false">Für korrekte Namen und Begriffe bei Transkription und Überarbeitung.</string>
+    <string name="t_be033f66" formatted="false">Talk Router schreibt auf, was du sagst, und kopiert es, bereit zum Einfügen. Bitte im selben Atemzug um mehr, etwa „mach daraus eine E-Mail“, „antworte auf dieses Angebot“ oder „nimm meine Wohnungsbewerbung“: Eine schnelle Prüfung merkt es, und %1$s schreibt stattdessen diesen Text.</string>
     <string name="t_be7f9242" formatted="false">Verlauf konnte nicht gespeichert werden.</string>
+    <string name="t_beca8f7f" formatted="false">Während der Aufnahme bleibt ein kleiner roter Button über anderen Apps sichtbar. Tippe darauf zum Stoppen. Sobald dein Text fertig ist, steht dort „Bereit zum Einfügen“. Android zeigt dir gleich eine App-Liste: Tippe auf Talk Router, aktiviere es und kehre zurück.</string>
     <string name="t_bee5e663" formatted="false">Alle Daten löschen?</string>
     <string name="t_c0da8988" formatted="false">Notizen</string>
-    <string name="t_c1020e57" formatted="false">Hilft Drift, Namen richtig zu schreiben und Notizen passend aufzubereiten.</string>
     <string name="t_c1505d8d" formatted="false">Vorgaben für Anweisungen</string>
     <string name="t_c1829c8e_one" formatted="false">%1$d Wort</string>
     <string name="t_c1829c8e_other" formatted="false">%1$d Wörter</string>
+    <string name="t_c1894a44" formatted="false">Ändere die Sprache in den Android-Einstellungen → Apps → Talk Router.</string>
     <string name="t_c21ddaab" formatted="false">Dein Text wird überarbeitet…</string>
+    <string name="t_c25dfbec" formatted="false">An Chief of Staff gesendet</string>
     <string name="t_c2ac4ac4" formatted="false">✓  Ein Schlüssel ist verschlüsselt auf diesem Gerät gespeichert.</string>
     <string name="t_c3257368" formatted="false">Mit klügerem Modell wiederholen</string>
     <string name="t_c34fa500" formatted="false">Gib der Vorlage einen Namen und einen Text</string>
     <string name="t_c37292d9" formatted="false">etwa %1$s</string>
-    <string name="t_c41916c9" formatted="false">Gespeicherte Aufnahme gefunden. Öffne Drift zum Wiederholen oder Verwerfen.</string>
     <string name="t_c42f4dd6" formatted="false">In dieser Aufnahme wurde keine Sprache erkannt.</string>
-    <string name="t_c519e3fc" formatted="false">Starte Drift und nutze dann jede App weiter: lesen, nachschlagen, wechseln. Wenn du stoppst, wird aufgeschrieben, was du gesagt hast, und kopiert, bereit zum Einfügen. Bitte um mehr, etwa „mach daraus eine E-Mail“ oder „antworte auf dieses Angebot“, und du bekommst stattdessen diesen Text.</string>
     <string name="t_c5573507" formatted="false">Hinzufügen</string>
+    <string name="t_c55b8799" formatted="false">Die lokale Adresse von bb ist http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Erreiche sie vom Smartphone über dein Tailnet (Tailscale Serve, HTTPS) oder adb reverse.</string>
     <string name="t_c5cf792a" formatted="false">Nicht festgelegt</string>
     <string name="t_c681543c" formatted="false">Bilder, PDFs oder Textdateien, bis zu 10 MB.</string>
+    <string name="t_c6f0a2dc" formatted="false">Nicht an Chief of Staff gesendet</string>
     <string name="t_c705b630" formatted="false">Dieser Schlüssel ist ungültig. Prüfe, ob du ihn vollständig kopiert hast.</string>
+    <string name="t_c73cbcb8" formatted="false">Speichern und testen</string>
     <string name="t_c7a54a7c" formatted="false">Wird transkribiert… Du kannst andere Apps weiternutzen.</string>
     <string name="t_c7ad7feb" formatted="false">Keine Verbindung zu OpenRouter. Prüfe deine Internetverbindung und versuche es erneut.</string>
-    <string name="t_c9894da2" formatted="false">Gespeichertes Audio konnte nicht gelöscht werden. Starte Drift neu und versuche es erneut.</string>
+    <string name="t_c8d72e3b" formatted="false">Talk Router zu Schnelleinstellungen hinzufügen</string>
+    <string name="t_c997df74" formatted="false">bb hat die Anmeldung abgelehnt: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio ist abgelaufen oder wurde gelöscht. Text ist weiterhin gespeichert.</string>
+    <string name="t_cc1ec5e4" formatted="false">ntfy ist kostenlos und Open Source. Installiere es und tippe erneut auf „In ntfy öffnen“.</string>
+    <string name="t_cc95b0c8" formatted="false">Bestätige Talk Router im Browser und kehre dann zurück.</string>
     <string name="t_cc9b594b" formatted="false">Änderungen konnten nicht gespeichert werden</string>
     <string name="t_cca63859" formatted="false">OpenRouter</string>
     <string name="t_cd782109" formatted="false">Füge zuerst deinen Schlüssel ein</string>
+    <string name="t_cd7cb0fd" formatted="false">Ein einzelner bb-Thread empfängt jede per Sprache übergebene Aufgabe. Er erledigt Kleinigkeiten selbst, startet Unter-Threads für Größeres und benachrichtigt dich per ntfy, wenn er fertig ist oder dich braucht.</string>
     <string name="t_cd8737fa" formatted="false">Artikel</string>
+    <string name="t_cda80146" formatted="false">Im Verlauf gespeichert. Öffne Talk Router zum Kopieren.</string>
     <string name="t_cdfc6e09" formatted="false">Zurück</string>
+    <string name="t_ce96200c" formatted="false">bb akzeptiert diese Anmeldung nicht mehr. Melde dich unter Einstellungen → bb erneut an.</string>
     <string name="t_ced42332" formatted="false">„%1$s“</string>
+    <string name="t_cee0bed5" formatted="false">%1$s hat mit einer Weiterleitung geantwortet (HTTP %2$d). Prüfe die Adresse.</string>
     <string name="t_cf584634" formatted="false">Diktat</string>
     <string name="t_cf5adcd1" formatted="false">Infos über dich, deine Worte und die gewünschte Vorlage werden automatisch hinzugefügt.</string>
     <string name="t_cf684db1" formatted="false">OpenRouter konnte diese Anfrage nicht ausführen (HTTP %1$d): %2$s</string>
-    <string name="t_d0b50e17" formatted="false">Wenn deaktiviert, schreibt Drift nur auf, was du sagst</string>
+    <string name="t_d099c7a5" formatted="false">Wenn deaktiviert, schreibt Talk Router nur auf, was du sagst</string>
+    <string name="t_d1101d1a" formatted="false">Dein bb wird gesucht…</string>
     <string name="t_d1e4a3ee" formatted="false">Start</string>
     <string name="t_d2be46f0" formatted="false">Diese Notiz hat %1$s gekostet.</string>
-    <string name="t_d3bbee7c" formatted="false">Drift ruft die Sprach- und Textmodelle über OpenRouter mit diesem Schlüssel auf.</string>
+    <string name="t_d37efb26" formatted="false">Benachrichtigungen</string>
     <string name="t_d41b37d2" formatted="false">Alle meine Daten löschen</string>
     <string name="t_d427e0ec" formatted="false">%1$d min</string>
+    <string name="t_d45847fe" formatted="false">In bb öffnen ↗</string>
+    <string name="t_d56c4783" formatted="false">Diese Anmeldung wurde hier nicht gestartet oder ist bereits abgelaufen. Starte sie erneut.</string>
     <string name="t_d6d7613f" formatted="false">Deine Vorlage</string>
+    <string name="t_d6dce050" formatted="false">Kein Chief of Staff eingerichtet. Richte einen unter Einstellungen → bb ein.</string>
     <string name="t_d769df43" formatted="false">Bereit zum Einfügen</string>
+    <string name="t_d79a087e" formatted="false">Dieser Thread ist in bb archiviert. Dearchiviere ihn oder wähle einen anderen.</string>
     <string name="t_d79ccbde" formatted="false">Keine E-Mail-App gefunden. Schreibe an %1$s</string>
     <string name="t_d8427f19" formatted="false">Dein OpenRouter-Schlüssel</string>
+    <string name="t_d97e8d4f" formatted="false">Hilft Talk Router, Namen richtig zu schreiben und Notizen passend aufzubereiten.</string>
     <string name="t_db5195fa" formatted="false">eingefügter Text</string>
+    <string name="t_db560319" formatted="false">Starte Talk Router und nutze dann jede App weiter: lesen, nachschlagen, wechseln. Wenn du stoppst, wird aufgeschrieben, was du gesagt hast, und kopiert, bereit zum Einfügen. Bitte um mehr, etwa „mach daraus eine E-Mail“ oder „antworte auf dieses Angebot“, und du bekommst stattdessen diesen Text.</string>
     <string name="t_dbde124f" formatted="false">Audio wurde nicht behalten und kann nicht neu verarbeitet werden.</string>
     <string name="t_dbe48d14" formatted="false">Nie</string>
-    <string name="t_dc8462c7" formatted="false">Drift schreibt auf, was du sagst, und kopiert es, bereit zum Einfügen. Bitte im selben Atemzug um mehr, etwa „mach daraus eine E-Mail“, „antworte auf dieses Angebot“ oder „nimm meine Wohnungsbewerbung“: Eine schnelle Prüfung merkt es, und %1$s schreibt stattdessen diesen Text.</string>
     <string name="t_dc8ad2bb" formatted="false">Tage ohne Diktat kosten nichts.</string>
     <string name="t_dd6fa894" formatted="false">Texte und Kosten bleiben. Notizen können nicht mehr neu verarbeitet werden.</string>
+    <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
+    <string name="t_ddca8a00" formatted="false">Chief of Staff</string>
     <string name="t_de8e5494" formatted="false">Tippe auf das Mikrofon zur Aufnahme</string>
     <string name="t_def9cb9f" formatted="false">Loslegen</string>
+    <string name="t_df336a1d" formatted="false">Thread-Link oder -ID (thr_…)</string>
     <string name="t_dff4964d" formatted="false">Dein OpenRouter-Guthaben ist aufgebraucht. Lade Guthaben auf openrouter.ai auf und versuche es erneut.</string>
     <string name="t_e17493b2" formatted="false">unter dieser Adresse antwortet nichts</string>
     <string name="t_e244f6df" formatted="false">Gespeichertes Audio verwerfen?</string>
+    <string name="t_e24b4cba" formatted="false">Anmeldung fehlgeschlagen: %1$s</string>
+    <string name="t_e2774654" formatted="false">In ntfy öffnen</string>
+    <string name="t_e281d2a6" formatted="false">Die Anmeldung kam von einem unerwarteten Server zurück (%1$s).</string>
+    <string name="t_e3d95fe1" formatted="false">Hierüber öffnen sich Thread-Links, meist https://&lt;handle&gt;.getbb.app.</string>
     <string name="t_e3e3bdf6" formatted="false">Noch kein Text</string>
     <string name="t_e3ee070f" formatted="false">Datei konnte nicht gelesen werden.</string>
     <string name="t_e4910683" formatted="false">Feedback senden</string>
@@ -319,10 +429,13 @@
     <string name="t_e534f035" formatted="false">Code &amp; Tech</string>
     <string name="t_e5523fab" formatted="false">Konnte nicht alles löschen</string>
     <string name="t_e5a8e366" formatted="false">Gesprochen</string>
+    <string name="t_e68de5c9" formatted="false">Talk Router schreibt</string>
+    <string name="t_e6a56db0" formatted="false">Diesen Thread nutzen</string>
     <string name="t_e6b9caa8" formatted="false">Das Modell ist gerade ausgelastet. Warte kurz und versuche es erneut.</string>
+    <string name="t_e6d8f947" formatted="false">Dein Thema</string>
+    <string name="t_e6e6003d" formatted="false">Bei bb abgemeldet.</string>
     <string name="t_e7224453" formatted="false">Neue Vorlage</string>
     <string name="t_e75c6468" formatted="false">Füge deinen OpenRouter-Schlüssel hinzu, um zu diktieren</string>
-    <string name="t_e816a013" formatted="false">Drift starten</string>
     <string name="t_e8683fe0" formatted="false">Lernen</string>
     <string name="t_e939503f" formatted="false">Wort oder Namen hinzufügen</string>
     <string name="t_e972981e" formatted="false">Einmal ausprobieren</string>
@@ -335,15 +448,19 @@
     <string name="t_ed4646d0" formatted="false">Schließe ausstehende Aufnahme erst ab oder verwerfe sie</string>
     <string name="t_ed8814bc" formatted="false">Kopieren</string>
     <string name="t_edd9ff2d" formatted="false">Vorlagen</string>
-    <string name="t_efab1e32" formatted="false">Drift kann nicht diktieren, bis du wieder einen Schlüssel hinzufügst.</string>
-    <string name="t_efb13ccc" formatted="false">Ändere die Sprache in den Android-Einstellungen → Apps → Drift.</string>
+    <string name="t_efc1065a" formatted="false">Nicht verbunden</string>
     <string name="t_f01551fb" formatted="false">Aufnahme enthält keine lesbaren Audiodaten.</string>
     <string name="t_f01db452" formatted="false">Erstelle dort einen Schlüssel, kopiere ihn und füge ihn oben ein. Lade auch ein paar Dollar Guthaben auf OpenRouter auf: Eine einminütige Notiz kostet meist deutlich unter einem Cent.</string>
     <string name="t_f05beeb6" formatted="false">Am günstigsten</string>
     <string name="t_f0d83244" formatted="false">Das Sprachmodell hat kein Transkript zurückgegeben. Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_f123362f" formatted="false">App</string>
     <string name="t_f157fddc" formatted="false">Füge den Text so ein oder tippe ihn so, wie du ihn senden würdest.</string>
+    <string name="t_f1a961a8" formatted="false">bb hat eine unerwartete Antwort gesendet. Aktualisiere bb und versuche es erneut.</string>
     <string name="t_f1d71ab7" formatted="false">Punkte für Wörter und Tempo sind Schätzungen, keine Messungen deiner Stimme. Minutenpreise, Stand: %1$s.</string>
+    <string name="t_f33f1fa4" formatted="false">Das war\'s schon. Es funktioniert in jeder App genauso: starten, sprechen, stoppen, einfügen. Deine Notizen werden in Talk Router gespeichert, wo du auch zum exakten Wortlaut zurückwechseln kannst.</string>
+    <string name="t_f37b2ae0" formatted="false">bb konnte es nicht ausführen: %1$s</string>
+    <string name="t_f3856474" formatted="false">bb Connect hat keinen Server namens „%1$s“. Prüfe das Handle und ob bb Connect in bb aktiviert ist.</string>
+    <string name="t_f41dc081" formatted="false">✓  Gesendet. Die Nachricht sollte gleich in der ntfy-App erscheinen.</string>
     <string name="t_f4c40ed1" formatted="false">Transkript oder Text</string>
     <string name="t_f55495e0" formatted="false">Speichern</string>
     <string name="t_f5e73ad1" formatted="false">Die Verbindung zu OpenRouter ist abgebrochen. Prüfe deine Internetverbindung und versuche es erneut.</string>
@@ -353,7 +470,8 @@
     <string name="t_f703e6b3" formatted="false">OpenRouter hat für diese Notiz noch keine Kosten gemeldet.</string>
     <string name="t_f7503f59" formatted="false">Warte, bis diese Notiz fertig ist</string>
     <string name="t_f927dded" formatted="false">%1$s aufgenommen</string>
-    <string name="t_fa4aec5a" formatted="false">Das war\'s schon. Es funktioniert in jeder App genauso: starten, sprechen, stoppen, einfügen. Deine Notizen werden in Drift gespeichert, wo du auch zum exakten Wortlaut zurückwechseln kannst.</string>
+    <string name="t_f9305c3d" formatted="false">• Deine Notizen, Audiodaten, Wörter und Vorlagen bleiben auf diesem Smartphone.\n• Zur Texterkennung geht deine Aufnahme direkt mit deinem Schlüssel an OpenRouter und weiter an den Anbieter des Sprachmodells. Der Text geht auf demselben Weg an ein schnelles Modell, das prüft, ob du eine Aktion beauftragt hast. Falls ja, geht er an das Textmodell – zusammen mit deinen Angaben über dich, deinen Wörtern, der gewünschten Vorlage und deinen Anhängen.\n• Wenn du bb verbindest, wird eine Aufgabe für deinen Chief of Staff samt eingefügtem Text an dein bb gesendet.\n• Talk Router hat keinen Server und sammelt nichts. OpenRouter und die Modellanbieter verarbeiten die Daten nach ihren eigenen Richtlinien.</string>
+    <string name="t_f9dd979f" formatted="false">✓  Gespeichert.</string>
     <string name="t_fa57ce65" formatted="false">Nur Transkript</string>
     <string name="t_fa8361bc" formatted="false">Kachel hinzufügen</string>
     <string name="t_fab497fe" formatted="false">Sprich, wo du willst.</string>
@@ -362,9 +480,9 @@
     <string name="t_fc4b6317" formatted="false">✓  Erlaubt</string>
     <string name="t_fcaa7d5e" formatted="false">Wird transkribiert</string>
     <string name="t_fd25c726" formatted="false">Vorlage gespeichert</string>
+    <string name="t_fdb98fd2" formatted="false">Talk-Router-Version</string>
     <string name="t_fe11d138" formatted="false">Name</string>
     <string name="t_ff09c867" formatted="false">Alle Daten wurden gelöscht</string>
-    <string name="t_ff212f62" formatted="false">Füge zuerst deinen OpenRouter-Schlüssel in den Einstellungen von Drift hinzu.</string>
     <string name="t_ff38152f" formatted="false">Speicher fast voll. Aufnahme gestoppt; Audio kann wiederholt werden.</string>
     <string name="t_ffd9a681" formatted="false">Wird mit klügerem Modell wiederholt… Du kannst diesen Bereich verlassen.</string>
 </resources>

@@ -29,6 +29,7 @@ public final class DictationService extends Service {
       STOPPING = "stopping",
       UPLOADING = "uploading",
       COPIED = "copied",
+      SENT = "sent",
       ERROR = "error",
       EMPTY = "empty";
   static volatile DictationService instance;
@@ -76,13 +77,13 @@ public final class DictationService extends Service {
     QuietNotifications.initialize(this);
     if (audio(this).exists()) {
       state = ERROR;
-      detail = tr("Saved recording found. Open Drift to retry or discard.");
+      detail = tr("Saved recording found. Open Talk Router to retry or discard.");
       main.postDelayed(finishFeedback, 3500);
     }
     windows = getSystemService(WindowManager.class);
     wake =
         getSystemService(PowerManager.class)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Drift:dictation");
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Talk Router:dictation");
     wake.setReferenceCounted(false);
   }
 
@@ -153,8 +154,8 @@ public final class DictationService extends Service {
     // Android requires a foreground-service notification object even without posting permission.
     return new Notification.Builder(this, QuietNotifications.CHANNEL)
         .setSmallIcon(app.driftdictation.R.drawable.ic_mic)
-        .setContentTitle(tr("Drift is running"))
-        .setContentText(tr("Use the bubble or open Drift to control dictation."))
+        .setContentTitle(tr("Talk Router is running"))
+        .setContentText(tr("Use the bubble or open Talk Router to control dictation."))
         .setOngoing(true)
         .setOnlyAlertOnce(true)
         .build();
@@ -174,9 +175,9 @@ public final class DictationService extends Service {
     detail = message;
     update();
     if ((bubble == null || alsoToast)
-        && (COPIED.equals(next) || ERROR.equals(next) || EMPTY.equals(next)))
+        && (done(next) || ERROR.equals(next) || EMPTY.equals(next)))
       Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-    if (COPIED.equals(next)) main.postDelayed(finishFeedback, 6000);
+    if (done(next)) main.postDelayed(finishFeedback, 6000);
     else if (ERROR.equals(next) || EMPTY.equals(next)) main.postDelayed(finishFeedback, 3500);
     else if (READY.equals(next) && !"always".equals(mode())) finishIdle();
   }
@@ -186,6 +187,11 @@ public final class DictationService extends Service {
     prefs.edit().putString("state", state).putString("detail", detail).apply();
     syncBubble();
     DictationTile.refresh(this);
+  }
+
+  /** A note is finished: copied ("Ready to paste") or sent to the chief of staff. */
+  static boolean done(String state) {
+    return COPIED.equals(state) || SENT.equals(state);
   }
 
   private String mode() {
@@ -198,7 +204,7 @@ public final class DictationService extends Service {
           finishIdle();
           return;
         }
-        if (COPIED.equals(state) || EMPTY.equals(state)) {
+        if (done(state) || EMPTY.equals(state)) {
           if ("always".equals(mode())) transition(READY, tr("Tap the microphone to record"));
           else finishIdle();
         }
@@ -266,7 +272,7 @@ public final class DictationService extends Service {
           }
           if (RECORDING.equals(state)) stopRecording(true);
           else if (isBusy()) return;
-          else if (COPIED.equals(state)) endFeedback(); // Tapping "Ready to paste" hides it.
+          else if (done(state)) endFeedback(); // Tapping "Ready to paste" hides it.
           else if (audio(this).exists() || ERROR.equals(state)) {
             finishIdle();
             startActivity(
@@ -339,7 +345,7 @@ public final class DictationService extends Service {
     int width =
         RECORDING.equals(state)
             ? dp(132 + OverlayIcon.ATTACH_DP)
-            : COPIED.equals(state) ? bubble.copiedWidth() : dp(48);
+            : done(state) ? bubble.doneWidth(state) : dp(48);
     if (layout.width != width) {
       layout.width = width;
       clampPosition();
@@ -362,7 +368,7 @@ public final class DictationService extends Service {
    */
   static void requireKey(Context context) throws IOException {
     if (!OpenRouter.hasKey(context))
-      throw new IOException(tr("Add your OpenRouter key in Drift's Settings first."));
+      throw new IOException(tr("Add your OpenRouter key in Talk Router's Settings first."));
   }
 
   /**
@@ -379,7 +385,9 @@ public final class DictationService extends Service {
     Router.Route route;
     long asked = SystemClock.elapsedRealtime();
     try {
-      route = Router.route(context, said, templates.names(), attachments.summary(note));
+      route =
+          Router.route(
+              context, said, templates.names(), attachments.summary(note), BbBridge.ready(context));
       entry.json.remove("routeFailed");
       entry.step(
           "check",
@@ -402,6 +410,14 @@ public final class DictationService extends Service {
     else entry.json.put("template", route.template());
     if (route.kind().equals(Router.TRANSCRIPT)) {
       entry.json.remove("processingFailed");
+      return;
+    }
+    if (route.kind().equals(Router.CHIEF)) {
+      entry.json.remove("processingFailed");
+      // A redo of a note isn't sent again by itself: the chief already has the first version.
+      if (!entry.recordingId().equals(entry.id()))
+        entry.json.put("chiefFailed", tr("A redo isn't sent by itself. Tap Send again to send it."));
+      else sendToChief(context, entry);
       return;
     }
     asked = SystemClock.elapsedRealtime();
@@ -432,6 +448,49 @@ public final class DictationService extends Service {
     }
   }
 
+  /** What the activity log calls the chief-of-staff step's target. */
+  static final String CHIEF_STEP = "bb", CHIEF_TARGET = "chief of staff";
+
+  /**
+   * Hands the dictation as said, with pasted text as context, to the chief-of-staff thread in bb.
+   * On failure the note keeps what was said and records why, so it can offer to send it again.
+   */
+  static void sendToChief(Context context, HistoryEntry entry) throws Exception {
+    String said = entry.json.optString("original", entry.text());
+    BbBridge bb = new BbBridge(context);
+    String chief = bb.chiefId();
+    long asked = SystemClock.elapsedRealtime();
+    entry.json.put("route", Router.CHIEF);
+    try {
+      if (chief.isEmpty() || !bb.connected())
+        throw new IOException(tr("No chief of staff is set up. Set one up in Settings → bb."));
+      java.util.List<String> skipped = new java.util.ArrayList<>();
+      java.util.List<String[]> pasted = new Attachments(context).texts(entry.recordingId(), skipped);
+      bb.send(chief, BbBridge.message(said, pasted, skipped));
+      entry.step(CHIEF_STEP, CHIEF_TARGET, SystemClock.elapsedRealtime() - asked, null, null);
+      entry
+          .json
+          .put("chiefThread", chief)
+          .put("chiefLink", bb.threadLink(chief))
+          .put("chiefSent", System.currentTimeMillis())
+          .remove("chiefFailed");
+    } catch (Exception ex) {
+      String why =
+          ex.getClass() == IOException.class && ex.getMessage() != null
+              ? ex.getMessage()
+              : tr("bb couldn't be reached. Try again.");
+      entry.json.put("chiefFailed", why);
+      entry.step(CHIEF_STEP, CHIEF_TARGET, SystemClock.elapsedRealtime() - asked, null, why);
+    }
+  }
+
+  /** The note went to the chief of staff: nothing to paste. */
+  static boolean sentToChief(HistoryEntry entry) {
+    return Router.CHIEF.equals(entry.json.optString("route"))
+        && entry.json.has("chiefThread")
+        && !entry.json.has("chiefFailed");
+  }
+
   private void startRecording() throws Exception {
     if (isBusy()) return;
     if (audio(this).exists()) {
@@ -439,7 +498,7 @@ public final class DictationService extends Service {
       return;
     }
     if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
-      throw new IOException(tr("Allow microphone access in Drift first."));
+      throw new IOException(tr("Allow microphone access in Talk Router first."));
     requireKey(this);
     foreground(true);
     vault.remove("progress");
@@ -615,21 +674,31 @@ public final class DictationService extends Service {
             vault.put("transcript", entry.text());
             String transcript = entry.text();
             String failed = entry.json.optString("processingFailed", "");
+            String notSent = entry.json.optString("chiefFailed", "");
+            boolean sent = sentToChief(entry);
             main.post(
                 () -> {
                   if (!alive) return;
                   try {
+                    if (sent) {
+                      // Nothing to paste: the chief of staff has it, and notifies when done.
+                      clearPending();
+                      transition(SENT, tr("Sent to chief of staff"));
+                      return;
+                    }
                     copy(this, transcript);
                     clearPending();
-                    // A failed processing step is worth a toast even when the button shows "Ready".
+                    // A failed step is worth a toast even when the button shows "Ready".
                     transition(
                         COPIED,
-                        failed.isEmpty()
-                            ? tr("Ready to paste")
-                            : tr("Copied what you said. Processing failed: %1$s", failed),
-                        !failed.isEmpty());
+                        !notSent.isEmpty()
+                            ? tr("Copied what you said. Not sent to your chief of staff: %1$s", notSent)
+                            : failed.isEmpty()
+                                ? tr("Ready to paste")
+                                : tr("Copied what you said. Processing failed: %1$s", failed),
+                        !failed.isEmpty() || !notSent.isEmpty());
                   } catch (Exception ex) {
-                    transition(ERROR, tr("Transcript saved in history. Open Drift to copy it."));
+                    transition(ERROR, tr("Transcript saved in history. Open Talk Router to copy it."));
                   } finally {
                     if (wake.isHeld()) wake.release();
                   }
@@ -658,7 +727,7 @@ public final class DictationService extends Service {
   }
 
   static void copy(Context context, String text) {
-    ClipData clip = ClipData.newPlainText("Drift transcript", text);
+    ClipData clip = ClipData.newPlainText("Talk Router transcript", text);
     PersistableBundle extras = new PersistableBundle();
     extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
     clip.getDescription().setExtras(extras);
@@ -667,7 +736,7 @@ public final class DictationService extends Service {
 
   private void clearPending() throws IOException {
     if (audio(this).exists() && !audio(this).delete())
-      throw new IOException(tr("Could not delete saved audio. Try again after restarting Drift."));
+      throw new IOException(tr("Could not delete saved audio. Try again after restarting Talk Router."));
     try (HistoryStore history = new HistoryStore(this)) {
       HistoryEntry entry = history.get(prefs.getString("sessionId", ""));
       if (entry != null
@@ -691,14 +760,14 @@ public final class DictationService extends Service {
   }
 
   static String friendly(Exception ex) {
-    // Drift's own errors are plain IOExceptions with a translated message. Subclasses come from
+    // Talk Router's own errors are plain IOExceptions with a translated message. Subclasses come from
     // the network stack (connection reset, TLS, timeouts) and carry raw English, if anything.
     if (ex.getClass() == IOException.class && ex.getMessage() != null) return ex.getMessage();
     if (ex instanceof java.io.FileNotFoundException
         || ex instanceof java.nio.file.FileSystemException
         || ex instanceof java.io.EOFException
         || (ex.getMessage() != null && ex.getMessage().contains("ENOSPC")))
-      return tr("Drift couldn't read or write its files. Check available storage, then retry.");
+      return tr("Talk Router couldn't read or write its files. Check available storage, then retry.");
     if (ex instanceof IOException)
       return tr("The connection to OpenRouter was lost. Check your internet connection, then retry.");
     return tr(

@@ -2,25 +2,28 @@ Privacy policy
 Last updated: [DATE]
 
 In short
-Drift has no server and collects nothing. Your recordings and texts go from your phone straight to OpenRouter, with your own OpenRouter key, and from there to the model providers. Everything else stays on your phone.
+Talk Router has no server and collects nothing. Your recordings and texts go from your phone straight to OpenRouter, with your own OpenRouter key, and from there to the model providers. If you connect bb, tasks you hand to your chief of staff go to your own bb. Everything else stays on your phone.
 
 What leaves your phone
-When you stop recording, the audio goes over HTTPS to OpenRouter and on to the provider of the speech model you chose in Settings → Speech model, with your words as spelling hints. The transcript then goes the same way to a fast model that checks whether you asked Drift for something (DeepSeek V4.1 Flash). Only if you did, it goes on to the text model (Claude Sonnet 5.5), together with About you, your words, the template you asked for and what you attached (pasted text, images, PDFs). If you turned requests off in Settings → Requests, only the transcription happens.
+When you stop recording, the audio goes over HTTPS to OpenRouter and on to the provider of the speech model you chose in Settings → Speech model, with your words as spelling hints. The transcript then goes the same way to a fast model that checks whether you asked Talk Router for something (DeepSeek V4.1 Flash). Only if you did, it goes on to the text model (Claude Sonnet 5.5), together with About you, your words, the template you asked for and what you attached (pasted text, images, PDFs). If you turned requests off in Settings → Requests, only the transcription happens.
+
+bb and ntfy (optional)
+If you connect bb (Settings → bb) and a dictation asks your chief of staff to do something, what you said and the text you pasted with 📎 go to your bb: through bb Connect (getbb.app relays it to your computer) or the address you entered. Images and PDFs are not sent. Setting up the chief of staff sends it standing instructions that include your ntfy topic. Your chief of staff runs on your computer, with the AI providers you chose in bb, and sends you notifications through ntfy (ntfy.sh unless you entered your own server); anyone who knows the topic can read them, which is why it is long and random. Talk Router itself sends no notifications; it only contacts ntfy when you tap Send test.
 
 Who receives it
 OpenRouter, Inc. and the provider that serves each call (for example Microsoft Azure, OpenAI, AssemblyAI, DeepSeek or Anthropic). They process the data under their own terms and privacy policies, which may include processing in the United States, and they bill your OpenRouter account. Your OpenRouter settings decide, for example, whether providers that keep or train on data are allowed.
 
 What stays on your phone
-Your notes, both versions of each note, your words, your templates, About you, your OpenRouter key and your settings are stored only on this phone, encrypted where they contain your text or your key. Audio is kept for up to 7 days (at most 100 MB) in the app's private storage so you can redo a note with another model; you can turn this off or delete it in Settings. Attachments stay with their note for up to 7 days.
+Your notes, both versions of each note, your words, your templates, About you, your OpenRouter key, your bb sign-in, your ntfy topic and your settings are stored only on this phone, encrypted where they contain your text or your key. Audio is kept for up to 7 days (at most 100 MB) in the app's private storage so you can redo a note with another model; you can turn this off or delete it in Settings. Attachments stay with their note for up to 7 days.
 
 Permissions
-Microphone: only while you record. Display over other apps (optional): the floating stop button, which also says when your text is ready to paste. Drift does not use notifications, Accessibility, screen recording, contacts or location, and it cannot read your screen.
+Microphone: only while you record. Display over other apps (optional): the floating stop button, which also says when your text is ready to paste. Talk Router does not use notifications, Accessibility, screen recording, contacts or location, and it cannot read your screen.
 
 Support emails
-When you tap "Send feedback", Drift opens your email app with a prepared message containing the app version and your Android version. Nothing is sent until you send the email yourself.
+When you tap "Send feedback", Talk Router opens your email app with a prepared message containing the app version and your Android version. Nothing is sent until you send the email yourself.
 
 Deleting your data
-Settings → Delete all my data deletes everything Drift stored on this phone, including your key. Data at OpenRouter and the model providers is covered by their policies; your OpenRouter account shows and manages it.
+Settings → Delete all my data deletes everything Talk Router stored on this phone, including your key and your bb sign-in (which it also revokes at getbb.app). Data at OpenRouter and the model providers is covered by their policies; your OpenRouter account shows and manages it.
 
 Changes
-We will update this page when Drift changes how it handles data.
+We will update this page when Talk Router changes how it handles data.

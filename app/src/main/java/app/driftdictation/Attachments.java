@@ -23,7 +23,7 @@ import org.json.JSONObject;
 
 /**
  * What the user adds to a dictation while recording, with the 📎 on the floating button or in
- * Drift: pasted text or files (images, PDFs, text). They wait in "pending" for the dictation
+ * Talk Router: pasted text or files (images, PDFs, text). They wait in "pending" for the dictation
  * being recorded (or the next one), then move to that note's folder, so a redo or "process again"
  * has them too, and are kept as long as its audio. The request check sees a short summary; the
  * text model gets the content; a dictation that asks for nothing ignores them.
@@ -150,6 +150,23 @@ final class Attachments {
       }
     }
     return s.toString();
+  }
+
+  /**
+   * For the chief of staff: pasted text and text files as {name, text}. Images and PDFs aren't
+   * sent to it in this version; their names go to skipped.
+   */
+  List<String[]> texts(String note, List<String> skipped) {
+    List<String[]> out = new ArrayList<>();
+    for (Item i : of(note)) {
+      switch (i.kind()) {
+        case "text" -> out.add(new String[] {"pasted text", readText(note, i)});
+        case "file" -> out.add(new String[] {i.name(), readText(note, i)});
+        case "image" -> skipped.add("an image (" + i.name() + ")");
+        default -> skipped.add("a PDF (" + i.name() + ")");
+      }
+    }
+    return out;
   }
 
   /** Message parts for the model: text inline, images and PDFs as base64. */

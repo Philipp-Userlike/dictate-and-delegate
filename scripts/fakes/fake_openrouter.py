@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A fake OpenRouter for tests: no provider calls, no money, answers tests queue up front.
 
-Serves the three OpenRouter endpoints Drift uses, under /api/v1 like the real one:
+Serves the three OpenRouter endpoints Talk Router uses, under /api/v1 like the real one:
 
   GET  /api/v1/key                    the key check in setup ("bad" keys get 401)
   POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."

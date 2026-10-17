@@ -48,7 +48,7 @@ public final class RecordActivity extends Activity {
       }
       // Without a key there is no point in recording: say so before the user starts speaking.
       if (!OpenRouter.hasKey(this)) {
-        openApp("key", tr("Add your OpenRouter key in Drift's Settings first."));
+        openApp("key", tr("Add your OpenRouter key in Talk Router's Settings first."));
         return;
       }
     }
@@ -76,12 +76,12 @@ public final class RecordActivity extends Activity {
     openApp(null, null);
   }
 
-  /** Opens Drift, on a given page with a message when there is one (e.g. the key is missing). */
+  /** Opens Talk Router, on a given page with a message when there is one (e.g. the key is missing). */
   private void openApp(String page, String message) {
     Intent intent = new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     if (page != null)
       intent
-          // Reach a Drift that is already open, too (onNewIntent).
+          // Reach a Talk Router that is already open, too (onNewIntent).
           .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
           .putExtra("open", page)
           .putExtra("message", message);

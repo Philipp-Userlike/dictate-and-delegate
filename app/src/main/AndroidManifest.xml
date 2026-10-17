@@ -9,15 +9,25 @@
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
     <application android:label="@string/app_name" android:theme="@style/AppTheme" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true" android:localeConfig="@xml/locales_config"
-        android:dataExtractionRules="@xml/data_extraction_rules" android:allowBackup="false" android:fullBackupContent="false" android:usesCleartextTraffic="false" android:supportsRtl="true">
+        android:dataExtractionRules="@xml/data_extraction_rules" android:allowBackup="false" android:fullBackupContent="false" android:usesCleartextTraffic="false" android:networkSecurityConfig="@xml/network_security_config" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
             <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+        </activity>
+        <!-- bb Connect sign-in: the browser comes back to talkrouter://oauth/callback. -->
+        <activity android:name=".BbSignInActivity" android:exported="true" android:excludeFromRecents="true"
+            android:launchMode="singleTask" android:taskAffinity="app.driftdictation.signin">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="talkrouter" android:host="oauth" android:path="/callback" />
+            </intent-filter>
         </activity>
         <activity android:name=".AttachActivity" android:exported="false" android:excludeFromRecents="true"
             android:taskAffinity="app.driftdictation.attach" android:theme="@style/AttachTheme" />
         <activity android:name=".RecordActivity" android:exported="false" android:excludeFromRecents="true"
             android:taskAffinity="app.driftdictation.record" android:theme="@style/RecordTheme" />
-        <service android:name=".DictationTile" android:label="Drift" android:icon="@drawable/ic_drift"
+        <service android:name=".DictationTile" android:label="Talk Router" android:icon="@drawable/ic_drift"
             android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
             <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="true" />

@@ -9,7 +9,7 @@ import android.view.View;
 
 /**
  * A 24dp glyph on a transparent 48dp target; while recording, a red pill with timer and stop; once
- * the note is copied, a green "Ready to paste" pill.
+ * the note is copied, a green "Ready to paste" pill ("Sent to chief of staff" when it went to bb).
  */
 final class OverlayIcon extends View {
   private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -42,7 +42,7 @@ final class OverlayIcon extends View {
     state = next;
     elapsed = elapsedMillis;
     float alpha = Math.max(0.25f, Math.min(1f, opacity / 100f));
-    boolean pill = state.equals(DictationService.RECORDING) || state.equals(DictationService.COPIED);
+    boolean pill = state.equals(DictationService.RECORDING) || DictationService.done(state);
     setAlpha(pill ? Math.max(alpha, 0.92f) : alpha);
     setContentDescription(
         switch (state) {
@@ -51,6 +51,7 @@ final class OverlayIcon extends View {
           case DictationService.EMPTY -> tr("No speech recognized");
           case DictationService.ERROR -> tr("Open recording recovery");
           case DictationService.COPIED -> tr("Ready to paste");
+          case DictationService.SENT -> tr("Sent to chief of staff");
           default -> tr("Start recording");
         });
     invalidate();
@@ -64,7 +65,7 @@ final class OverlayIcon extends View {
       pill(canvas, d);
       return;
     }
-    if (state.equals(DictationService.COPIED) && getWidth() > getHeight() * 1.5f) {
+    if (DictationService.done(state) && getWidth() > getHeight() * 1.5f) {
       ready(canvas, d);
       return;
     }
@@ -86,7 +87,7 @@ final class OverlayIcon extends View {
         canvas.drawArc(3, 3, 21, 21, (SystemClock.uptimeMillis() % 1000) * .36f, 250, false, paint);
         if (isAttachedToWindow()) postInvalidateOnAnimation();
       }
-      case DictationService.COPIED -> {
+      case DictationService.COPIED, DictationService.SENT -> {
         Path p = new Path();
         p.moveTo(3, 12);
         p.lineTo(9, 18);
@@ -153,12 +154,17 @@ final class OverlayIcon extends View {
         paint);
   }
 
-  /** Width of the "Ready to paste" pill: check mark, text and padding. */
-  int copiedWidth() {
+  /** The finished pill's text: "Ready to paste", or "Sent to chief of staff" (nothing copied). */
+  private static String doneText(String state) {
+    return state.equals(DictationService.SENT) ? tr("Sent to chief of staff") : tr("Ready to paste");
+  }
+
+  /** Width of the finished pill: check mark, text and padding. */
+  int doneWidth(String state) {
     float d = getResources().getDisplayMetrics().density;
     paint.setTextSize(15 * d);
     paint.setTypeface(Typeface.DEFAULT_BOLD);
-    return Math.round(paint.measureText(tr("Ready to paste")) + 54 * d);
+    return Math.round(paint.measureText(doneText(state)) + 54 * d);
   }
 
   private void ready(Canvas canvas, float d) {
@@ -179,7 +185,7 @@ final class OverlayIcon extends View {
     paint.setTextSize(15 * d);
     paint.setTypeface(Typeface.DEFAULT_BOLD);
     Paint.FontMetrics m = paint.getFontMetrics();
-    canvas.drawText(tr("Ready to paste"), 36 * d, h / 2f - (m.ascent + m.descent) / 2f, paint);
+    canvas.drawText(doneText(state), 36 * d, h / 2f - (m.ascent + m.descent) / 2f, paint);
   }
 
   @Override

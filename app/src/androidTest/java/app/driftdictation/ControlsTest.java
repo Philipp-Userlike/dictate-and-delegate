@@ -115,8 +115,9 @@ public class ControlsTest {
     context.startActivity(
         new Intent(context, MainActivity.class)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-    assertNotNull(device.wait(Until.findObject(By.text("drift")), 5000));
-    device.findObject(By.text("Add tile")).click();
+    UiObject2 addTile = device.wait(Until.findObject(By.text("Add tile")), 5000);
+    assertNotNull("Home offers to add the tile", addTile);
+    addTile.click();
     var add =
         device.wait(
             Until.findObject(By.text(java.util.regex.Pattern.compile("(?i)^(add|add tile)$"))),
@@ -130,7 +131,7 @@ public class ControlsTest {
     device.openQuickSettings();
     UiObject2 tile = null;
     for (int page = 0; page < 4; page++) {
-      tile = device.wait(Until.findObject(By.text("Drift")), 1000);
+      tile = device.wait(Until.findObject(By.pkg("com.android.systemui").text("Talk Router")), 1000);
       if (tile != null) break;
       device.swipe(
           device.getDisplayWidth() * 8 / 10,

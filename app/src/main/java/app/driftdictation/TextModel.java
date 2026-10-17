@@ -12,7 +12,7 @@ final class TextModel {
   static final int MAX_TOKENS = 4096;
 
   /**
-   * For dictations that ask Drift for something; the request check sends nothing else here.
+   * For dictations that ask Talk Router for something; the request check sends nothing else here.
    * Tested on tidy-ups, tone changes, templates, drafts and plain-transcript requests.
    */
   static final String DEFAULT_PROMPT =
