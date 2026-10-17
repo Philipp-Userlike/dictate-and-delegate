@@ -29,7 +29,11 @@ Press a key and talk: dictation, text creation and independent agents, from one 
 </tr>
 <tr><td colspan="3"><b>Hand it to your agent</b></td></tr>
 <tr>
-<td colspan="3"><img src="docs/images/anim-agent.gif" alt="You ask your agent for a snake game; it builds it on your computer and sends a link; while playing you ask for changes, and it updates the game"></td>
+<td colspan="3"><img src="docs/images/anim-agent.gif" alt="You ask your agent for a snake game; it builds it on your computer and sends a link; while playing you ask for changes, and it updates the game">
+
+https://github.com/user-attachments/assets/1d1d507f-47d5-4513-99e1-ce83b8d83619
+
+</td>
 </tr>
 <tr>
 <td colspan="3"><i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</td>
