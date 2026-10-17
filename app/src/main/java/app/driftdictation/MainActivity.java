@@ -48,6 +48,21 @@ public final class MainActivity extends Activity {
   private boolean showOriginal;
   /** Settings → bb: the mode being looked at, a result to show once, and "change the chief". */
   private String bbModeShown = "";
+  /**
+   * The sign-in outcome or tile message for the next page opened from an intent. Handed over here
+   * rather than as intent extras: MainActivity is exported, so any app could send those.
+   */
+  static volatile String handoffMessage;
+
+  static volatile boolean handoffOk;
+
+  /** Takes the message handed over for this intent, once. */
+  private static String takeHandoff() {
+    String m = handoffMessage;
+    handoffMessage = null;
+    return m;
+  }
+
   private String bbNotice = "";
   private boolean bbNoticeOk, changingChief;
   private TextView skillsLine;
@@ -131,8 +146,8 @@ public final class MainActivity extends Activity {
     String target = intent == null ? null : intent.getStringExtra("open");
     if ("bb".equals(target)) {
       // Back from signing in to bb Connect in the browser (BbSignInActivity).
-      bbNotice = String.valueOf(intent.getStringExtra("bbResult"));
-      bbNoticeOk = intent.getBooleanExtra("bbOk", false);
+      bbNoticeOk = handoffOk;
+      bbNotice = java.util.Objects.toString(takeHandoff(), "");
       bbModeShown = BbBridge.CONNECT;
       intent.removeExtra("open");
       if (prefs.getBoolean("onboarded", false)) {
@@ -145,9 +160,8 @@ public final class MainActivity extends Activity {
     }
     if (target != null && prefs.getBoolean("onboarded", false)) {
       // From the tile: recording isn't possible right now, e.g. without a key.
-      String message = intent.getStringExtra("message");
+      String message = takeHandoff();
       intent.removeExtra("open");
-      intent.removeExtra("message");
       stack.clear();
       stack.push("home");
       show(target.equals("key") ? "key" : "home");
