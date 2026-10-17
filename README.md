@@ -48,7 +48,7 @@ One fast step that follows your instructions, with templates if you like.
 
 It works independently on your computer or a server, and reports back.
 
-*Example: "Ada, build me a snake game", which you then improve while you play.*
+*Example: "Ada, build me a snake game." Then you give feedback while you play: no typing, no switching apps.*
 
 <table>
 <tr>
@@ -61,7 +61,7 @@ It works independently on your computer or a server, and reports back.
 <td valign="top">① <i>"Ada, build me a little snake game."</i></td>
 <td valign="top">② Ada builds it on your computer.</td>
 <td valign="top">③ You get a message when it's ready.</td>
-<td valign="top">④ Play, and say what to change: <i>"Ada, make it faster each level."</i></td>
+<td valign="top">④ Give feedback while you play: <i>"Ada, make it faster each level."</i> No typing, no switching apps.</td>
 </tr>
 </table>
 
@@ -69,9 +69,9 @@ It works independently on your computer or a server, and reports back.
 
 https://github.com/user-attachments/assets/1d1d507f-47d5-4513-99e1-ce83b8d83619
 
-## What it does
+## How it works
 
-### Dictate anywhere
+### The floating panel
 
 Press a shortcut in any app and talk. A small floating panel stays next to whatever you're doing, so you can keep browsing, reading or testing while you speak. When you're done, you can use the transcript anywhere.
 
@@ -85,17 +85,17 @@ Press a shortcut in any app and talk. A small floating panel stays next to whate
 - predefined text templates (like a sample job application),
 - any instruction you dictate ("Write an application to startup X based on our template. Emphasize that…").
 
-### Hand off larger tasks to agents
+### Agents through bb
 
 Talk Router sends your dictation to an agent running on its own machine, your laptop or a server, through [bb](https://getbb.app), with Claude Code or Codex on your existing subscription. Usually you'd have a kind of "coordinator" or "chief of staff" agent there that routes and manages all larger independent work. This can include coding, research, recurring tasks and a lot of other things.
 
-### The best models, pay per use
+### Models and cost
 
 The latest speech models: MAI-Transcribe 2 by default, 60 languages, and you can switch languages mid-sentence. You pay per use at the providers' prices, about $0.10 per hour of audio, so half an hour of talking a day comes to about $1.50 a month. There's no subscription, and every note shows what it cost.
 
-### Open source, private by design
+### Open source
 
-No Talk Router server, no account, no analytics. You use your own keys, and notes stay encrypted on the phone. It's MIT licensed, so you can read exactly what it sends. [Privacy details](docs/PRIVACY.md)
+It's MIT licensed, so you can read exactly what it sends, or build it yourself. Your voice and text go only to the providers you choose; there's no Talk Router server.
 
 ## Why bb
 
@@ -109,4 +109,4 @@ bb runs Claude Code and Codex and adds nice extra features on top. It works with
 2. Open Talk Router and paste your OpenRouter key. Setup walks you through the microphone, the start key and Insert.
 3. Optional: in bb, run `bb plugin enable bb--mcp`, then sign in from Talk Router. It sets up your agent.
 
-[How it works](docs/HOW-IT-WORKS.md) · [Using the app](docs/GUIDE.md) · [Build & test](docs/DEVELOPMENT.md) · [Privacy](docs/PRIVACY.md)
+[More on how it works](docs/HOW-IT-WORKS.md) · [Using the app](docs/GUIDE.md) · [Build & test](docs/DEVELOPMENT.md)
