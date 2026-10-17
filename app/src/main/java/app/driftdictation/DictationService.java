@@ -663,14 +663,15 @@ public final class DictationService extends Service {
           } else {
             s.refine = DONE;
             s.refined = text;
-            copy(this, text);
             try {
               vault.put("transcript", text);
             } catch (Exception ignored) {
               /* Only the last-transcript shortcut. */
             }
-            s.message = bubble == null ? "" : tr("Refined, and copied");
-            if (bubble == null && session == s) Toast.makeText(this, tr("Refined text copied"), Toast.LENGTH_LONG).show();
+            // Never on the clipboard by itself: Insert refined, or Copy on the note.
+            s.message = bubble == null ? "" : tr("Refined");
+            if (bubble == null && session == s)
+              Toast.makeText(this, tr("Refined. The text is in Talk Router."), Toast.LENGTH_LONG).show();
           }
           if (session == s) {
             renderBubble();
@@ -771,15 +772,18 @@ public final class DictationService extends Service {
           main.post(
               () -> {
                 if (done == null) {
+                  // Insert couldn't: the clipboard instead, and the panel says so.
                   copy(this, text);
                   s.message =
                       a == null
-                          ? tr("Copied, paste with a long press. Insert needs the Accessibility permission (Settings → Start).")
-                          : tr("Copied, paste with a long press");
+                          ? tr("Copied instead, paste with a long press. Insert needs the Accessibility permission (Settings → Start).")
+                          : tr("Copied instead, paste with a long press");
                 } else {
                   s.inserted = done;
                   s.insertedKind = kind;
-                  s.message = swapped ? tr("Replaced with the refined text") : tr("Inserted");
+                  s.message =
+                      (swapped ? tr("Replaced with the refined text") : tr("Inserted"))
+                          + (done.clipboard() ? " · " + tr("this app only takes pastes, so it's on the clipboard too") : "");
                 }
                 if (session == s) {
                   renderBubble();
@@ -1190,13 +1194,12 @@ public final class DictationService extends Service {
                 () -> {
                   if (!alive) return;
                   try {
-                    // The transcript always comes first: copied, and on the panel to insert.
-                    copy(this, transcript);
+                    // The transcript comes first, on the panel to insert; never on the clipboard by itself.
                     clearPending();
                     session.noteId = sessionId;
                     session.transcript = transcript;
                     session.redo = redo;
-                    transition(COPIED, tr("Ready to paste"));
+                    transition(COPIED, tr("Your text is ready to insert"));
                     decide();
                   } catch (Exception ex) {
                     transition(ERROR, tr("Transcript saved in history. Open Talk Router to copy it."));

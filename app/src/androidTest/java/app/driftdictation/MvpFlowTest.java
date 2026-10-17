@@ -212,9 +212,12 @@ public class MvpFlowTest {
     Thread.sleep(1200);
     find("Stop").click();
     waitFor("copied");
-    UiObject2 box = find("Paste here");
+    UiObject2 box = find("Insert here");
     box.click();
-    device.pressKeyCode(android.view.KeyEvent.KEYCODE_PASTE);
+    device.wait(Until.findObject(By.desc("Insert")), 5000).click();
+    // Without the Accessibility service, Insert copies instead and says so; then paste.
+    if (!device.wait(Until.hasObject(By.text("um hi Jana see you at ten")), 2000))
+      device.pressKeyCode(android.view.KeyEvent.KEYCODE_PASTE);
     find("um hi Jana see you at ten");
     tap("Continue");
     // bb is optional: "Later" ends setup, and the app works as a dictation app.

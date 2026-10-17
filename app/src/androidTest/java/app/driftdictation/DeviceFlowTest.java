@@ -90,6 +90,13 @@ public class DeviceFlowTest {
     TestServer.transcripts(
         "Implement the parser and add a regression test.",
         "Implement the parser and add a regression test.");
+    // Whatever is on the clipboard stays there: Talk Router never copies by itself.
+    InstrumentationRegistry.getInstrumentation()
+        .runOnMainSync(
+            () ->
+                context
+                    .getSystemService(ClipboardManager.class)
+                    .setPrimaryClip(ClipData.newPlainText("mine", "something I still need")));
     send(DictationService.ENABLE);
     waitFor("ready");
     device.pressHome();
@@ -107,14 +114,10 @@ public class DeviceFlowTest {
     assertNotNull(stop);
     stop.click();
     waitFor("copied");
-    // The floating panel offers Insert; the text is copied too.
+    // The floating panel offers Insert; nothing is copied.
     assertNotNull(device.wait(Until.findObject(By.desc("Insert")), 2000));
     assertFalse(device.hasObject(By.text("Fix")));
     assertFalse(DictationService.audio(context).exists());
-    device.wait(Until.findObject(By.text("Paste")), 5000).click();
-    assertNotNull(
-        device.wait(
-            Until.findObject(By.text("Implement the parser and add a regression test.")), 5000));
     launch();
     String[] clip = {null};
     InstrumentationRegistry.getInstrumentation()
@@ -123,11 +126,12 @@ public class DeviceFlowTest {
               ClipData c = context.getSystemService(ClipboardManager.class).getPrimaryClip();
               clip[0] = c == null ? null : c.getItemAt(0).getText().toString();
             });
-    assertEquals("Implement the parser and add a regression test.", clip[0]);
-    assertEquals(clip[0], vault.get("transcript"));
+    assertEquals("something I still need", clip[0]);
+    String said = "Implement the parser and add a regression test.";
+    assertEquals(said, vault.get("transcript"));
     try (HistoryStore h = new HistoryStore(context)) {
       HistoryEntry entry = h.list(1, 0).get(0);
-      assertEquals(clip[0], entry.text());
+      assertEquals(said, entry.text());
       assertEquals(0, TestServer.SPEECH.compareTo(entry.cost()));
     }
     // The microphone must also start on a second use after a completed transcription.
@@ -142,7 +146,7 @@ public class DeviceFlowTest {
     device.openNotification();
     device.waitForIdle();
     assertFalse(device.hasObject(By.text("Talk Router is running")));
-    assertFalse(device.hasObject(By.text("Ready to paste")));
+    assertFalse(device.hasObject(By.text("Ready to insert")));
     device.pressBack();
   }
 

@@ -26,10 +26,10 @@ Talk Router needs no language setting: the speech model recognises the language,
 
 The panel's buttons are icons, named for TalkBack; a long press shows the name. While you record, it's just the timer with ■ (stop) and ⋯, which opens 📎, ✕ (cancel), **✨ Refine** and **🧑‍💼 Chief**. Tapping Refine or Chief now means "do this when the transcript is ready" (✓); tap again to undo. ✕ throws the recording away: nothing is transcribed or sent, so it costs nothing.
 
-After you stop, your words are transcribed and copied, and the panel offers:
+After you stop, your words are transcribed and the panel offers the following. Talk Router never puts anything on your clipboard by itself, so whatever you copied stays there:
 
-- **📥 Insert:** puts the transcript at the cursor of the field you're typing in, when you tap. You can move the cursor or switch fields first. With no field, or without the Accessibility permission, the text is copied and the panel says "Copied, paste with a long press".
-- **✨ Refine:** one call to the text model (Claude Sonnet 5.5) makes the text you need: it works out what the text is for (message, email, note, reply…) and improves it towards that, follows what you asked ("more formal", "turn it into bullet points", "translate to German"), fills in a template you named, and keeps your language and the facts. Then the button becomes ✨📥, **Insert refined**: if the transcript you inserted is still unchanged in the field, it's replaced in place; otherwise the refined text goes at the cursor. Refined text is copied too.
+- **📥 Insert:** puts the transcript at the cursor of the field you're typing in, when you tap. You can move the cursor or switch fields first. Insert sets the field's text directly, without the clipboard; only an app that accepts nothing but a paste gets it through the clipboard, and the panel says so. With no field, or without the Accessibility permission, the text is copied instead and the panel says "Copied instead, paste with a long press".
+- **✨ Refine:** one call to the text model (Claude Sonnet 5.5) makes the text you need: it works out what the text is for (message, email, note, reply…) and improves it towards that, follows what you asked ("more formal", "turn it into bullet points", "translate to German"), fills in a template you named, and keeps your language and the facts. Then the button becomes ✨📥, **Insert refined**: if the transcript you inserted is still unchanged in the field, it's replaced in place; otherwise the refined text goes at the cursor.
 - **🧑‍💼 Chief:** hands what you said to your chief of staff in bb (below). Then the button becomes 🧑‍💼↗, **Open chat ↗**. Whatever goes to the chief goes as said: a Refine that Jev started is dropped.
 - **✕:** closes the panel. The note stays in Talk Router.
 
@@ -71,9 +71,13 @@ Settings → **Templates** keeps texts you write again and again, like an applic
 
 ## Notes and costs
 
-Open a note to copy it, edit it, or switch between **Talk Router's version** and **What you said**. Each note shows what it cost, as OpenRouter reported it for each call; when OpenRouter reports no cost, Talk Router shows none rather than $0.00. **Redo with a smarter model** transcribes the saved audio again with a more accurate speech model.
+Open a note to copy it (**Copy**), edit it, or switch between **Talk Router's version** and **What you said**. Each note shows what it cost, as OpenRouter reported it for each call; when OpenRouter reports no cost, Talk Router shows none rather than $0.00. **Redo with a smarter model** transcribes the saved audio again with a more accurate speech model.
 
 Settings → **Activity** lists your latest notes with each step: the transcription (speech model), Jev with what it answered (e.g. "refine 0.82 · chief 0.97"), Refine, and the hand-over to bb, each with the time it took and what it cost (bb costs nothing here), or the error if a step failed. **Usage** shows each month's minutes and cost by model; Home shows this month and the last 14 days. Your OpenRouter account has the authoritative numbers.
+
+## Refine with your Anthropic key
+
+Have Anthropic API credits? Settings → **Refine** → **Anthropic key** (optional) takes your own Anthropic key; Talk Router checks it with Anthropic and keeps it encrypted. Then ✨ Refine goes to Claude Sonnet 5.5 at Anthropic directly; speech and Jev stay on OpenRouter, so the OpenRouter key is still needed. If Anthropic fails (key, credits, an outage), the same request goes through OpenRouter, and the note says why when it was the key or the credits. Anthropic reports no price, so Talk Router computes it at list price ($2 / $10 per million tokens) and marks it "≈". Because it comes out of credits you already have, it's kept apart: the note shows "Refine: Anthropic credits ≈…" on its own line, Usage shows "Anthropic credits used this month", and neither counts in the OpenRouter totals. A fallback through OpenRouter counts as real money.
 
 ## Data
 

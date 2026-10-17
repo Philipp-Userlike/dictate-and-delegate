@@ -398,8 +398,8 @@ public class BbFlowTest {
     send(DictationService.HIDE);
     Thread.sleep(500);
     launch();
-    // In front now, so the test may read the clipboard.
-    assertEquals("Henry, find the cheapest of these flights", clipboard());
+    // In front now, so the test may read the clipboard: nothing was copied by itself.
+    assertNotEquals("Henry, find the cheapest of these flights", clipboard());
     tap("Henry, find the cheapest of these flights");
     find("Sent to chief of staff ↗");
     find("What you said");
@@ -494,7 +494,7 @@ public class BbFlowTest {
     send(DictationService.HIDE);
     Thread.sleep(500);
     launch();
-    assertEquals("Henry, book the table for Friday", clipboard());
+    assertNotEquals("Henry, book the table for Friday", clipboard());
     tap("Henry, book the table for Friday");
     find(By.textStartsWith("Not sent to your chief of staff:"), "the failure");
     find("Copy");
@@ -519,7 +519,7 @@ public class BbFlowTest {
     assertNull(device.findObject(By.desc("🧑‍💼 Chief")));
     send(DictationService.HIDE);
     launch();
-    assertEquals("tell my chief of staff to call the plumber", clipboard());
+    assertNotEquals("tell my chief of staff to call the plumber", clipboard());
   }
 
   @Test

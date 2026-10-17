@@ -10,6 +10,9 @@ When you stop recording, the audio goes over HTTPS to OpenRouter and on to the p
 bb and ntfy (optional)
 If you connect bb (Settings → bb) and you tap 🧑‍💼 Chief or say by name that a dictation is for your chief of staff, what you said and the text you pasted with 📎 go to your bb: through bb Connect (getbb.app relays it to your computer) or the address you entered. Images and PDFs are not sent. Setting up the chief of staff sends it standing instructions that include your ntfy topic. Your chief of staff runs on your computer, with the AI providers you chose in bb, and sends you notifications and text to paste through ntfy (ntfy.sh unless you entered your own server); anyone who knows the topic can read them, which is why it is long and random. Talk Router itself sends no notifications. It contacts ntfy when you tap Send test, while the floating panel waits for your chief's text, and when you tap Copy on your chief's notification.
 
+Anthropic (optional)
+If you enter your own Anthropic key (Settings → Refine → Anthropic key), Refine sends the same text it would send to OpenRouter (the transcript, About you, your words, the template and attachments) directly to Anthropic, PBC instead, under Anthropic's terms and privacy policy and billed to your Anthropic account. If that fails, it goes through OpenRouter as usual.
+
 Who receives it
 OpenRouter, Inc. and the provider that serves each call (for example Microsoft Azure, OpenAI, AssemblyAI, TypeSafe or Anthropic). They process the data under their own terms and privacy policies, which may include processing in the United States, and they bill your OpenRouter account. Your OpenRouter settings decide, for example, whether providers that keep or train on data are allowed.
 

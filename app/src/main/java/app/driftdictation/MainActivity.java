@@ -964,7 +964,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Talk Router writes it down.\n3. Tap the box below, then Insert on the floating panel. Or touch and hold the box and tap Paste: the text is copied too."),
+            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Talk Router writes it down.\n3. Tap the box below, then 📥 Insert on the floating panel. Your clipboard stays as it was."),
             15,
             Ui.BODY),
         12);
@@ -972,7 +972,7 @@ public final class MainActivity extends Activity {
     record.setMinHeight(ui.dp(56));
     status = ui.add(content, ui.text("", 13, Ui.MUTED), 6);
     status.setGravity(Gravity.CENTER);
-    practice = ui.input("", tr("Paste here"), true);
+    practice = ui.input("", tr("Insert here"), true);
     practice.setMinLines(3);
     practice.setBackground(ui.shape(Ui.PANEL, 0, 16));
     practice.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
@@ -981,7 +981,7 @@ public final class MainActivity extends Activity {
         ui.add(
             content,
             ui.text(
-                tr("That's it. It works the same in any app: start, talk, stop, paste. Your notes are saved in Talk Router, where you can also switch back to exactly what you said."),
+                tr("That's it. It works the same in any app: start, talk, stop, insert. Your notes are saved in Talk Router, where you can also copy them or switch back to exactly what you said."),
                 15,
                 Ui.TEAL),
             12);
@@ -2316,8 +2316,6 @@ public final class MainActivity extends Activity {
             if (n == null) throw new IOException(tr("This note was deleted."));
             HistoryEntry e = n.shown();
             failed = DictationService.refineNote(this, e.id(), profile, e.json.optString("template"));
-            HistoryEntry now = DictationService.load(this, e.id());
-            if (failed == null && now != null) DictationService.copy(this, now.text());
             prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
           } catch (Exception ex) {
             failed = DictationService.friendly(ex);
@@ -2326,7 +2324,7 @@ public final class MainActivity extends Activity {
             main.post(
                 () -> {
                   applying = false;
-                  toast(message != null ? message : tr("Refined · copied"));
+                  toast(message != null ? message : tr("Refined"));
                   if (page.equals("note")) show("note");
                 });
           }
@@ -3177,7 +3175,7 @@ public final class MainActivity extends Activity {
         if (!dirty) {
           if (!redoSession.isEmpty() && !DictationService.busy()) {
             redoSession = "";
-            toast(tr("Redone with a smarter model and copied"));
+            toast(tr("Redone with a smarter model"));
           }
           show("note");
         }

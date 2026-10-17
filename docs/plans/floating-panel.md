@@ -128,4 +128,5 @@ Built as planned, with these changes from the phone test of 2.2.0 (Philipp, Pixe
 - **✕ while recording cancels**: the audio is deleted, nothing is transcribed or sent. Cancelling during transcription isn't offered: the audio is already uploaded and billed by then.
 - **Open chat ↗** sends `Browser.EXTRA_APPLICATION_ID`, so Chromium browsers reuse one tab instead of opening a new one each time. The chief's ntfy notification link opens through the ntfy app, which Talk Router doesn't control.
 - **Text back from the chief** works as planned: the JSON stream while the panel is open, ntfy's Copy broadcast when it's closed.
-
+- **Nothing goes on the clipboard by itself** (Philipp, after 2.2.1): not the transcript, not the refined text, not the chief's text. Insert sets the field's text directly; the clipboard is used only for an explicit Copy, or when Insert can't reach a field ("Copied instead"), or for an app that only accepts pastes.
+- **Refine with your own Anthropic key** (2.2.3): Refine goes to Anthropic's Messages API directly, on the user's Anthropic credits, with OpenRouter as the fallback. Its cost is computed at list price and shown apart from the OpenRouter totals. Not checked against the real API yet: no Anthropic key on the test Mac.

@@ -109,6 +109,12 @@ public class PanelTest {
     device.wait(Until.hasObject(By.pkg(context.getPackageName()).depth(0)), 5000);
   }
 
+  void setClipboard(String text) {
+    InstrumentationRegistry.getInstrumentation()
+        .runOnMainSync(
+            () -> context.getSystemService(ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("mine", text)));
+  }
+
   String clipboard() {
     String[] clip = {null};
     InstrumentationRegistry.getInstrumentation()
@@ -241,6 +247,7 @@ public class PanelTest {
     TestServer.transcripts("um so see you at ten I mean eleven");
     TestServer.decide(0.93, 0, "none");
     TestServer.replies("See you at eleven.");
+    setClipboard("something I still need");
     pad("Hi Jana, ");
     send(DictationService.RECORD);
     waitFor("recording");
@@ -263,8 +270,9 @@ public class PanelTest {
     find("Insert refined").click();
     until("the refined text replaced it", () -> "Hi Jana, See you at eleven.".equals(padText()));
     find("Replaced with the refined text");
+    // Inserting, refining and replacing never touched the clipboard.
     front();
-    until("copied", () -> "See you at eleven.".equals(clipboard()));
+    assertEquals("something I still need", clipboard());
     HistoryEntry e = note();
     assertEquals("See you at eleven.", e.json.optString("processed"));
     assertEquals("um so see you at ten I mean eleven", e.json.optString("original"));
@@ -377,7 +385,7 @@ public class PanelTest {
     pad("");
     dictate();
     find("Insert").click();
-    find(By.textStartsWith("Copied, paste with a long press"), "the fallback message");
+    find(By.textStartsWith("Copied instead, paste with a long press"), "the fallback message");
     shot("6-copied-fallback");
     assertEquals("", padText());
     front();

@@ -173,7 +173,8 @@ public final class TalkAccessibility extends AccessibilityService {
   // ------------------------------------------------------------------ insert
 
   /** Where a text was put: the field, and the range it took there (start -1 when unknown). */
-  record Inserted(AccessibilityNodeInfo field, String text, int start) {}
+  /** clipboard: the app only took it as a paste, so the text is on the clipboard now too. */
+  record Inserted(AccessibilityNodeInfo field, String text, int start, boolean clipboard) {}
 
   /** The text field that has input focus in the app you're in, or null. */
   AccessibilityNodeInfo field() {
@@ -209,9 +210,10 @@ public final class TalkAccessibility extends AccessibilityService {
   }
 
   /**
-   * Puts the text at the cursor of the focused field, replacing a selection, the way pasting does:
-   * through the clipboard and the field's own paste, else by setting the field's text with the
-   * text spliced in at the cursor. Null when there's no field or the app refused both.
+   * Puts the text at the cursor of the focused field, replacing a selection: by setting the
+   * field's text with ours spliced in at the cursor, which leaves the clipboard alone. Only if the
+   * app refuses that, through the clipboard and the field's own paste. Null when there's no field
+   * or the app refused both.
    */
   Inserted insert(Context context, String text) {
     AccessibilityNodeInfo n = field();
@@ -259,31 +261,27 @@ public final class TalkAccessibility extends AccessibilityService {
   private Inserted put(
       Context context, AccessibilityNodeInfo n, String before, int s, int e, String text) {
     String expected = spliced(before, s, e, text);
+    // Set the field's text with ours spliced in, then the cursor after it: no clipboard.
+    Bundle args = new Bundle();
+    args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, expected);
+    if (n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)) {
+      Bundle cursor = new Bundle();
+      cursor.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, s + text.length());
+      cursor.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, s + text.length());
+      n.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, cursor);
+      String after = settle(n, before);
+      if (!after.equals(before)) return new Inserted(n, text, locate(after, text, s), false);
+    }
+    // The app ignored that: paste, which needs the text on the clipboard.
     Bundle range = new Bundle();
     range.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, s);
     range.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, e);
-    if (s != n.getTextSelectionStart() || e != n.getTextSelectionEnd())
-      n.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, range);
+    n.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, range);
     DictationService.copy(context, text);
-    if (n.performAction(AccessibilityNodeInfo.ACTION_PASTE)) {
-      String after = settle(n, before);
-      if (after.equals(expected)) return new Inserted(n, text, s);
-      if (!after.equals(before)) {
-        // Pasted, but the app changed something around it: find it, if we can.
-        int at = locate(after, text, s);
-        return new Inserted(n, text, at);
-      }
-    }
-    // The app ignored the paste: set its text, with ours spliced in at the cursor.
-    Bundle args = new Bundle();
-    args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, expected);
-    if (!n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)) return null;
-    Bundle cursor = new Bundle();
-    cursor.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, s + text.length());
-    cursor.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, s + text.length());
-    n.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, cursor);
+    if (!n.performAction(AccessibilityNodeInfo.ACTION_PASTE)) return null;
     String after = settle(n, before);
-    return after.equals(before) ? null : new Inserted(n, text, locate(after, text, s));
+    if (after.equals(before)) return null;
+    return new Inserted(n, text, after.equals(expected) ? s : locate(after, text, s), true);
   }
 
   /** The field's text once it changed (apps paste asynchronously), at most about half a second. */

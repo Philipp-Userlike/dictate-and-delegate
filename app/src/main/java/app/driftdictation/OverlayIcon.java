@@ -31,7 +31,7 @@ final class OverlayIcon extends View {
           case DictationService.UPLOADING, DictationService.STOPPING -> tr("Transcribing");
           case DictationService.EMPTY -> tr("No speech recognized");
           case DictationService.ERROR -> tr("Open recording recovery");
-          case DictationService.COPIED -> tr("Ready to paste");
+          case DictationService.COPIED -> tr("Ready to insert");
           default -> tr("Start recording");
         });
     invalidate();

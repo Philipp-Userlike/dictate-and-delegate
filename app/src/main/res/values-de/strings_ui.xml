@@ -13,6 +13,7 @@
     <string name="t_05db04e6" formatted="false">Kein Preis verfügbar · siehe Quelle</string>
     <string name="t_05ff3c07" formatted="false">Nichts zum Einfügen: Kopiere zuerst etwas Text.</string>
     <string name="t_064b8a10" formatted="false">Notiz konnte nicht verfeinert werden: %1$s Unten steht das Gesagte.</string>
+    <string name="t_067329ed" formatted="false">diese App nimmt Text nur über die Zwischenablage an, daher liegt er auch dort</string>
     <string name="t_068966f6" formatted="false">Verfeinern: Anthropic-Guthaben ≈%1$s</string>
     <string name="t_07290dc9" formatted="false">Talk Router nutzt dieses Modell für jede Notiz.</string>
     <string name="t_07ee7593" formatted="false">Geht es um etwas Bestimmtes? Füge es hinzu, z. B. ein Angebot, auf das du antwortest.</string>
@@ -74,7 +75,6 @@
     <string name="t_22747cc0" formatted="false">Nachrichten</string>
     <string name="t_22a3ef54" formatted="false">Recht</string>
     <string name="t_22d5fbd9" formatted="false">Kontext zum Diktat hinzufügen</string>
-    <string name="t_22d9f0fb" formatted="false">Hier einfügen</string>
     <string name="t_236a5def" formatted="false">Was du gesagt hast</string>
     <string name="t_2427c428" formatted="false">Alle Notizen</string>
     <string name="t_244d0dc6" formatted="false">„Nimm meine Wohnungsbewerbung für die 2-Zimmer-Wohnung in der Hauptstraße 5, die Besichtigung ist am Samstag, und erwähne, dass ich im Homeoffice arbeite.“</string>
@@ -110,7 +110,6 @@
     <string name="t_30a4185d" formatted="false">Ausgegeben</string>
     <string name="t_30a98a26" formatted="false">Verlauf konnte nicht aktualisiert werden.</string>
     <string name="t_315f5fe4" formatted="false">Verfeinert</string>
-    <string name="t_31e20d5f" formatted="false">1. Tippe auf Start und sprich einen Satz.\n2. Tippe auf Stopp. Talk Router schreibt ihn auf.\n3. Tippe in das Feld unten, dann im schwebenden Fenster auf Einfügen. Oder halte das Feld gedrückt und wähle im Menü „Einfügen“: Der Text ist auch kopiert.</string>
     <string name="t_324be3eb" formatted="false">Vorlage konnte nicht gelöscht werden</string>
     <string name="t_32a5138e" formatted="false">wie gesprochen</string>
     <string name="t_32c62f32" formatted="false">Dein OpenRouter-Schlüssel ist nicht mehr gültig. Ändere ihn in den Einstellungen von Talk Router.</string>
@@ -194,6 +193,7 @@
     <string name="t_52ee42ed" formatted="false">Diese Notiz löschen?</string>
     <string name="t_5300e89a" formatted="false">Audio 7 Tage behalten</string>
     <string name="t_5305888b" formatted="false">Beim Tippen direkt einfügen</string>
+    <string name="t_53862dd4" formatted="false">Stattdessen kopiert, mit langem Drücken einfügen. Einfügen braucht die Bedienungshilfen-Berechtigung (Einstellungen → Start).</string>
     <string name="t_55026b0c" formatted="false">Aktivität</string>
     <string name="t_551d8c4b" formatted="false">Keine App zum Auswählen von Dateien vorhanden.</string>
     <string name="t_55cc6297" formatted="false">Hintergrund-Diktat</string>
@@ -207,6 +207,7 @@
     <string name="t_5a076fff" formatted="false">%1$s macht daraus den gewünschten Text: eine E-Mail, eine Antwort, eine Notiz, deine Vorlage. Dann: Verfeinertes einfügen.</string>
     <string name="t_5a36973e" formatted="false">Text wird verfeinert…</string>
     <string name="t_5bd47891" formatted="false">Jede Notiz zeigt die Kosten laut OpenRouter. Jevs Entscheidung kostet ca. 0,00002 $, eine Minute Sprache mit dem Standardmodell ca. 0,002 $.</string>
+    <string name="t_5c1c78f4" formatted="false">1. Tippe auf Start und sprich einen Satz.\n2. Tippe auf Stopp. Talk Router schreibt ihn auf.\n3. Tippe in das Feld unten, dann im schwebenden Fenster auf 📥 Einfügen. Deine Zwischenablage bleibt unverändert.</string>
     <string name="t_5c53b93a" formatted="false">Mikrofon wurde unterbrochen. Gespeichertes Audio kann wiederholt werden.</string>
     <string name="t_5cab269d" formatted="false">Dein Chief of Staff bearbeitet es in bb und benachrichtigt dich per ntfy, wenn er fertig ist oder dich braucht. Der Button öffnet den Thread.</string>
     <string name="t_5d00536d" formatted="false">Kopiert</string>
@@ -228,6 +229,7 @@
     <string name="t_64ad54e9" formatted="false">Erstellt einen Thread namens „Chief of staff“ in Personal (kein Projekt) mit Daueranweisungen inklusive deines ntfy-Topics.</string>
     <string name="t_64d60911" formatted="false">Los geht’s</string>
     <string name="t_65211030" formatted="false">Die Serveradresse beginnt mit https://</string>
+    <string name="t_653174a7" formatted="false">Mit klügerem Modell neu erstellt</string>
     <string name="t_6542df76" formatted="false">Beim Beenden werden deine Worte aufgeschrieben und ein kleines Fenster schwebt über der aktuellen App.</string>
     <string name="t_65579ecd" formatted="false">Diese Notiz hat bisher %1$s gekostet.</string>
     <string name="t_6575c78f" formatted="false">Talk Router ruft die Sprach- und Textmodelle über OpenRouter auf, mit deinem eigenen Schlüssel. Du bezahlst OpenRouter für das, was du nutzt; Talk Router hat keinen Server und verdient nichts daran.</string>
@@ -265,7 +267,6 @@
     <string name="t_783d9fbc" formatted="false">Bild konnte nicht gelesen werden.</string>
     <string name="t_791246e5" formatted="false">Name deines Chiefs</string>
     <string name="t_7a933498" formatted="false">Konnte nicht alle Audios löschen</string>
-    <string name="t_7aebd13e" formatted="false">Kopiert, mit langem Drücken einfügen</string>
     <string name="t_7b017d1c" formatted="false">Test von Talk Router. So sehen Benachrichtigungen deines Chief of Staff aus.</string>
     <string name="t_7bd974ca" formatted="false">Nimmt auf, bis du auf Stopp tippst. Du kannst Apps frei wechseln.</string>
     <string name="t_7c160dc5" formatted="false">Gib die MCP-Adresse ein, beginnend mit https:// oder http://</string>
@@ -304,7 +305,6 @@
     <string name="t_8bec24cc" formatted="false">Prüfen und speichern</string>
     <string name="t_8bf10d56" formatted="false">Verwerfen</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Hinzufügen</string>
-    <string name="t_8ce3db30" formatted="false">Verfeinerter Text kopiert</string>
     <string name="t_8edfe30e" formatted="false">erfordert Aufmerksamkeit</string>
     <string name="t_8fe78547" formatted="false">keine Sprache</string>
     <string name="t_900e8667" formatted="false">Diesen Monat nichts.</string>
@@ -323,6 +323,7 @@
     <string name="t_980cb9e2" formatted="false">Anthropic hat zu lange gebraucht.</string>
     <string name="t_980e859d" formatted="false">Talk-Router-Feedback</string>
     <string name="t_9931e57c" formatted="false">Konnte nicht starten. Berechtigungen prüfen und erneut versuchen.</string>
+    <string name="t_998a8ce0" formatted="false">Stattdessen kopiert, mit langem Drücken einfügen</string>
     <string name="t_9aefa862" formatted="false">Schlüssel auf openrouter.ai holen</string>
     <string name="t_9b464b7c_one" formatted="false">%1$d Anhang für dieses Diktat</string>
     <string name="t_9b464b7c_other" formatted="false">%1$d Anhänge für dieses Diktat</string>
@@ -384,7 +385,6 @@
     <string name="t_b0ad5840" formatted="false">Noch keine Vorlagen vorhanden.</string>
     <string name="t_b0bc3188" formatted="false">Wörter</string>
     <string name="t_b0c515f3" formatted="false">✓  An</string>
-    <string name="t_b1489b01" formatted="false">Mit klügerem Modell wiederholt und kopiert</string>
     <string name="t_b15fa13c" formatted="false">Keine Verbindung zu %1$s. Prüfe deine Internetverbindung.</string>
     <string name="t_b203fda8" formatted="false">Eigene Adresse</string>
     <string name="t_b214280c" formatted="false">Vorlage löschen</string>
@@ -401,6 +401,7 @@
     <string name="t_b80635d0" formatted="false">Mikrofon erlauben</string>
     <string name="t_b80c02ec" formatted="false">Diese Notiz wurde gelöscht.</string>
     <string name="t_b8663ec6" formatted="false">Medizin</string>
+    <string name="t_b8bced70" formatted="false">Verfeinert. Der Text ist in Talk Router.</string>
     <string name="t_b8d84684" formatted="false">Mikrofon nicht erlaubt</string>
     <string name="t_b942a462" formatted="false">keine Details</string>
     <string name="t_b99de9e8" formatted="false">Kein Anthropic-Schlüssel festgelegt.</string>
@@ -421,7 +422,6 @@
     <string name="t_c2ac4ac4" formatted="false">✓  Ein Schlüssel ist verschlüsselt auf diesem Gerät gespeichert.</string>
     <string name="t_c323cecd" formatted="false">Während des Diktierens</string>
     <string name="t_c3257368" formatted="false">Mit klügerem Modell wiederholen</string>
-    <string name="t_c329a080" formatted="false">Kopiert, mit langem Drücken einfügen. Einfügen erfordert Bedienungshilfen-Berechtigung (Einstellungen → Start).</string>
     <string name="t_c34fa500" formatted="false">Gib der Vorlage einen Namen und einen Text</string>
     <string name="t_c37292d9" formatted="false">etwa %1$s</string>
     <string name="t_c38dbe97" formatted="false">Einfügen an</string>
@@ -465,15 +465,14 @@
     <string name="t_d2c0aec0" formatted="false">Schließen</string>
     <string name="t_d37efb26" formatted="false">Benachrichtigungen</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Senden…</string>
-    <string name="t_d3f63d92" formatted="false">Verfeinert · kopiert</string>
     <string name="t_d41b37d2" formatted="false">Alle meine Daten löschen</string>
     <string name="t_d427e0ec" formatted="false">%1$d min</string>
     <string name="t_d45847fe" formatted="false">In bb öffnen ↗</string>
+    <string name="t_d486aa0e" formatted="false">Bereit zum Einfügen</string>
     <string name="t_d56c4783" formatted="false">Diese Anmeldung wurde hier nicht gestartet oder ist bereits abgelaufen. Starte sie erneut.</string>
     <string name="t_d6bd063a" formatted="false">Kachel</string>
     <string name="t_d6d7613f" formatted="false">Deine Vorlage</string>
     <string name="t_d6dce050" formatted="false">Kein Chief of Staff eingerichtet. Richte einen unter Einstellungen → bb ein.</string>
-    <string name="t_d769df43" formatted="false">Bereit zum Einfügen</string>
     <string name="t_d79a087e" formatted="false">Dieser Thread ist in bb archiviert. Dearchiviere ihn oder wähle einen anderen.</string>
     <string name="t_d79ccbde" formatted="false">Keine E-Mail-App gefunden. Schreibe an %1$s</string>
     <string name="t_d8427f19" formatted="false">Dein OpenRouter-Schlüssel</string>
@@ -492,10 +491,12 @@
     <string name="t_def9cb9f" formatted="false">Loslegen</string>
     <string name="t_df336a1d" formatted="false">Thread-Link oder -ID (thr_…)</string>
     <string name="t_dff4964d" formatted="false">Dein OpenRouter-Guthaben ist aufgebraucht. Lade Guthaben auf openrouter.ai auf und versuche es erneut.</string>
+    <string name="t_e0b2ab27" formatted="false">Das war\'s schon. Es funktioniert in jeder App genauso: Starten, sprechen, stoppen, einfügen. Deine Notizen werden in Talk Router gespeichert, wo du sie auch kopieren oder zum genauen Wortlaut zurückkehren kannst.</string>
     <string name="t_e124f150" formatted="false">Zum Beispiel: Ada</string>
     <string name="t_e17493b2" formatted="false">unter dieser Adresse antwortet nichts</string>
     <string name="t_e244f6df" formatted="false">Gespeichertes Audio verwerfen?</string>
     <string name="t_e24b4cba" formatted="false">Anmeldung fehlgeschlagen: %1$s</string>
+    <string name="t_e2530adf" formatted="false">Hier einfügen</string>
     <string name="t_e2774654" formatted="false">In ntfy öffnen</string>
     <string name="t_e281d2a6" formatted="false">Die Anmeldung kam von einem unerwarteten Server zurück (%1$s).</string>
     <string name="t_e3d95fe1" formatted="false">Hierüber öffnen sich Thread-Links, meist https://&lt;handle&gt;.getbb.app.</string>
@@ -521,7 +522,6 @@
     <string name="t_e9a27001" formatted="false">Datenschutzerklärung</string>
     <string name="t_ea954889" formatted="false">Weiter</string>
     <string name="t_eaa82cf9" formatted="false">Keine Sprache erkannt. Bereit für neue Aufnahme.</string>
-    <string name="t_eb0492bd" formatted="false">Verfeinert und kopiert</string>
     <string name="t_eb150f22" formatted="false">Aktion fehlgeschlagen. Prüfe Mikrofon-Berechtigung, Speicherplatz und deinen Schlüssel, dann versuche es erneut.</string>
     <string name="t_eb89173a" formatted="false">Bedienungshilfen öffnen</string>
     <string name="t_ec8fbe93" formatted="false">Text, Versionen, Kosten und Audio werden unwiderruflich gelöscht.</string>
@@ -540,10 +540,10 @@
     <string name="t_f1a961a8" formatted="false">bb hat eine unerwartete Antwort gesendet. Aktualisiere bb und versuche es erneut.</string>
     <string name="t_f1d71ab7" formatted="false">Punkte für Wörter und Tempo sind Schätzungen, keine Messungen deiner Stimme. Minutenpreise, Stand: %1$s.</string>
     <string name="t_f2cd6d4e" formatted="false">Automatisch · %1$s</string>
-    <string name="t_f33f1fa4" formatted="false">Das war\'s schon. Es funktioniert in jeder App genauso: starten, sprechen, stoppen, einfügen. Deine Notizen werden in Talk Router gespeichert, wo du auch zum exakten Wortlaut zurückwechseln kannst.</string>
     <string name="t_f37b2ae0" formatted="false">bb konnte es nicht ausführen: %1$s</string>
     <string name="t_f3856474" formatted="false">bb Connect hat keinen Server namens „%1$s“. Prüfe das Handle und ob bb Connect in bb aktiviert ist.</string>
     <string name="t_f41dc081" formatted="false">✓  Gesendet. Die Nachricht sollte gleich in der ntfy-App erscheinen.</string>
+    <string name="t_f4a367c5" formatted="false">Dein Text ist bereit zum Einfügen</string>
     <string name="t_f54ea68b" formatted="false">Einfügen kopiert den Text</string>
     <string name="t_f55495e0" formatted="false">Speichern</string>
     <string name="t_f5e73ad1" formatted="false">Die Verbindung zu OpenRouter ist abgebrochen. Prüfe deine Internetverbindung und versuche es erneut.</string>

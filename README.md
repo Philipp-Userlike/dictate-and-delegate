@@ -44,7 +44,7 @@ flowchart LR
 
 | Button | Does | Then turns into |
 |---|---|---|
-| **Insert** | Puts what you said at the cursor of the app you're in (through Android's Accessibility service). Without that permission, or without a text field, it's copied for you to paste. | – |
+| **Insert** | Puts what you said at the cursor of the app you're in (through Android's Accessibility service). Without that permission, or without a text field, it's copied instead, and the panel says so. Otherwise Talk Router never touches your clipboard. | – |
 | **✨ Refine** | One call to Claude Sonnet 5.5 makes the text you need: works out what it's for (message, email, note, reply), follows what you asked, fills in a template you named, keeps your language and facts. | **Insert refined**. If the transcript you inserted is still unchanged in the field, it's replaced in place. |
 | **🧑‍💼 Chief** | Sends what you said, plus pasted text, to your chief-of-staff thread in bb. | **Open chat ↗**, which opens the thread. If the chief sends text back for you to paste, **Insert from chief** appears. |
 | **✕** | While recording: cancels, nothing is transcribed or sent. Afterwards: closes the panel; the note stays in Talk Router. | – |
@@ -87,7 +87,7 @@ flowchart TB
     ntfyapp -- "tap" --> pwa
 ```
 
-- **OpenRouter:** speech, Jev's decision and Refine. You pay OpenRouter directly for what you use; every note shows what it cost, and Settings → Activity shows which model did what, how long it took and what it cost.
+- **OpenRouter:** speech, Jev's decision and Refine (with your own Anthropic key, Refine goes to Anthropic directly instead, on your Anthropic credits, with OpenRouter as the fallback). You pay OpenRouter directly for what you use; every note shows what it cost, and Settings → Activity shows which model did what, how long it took and what it cost.
 - **bb:** an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Talk Router uses bb's built-in MCP server and its `run` tool to create the chief-of-staff thread (`bb thread spawn`) and to send it your dictations (`bb thread tell`). The chief does small things itself and hands bigger work to child threads.
 - **ntfy:** a simple notification service. The chief sends exactly one notification per request, with a summary it writes itself and a link to its thread. Text meant for you to paste goes as a second message tagged with the request's ID: while the panel is open, Talk Router reads your topic and shows **Insert from chief**; otherwise the notification's **Copy** button hands it to Talk Router. The topic is a long random name that only you know. Talk Router itself sends no notifications.
 
@@ -169,7 +169,7 @@ Everything can be changed later in Settings: the key, how you start, the speech 
 ## Privacy
 
 - Notes and audio stay on the phone, encrypted. There's no Talk Router account and no server.
-- When you dictate, audio and text go to OpenRouter and the model providers it uses (speech, Jev, and Claude when you Refine). When you hand off a task, what you said (and text you pasted) goes to your bb.
+- When you dictate, audio and text go to OpenRouter and the model providers it uses (speech, Jev, and Claude when you Refine). With your Anthropic key set, Refine's text goes to Anthropic instead. When you hand off a task, what you said (and text you pasted) goes to your bb.
 - Your chief's notifications pass through ntfy.sh (or your own ntfy server) under your random topic.
 - Accessibility is used only for Insert and the volume key: Talk Router asks for no accessibility events and looks up the text field you're typing in only when you tap Insert. No screen reading.
 

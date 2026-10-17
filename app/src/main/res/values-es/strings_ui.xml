@@ -13,6 +13,7 @@
     <string name="t_05db04e6" formatted="false">Precio no disponible · ver origen</string>
     <string name="t_05ff3c07" formatted="false">Nada que pegar: copia algo de texto primero.</string>
     <string name="t_064b8a10" formatted="false">No se pudo pulir esta nota: %1$s Abajo está lo que dijiste.</string>
+    <string name="t_067329ed" formatted="false">esta app solo admite pegar, así que también está en el portapapeles</string>
     <string name="t_068966f6" formatted="false">Mejorar: créditos de Anthropic ≈%1$s</string>
     <string name="t_07290dc9" formatted="false">Talk Router usa este modelo para cada nota.</string>
     <string name="t_07ee7593" formatted="false">¿Hablas de algo? Añádelo, como una oferta a la que respondes.</string>
@@ -74,7 +75,6 @@
     <string name="t_22747cc0" formatted="false">Mensajes</string>
     <string name="t_22a3ef54" formatted="false">Legal</string>
     <string name="t_22d5fbd9" formatted="false">Añadir contexto a este dictado</string>
-    <string name="t_22d9f0fb" formatted="false">Pega aquí</string>
     <string name="t_236a5def" formatted="false">Lo que dijiste</string>
     <string name="t_2427c428" formatted="false">Todas las notas</string>
     <string name="t_244d0dc6" formatted="false">«Usa mi solicitud de piso para el apartamento de dos habitaciones en Hauptstraße 5, la visita es el sábado y menciona que teletrabajo».</string>
@@ -110,7 +110,6 @@
     <string name="t_30a4185d" formatted="false">Gastado</string>
     <string name="t_30a98a26" formatted="false">No se pudo actualizar el historial.</string>
     <string name="t_315f5fe4" formatted="false">Pulido</string>
-    <string name="t_31e20d5f" formatted="false">1. Pulsa Iniciar y di una frase.\n2. Pulsa Parar. Talk Router la transcribirá.\n3. Toca el cuadro inferior y pulsa Insertar en el panel flotante. O mantén pulsado el cuadro y toca Pegar: el texto también se copia.</string>
     <string name="t_324be3eb" formatted="false">No se pudo eliminar la plantilla</string>
     <string name="t_32a5138e" formatted="false">original</string>
     <string name="t_32c62f32" formatted="false">Tu clave de OpenRouter ya no es válida. Cámbiala en los ajustes de Talk Router.</string>
@@ -195,6 +194,7 @@
     <string name="t_52ee42ed" formatted="false">¿Eliminar esta nota?</string>
     <string name="t_5300e89a" formatted="false">Guardar audio durante 7 días</string>
     <string name="t_5305888b" formatted="false">Inserta donde escribes</string>
+    <string name="t_53862dd4" formatted="false">Se ha copiado. Pégalo con una pulsación larga. Para insertar se necesita el permiso de accesibilidad (Ajustes → Iniciar).</string>
     <string name="t_55026b0c" formatted="false">Actividad</string>
     <string name="t_551d8c4b" formatted="false">No hay ninguna app para seleccionar archivos.</string>
     <string name="t_55cc6297" formatted="false">Dictado en segundo plano</string>
@@ -208,6 +208,7 @@
     <string name="t_5a076fff" formatted="false">%1$s lo convierte en el texto que necesitas: un correo, una respuesta, una nota limpia o tu plantilla. Luego, Insertar pulido.</string>
     <string name="t_5a36973e" formatted="false">Puliendo tu texto…</string>
     <string name="t_5bd47891" formatted="false">Cada nota muestra su coste según los datos de OpenRouter. La decisión de Jev cuesta unos 0,00002 $; un minuto de voz con el modelo predeterminado, unos 0,002 $.</string>
+    <string name="t_5c1c78f4" formatted="false">1. Toca Iniciar y di una frase.\n2. Toca Detener. Talk Router la transcribe.\n3. Toca el cuadro de abajo y luego 📥 Insertar en el panel flotante. Tu portapapeles se queda como estaba.</string>
     <string name="t_5c53b93a" formatted="false">El micrófono se interrumpió. Puedes reintentar con el audio guardado.</string>
     <string name="t_5cab269d" formatted="false">Tu jefe de gabinete trabaja en ello en bb y te avisa mediante ntfy cuando termina o te necesita. El botón abre el hilo.</string>
     <string name="t_5d00536d" formatted="false">Copiado</string>
@@ -229,6 +230,7 @@
     <string name="t_64ad54e9" formatted="false">Crea un hilo llamado «Jefe de gabinete» en Personal (sin proyecto), con instrucciones permanentes que incluyen tu tema de ntfy.</string>
     <string name="t_64d60911" formatted="false">Uso de Talk Router</string>
     <string name="t_65211030" formatted="false">La dirección del servidor empieza por https://</string>
+    <string name="t_653174a7" formatted="false">Rehecho con un modelo más inteligente</string>
     <string name="t_6542df76" formatted="false">Al parar, tus palabras se transcriben y aparece un pequeño panel flotante sobre la app en la que estés.</string>
     <string name="t_65579ecd" formatted="false">Esta nota ha costado %1$s hasta ahora.</string>
     <string name="t_6575c78f" formatted="false">Talk Router usa los modelos de voz y texto a través de OpenRouter con tu propia clave. Pagas a OpenRouter por lo que usas; Talk Router no tiene servidor ni se lleva comisión.</string>
@@ -266,7 +268,6 @@
     <string name="t_783d9fbc" formatted="false">No se pudo leer esta imagen.</string>
     <string name="t_791246e5" formatted="false">Nombre de tu jefe</string>
     <string name="t_7a933498" formatted="false">No se pudo eliminar todo el audio</string>
-    <string name="t_7aebd13e" formatted="false">Copiado; pega con una pulsación larga</string>
     <string name="t_7b017d1c" formatted="false">Prueba de Talk Router. Así llegan las notificaciones de tu jefe de gabinete.</string>
     <string name="t_7bd974ca" formatted="false">Grabando hasta que toques Detener. Cambia de app con libertad.</string>
     <string name="t_7c160dc5" formatted="false">Introduce la dirección MCP, empezando por https:// o http://</string>
@@ -306,7 +307,6 @@
     <string name="t_8bec24cc" formatted="false">Comprobar y guardar</string>
     <string name="t_8bf10d56" formatted="false">Descartar</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Añadir</string>
-    <string name="t_8ce3db30" formatted="false">Texto pulido copiado</string>
     <string name="t_8edfe30e" formatted="false">requiere atención</string>
     <string name="t_8fe78547" formatted="false">sin voz</string>
     <string name="t_900e8667" formatted="false">Nada este mes.</string>
@@ -325,6 +325,7 @@
     <string name="t_980cb9e2" formatted="false">Anthropic tardó demasiado.</string>
     <string name="t_980e859d" formatted="false">Comentarios sobre Talk Router</string>
     <string name="t_9931e57c" formatted="false">No se pudo iniciar. Comprueba los permisos e inténtalo de nuevo.</string>
+    <string name="t_998a8ce0" formatted="false">Se ha copiado. Pégalo con una pulsación larga.</string>
     <string name="t_9aefa862" formatted="false">Obtener clave en openrouter.ai</string>
     <string name="t_9b464b7c_many" formatted="false">%1$d de archivos adjuntos para este dictado</string>
     <string name="t_9b464b7c_one" formatted="false">%1$d archivo adjunto para este dictado</string>
@@ -387,7 +388,6 @@
     <string name="t_b0ad5840" formatted="false">Aún no hay plantillas.</string>
     <string name="t_b0bc3188" formatted="false">Palabras</string>
     <string name="t_b0c515f3" formatted="false">✓  Activado</string>
-    <string name="t_b1489b01" formatted="false">Rehecho con un modelo mejor y copiado</string>
     <string name="t_b15fa13c" formatted="false">Sin conexión con %1$s. Comprueba tu conexión a internet.</string>
     <string name="t_b203fda8" formatted="false">Dirección personalizada</string>
     <string name="t_b214280c" formatted="false">Eliminar plantilla</string>
@@ -404,6 +404,7 @@
     <string name="t_b80635d0" formatted="false">Permitir micrófono</string>
     <string name="t_b80c02ec" formatted="false">Esta nota se ha eliminado.</string>
     <string name="t_b8663ec6" formatted="false">Medicina</string>
+    <string name="t_b8bced70" formatted="false">Mejorado. El texto está en Talk Router.</string>
     <string name="t_b8d84684" formatted="false">Micrófono no permitido</string>
     <string name="t_b942a462" formatted="false">sin detalles</string>
     <string name="t_b99de9e8" formatted="false">No hay ninguna clave de Anthropic configurada.</string>
@@ -425,7 +426,6 @@
     <string name="t_c2ac4ac4" formatted="false">✓  Hay una clave guardada en este teléfono, cifrada.</string>
     <string name="t_c323cecd" formatted="false">Mientras dictas</string>
     <string name="t_c3257368" formatted="false">Rehacer con un modelo mejor</string>
-    <string name="t_c329a080" formatted="false">Copiado; pega con una pulsación larga. Insertar necesita el permiso de accesibilidad (Ajustes → Inicio).</string>
     <string name="t_c34fa500" formatted="false">Ponle un nombre y un texto a la plantilla</string>
     <string name="t_c37292d9" formatted="false">unos %1$s</string>
     <string name="t_c38dbe97" formatted="false">Insertar activado</string>
@@ -469,15 +469,14 @@
     <string name="t_d2c0aec0" formatted="false">Cerrar</string>
     <string name="t_d37efb26" formatted="false">Notificaciones</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Enviando…</string>
-    <string name="t_d3f63d92" formatted="false">Pulido · copiado</string>
     <string name="t_d41b37d2" formatted="false">Eliminar todos mis datos</string>
     <string name="t_d427e0ec" formatted="false">%1$d min</string>
     <string name="t_d45847fe" formatted="false">Abrir en bb ↗</string>
+    <string name="t_d486aa0e" formatted="false">Listo para insertar</string>
     <string name="t_d56c4783" formatted="false">Este inicio de sesión no se inició aquí o ya ha finalizado. Inícialo de nuevo.</string>
     <string name="t_d6bd063a" formatted="false">Botón</string>
     <string name="t_d6d7613f" formatted="false">Tu plantilla</string>
     <string name="t_d6dce050" formatted="false">No hay ningún jefe de gabinete configurado. Configura uno en Ajustes → bb.</string>
-    <string name="t_d769df43" formatted="false">Listo para pegar</string>
     <string name="t_d79a087e" formatted="false">Ese hilo está archivado en bb. Desarchívalo o elige otro.</string>
     <string name="t_d79ccbde" formatted="false">No se encontró ninguna app de correo. Escribe a %1$s</string>
     <string name="t_d8427f19" formatted="false">Tu clave de OpenRouter</string>
@@ -496,10 +495,12 @@
     <string name="t_def9cb9f" formatted="false">Empezar</string>
     <string name="t_df336a1d" formatted="false">Enlace o ID del hilo (thr_…)</string>
     <string name="t_dff4964d" formatted="false">Te has quedado sin saldo en OpenRouter. Añade saldo en openrouter.ai y vuelve a intentarlo.</string>
+    <string name="t_e0b2ab27" formatted="false">Eso es todo. Funciona igual en cualquier app: iniciar, hablar, detener, insertar. Tus notas se guardan en Talk Router, donde también puedes copiarlas o volver a lo que dijiste exactamente.</string>
     <string name="t_e124f150" formatted="false">Por ejemplo: Ada</string>
     <string name="t_e17493b2" formatted="false">nada responde en esta dirección</string>
     <string name="t_e244f6df" formatted="false">¿Descartar el audio guardado?</string>
     <string name="t_e24b4cba" formatted="false">Error al iniciar sesión: %1$s</string>
+    <string name="t_e2530adf" formatted="false">Insertar aquí</string>
     <string name="t_e2774654" formatted="false">Abrir en ntfy</string>
     <string name="t_e281d2a6" formatted="false">El inicio de sesión volvió desde un servidor inesperado (%1$s).</string>
     <string name="t_e3d95fe1" formatted="false">Dónde se abren los enlaces a los hilos, normalmente https://&lt;usuario&gt;.getbb.app.</string>
@@ -525,7 +526,6 @@
     <string name="t_e9a27001" formatted="false">Política de privacidad</string>
     <string name="t_ea954889" formatted="false">Continuar</string>
     <string name="t_eaa82cf9" formatted="false">No se reconoció voz. Listo para volver a grabar.</string>
-    <string name="t_eb0492bd" formatted="false">Pulido y copiado</string>
     <string name="t_eb150f22" formatted="false">No se pudo completar esta acción. Comprueba el permiso del micrófono, el almacenamiento disponible y tu clave guardada, y vuelve a intentarlo.</string>
     <string name="t_eb89173a" formatted="false">Abrir ajustes de accesibilidad</string>
     <string name="t_ec8fbe93" formatted="false">Se eliminarán su texto, versiones, costes y audio. Esto no se puede deshacer.</string>
@@ -544,10 +544,10 @@
     <string name="t_f1a961a8" formatted="false">bb envió una respuesta inesperada. Actualiza bb e inténtalo de nuevo.</string>
     <string name="t_f1d71ab7" formatted="false">Los puntos de palabras y velocidad son estimaciones orientativas, no mediciones de tu voz. Precios por minuto desde %1$s.</string>
     <string name="t_f2cd6d4e" formatted="false">Automático · %1$s</string>
-    <string name="t_f33f1fa4" formatted="false">¡Listo! Funciona igual en cualquier app: inicia, habla, para y pega. Tus notas se guardan en Talk Router, donde también puedes recuperar exactamente lo que dijiste.</string>
     <string name="t_f37b2ae0" formatted="false">bb no pudo hacerlo: %1$s</string>
     <string name="t_f3856474" formatted="false">bb Connect no tiene ningún servidor llamado «%1$s». Comprueba el usuario y que bb Connect esté activo en bb.</string>
     <string name="t_f41dc081" formatted="false">✓  Enviado. Debería aparecer en la app de ntfy.</string>
+    <string name="t_f4a367c5" formatted="false">Tu texto está listo para insertar</string>
     <string name="t_f54ea68b" formatted="false">Insertar copia</string>
     <string name="t_f55495e0" formatted="false">Guardar</string>
     <string name="t_f5e73ad1" formatted="false">Se perdió la conexión con OpenRouter. Comprueba tu conexión a internet y reinténtalo.</string>
