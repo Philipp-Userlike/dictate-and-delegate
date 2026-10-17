@@ -105,6 +105,42 @@ final class TestServer {
     postTo(bbRoot(), "/test/config", new JSONObject().put("token", token));
   }
 
+  /** What the fake bb has installed: {"installed": {name: hash}, "files": {name: content}}. */
+  static JSONObject bbSkills() throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(bbRoot() + "/test/skills").openConnection();
+    try (InputStream in = c.getInputStream()) {
+      return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+    } finally {
+      c.disconnect();
+    }
+  }
+
+  /** The installed hash of one fake bb skill, "" when missing or unreadable. */
+  static String bbSkillsOr(String name) {
+    try {
+      return bbSkills().getJSONObject("installed").optString(name);
+    } catch (Exception ex) {
+      return "";
+    }
+  }
+
+  /** Sets what the fake bb has installed ({name: hash}), and whether installing stalls. */
+  static void bbSetSkills(JSONObject installed, boolean stall) throws Exception {
+    postTo(bbRoot(), "/test/skills", new JSONObject().put("installed", installed).put("stall", stall));
+  }
+
+  /** Marks bb's skills as current for this app, so tests about other things don't install. */
+  static void skillsCurrent(android.content.Context context) throws Exception {
+    String summary = ChiefSkills.summary(ChiefSkills.filled(context));
+    context
+        .getSharedPreferences("settings", 0)
+        .edit()
+        .putString(ChiefSkills.INSTALLED, summary)
+        .putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE)
+        .putBoolean(ChiefSkills.CHIEF_TOLD, true)
+        .commit();
+  }
+
   /** MCP requests the fake received since the last reset: {"method", "tool", "code", "auth"}. */
   static JSONArray bbRequests() throws Exception {
     HttpURLConnection c = (HttpURLConnection) new URL(bbRoot() + "/test/requests").openConnection();

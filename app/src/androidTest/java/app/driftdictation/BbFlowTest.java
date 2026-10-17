@@ -112,10 +112,6 @@ public class BbFlowTest {
     return find(By.desc(text), text);
   }
 
-  /** ⋯ on the recording panel: shows 📎, ✕, Refine and Chief. */
-  void more() {
-    find(By.desc("More"), "⋯").click();
-  }
 
   UiObject2 find(BySelector selector, String what) {
     UiObject2 found = device.wait(Until.findObject(selector), 8000);
@@ -146,6 +142,7 @@ public class BbFlowTest {
     bb.useCustom(TestServer.bbUrl(), "", LINKS);
     bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
     prefs.edit().putString(Profile.CHIEF_NAME, "Henry").commit();
+    TestServer.skillsCurrent(context);
   }
 
   @Before
@@ -174,6 +171,10 @@ public class BbFlowTest {
         .remove(BbBridge.URL)
         .remove(BbBridge.LINK_BASE)
         .remove(BbBridge.CHIEF_ID)
+        .remove(ChiefSkills.USER_NAME)
+        .remove(ChiefSkills.INSTALLED)
+        .remove(ChiefSkills.CHECKED_VERSION)
+        .remove(ChiefSkills.CHIEF_TOLD)
         .remove(BbBridge.CHIEF_NAME)
         .remove(BbBridge.NTFY_SERVER)
         .commit();
@@ -227,14 +228,21 @@ public class BbFlowTest {
     while (new BbBridge(context).chiefId().isEmpty() && SystemClock.elapsedRealtime() < deadline)
       Thread.sleep(200);
     assertEquals(TestServer.CHIEF, new BbBridge(context).chiefId());
-    String spawn = TestServer.bbSnippets().get(0);
-    assertTrue(spawn, spawn.contains("talkrouter-paste"));
-    assertTrue(prefs.getBoolean(BbBridge.CHIEF_KNOWS_PASTE, false));
-    assertTrue(spawn, spawn.contains("\"thread\",\"spawn\",\"--project\",\"proj_personal\",\"--title\",\"Chief of staff\""));
+    // Connecting installed the skills through a short thread, with the topic and links filled in.
     String topic = new Vault(context).get(BbBridge.NTFY_TOPIC);
     assertTrue(topic, topic.matches("talkrouter-[A-Za-z0-9_-]{24}"));
-    assertTrue(spawn.contains("https:\\/\\/ntfy.sh\\/" + topic) || spawn.contains("https://ntfy.sh/" + topic));
-    assertTrue(spawn.contains("threads\\/$BB_THREAD_ID") || spawn.contains("threads/$BB_THREAD_ID"));
+    JSONObject skills = TestServer.bbSkills();
+    String router = skills.getJSONObject("files").getString("talk-router");
+    assertTrue(router, router.contains("https://ntfy.sh/" + topic));
+    assertTrue(router, router.contains(LINKS + "/threads/$BB_THREAD_ID"));
+    assertTrue(skills.getJSONObject("files").getString("chief-of-staff").contains("the user's chief of staff"));
+    // The chief itself only gets one line.
+    String spawn = null;
+    for (String code : TestServer.bbSnippets()) if (code.contains("\"--title\",\"Chief of staff\"")) spawn = code;
+    assertNotNull(spawn);
+    assertTrue(spawn, spawn.contains("\"thread\",\"spawn\",\"--project\",\"proj_personal\",\"--title\",\"Chief of staff\""));
+    assertTrue(spawn, spawn.contains(ChiefSkills.START));
+    assertFalse(spawn, spawn.contains("talkrouter-paste"));
     find("Open in bb ↗");
 
     device.pressBack();
@@ -350,6 +358,22 @@ public class BbFlowTest {
     }
   }
 
+  /** Scrolls the page to its end. */
+  void toEnd() throws Exception {
+    new UiScrollable(new UiSelector().scrollable(true)).scrollToEnd(5);
+    Thread.sleep(500);
+  }
+
+  /** Waits up to 20 s for a condition. */
+  void until(java.util.concurrent.Callable<Boolean> condition, String what) throws Exception {
+    long deadline = SystemClock.elapsedRealtime() + 20000;
+    while (SystemClock.elapsedRealtime() < deadline) {
+      if (condition.call()) return;
+      Thread.sleep(200);
+    }
+    fail("Never happened: " + what);
+  }
+
   void waitDecided() throws Exception {
     long deadline = SystemClock.elapsedRealtime() + 8000;
     while (!DictationService.session().decided && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
@@ -446,7 +470,6 @@ public class BbFlowTest {
     TestServer.transcripts("the build is red again");
     send(DictationService.RECORD);
     waitFor("recording");
-    more();
     find("🧑‍💼 Chief").click();
     find("🧑‍💼 Chief ✓");
     assertTrue(TestServer.bbSnippets().isEmpty());
@@ -457,23 +480,86 @@ public class BbFlowTest {
   }
 
   @Test
-  public void aChiefFromBeforeIsToldOnceHowToSendTextBack() throws Exception {
-    connectFake();
-    prefs.edit().remove(BbBridge.CHIEF_KNOWS_PASTE).commit();
-    TestServer.transcripts("Henry, book a table", "Henry, call the plumber");
-    TestServer.decide(0, 0.98, "none");
-    TestServer.decide(0, 0.98, "none");
-    dictate("copied");
-    latestOnce(n -> n.json.has("chiefThread"), "the chief");
+  public void connectingInstallsTheSkillsAndAnOlderChiefIsToldOnce() throws Exception {
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(TestServer.bbUrl(), "", LINKS);
+    // A chief from before the skills: it hasn't been told.
+    bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
+    prefs.edit().remove(ChiefSkills.CHIEF_TOLD).putString(ChiefSkills.USER_NAME, "Alex").commit();
+    ChiefSkills.pollMs = 300;
+    launch();
+    tap("Settings");
+    tap("Connection");
+    find("Your chief's skills");
+    toEnd();
+    find(By.textContains("Installed in bb"), "installed");
+    JSONObject installed = TestServer.bbSkills().getJSONObject("installed");
+    java.util.Map<String, String> files = ChiefSkills.filled(context);
+    assertEquals(ChiefSkills.marker(files.get("chief-of-staff")), installed.getString("chief-of-staff"));
+    assertEquals(ChiefSkills.marker(files.get("talk-router")), installed.getString("talk-router"));
+    assertTrue(TestServer.bbSkills().getJSONObject("files").getString("chief-of-staff").contains("You're Alex's chief of staff."));
+    // The install thread was archived, and the older chief got the one line, once.
     List<String> snippets = TestServer.bbSnippets();
-    assertEquals(2, snippets.size());
-    assertTrue(snippets.get(0).contains("talkrouter-paste"));
-    assertTrue(snippets.get(1).contains("book a table"));
-    send(DictationService.HIDE);
-    Thread.sleep(500);
-    dictate("copied");
-    latestOnce(n -> n.json.optString("original").contains("plumber") && n.json.has("chiefThread"), "the chief");
-    assertEquals(3, TestServer.bbSnippets().size());
+    long tells = snippets.stream().filter(c -> c.contains("\"thread\",\"tell\"")).count();
+    assertEquals(1, tells);
+    assertTrue(snippets.stream().anyMatch(c -> c.contains("\"thread\",\"archive\",\"thr_fakeinstall\"")));
+    assertTrue(snippets.stream().anyMatch(c -> c.contains(ChiefSkills.START)));
+    assertTrue(prefs.getBoolean(ChiefSkills.CHIEF_TOLD, false));
+    // Up to date: checking again installs nothing.
+    int before = snippets.size();
+    toEnd();
+    find("Check the skills in bb").click();
+    Thread.sleep(1500);
+    find(By.textContains("Installed in bb"), "installed");
+    assertEquals(before, TestServer.bbSnippets().size());
+  }
+
+  @Test
+  public void aNewTopicOrAnAppUpdateReinstallsAndCurrentSkillsAreLeftAlone() throws Exception {
+    connectFake();
+    ChiefSkills.pollMs = 300;
+    java.util.Map<String, String> files = ChiefSkills.filled(context);
+    TestServer.bbSetSkills(
+        new JSONObject()
+            .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
+            .put("talk-router", ChiefSkills.marker(files.get("talk-router"))),
+        false);
+    // An app update with current skills in bb: checked, nothing installed.
+    prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
+    launch();
+    until(() -> prefs.getInt(ChiefSkills.CHECKED_VERSION, 0) == BuildConfig.VERSION_CODE, "checked after the update");
+    assertTrue(TestServer.bbSnippets().isEmpty());
+    // An old talk-router in bb, found after the next update: reinstalled.
+    TestServer.bbSetSkills(
+        new JSONObject().put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff"))).put("talk-router", "0ld0ld0ld0ld"),
+        false);
+    prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
+    launch();
+    until(() -> TestServer.bbSkillsOr("talk-router").equals(ChiefSkills.marker(files.get("talk-router"))), "reinstalled");
+    // A new ntfy server changes talk-router: reinstalled with it.
+    new BbBridge(context).setNtfyServer("https://ntfy.example.org");
+    launch();
+    until(() -> TestServer.bbSkillsOr("talk-router").equals(ChiefSkills.marker(ChiefSkills.filled(context).get("talk-router"))), "reinstalled with the new server");
+    assertTrue(TestServer.bbSkills().getJSONObject("files").getString("talk-router").contains("https://ntfy.example.org/"));
+  }
+
+  @Test
+  public void whenTheInstallThreadDoesNothingItSaysSo() throws Exception {
+    connectFake();
+    ChiefSkills.pollMs = 200;
+    ChiefSkills.installWaitMs = 2000;
+    try {
+      TestServer.bbSetSkills(new JSONObject(), true);
+      prefs.edit().remove(ChiefSkills.INSTALLED).commit();
+      launch();
+      tap("Settings");
+      tap("Connection");
+      toEnd();
+      find(By.textStartsWith("Couldn't install the chief's skills:"), "the failure");
+      assertTrue(TestServer.bbSnippets().stream().anyMatch(c -> c.contains("\"thread\",\"archive\",\"thr_fakeinstall\"")));
+    } finally {
+      ChiefSkills.installWaitMs = 4 * 60_000;
+    }
   }
 
   @Test
@@ -540,16 +626,21 @@ public class BbFlowTest {
   }
 
   @Test
-  public void anExistingThreadCanBeTheChiefAndIsToldWhereToNotify() throws Exception {
+  public void anExistingThreadCanBeTheChiefAndGetsTheOneLine() throws Exception {
     BbBridge bb = new BbBridge(context);
     bb.useCustom(TestServer.bbUrl(), "", LINKS);
+    ChiefSkills.pollMs = 300;
     BbBridge.ThreadInfo t = bb.useExistingChief(LINKS + "/threads/thr_existing7");
     assertEquals("thr_existing7", t.id());
     assertEquals("thr_existing7", bb.chiefId());
     List<String> snippets = TestServer.bbSnippets();
     assertTrue(snippets.get(0).contains("\"thread\",\"show\",\"thr_existing7\""));
-    assertTrue(snippets.get(1).contains("\"thread\",\"tell\",\"thr_existing7\""));
-    assertTrue(snippets.get(1).contains(bb.ntfyTopic()));
+    // The skills first, then the one line.
+    assertTrue(snippets.get(1).contains("Talk Router: install skills"));
+    String tell = snippets.get(snippets.size() - 1);
+    assertTrue(tell, tell.contains("\"thread\",\"tell\",\"thr_existing7\""));
+    assertTrue(tell, tell.contains(ChiefSkills.START));
+    assertFalse(tell, tell.contains(bb.ntfyTopic()));
     TestServer.bbFail("show", "tool");
     try {
       bb.useExistingChief("thr_gone");
@@ -559,4 +650,5 @@ public class BbFlowTest {
     }
     assertEquals("thr_existing7", bb.chiefId());
   }
+
 }

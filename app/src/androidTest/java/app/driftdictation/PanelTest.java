@@ -74,10 +74,6 @@ public class PanelTest {
     return find(By.desc(text), text);
   }
 
-  /** ⋯ on the recording panel: shows 📎, ✕, Refine and Chief. */
-  void more() {
-    find(By.desc("More"), "⋯").click();
-  }
 
   UiObject2 find(BySelector selector, String what) {
     UiObject2 found = device.wait(Until.findObject(selector), 10000);
@@ -209,6 +205,10 @@ public class PanelTest {
         .putInt("bubbleY", 900) // Clear of the test pad's field and of Android's clipboard chip.
         .remove(TalkAccessibility.VOLUME_KEY)
         .remove(BbBridge.CHIEF_ID)
+        .remove(ChiefSkills.USER_NAME)
+        .remove(ChiefSkills.INSTALLED)
+        .remove(ChiefSkills.CHECKED_VERSION)
+        .remove(ChiefSkills.CHIEF_TOLD)
         .remove(BbBridge.CHIEF_NAME)
         .remove(BbBridge.NTFY_SERVER)
         .commit();
@@ -252,9 +252,6 @@ public class PanelTest {
     send(DictationService.RECORD);
     waitFor("recording");
     find(By.desc("Stop recording"), "the stop button");
-    find(By.desc("More"), "⋯");
-    shot("1a-recording-collapsed");
-    more();
     find("✨ Refine");
     shot("1-recording");
     send(DictationService.STOP);
@@ -307,7 +304,6 @@ public class PanelTest {
     TestServer.script("text", new JSONObject().put("text", "Hello there!").put("delay", 2));
     send(DictationService.RECORD);
     waitFor("recording");
-    more();
     find("✨ Refine").click();
     find("✨ Refine ✓");
     assertTrue(TestServer.requests().length() == 0);
@@ -399,7 +395,6 @@ public class PanelTest {
     send(DictationService.RECORD);
     waitFor("recording");
     Thread.sleep(800);
-    more();
     find(By.desc("Cancel: nothing is transcribed or sent"), "✕").click();
     until("the panel is gone", () -> !DictationService.bubbleVisible());
     until("ready again", () -> DictationService.READY.equals(prefs.getString("state", "")) || DictationService.instance == null);
@@ -425,6 +420,7 @@ public class PanelTest {
     bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
     bb.setNtfyServer(TestServer.ntfyRoot());
     prefs.edit().putString(Profile.CHIEF_NAME, "Henry").commit();
+    TestServer.skillsCurrent(context);
     return bb;
   }
 
@@ -506,7 +502,8 @@ public class PanelTest {
    * Opt-in check against a real bb and a real ntfy server; speech and Jev stay fake. Run with
    * -e realMcp <bb MCP address> -e realLinks <bb web address> -e realNtfy <ntfy server> and
    * -e realTitle <thread title>. Creates a chief with that title (archive it afterwards; its ID is
-   * in logcat under TalkRouterReal) and waits for its text to paste as long as the panel does.
+   * in logcat under TalkRouterReal) and waits for its text to paste as long as the panel does. The
+   * skills go to that chief as its first message, not into bb's skills.
    */
   @Test
   public void realBbChiefSendsTextBackToThePanel() throws Exception {
@@ -515,7 +512,14 @@ public class PanelTest {
     BbBridge bb = new BbBridge(context);
     bb.useCustom(args.getString("realMcp"), "", args.getString("realLinks"));
     bb.setNtfyServer(args.getString("realNtfy"));
-    String prompt = BbBridge.chiefPrompt(bb.ntfyServer(), bb.ntfyTopic(), args.getString("realLinks"));
+    // Never into the real ~/.bb/skills: this chief gets the filled skills as its first message.
+    TestServer.skillsCurrent(context);
+    java.util.Map<String, String> files = ChiefSkills.filled(context);
+    String prompt =
+        "For this test, follow these two skills as if they were installed, then reply \"ready\".\n\n"
+            + files.get(ChiefSkills.CHIEF)
+            + "\n"
+            + files.get(ChiefSkills.ROUTER);
     String snippet =
         BbBridge.spawnSnippet(prompt)
             .replace(JSONObject.quote(BbBridge.CHIEF_TITLE), JSONObject.quote(args.getString("realTitle")));
@@ -578,7 +582,6 @@ public class PanelTest {
     assertTrue(key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOLUME_DOWN));
     waitFor("recording");
     find(By.desc("Stop recording"), "the stop button");
-    more();
     find("✨ Refine");
     shot("0b-volume-recording-again");
     assertTrue(key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN));
@@ -609,7 +612,6 @@ public class PanelTest {
     waitFor("recording");
     // The panel is there while recording, so Refine and Chief can be chosen while talking.
     find(By.desc("Stop recording"), "the stop button");
-    more();
     find("✨ Refine");
     shot("0-volume-recording");
     Thread.sleep(1000);

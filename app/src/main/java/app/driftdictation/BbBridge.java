@@ -40,9 +40,7 @@ final class BbBridge {
       CHIEF_NAME = "chiefTitle",
       NTFY_SERVER = "ntfyServer",
       TOKEN = "bbToken",
-      NTFY_TOPIC = "ntfyTopic",
-      /** The chief knows the paste command (its instructions are from version 2.2 or later). */
-      CHIEF_KNOWS_PASTE = "chiefKnowsPaste";
+      NTFY_TOPIC = "ntfyTopic";
 
   static final String NTFY_DEFAULT = "https://ntfy.sh";
 
@@ -131,12 +129,12 @@ final class BbBridge {
         .edit()
         .putString(CHIEF_ID, t.id())
         .putString(CHIEF_NAME, t.title())
-        .putBoolean(CHIEF_KNOWS_PASTE, true)
+        .putBoolean(ChiefSkills.CHIEF_TOLD, true)
         .apply();
   }
 
   void forgetChief() {
-    prefs.edit().remove(CHIEF_ID).remove(CHIEF_NAME).remove(CHIEF_KNOWS_PASTE).apply();
+    prefs.edit().remove(CHIEF_ID).remove(CHIEF_NAME).remove(ChiefSkills.CHIEF_TOLD).apply();
   }
 
   /** Signs out of bb Connect (revoking the tokens) or forgets the custom address. */
@@ -231,18 +229,6 @@ final class BbBridge {
         + " status: s.thread.status, archived: !!s.thread.archivedAt};";
   }
 
-  /** The curl line the chief uses to notify the user; $BB_THREAD_ID is its own thread. */
-  static String notifyCommand(String server, String topic, String linkBase) {
-    String click = linkBase.isEmpty() ? "" : " -H \"Click: " + linkBase + "/threads/$BB_THREAD_ID\"";
-    return "curl -s -H \"Title: <short title>\""
-        + click
-        + " --data-binary @- "
-        + server
-        + "/"
-        + topic
-        + " <<'EOF'\n<one or two sentences: what's done, or what you need from me>\nEOF";
-  }
-
   /** The ntfy tag that marks text meant for pasting, and the one that names its request. */
   static final String PASTE_TAG = "talkrouter-paste";
 
@@ -250,73 +236,7 @@ final class BbBridge {
     return "req-" + request;
   }
 
-  /**
-   * The curl line for text to paste: tagged for Talk Router, with the request ID, and a Copy
-   * button whose broadcast Talk Router receives (ntfy's "broadcast" action).
-   */
-  static String pasteCommand(String server, String topic) {
-    return "curl -s -H \"Title: Text to paste\" -H \"Tags: "
-        + PASTE_TAG
-        + ","
-        + requestTag("<request ID>")
-        + "\" -H \"Actions: broadcast, Copy, intent="
-        + TalkAccessibility.COPY_ACTION
-        + ", extras.request=<request ID>, clear=true\" --data-binary @- "
-        + server
-        + "/"
-        + topic
-        + " <<'EOF'\n<only the text to paste>\nEOF";
-  }
 
-  /** How to send text back for pasting; part of the standing instructions. */
-  static String pasteInstructions(String server, String topic) {
-    return "Each message from Talk Router ends with a request ID, like [request: k3x9qa]. When a"
-        + " request asks for a text I'll paste somewhere (a message, an email, a reply, a"
-        + " command), send that text, and nothing else, as soon as it's ready, with:\n\n"
-        + pasteCommand(server, topic)
-        + "\n\n  Talk Router shows it with an Insert button. Then finish as usual, including the"
-        + " notification.";
-  }
-
-  /** The chief's standing instructions, its first message. */
-  static String chiefPrompt(String server, String topic, String linkBase) {
-    return "You are my chief of staff. I talk to you by voice from Talk Router, an app on my phone:"
-        + " every message in this thread is a dictation, written down by a speech model (expect the"
-        + " odd misheard word), sometimes followed by text I pasted as context.\n\n"
-        + "For each request:\n"
-        + "- Do small things yourself. Hand bigger or parallel work to child threads with"
-        + " `bb thread spawn --parent-self …` (see `bb guide`), give them a clear brief, and follow"
-        + " up until the whole request is done. You'll hear when a child finishes.\n"
-        + "- If a request is unclear or needs my decision, ask me instead of guessing.\n"
-        + "- Reply in the language I used. Lead your final reply with the result; I read it on my"
-        + " phone.\n"
-        + "- Put text meant for me to paste (a message, an email, a command) in its own fenced"
-        + " code block, with nothing else in the block.\n"
-        + "- When a request is done, or when you need me, send exactly one notification, then"
-        + " end your turn:\n\n"
-        + notifyCommand(server, topic, linkBase)
-        + "\n\n"
-        + "  Plain text, no secrets. No notification for intermediate steps.\n"
-        + "- "
-        + pasteInstructions(server, topic)
-        + "\n\n"
-        + "Now reply with one short line saying you're ready. Don't run anything and don't send a"
-        + " notification for this message.";
-  }
-
-  /**
-   * What the chief is told when the notification settings change, and what an existing thread is
-   * told when it becomes the chief.
-   */
-  static String settingsMessage(String server, String topic, String linkBase) {
-    return "Talk Router, the voice app on my phone, sends my spoken requests to this thread: you"
-        + " are my chief of staff. When a request is done, or when you need me, send exactly one"
-        + " notification, from now on like this:\n\n"
-        + notifyCommand(server, topic, linkBase)
-        + "\n\n"
-        + pasteInstructions(server, topic)
-        + "\n\nReply with one short line. Don't send a notification for this message.";
-  }
 
   /** The ntfy app's subscribe link: ntfy://<host>/<topic> (secure=false for plain HTTP). */
   static String ntfyLink(String server, String topic) {
@@ -355,9 +275,13 @@ final class BbBridge {
         });
   }
 
-  /** Creates the chief of staff in Personal, with its standing instructions, and keeps it. */
+  /**
+   * Creates the chief of staff in Personal and keeps it. Its instructions are the chief-of-staff
+   * and talk-router skills, installed first; the thread itself only gets one line.
+   */
   ThreadInfo createChief() throws Exception {
-    JSONObject r = run(spawnSnippet(chiefPrompt(ntfyServer(), ntfyTopic(), linkBase())));
+    ChiefSkills.ensure(context, ChiefSkills.filled(context));
+    JSONObject r = run(spawnSnippet(ChiefSkills.START));
     ThreadInfo t = new ThreadInfo(r.optString("id"), r.optString("title", CHIEF_TITLE), r.optString("status"));
     if (t.id().isEmpty()) throw new IOException(tr("bb didn't say which thread it created."));
     setChief(t);
@@ -393,8 +317,8 @@ final class BbBridge {
   }
 
   /**
-   * Uses an existing bb thread as the chief of staff, after checking it exists, and tells it where
-   * notifications go (a thread from an earlier install knows an old topic).
+   * Uses an existing bb thread as the chief of staff, after checking it exists: the skills are
+   * installed, then it gets the one line.
    */
   ThreadInfo useExistingChief(String idOrLink) throws Exception {
     String id = threadId(idOrLink);
@@ -404,7 +328,8 @@ final class BbBridge {
     if (r.optBoolean("archived"))
       throw new IOException(tr("That thread is archived in bb. Unarchive it or pick another."));
     ThreadInfo t = new ThreadInfo(r.optString("id", id), r.optString("title"), r.optString("status"));
-    send(t.id(), settingsMessage(ntfyServer(), ntfyTopic(), linkBase()));
+    ChiefSkills.ensure(context, ChiefSkills.filled(context));
+    send(t.id(), ChiefSkills.START);
     setChief(t);
     return t;
   }
@@ -414,23 +339,9 @@ final class BbBridge {
     run(tellSnippet(chiefId, message));
   }
 
-  /**
-   * Sends a request: a chief from before version 2.2 is first told (once) how to send text back
-   * for pasting, then gets the request.
-   */
+  /** Sends a request to the chief. Its instructions come from the skills (ChiefSkills). */
   void sendRequest(String chiefId, String message) throws Exception {
-    if (!prefs.getBoolean(CHIEF_KNOWS_PASTE, false)) {
-      send(chiefId, settingsMessage(ntfyServer(), ntfyTopic(), linkBase()));
-      prefs.edit().putBoolean(CHIEF_KNOWS_PASTE, true).apply();
-    }
     send(chiefId, message);
-  }
-
-  /** Tells the chief where notifications go now (after the ntfy server or links changed). */
-  void updateChief() throws Exception {
-    if (chiefId().isEmpty()) return;
-    send(chiefId(), settingsMessage(ntfyServer(), ntfyTopic(), linkBase()));
-    prefs.edit().putBoolean(CHIEF_KNOWS_PASTE, true).apply();
   }
 
   String threadLink(String id) {
@@ -455,9 +366,18 @@ final class BbBridge {
 
   /** Runs a snippet with the run tool; its returned value as JSON. */
   JSONObject run(String code) throws Exception {
+    return snippet("run", code);
+  }
+
+  /** Runs a snippet that only looks (bb skill list/show) with the read tool. */
+  JSONObject read(String code) throws Exception {
+    return snippet("read", code);
+  }
+
+  private JSONObject snippet(String tool, String code) throws Exception {
     return call(
         c -> {
-          JSONObject result = c.callResult("run", new JSONObject().put("code", code));
+          JSONObject result = c.callResult(tool, new JSONObject().put("code", code));
           String text = Mcp.Connection.text(result).trim();
           if (result.optBoolean("isError")) {
             if (text.length() > 400) text = text.substring(0, 400) + "…";

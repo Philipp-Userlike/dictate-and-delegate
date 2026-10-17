@@ -41,6 +41,7 @@
     <string name="t_115acf0a" formatted="false">Najpierw zezwól na dostęp do mikrofonu</string>
     <string name="t_115f8e33" formatted="false">Brak słów.</string>
     <string name="t_13f11ba3" formatted="false">Wył.</string>
+    <string name="t_14f38eda" formatted="false">Instalowanie umiejętności i tworzenie wątku w bb…</string>
     <string name="t_1515cfb6" formatted="false">Brak wyników.</string>
     <string name="t_16666fb3" formatted="false">przekroczono czas oczekiwania na odpowiedź</string>
     <string name="t_1680b9fc" formatted="false">Na przykład: Tworzę aplikację o nazwie Talk Router. Jana to współpracowniczka. Liczby zapisuj cyframi.</string>
@@ -94,7 +95,6 @@
     <string name="t_2994b473" formatted="false">‹ Wcześniej</string>
     <string name="t_29a545af" formatted="false">Dzień dobry panie Weber, eee, kran w kuchni, nie, właściwie ten w łazience, cieknie od poniedziałku. A i niech to brzmi trochę bardziej formalnie.</string>
     <string name="t_2af8adac" formatted="false">Wysłano do szefa sztabu</string>
-    <string name="t_2b605d42" formatted="false">Więcej</string>
     <string name="t_2b61782b" formatted="false">Informacje prawne</string>
     <string name="t_2c113272" formatted="false">Twój identyfikator bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Dotknij, aby zatrzymać</string>
@@ -116,7 +116,6 @@
     <string name="t_32cb8094" formatted="false">To nie jest link ani ID wątku bb (powinno zaczynać się od thr_).</string>
     <string name="t_33e841f4" formatted="false">Nie wysłano do szefa sztabu: %1$s</string>
     <string name="t_345d171c" formatted="false">Serwer logowania bb odpowiedział kodem HTTP %1$d.</string>
-    <string name="t_348a26a4" formatted="false">✓  bb odpowiada. Szef sztabu otrzymał nowe linki.</string>
     <string name="t_370bef97" formatted="false">Token (opcjonalnie)</string>
     <string name="t_373d8b92" formatted="false">Dotknij dymka, aby nagrać</string>
     <string name="t_377c4e46" formatted="false">Przytrzymaj klawisz, aby zacząć; przytrzymaj go lub naciśnij ponownie, aby zatrzymać. Krótkie naciśnięcie nadal zmienia głośność. Działa przy włączonym i odblokowanym ekranie, poza połączeniami.</string>
@@ -129,7 +128,6 @@
     <string name="t_3b9793b3" formatted="false">%1$s nie odpowiada w wyznaczonym czasie. Spróbuj ponownie.</string>
     <string name="t_3b9938d1" formatted="false">Usunąć ten szablon?</string>
     <string name="t_3c847f8f" formatted="false">Pływający panel · opcjonalnie</string>
-    <string name="t_3d344edd" formatted="false">Tworzenie wątku w bb…</string>
     <string name="t_3d38c7ad" formatted="false">Zapisywanie nagrania…</string>
     <string name="t_3dbbd3aa" formatted="false">Klucz Anthropic</string>
     <string name="t_3dbe79b1" formatted="false">Usuń</string>
@@ -185,6 +183,8 @@
     <string name="t_503970b4" formatted="false">Bez tytułu</string>
     <string name="t_503e7474" formatted="false">dźwięk odrzucony</string>
     <string name="t_5048970e" formatted="false">Częściowy tekst i odnotowane koszty pozostaną w notatkach.</string>
+    <string name="t_510e0171" formatted="false">Instalowanie umiejętności asystenta w bb…</string>
+    <string name="t_51a8b5d9" formatted="false">Sprawdzanie wątku i umiejętności w bb…</string>
     <string name="t_51bac044" formatted="false">Anuluj</string>
     <string name="t_52316b96" formatted="false">Nazwa w adresie bb: &lt;identyfikator&gt;.getbb.app. Przeglądarka otworzy stronę konta bb; zatwierdź tam Talk Router.</string>
     <string name="t_523a6999" formatted="false">Połączenie z bb zostało przerwane. Spróbuj ponownie.</string>
@@ -228,7 +228,6 @@
     <string name="t_6358935d" formatted="false">Klucz zapisany</string>
     <string name="t_6361c341" formatted="false">połączenie zostało przerwane; czy to serwer MCP (Streamable HTTP)?</string>
     <string name="t_6418f0e2" formatted="false">Wpisz swój identyfikator bb Connect</string>
-    <string name="t_64ad54e9" formatted="false">Tworzy wątek o nazwie „Chief of staff” w sekcji Personal (bez projektu) ze stałymi instrukcjami zawierającymi Twój temat ntfy.</string>
     <string name="t_64d60911" formatted="false">Korzystanie z Talk Router</string>
     <string name="t_65211030" formatted="false">Adres serwera musi zaczynać się od https://</string>
     <string name="t_653174a7" formatted="false">Poprawiono za pomocą mądrzejszego modelu</string>
@@ -237,6 +236,7 @@
     <string name="t_6575c78f" formatted="false">Talk Router łączy się z modelami mowy i tekstu przez OpenRouter za pomocą Twojego klucza. Płacisz OpenRouter za faktyczne użycie; Talk Router nie ma serwera i nie pobiera prowizji.</string>
     <string name="t_657ce781" formatted="false">Brak pasujących modeli.</string>
     <string name="t_65c84835" formatted="false">Nie rozpoznano mowy</string>
+    <string name="t_65d60c24" formatted="false">Nie udało się zainstalować umiejętności asystenta: %1$s</string>
     <string name="t_66aa70b6" formatted="false">Połączenie</string>
     <string name="t_67c5a895" formatted="false">Wczoraj</string>
     <string name="t_694eaa92" formatted="false">%1$s nie odpowiada.</string>
@@ -252,7 +252,6 @@
     <string name="t_6d7c0d41" formatted="false">cena pokazywana po fakcie</string>
     <string name="t_6dde3895" formatted="false">Anthropic jest teraz zajęty.</string>
     <string name="t_6f2c1806" formatted="false">Usuń</string>
-    <string name="t_70c25729" formatted="false">Sprawdzanie wątku w bb…</string>
     <string name="t_714149a6" formatted="false">Wysyłaj do szefa po wywołaniu</string>
     <string name="t_71cc04b4" formatted="false">bb nie przesłało kodu logowania. Rozpocznij ponownie.</string>
     <string name="t_721589c1" formatted="false">Dzisiaj</string>
@@ -263,9 +262,9 @@
     <string name="t_75cfcf01" formatted="false">Wyloguj się</string>
     <string name="t_76b8be2f" formatted="false">Znaleziono zapisane nagranie. Otwórz Talk Router, aby spróbować ponownie lub je odrzucić.</string>
     <string name="t_77083f49" formatted="false">Co opuszcza Twój telefon</string>
+    <string name="t_772f8ccc" formatted="false">Twoje imię</string>
     <string name="t_77a2a807" formatted="false">Usuń notatkę</string>
     <string name="t_77e5aff2" formatted="false">Wysłano do szefa sztabu ↗</string>
-    <string name="t_781df68b" formatted="false">✓  Zapisano. Szef sztabu został powiadomiony.</string>
     <string name="t_783d9fbc" formatted="false">Nie udało się odczytać tego obrazu.</string>
     <string name="t_791246e5" formatted="false">Imię Twojego szefa</string>
     <string name="t_7a933498" formatted="false">Nie udało się usunąć całego dźwięku</string>
@@ -301,6 +300,7 @@
     <string name="t_86889c2c" formatted="false">✓  Utworzono %1$s (%2$s).</string>
     <string name="t_874caa6a" formatted="false">Mikrofon jest niedostępny.</string>
     <string name="t_87747dc3" formatted="false">Uruchamiaj kafelkiem lub klawiszem głośności; opcja Wstaw umieszcza tekst tam, gdzie piszesz.</string>
+    <string name="t_886029f0" formatted="false">Umiejętności asystenta</string>
     <string name="t_8860ef62" formatted="false">Nie udało się połączyć z %1$s. Sprawdź adres i połączenie z siecią.</string>
     <string name="t_88ea76d0" formatted="false">Najpierw dokończ lub odrzuć oczekujące nagranie.</string>
     <string name="t_8ab1eddb" formatted="false">✓  Zalogowano do %1$s.getbb.app</string>
@@ -317,11 +317,13 @@
     <string name="t_9153ca96" formatted="false">Dotychczas: %1$s</string>
     <string name="t_918020d9" formatted="false">identyfikator</string>
     <string name="t_91d100de" formatted="false">Załączono</string>
+    <string name="t_94476a26" formatted="false">bb nie zainstalowało umiejętności asystenta na czas. Spróbuj ponownie.</string>
     <string name="t_946ab421" formatted="false">Szukaj modeli</string>
     <string name="t_9486247d" formatted="false">Wstawiono</string>
     <string name="t_9493d3a2" formatted="false">Nie wysłano do szefa sztabu: %1$s Poniżej znajduje się Twoja wypowiedź.</string>
     <string name="t_9500493c" formatted="false">bb nie zwróciło informacji o utworzonym wątku.</string>
     <string name="t_95bed80b" formatted="false">Ustaw adres www bb dla linków w Ustawienia → bb.</string>
+    <string name="t_95c3fc8c" formatted="false">Opcjonalnie: jak ma się do Ciebie zwracać asystent</string>
     <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">poprawione</string>
     <string name="t_980cb9e2" formatted="false">Anthropic odpowiadał zbyt długo.</string>
@@ -375,6 +377,7 @@
     <string name="t_aafc2622" formatted="false">Brak notatek.</string>
     <string name="t_ab7143b8" formatted="false">Uprawnienia</string>
     <string name="t_ac66579e" formatted="false">Nie udało się połączyć z bb. Spróbuj ponownie.</string>
+    <string name="t_ad007023" formatted="false">W razie potrzeby instaluje umiejętności asystenta w bb, a następnie tworzy wątek „Chief of staff” w sekcji Osobiste (brak projektu), który z nich korzysta.</string>
     <string name="t_ad395bc2" formatted="false">Wklej nowy klucz, aby go zastąpić</string>
     <string name="t_ad6a2fb1" formatted="false">Podaj Talk Router kontekst, np. ofertę, na którą odpowiadasz. Zostanie użyty, gdy o coś poprosisz.</string>
     <string name="t_ad6a7ed6" formatted="false">✓ Zapisano</string>
@@ -392,9 +395,9 @@
     <string name="t_b0bc3188" formatted="false">Słowa</string>
     <string name="t_b0c515f3" formatted="false">✓  Włączone</string>
     <string name="t_b15fa13c" formatted="false">Brak połączenia z %1$s. Sprawdź połączenie z internetem.</string>
+    <string name="t_b1c2889b" formatted="false">Sprawdź umiejętności w bb</string>
     <string name="t_b203fda8" formatted="false">Własny adres</string>
     <string name="t_b214280c" formatted="false">Usuń szablon</string>
-    <string name="t_b23ea214" formatted="false">✓  Wybrano %1$s (%2$s). Przekazano, gdzie wysyłać powiadomienia.</string>
     <string name="t_b28cda23" formatted="false">Dopracowuje</string>
     <string name="t_b4211199" formatted="false">Jednostka ceny niezweryfikowana · zobacz źródło</string>
     <string name="t_b50cba8b" formatted="false">Wstaw od szefa</string>
@@ -498,6 +501,7 @@
     <string name="t_de8e5494" formatted="false">Dotknij mikrofonu, aby nagrać</string>
     <string name="t_def9cb9f" formatted="false">Rozpocznij</string>
     <string name="t_df336a1d" formatted="false">Link do wątku lub ID (thr_…)</string>
+    <string name="t_dfb2c9e3" formatted="false">Twój asystent (chief of staff) korzysta z dwóch umiejętności w bb: chief-of-staff i talk-router. Określają one, jak dla Ciebie pracować, powiadamiać Cię i odsyłać tekst. Talk Router instaluje je i aktualizuje w bb za pomocą krótkiego wątku.</string>
     <string name="t_dff4964d" formatted="false">Twoje środki na OpenRouter wyczerpały się. Doładuj konto na openrouter.ai i spróbuj ponownie.</string>
     <string name="t_e0b2ab27" formatted="false">To wszystko. Działa to tak samo w każdej aplikacji: zacznij, mów, zatrzymaj, wstaw. Twoje notatki są zapisywane w Talk Router, gdzie możesz je też skopiować lub wrócić do dokładnej transkrypcji.</string>
     <string name="t_e124f150" formatted="false">Na przykład: Ada</string>
@@ -507,6 +511,7 @@
     <string name="t_e2530adf" formatted="false">Wstaw tutaj</string>
     <string name="t_e2774654" formatted="false">Otwórz w ntfy</string>
     <string name="t_e281d2a6" formatted="false">Odpowiedź logowania nadeszła z nieoczekiwanego serwera (%1$s).</string>
+    <string name="t_e3725a1f" formatted="false">✓  Zainstalowano w bb</string>
     <string name="t_e3d95fe1" formatted="false">Gdzie otwierają się linki do wątków, zwykle https://&lt;identyfikator&gt;.getbb.app.</string>
     <string name="t_e3e3bdf6" formatted="false">Brak tekstu</string>
     <string name="t_e3ee070f" formatted="false">Nie udało się odczytać tego pliku.</string>
@@ -534,8 +539,10 @@
     <string name="t_eb89173a" formatted="false">Otwórz ustawienia dostępności</string>
     <string name="t_ec8fbe93" formatted="false">Jej tekst, wersje, koszty i dźwięk zostaną usunięte. Tego nie można cofnąć.</string>
     <string name="t_ed4646d0" formatted="false">Najpierw dokończ lub odrzuć oczekujące nagranie</string>
+    <string name="t_ed783112" formatted="false">✓  Używa %1$s (%2$s). Poinstruowano o użyciu umiejętności.</string>
     <string name="t_ed8814bc" formatted="false">Kopiuj</string>
     <string name="t_edd9ff2d" formatted="false">Szablony</string>
+    <string name="t_ee5fc561" formatted="false">Sprawdzanie umiejętności asystenta w bb…</string>
     <string name="t_eea7466f" formatted="false">Wstawia tekst w miejscu kursora, tam gdzie piszesz.</string>
     <string name="t_efc1065a" formatted="false">Nie połączono</string>
     <string name="t_f01551fb" formatted="false">Nagranie nie zawiera czytelnego dźwięku.</string>

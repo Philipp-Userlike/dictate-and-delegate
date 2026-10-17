@@ -49,22 +49,10 @@ public class BbBridgeTest {
   }
 
   @Test
-  public void theChiefKnowsWhereToNotify() {
-    String p = BbBridge.chiefPrompt("https://ntfy.sh", "talkrouter-abc", "https://someone.getbb.app");
-    assertTrue(p.contains("https://ntfy.sh/talkrouter-abc"));
-    assertTrue(p.contains("Click: https://someone.getbb.app/threads/$BB_THREAD_ID"));
-    assertTrue(p.contains("--parent-self"));
-    assertTrue(p.contains("exactly one notification"));
-    assertTrue(p.contains("don't send a notification for this message"));
-    // Text to paste comes back as an ntfy message tagged with the request, with a Copy action.
-    assertTrue(p.contains("[request: k3x9qa]"));
-    assertTrue(p.contains("Tags: talkrouter-paste,req-<request ID>"));
-    assertTrue(p.contains("Actions: broadcast, Copy, intent=" + TalkAccessibility.COPY_ACTION + ", extras.request=<request ID>"));
-    String told = BbBridge.settingsMessage("https://ntfy.sh", "talkrouter-abc", "https://someone.getbb.app");
-    assertTrue(told.contains("Tags: talkrouter-paste,req-<request ID>"));
-    assertTrue(told.contains("Click: https://someone.getbb.app/threads/$BB_THREAD_ID"));
-    String code = BbBridge.spawnSnippet(p);
+  public void aNewChiefGetsOneLine() {
+    String code = BbBridge.spawnSnippet(ChiefSkills.START);
     assertTrue(code.contains("\"--project\",\"proj_personal\",\"--title\",\"Chief of staff\""));
+    assertTrue(code.contains("Use the chief-of-staff and talk-router skills."));
   }
 
   @Test

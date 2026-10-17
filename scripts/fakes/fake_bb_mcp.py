@@ -10,6 +10,11 @@ Speaks MCP Streamable HTTP on POST /mcp and answers as an event stream, like bb 
                                 "thread","spawn"  -> {"id": "thr_fakechief", "title": ..., "status": "starting"}
                                 "thread","tell"   -> {"threadId": ..., "delivery": "sent"}
                                 "thread","show"   -> {"id": ..., "title": "Chief of staff", "status": "idle", "archived": false}
+                                "skill","list"    -> {"skills": {name: marker hash}} of the installed fake skills
+                                spawn titled "Talk Router: install skills" -> installs the files in its
+                                                     prompt at once (unless /test/skills says "stall"),
+                                                     {"id": "thr_fakeinstall"}
+                                "thread","archive" -> {"archived": true}
                               anything else returns {}
 
 Test control (not part of bb):
@@ -20,7 +25,10 @@ Test control (not part of bb):
                       JSON-RPC error
   POST /test/config   {"token": "secret"} requires "Authorization: Bearer secret" (401 otherwise);
                       {"token": ""} turns that off
-  POST /test/reset    empties failures, config and the request log
+  POST /test/skills   {"installed": {"talk-router": "abc", ...}} sets what bb has ("" missing,
+                      "old" unmarked); {"stall": true} makes the install thread never install
+  GET  /test/skills   what's installed: {"installed": {...}, "files": {name: content}}
+  POST /test/reset    empties failures, config, installed skills and the request log
   GET  /test/requests every MCP request since the last reset, oldest first:
                       {"method", "tool", "code", "auth"}
 
@@ -46,10 +54,16 @@ TOOLS = [
 lock = threading.Lock()
 failures = []
 config = {"token": ""}
+skills = {"installed": {}, "files": {}, "stall": False}
 requests = []
 
 
 def kind_of(code):
+    flat = code.replace(" ", "")
+    if '"skill","list"' in flat:
+        return "skills"
+    if '"thread","archive"' in flat:
+        return "archive"
     for kind in ("spawn", "tell", "show"):
         if '"thread","%s"' % kind in code.replace(" ", ""):
             return kind
@@ -102,6 +116,9 @@ class Handler(BaseHTTPRequestHandler):
             return {}
 
     def do_GET(self):
+        if self.path == "/test/skills":
+            with lock:
+                return self.send_json(200, {"installed": skills["installed"], "files": skills["files"]})
         if self.path == "/test/requests":
             with lock:
                 return self.send_json(200, {"requests": list(requests)})
@@ -114,10 +131,18 @@ class Handler(BaseHTTPRequestHandler):
                 failures.clear()
                 requests.clear()
                 config["token"] = ""
+                skills.update({"installed": {}, "files": {}, "stall": False})
             return self.send_json(200, {})
         if self.path == "/test/fail":
             with lock:
                 failures.append(body)
+            return self.send_json(200, {})
+        if self.path == "/test/skills":
+            with lock:
+                if "installed" in body:
+                    skills["installed"] = dict(body["installed"])
+                if "stall" in body:
+                    skills["stall"] = bool(body["stall"])
             return self.send_json(200, {})
         if self.path == "/test/config":
             with lock:
@@ -172,7 +197,22 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_event({"jsonrpc": "2.0", "id": rid, "result": {
                 "content": [{"type": "text", "text": "Error: bb thread %s failed: thread not found" % kind}],
                 "isError": True}})
-        if kind == "spawn":
+        if kind == "skills":
+            with lock:
+                value = {"skills": {n: skills["installed"].get(n, "") for n in ("chief-of-staff", "talk-router")}}
+        elif kind == "archive":
+            value = {"archived": True}
+        elif kind == "spawn" and "Talk Router: install skills" in code:
+            prompt = json.loads(re.search(r'\{stdin: ("(?:[^"\\]|\\.)*")\}', code).group(1))
+            with lock:
+                if not skills["stall"]:
+                    for m in re.finditer(r"===== ~/\.bb/skills/([a-z-]+)/SKILL\.md \(begins on the next line\) =====\n(.*?)===== end of \1 =====",
+                                         prompt, re.S):
+                        skills["files"][m.group(1)] = m.group(2)
+                        marker = re.search(r"<!-- [a-z-]+-skill: ([0-9a-f]+) -->", m.group(2))
+                        skills["installed"][m.group(1)] = marker.group(1) if marker else "old"
+            value = {"id": "thr_fakeinstall", "status": "starting"}
+        elif kind == "spawn":
             value = {"id": CHIEF_ID, "title": "Chief of staff", "status": "starting"}
         elif kind == "tell":
             value = {"threadId": thread_arg(code, "tell"), "delivery": "sent"}

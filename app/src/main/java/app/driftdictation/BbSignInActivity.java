@@ -45,6 +45,7 @@ public final class BbSignInActivity extends Activity {
               try {
                 String handle = BbOAuth.complete(this, query);
                 new BbBridge(this).useConnect(handle);
+                ChiefSkills.sync(this, true);
                 message = tr("Signed in to %1$s.getbb.app", handle);
                 ok = true;
               } catch (Exception ex) {

@@ -49,7 +49,7 @@ flowchart LR
 | **🧑‍💼 Chief** | Sends what you said, plus pasted text, to your chief-of-staff thread in bb. | **Open chat ↗**, which opens the thread. If the chief sends text back for you to paste, **Insert from chief** appears. |
 | **✕** | While recording: cancels, nothing is transcribed or sent. Afterwards: closes the panel; the note stays in Talk Router. | – |
 
-The buttons are icons (📥 Insert, ✨ Refine, 🧑‍💼 Chief, ✕), named for TalkBack; a long press shows the name. While you record, the panel is just the timer with ■ and ⋯; ⋯ opens 📎, ✕, Refine and Chief, which you can tap while still recording: they run once the transcript is ready. Drag the panel anywhere; it remembers the spot.
+The buttons are icons (📥 Insert, ✨ Refine, 🧑‍💼 Chief, ✕), named for TalkBack; a long press shows the name. While you record, one compact row shows ■ with the timer, ✨, 🧑‍💼, ✕ and 📎; tap ✨ or 🧑‍💼 while still talking and it runs once the transcript is ready. Drag the panel anywhere; it remembers the spot.
 
 **What happens by itself.** After the transcript, Jev (TypeSafe's decision model, about 0.3 s and $0.00003) answers a few questions:
 - Do you ask for a text, or name a template ("turn this into an email", "use my apartment application…")? Then Refine starts by itself.
@@ -88,7 +88,7 @@ flowchart TB
 ```
 
 - **OpenRouter:** speech, Jev's decision and Refine (with your own Anthropic key, Refine goes to Anthropic directly instead, on your Anthropic credits, with OpenRouter as the fallback). You pay OpenRouter directly for what you use; every note shows what it cost, and Settings → Activity shows which model did what, how long it took and what it cost.
-- **bb:** an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Talk Router uses bb's built-in MCP server and its `run` tool to create the chief-of-staff thread (`bb thread spawn`) and to send it your dictations (`bb thread tell`). The chief does small things itself and hands bigger work to child threads.
+- **bb:** an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Talk Router uses bb's built-in MCP server and its `run` tool to create the chief-of-staff thread (`bb thread spawn`) and to send it your dictations (`bb thread tell`). The chief's instructions are two bb user skills Talk Router keeps up to date: **chief-of-staff** (how to work for you: small things itself, bigger work split into parallel child threads with context, intent and what done looks like) and **talk-router** (how to read dictations, notify you and send text back, with your ntfy topic and bb links filled in). The chief thread itself only gets one line: "You're my chief of staff. Use the chief-of-staff and talk-router skills."
 - **ntfy:** a simple notification service. The chief sends exactly one notification per request, with a summary it writes itself and a link to its thread. Text meant for you to paste goes as a second message tagged with the request's ID: while the panel is open, Talk Router reads your topic and shows **Insert from chief**; otherwise the notification's **Copy** button hands it to Talk Router. The topic is a long random name that only you know. Talk Router itself sends no notifications.
 
 ### What happens when you hand off a task
@@ -159,7 +159,7 @@ Instead of bb Connect you can also enter any address of bb's MCP server yourself
 3. **Connect bb** (or tap *Later*):
    1. On your computer, turn on bb's MCP server once: `bb plugin enable bb--mcp`.
    2. In Talk Router, enter your bb Connect handle (the `<handle>` in `<handle>.getbb.app`) and tap **Sign in with bb**. Approve Talk Router on the bb page.
-4. **Chief of staff:** tap **Create**. Talk Router starts a thread called "Chief of staff" in your Personal project in bb, with standing instructions. You can also pick an existing thread.
+4. **Chief of staff:** tap **Create**. Talk Router installs the chief's two skills in bb (through a short thread it archives afterwards), then starts a thread called "Chief of staff" in your Personal project that uses them. You can also pick an existing thread.
 5. **Notifications:** tap **Open in ntfy** to subscribe to your topic in the ntfy app, then **Send test**.
 6. **Name your chief** in Settings → Chief of staff, for example "Ada".
 7. **Try it:** "Ada, find three Italian places near the office and send me a short list."

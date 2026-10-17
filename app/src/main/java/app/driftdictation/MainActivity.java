@@ -50,6 +50,9 @@ public final class MainActivity extends Activity {
   private String bbModeShown = "";
   private String bbNotice = "";
   private boolean bbNoticeOk, changingChief;
+  private TextView skillsLine;
+  /** The name field waits for a pause in typing before the skills are updated in bb. */
+  private final Runnable skillsAfterName = () -> ChiefSkills.sync(this, false);
   private final Runnable refresh =
       new Runnable() {
         public void run() {
@@ -255,6 +258,7 @@ public final class MainActivity extends Activity {
     record = null;
     status = null;
     noteStatus = null;
+    skillsLine = null;
     recovery = recentBox = notesBox = monthBox = wordsBox = modelList = null;
     editor = practice = null;
     LinearLayout root = ui.vertical();
@@ -1168,11 +1172,66 @@ public final class MainActivity extends Activity {
             }));
     if (bbModeShown.equals(BbBridge.CONNECT)) connectCard(bb, connected);
     else customCard(bb, connected);
+    if (bb.connected()) skillsCard();
     if (onboarding) {
       spacer();
       if (bb.connected())
         ui.add(content, ui.button(tr("Continue"), Ui.Kind.PRIMARY, v -> nextSetupPage()), 24);
       laterButton();
+    }
+  }
+
+  /**
+   * The chief's instructions live in two bb skills; this says whether bb has the current ones and
+   * asks for the name the chief calls you.
+   */
+  private void skillsCard() {
+    ui.add(content, ui.strong(tr("Your chief's skills"), 16), 24);
+    ui.add(
+        content,
+        ui.text(
+            tr("Your chief of staff follows two skills in bb, chief-of-staff and talk-router: how to work for you, and how to notify you and send text back. Talk Router installs and updates them in bb through a short thread."),
+            13,
+            Ui.MUTED),
+        4);
+    ui.add(content, ui.strong(tr("Your name"), 15), 14);
+    EditText name =
+        ui.input(prefs.getString(ChiefSkills.USER_NAME, ""), tr("Optional: what your chief calls you"), false);
+    name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(40)});
+    ui.add(content, name, 6);
+    autosave(
+        name,
+        t -> {
+          prefs.edit().putString(ChiefSkills.USER_NAME, t.trim()).apply();
+          main.removeCallbacks(skillsAfterName);
+          main.postDelayed(skillsAfterName, 1500);
+        });
+    skillsLine = ui.add(content, ui.text("", 14, Ui.MUTED), 12);
+    ui.add(content, ui.button(tr("Check the skills in bb"), Ui.Kind.QUIET, v -> ChiefSkills.sync(this, true)), 4);
+    ChiefSkills.sync(this, false);
+    renderSkills();
+  }
+
+  private void renderSkills() {
+    if (skillsLine == null) return;
+    switch (ChiefSkills.state) {
+      case CHECKING -> {
+        skillsLine.setTextColor(Ui.MUTED);
+        skillsLine.setText(tr("Checking the chief's skills in bb…"));
+      }
+      case INSTALLING -> {
+        skillsLine.setTextColor(Ui.MUTED);
+        skillsLine.setText(tr("Installing the chief's skills in bb…"));
+      }
+      case INSTALLED -> {
+        skillsLine.setTextColor(Ui.TEAL);
+        skillsLine.setText(tr("✓  Installed in bb"));
+      }
+      case FAILED -> {
+        skillsLine.setTextColor(Ui.WARN);
+        skillsLine.setText(tr("Couldn't install the chief's skills: %1$s", ChiefSkills.problem));
+      }
+      default -> skillsLine.setText("");
     }
   }
 
@@ -1330,7 +1389,6 @@ public final class MainActivity extends Activity {
                     toast(tr("The web address starts with https://"));
                     return;
                   }
-                  String oldBase = bb.linkBase();
                   bbAction(
                       save[0],
                       result,
@@ -1338,10 +1396,8 @@ public final class MainActivity extends Activity {
                       () -> {
                         bb.useCustom(address, token.getText().toString(), base);
                         bb.test();
-                        if (!bb.chiefId().isEmpty() && !bb.linkBase().equals(oldBase)) {
-                          bb.updateChief();
-                          return tr("✓  bb answers. Your chief of staff was told the new links.");
-                        }
+                        // Connected, or new links: the skills get checked and, if needed, updated.
+                        ChiefSkills.sync(this, true);
                         return tr("✓  bb answers.");
                       });
                 }),
@@ -1414,7 +1470,7 @@ public final class MainActivity extends Activity {
                       bbAction(
                           create[0],
                           result,
-                          tr("Creating the thread in bb…"),
+                          tr("Installing the skills and creating the thread in bb…"),
                           () -> {
                             BbBridge.ThreadInfo t = bb.createChief();
                             changingChief = false;
@@ -1424,7 +1480,7 @@ public final class MainActivity extends Activity {
       ui.add(
           content,
           ui.text(
-              tr("Creates a thread called “Chief of staff” in Personal (no project), with standing instructions that include your ntfy topic."),
+              tr("Installs the chief's skills in bb if needed, then creates a thread called “Chief of staff” in Personal (no project) that uses them."),
               13,
               Ui.MUTED),
           4);
@@ -1444,11 +1500,11 @@ public final class MainActivity extends Activity {
                     bbAction(
                         use[0],
                         result,
-                        tr("Checking the thread in bb…"),
+                        tr("Checking the thread and the skills in bb…"),
                         () -> {
                           BbBridge.ThreadInfo t = bb.useExistingChief(input);
                           changingChief = false;
-                          return tr("✓  Using %1$s (%2$s). It was told where to send notifications.", t.title().isEmpty() ? t.id() : t.title(), t.id());
+                          return tr("✓  Using %1$s (%2$s). It was told to use the skills.", t.title().isEmpty() ? t.id() : t.title(), t.id());
                         });
                   }),
               8);
@@ -1548,10 +1604,8 @@ public final class MainActivity extends Activity {
                       tr("Saving…"),
                       () -> {
                         bb.setNtfyServer(value);
-                        if (bb.connected() && !bb.chiefId().isEmpty()) {
-                          bb.updateChief();
-                          return tr("✓  Saved. Your chief of staff was told.");
-                        }
+                        // The talk-router skill holds the server: it's updated in bb.
+                        ChiefSkills.sync(this, false);
                         return tr("✓  Saved.");
                       });
                 }),
@@ -3135,6 +3189,7 @@ public final class MainActivity extends Activity {
   // ---------------------------------------------------------------- live state
 
   private void renderStatus() {
+    renderSkills();
     boolean busy = DictationService.busy(), active = DictationService.instance != null;
     String state = active ? prefs.getString("state", "") : "";
     boolean pending = !busy && DictationService.audio(this).exists();
@@ -3197,6 +3252,8 @@ public final class MainActivity extends Activity {
         && setupComplete()) send(DictationService.CONFIGURE);
     if (List.of("setup", "settings", "allow1", "start1", "insert1", "start").contains(page)) show(page);
     main.post(refresh);
+    // After an app update, or a change elsewhere, bb gets the current skills.
+    ChiefSkills.sync(this, false);
   }
 
   @Override

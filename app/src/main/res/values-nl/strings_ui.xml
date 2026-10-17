@@ -41,6 +41,7 @@
     <string name="t_115acf0a" formatted="false">Geef eerst toegang tot de microfoon</string>
     <string name="t_115f8e33" formatted="false">Nog geen woorden.</string>
     <string name="t_13f11ba3" formatted="false">Uit</string>
+    <string name="t_14f38eda" formatted="false">Skills installeren en thread aanmaken in bb…</string>
     <string name="t_1515cfb6" formatted="false">Geen resultaten.</string>
     <string name="t_16666fb3" formatted="false">geen tijdige reactie</string>
     <string name="t_1680b9fc" formatted="false">Bijvoorbeeld: Ik bouw een app genaamd Talk Router. Jana is een collega. Schrijf getallen als cijfers.</string>
@@ -94,7 +95,6 @@
     <string name="t_2994b473" formatted="false">‹ Eerder</string>
     <string name="t_29a545af" formatted="false">Beste meneer Weber, eh, de kraan in de keuken, nee eigenlijk die in de badkamer, lekt sinds maandag. Oh en maak dat wat formeler alsjeblieft.</string>
     <string name="t_2af8adac" formatted="false">Verzonden naar je stafchef</string>
-    <string name="t_2b605d42" formatted="false">Meer</string>
     <string name="t_2b61782b" formatted="false">Colofon</string>
     <string name="t_2c113272" formatted="false">Je bb Connect-gebruikersnaam</string>
     <string name="t_2c467e9e" formatted="false">Tik om te stoppen</string>
@@ -116,7 +116,6 @@
     <string name="t_32cb8094" formatted="false">Dat is geen bb-threadlink of -id (begint met thr_).</string>
     <string name="t_33e841f4" formatted="false">Niet verzonden naar je stafchef: %1$s</string>
     <string name="t_345d171c" formatted="false">De aanmeldserver van bb antwoordde met HTTP %1$d.</string>
-    <string name="t_348a26a4" formatted="false">✓  bb reageert. De nieuwe links zijn doorgegeven aan je stafchef.</string>
     <string name="t_370bef97" formatted="false">Token (optioneel)</string>
     <string name="t_373d8b92" formatted="false">Tik op de bubbel om op te nemen</string>
     <string name="t_377c4e46" formatted="false">Houd de knop ingedrukt om te starten, houd ingedrukt of druk nogmaals om te stoppen. Kort drukken past nog steeds het volume aan. Werkt als het scherm aan en ontgrendeld is, niet tijdens oproepen.</string>
@@ -129,7 +128,6 @@
     <string name="t_3b9793b3" formatted="false">%1$s antwoordde niet op tijd. Probeer het opnieuw.</string>
     <string name="t_3b9938d1" formatted="false">Dit sjabloon verwijderen?</string>
     <string name="t_3c847f8f" formatted="false">Zwevend paneel · optioneel</string>
-    <string name="t_3d344edd" formatted="false">Thread aanmaken in bb…</string>
     <string name="t_3d38c7ad" formatted="false">Opname opslaan…</string>
     <string name="t_3dbbd3aa" formatted="false">Anthropic-sleutel</string>
     <string name="t_3dbe79b1" formatted="false">Verwijderen</string>
@@ -183,6 +181,8 @@
     <string name="t_503970b4" formatted="false">Naamloos</string>
     <string name="t_503e7474" formatted="false">audio verwijderd</string>
     <string name="t_5048970e" formatted="false">Gedeeltelijke tekst en geregistreerde kosten blijven in je notities.</string>
+    <string name="t_510e0171" formatted="false">Skills van stafchef installeren in bb…</string>
+    <string name="t_51a8b5d9" formatted="false">Thread en skills controleren in bb…</string>
     <string name="t_51bac044" formatted="false">Annuleren</string>
     <string name="t_52316b96" formatted="false">De naam in je bb-adres: &lt;handle&gt;.getbb.app. Je browser opent de accountpagina van bb; keur Talk Router daar goed.</string>
     <string name="t_523a6999" formatted="false">De verbinding met bb is verbroken. Probeer het opnieuw.</string>
@@ -226,7 +226,6 @@
     <string name="t_6358935d" formatted="false">Sleutel opgeslagen</string>
     <string name="t_6361c341" formatted="false">de verbinding is verbroken; is het een MCP-server (Streamable HTTP)?</string>
     <string name="t_6418f0e2" formatted="false">Voer je bb Connect-gebruikersnaam in</string>
-    <string name="t_64ad54e9" formatted="false">Maakt een thread genaamd “Chief of staff” aan in Persoonlijk (geen project), met vaste instructies inclusief je ntfy-topic.</string>
     <string name="t_64d60911" formatted="false">Talk Router gebruiken</string>
     <string name="t_65211030" formatted="false">Het serveradres begint met https://</string>
     <string name="t_653174a7" formatted="false">Opnieuw gedaan met een slimmer model</string>
@@ -235,6 +234,7 @@
     <string name="t_6575c78f" formatted="false">Talk Router roept de spraak- en tekstmodellen aan via OpenRouter, met je eigen sleutel. Je betaalt OpenRouter voor wat je gebruikt; Talk Router heeft geen server en vraagt niets extra.</string>
     <string name="t_657ce781" formatted="false">Geen passende modellen.</string>
     <string name="t_65c84835" formatted="false">Geen spraak herkend</string>
+    <string name="t_65d60c24" formatted="false">Kon skills van stafchef niet installeren: %1$s</string>
     <string name="t_66aa70b6" formatted="false">Verbinding</string>
     <string name="t_67c5a895" formatted="false">Gisteren</string>
     <string name="t_694eaa92" formatted="false">%1$s antwoordde niet.</string>
@@ -250,7 +250,6 @@
     <string name="t_6d7c0d41" formatted="false">prijs achteraf getoond</string>
     <string name="t_6dde3895" formatted="false">Anthropic is momenteel overbelast.</string>
     <string name="t_6f2c1806" formatted="false">Verwijderen</string>
-    <string name="t_70c25729" formatted="false">Thread controleren in bb…</string>
     <string name="t_714149a6" formatted="false">Naar stafchef sturen indien aangesproken</string>
     <string name="t_71cc04b4" formatted="false">bb stuurde geen aanmeldcode. Start opnieuw.</string>
     <string name="t_721589c1" formatted="false">Vandaag</string>
@@ -261,9 +260,9 @@
     <string name="t_75cfcf01" formatted="false">Uitloggen</string>
     <string name="t_76b8be2f" formatted="false">Opgeslagen opname gevonden. Open Talk Router om opnieuw te proberen of te verwijderen.</string>
     <string name="t_77083f49" formatted="false">Wat je telefoon verlaat</string>
+    <string name="t_772f8ccc" formatted="false">Je naam</string>
     <string name="t_77a2a807" formatted="false">Notitie verwijderen</string>
     <string name="t_77e5aff2" formatted="false">Verzonden naar stafchef ↗</string>
-    <string name="t_781df68b" formatted="false">✓  Opgeslagen. Doorgegeven aan je stafchef.</string>
     <string name="t_783d9fbc" formatted="false">Kon deze afbeelding niet lezen.</string>
     <string name="t_791246e5" formatted="false">Naam van je leidinggevende</string>
     <string name="t_7a933498" formatted="false">Kon niet alle audio verwijderen</string>
@@ -297,6 +296,7 @@
     <string name="t_86889c2c" formatted="false">✓  %1$s aangemaakt (%2$s).</string>
     <string name="t_874caa6a" formatted="false">Microfoon is niet beschikbaar.</string>
     <string name="t_87747dc3" formatted="false">Start met de tegel of een volumeknop; Invoegen plaatst de tekst waar je typt.</string>
+    <string name="t_886029f0" formatted="false">Skills van je stafchef</string>
     <string name="t_8860ef62" formatted="false">Kon %1$s niet bereiken. Controleer het adres en je verbinding.</string>
     <string name="t_88ea76d0" formatted="false">Rond eerst de openstaande opname af of verwijder deze.</string>
     <string name="t_8ab1eddb" formatted="false">✓  Aangemeld bij %1$s.getbb.app</string>
@@ -313,11 +313,13 @@
     <string name="t_9153ca96" formatted="false">%1$s tot nu toe</string>
     <string name="t_918020d9" formatted="false">gebruikersnaam</string>
     <string name="t_91d100de" formatted="false">Bijgevoegd</string>
+    <string name="t_94476a26" formatted="false">bb heeft de skills van de stafchef niet op tijd geïnstalleerd. Probeer het opnieuw.</string>
     <string name="t_946ab421" formatted="false">Modellen zoeken</string>
     <string name="t_9486247d" formatted="false">Ingevoegd</string>
     <string name="t_9493d3a2" formatted="false">Niet verzonden naar je stafchef: %1$s Hieronder staat wat je zei.</string>
     <string name="t_9500493c" formatted="false">bb heeft niet aangegeven welke thread is aangemaakt.</string>
     <string name="t_95bed80b" formatted="false">Stel het bb-webadres voor links in via Instellingen → bb.</string>
+    <string name="t_95c3fc8c" formatted="false">Optioneel: hoe je stafchef je noemt</string>
     <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">opnieuw gedaan</string>
     <string name="t_980cb9e2" formatted="false">Anthropic deed er te lang over.</string>
@@ -369,6 +371,7 @@
     <string name="t_aafc2622" formatted="false">Nog geen notities.</string>
     <string name="t_ab7143b8" formatted="false">Machtigingen</string>
     <string name="t_ac66579e" formatted="false">bb kon niet worden bereikt. Probeer het opnieuw.</string>
+    <string name="t_ad007023" formatted="false">Installeert zo nodig de skills van de stafchef in bb en maakt vervolgens een thread genaamd “Chief of staff” aan in Persoonlijk (geen project) die deze gebruikt.</string>
     <string name="t_ad395bc2" formatted="false">Plak een nieuwe sleutel om deze te vervangen</string>
     <string name="t_ad6a2fb1" formatted="false">Geef Talk Router context over waar je het over hebt, zoals de offerte waarop je reageert. Dit wordt gebruikt wanneer je ergens om vraagt.</string>
     <string name="t_ad6a7ed6" formatted="false">✓ Opgeslagen</string>
@@ -386,9 +389,9 @@
     <string name="t_b0bc3188" formatted="false">Woorden</string>
     <string name="t_b0c515f3" formatted="false">✓  Aan</string>
     <string name="t_b15fa13c" formatted="false">Geen verbinding met %1$s. Controleer je internetverbinding.</string>
+    <string name="t_b1c2889b" formatted="false">Skills controleren in bb</string>
     <string name="t_b203fda8" formatted="false">Aangepast adres</string>
     <string name="t_b214280c" formatted="false">Sjabloon verwijderen</string>
-    <string name="t_b23ea214" formatted="false">✓  %1$s in gebruik (%2$s). Locatie voor meldingen is doorgegeven.</string>
     <string name="t_b28cda23" formatted="false">Verfijnt</string>
     <string name="t_b4211199" formatted="false">Prijseenheid niet geverifieerd · zie bron</string>
     <string name="t_b50cba8b" formatted="false">Invoegen van stafchef</string>
@@ -490,6 +493,7 @@
     <string name="t_de8e5494" formatted="false">Tik op de microfoon om op te nemen</string>
     <string name="t_def9cb9f" formatted="false">Aan de slag</string>
     <string name="t_df336a1d" formatted="false">Threadlink of -id (thr_…)</string>
+    <string name="t_dfb2c9e3" formatted="false">Je stafchef gebruikt twee skills in bb, chief-of-staff en talk-router: hoe hij voor je werkt, en hoe hij je meldingen stuurt en tekst terugstuurt. Talk Router installeert en updatet ze in bb via een korte thread.</string>
     <string name="t_dff4964d" formatted="false">Je OpenRouter-tegoed is op. Waardeer je tegoed op via openrouter.ai en probeer het opnieuw.</string>
     <string name="t_e0b2ab27" formatted="false">Dat is alles. Het werkt overal hetzelfde: start, praat, stop, voeg in. Je notities worden opgeslagen in Talk Router, waar je ze ook kunt kopiëren of terug kunt naar wat je precies zei.</string>
     <string name="t_e124f150" formatted="false">Bijvoorbeeld: Ada</string>
@@ -499,6 +503,7 @@
     <string name="t_e2530adf" formatted="false">Hier invoegen</string>
     <string name="t_e2774654" formatted="false">Openen in ntfy</string>
     <string name="t_e281d2a6" formatted="false">De aanmelding kwam terug van een onverwachte server (%1$s).</string>
+    <string name="t_e3725a1f" formatted="false">✓  Geïnstalleerd in bb</string>
     <string name="t_e3d95fe1" formatted="false">Waar threadlinks openen, meestal https://&lt;handle&gt;.getbb.app.</string>
     <string name="t_e3e3bdf6" formatted="false">Nog geen tekst</string>
     <string name="t_e3ee070f" formatted="false">Kon dit bestand niet lezen.</string>
@@ -526,8 +531,10 @@
     <string name="t_eb89173a" formatted="false">Open Toegankelijkheidsinstellingen</string>
     <string name="t_ec8fbe93" formatted="false">De tekst, versies, kosten en audio worden verwijderd. Dit kan niet ongedaan worden gemaakt.</string>
     <string name="t_ed4646d0" formatted="false">Rond eerst de openstaande opname af of verwijder deze</string>
+    <string name="t_ed783112" formatted="false">✓  Gebruikt %1$s (%2$s). Geïnstrueerd om de skills te gebruiken.</string>
     <string name="t_ed8814bc" formatted="false">Kopiëren</string>
     <string name="t_edd9ff2d" formatted="false">Sjablonen</string>
+    <string name="t_ee5fc561" formatted="false">Skills van stafchef controleren in bb…</string>
     <string name="t_eea7466f" formatted="false">Plaatst de tekst bij de cursor, waar je typt.</string>
     <string name="t_efc1065a" formatted="false">Niet verbonden</string>
     <string name="t_f01551fb" formatted="false">Opname bevat geen leesbare audio.</string>

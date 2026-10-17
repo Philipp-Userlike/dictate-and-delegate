@@ -11,8 +11,8 @@ import android.widget.*;
 
 /**
  * The floating panel over other apps, icon buttons named for accessibility (long press shows the
- * name). While recording: the timer with stop and ⋯, which opens 📎, ✕ to cancel, and Refine and
- * Chief to choose ahead. Afterwards: ✕, Insert, Refine (then Insert refined), Chief (then Open chat
+ * name). While recording: the timer with stop, Refine and Chief to choose ahead, ✕ to cancel, and
+ * 📎. Afterwards: ✕, Insert, Refine (then Insert refined), Chief (then Open chat
  * ↗), and Insert from chief when the chief sent text back. Ready, error and empty show the small
  * icon instead. Its window never takes focus, so the cursor stays in the app you're in; drag it
  * anywhere.
@@ -33,9 +33,6 @@ final class FloatingPanel extends FrameLayout {
 
   interface Actions {
     void close();
-
-    /** ⋯ while recording: the panel shows all its buttons; it only needs drawing again. */
-    void expand();
 
     void stop();
 
@@ -64,13 +61,16 @@ final class FloatingPanel extends FrameLayout {
 
   private final OverlayIcon icon;
   private final LinearLayout bar, extra;
-  private final TextView more, attach, timer, close, insert, refine, chief, fromChief, status;
+  private final TextView attach, timer, close, insert, refine, chief, fromChief, status;
+  private final Row row;
   private final Actions actions;
   private final Drag drag;
   private final float density;
   private final int slop;
   private float downX, downY;
-  private boolean dragging, small = true, expanded;
+  private boolean dragging, small = true;
+  /** Which order the buttons are in: null before the first render. */
+  private Boolean recordingOrder;
 
   FloatingPanel(Context context, Actions actions, Drag drag) {
     super(context);
@@ -88,20 +88,11 @@ final class FloatingPanel extends FrameLayout {
     bg.setColor(INK);
     bg.setCornerRadius(dp(24));
     bar.setBackground(bg);
-    Row row = new Row(context, dp(6));
+    row = new Row(context, dp(6));
     bar.addView(row, new LinearLayout.LayoutParams(-2, -2)); // Its own width: it sets the panel's.
     timer = pill(row, "", v -> actions.stop());
     name(timer, tr("Stop recording"));
     timer.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-    more =
-        pill(
-            row,
-            "⋯",
-            v -> {
-              expanded = true;
-              actions.expand();
-            });
-    name(more, tr("More"));
     attach = pill(row, "📎", v -> actions.attach());
     name(attach, tr("Add context to this dictation"));
     close = pill(row, "✕", v -> actions.close());
@@ -251,16 +242,19 @@ final class FloatingPanel extends FrameLayout {
       return;
     }
     setAlpha(1f);
-    // While recording only the timer and ⋯ show, until ⋯ is tapped; afterwards everything does.
-    if (!recording) expanded = false;
-    boolean all = !recording || expanded;
-    more.setVisibility(recording && !expanded ? VISIBLE : GONE);
-    attach.setVisibility(recording && expanded ? VISIBLE : GONE);
+    // While recording: ■ ✨ 🧑‍💼 ✕ 📎; afterwards: ✕ 📥 ✨ 🧑‍💼.
+    if (!Boolean.valueOf(recording).equals(recordingOrder)) {
+      recordingOrder = recording;
+      row.removeAllViews();
+      for (TextView t : recording ? new TextView[] {timer, refine, chief, close, attach, insert} : new TextView[] {close, insert, refine, chief, timer, attach})
+        row.addView(t, new ViewGroup.LayoutParams(-2, dp(40)));
+    }
+    attach.setVisibility(recording ? VISIBLE : GONE);
     attach.setText(m.attached() > 0 ? "📎 " + m.attached() : "📎");
     timer.setVisibility(recording ? VISIBLE : GONE);
     timer.setText("● " + AudioFiles.elapsed(m.elapsed()) + "  ■");
     style(timer, 0xffe5484d, 0);
-    close.setVisibility(working || !all ? GONE : VISIBLE);
+    close.setVisibility(working ? GONE : VISIBLE);
     name(close, recording ? tr("Cancel: nothing is transcribed or sent") : tr("Close"));
     insert.setVisibility(recording ? GONE : VISIBLE);
     insert.setText(working ? "…" : "📥");
@@ -268,7 +262,6 @@ final class FloatingPanel extends FrameLayout {
     insert.setEnabled(ready);
     insert.setAlpha(ready ? 1f : 0.6f);
     style(insert, ready ? TEAL : PILL, 0);
-    refine.setVisibility(all ? VISIBLE : GONE);
     refine.setText(
         switch (m.refine()) {
           case DictationService.QUEUED -> "✨ ✓";
@@ -290,7 +283,7 @@ final class FloatingPanel extends FrameLayout {
         refine,
         m.refine().equals(DictationService.DONE) ? TEAL : PILL,
         m.refine().equals(DictationService.QUEUED) || m.refine().equals(DictationService.RUNNING) ? TEAL : 0);
-    chief.setVisibility(all && m.chiefAvailable() ? VISIBLE : GONE);
+    chief.setVisibility(m.chiefAvailable() ? VISIBLE : GONE);
     chief.setText(
         switch (m.chief()) {
           case DictationService.QUEUED -> "🧑‍💼 ✓";

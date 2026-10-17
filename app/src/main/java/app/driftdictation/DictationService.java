@@ -329,11 +329,6 @@ public final class DictationService extends Service {
                 else closePanel();
               }
 
-              public void expand() {
-                renderBubble();
-                touch();
-              }
-
               public void stop() {
                 if (RECORDING.equals(state)) stopRecording(true);
               }

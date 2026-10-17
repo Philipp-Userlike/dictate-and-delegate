@@ -41,6 +41,7 @@
     <string name="t_115acf0a" formatted="false">Allow the microphone first</string>
     <string name="t_115f8e33" formatted="false">No words yet.</string>
     <string name="t_13f11ba3" formatted="false">Off</string>
+    <string name="t_14f38eda" formatted="false">Installing the skills and creating the thread in bb…</string>
     <string name="t_1515cfb6" formatted="false">Nothing matches.</string>
     <string name="t_16666fb3" formatted="false">no answer in time</string>
     <string name="t_1680b9fc" formatted="false">For example: I build an app called Talk Router. Jana is a colleague. Write numbers as digits.</string>
@@ -94,7 +95,6 @@
     <string name="t_2994b473" formatted="false">‹ Earlier</string>
     <string name="t_29a545af" formatted="false">Dear Mr. Weber, uh, the tap in the kitchen, no actually the one in the bathroom, has been dripping since Monday. Oh and make that a bit more formal please.</string>
     <string name="t_2af8adac" formatted="false">Sent to your chief of staff</string>
-    <string name="t_2b605d42" formatted="false">More</string>
     <string name="t_2b61782b" formatted="false">Imprint</string>
     <string name="t_2c113272" formatted="false">Your bb Connect handle</string>
     <string name="t_2c467e9e" formatted="false">Tap to stop</string>
@@ -116,7 +116,6 @@
     <string name="t_32cb8094" formatted="false">That isn\'t a bb thread link or id (it starts with thr_).</string>
     <string name="t_33e841f4" formatted="false">Not sent to your chief of staff: %1$s</string>
     <string name="t_345d171c" formatted="false">bb\'s sign-in server answered with HTTP %1$d.</string>
-    <string name="t_348a26a4" formatted="false">✓  bb answers. Your chief of staff was told the new links.</string>
     <string name="t_370bef97" formatted="false">Token (optional)</string>
     <string name="t_373d8b92" formatted="false">Tap the bubble to record</string>
     <string name="t_377c4e46" formatted="false">Hold the key to start, hold it or press it again to stop. A short press still changes the volume. Works while the screen is on and unlocked, not during calls.</string>
@@ -129,7 +128,6 @@
     <string name="t_3b9793b3" formatted="false">%1$s didn\'t answer in time. Try again.</string>
     <string name="t_3b9938d1" formatted="false">Delete this template?</string>
     <string name="t_3c847f8f" formatted="false">Floating panel · optional</string>
-    <string name="t_3d344edd" formatted="false">Creating the thread in bb…</string>
     <string name="t_3d38c7ad" formatted="false">Saving recording…</string>
     <string name="t_3dbbd3aa" formatted="false">Anthropic key</string>
     <string name="t_3dbe79b1" formatted="false">Delete</string>
@@ -185,6 +183,8 @@
     <string name="t_503970b4" formatted="false">Untitled</string>
     <string name="t_503e7474" formatted="false">audio discarded</string>
     <string name="t_5048970e" formatted="false">Partial text and reported costs stay in your notes.</string>
+    <string name="t_510e0171" formatted="false">Installing the chief\'s skills in bb…</string>
+    <string name="t_51a8b5d9" formatted="false">Checking the thread and the skills in bb…</string>
     <string name="t_51bac044" formatted="false">Cancel</string>
     <string name="t_52316b96" formatted="false">The name in your bb address: &lt;handle&gt;.getbb.app. Your browser opens bb\'s account page; approve Talk Router there.</string>
     <string name="t_523a6999" formatted="false">The connection to bb broke off. Try again.</string>
@@ -228,7 +228,6 @@
     <string name="t_6358935d" formatted="false">Key saved</string>
     <string name="t_6361c341" formatted="false">the connection broke off; is it an MCP server (Streamable HTTP)?</string>
     <string name="t_6418f0e2" formatted="false">Enter your bb Connect handle</string>
-    <string name="t_64ad54e9" formatted="false">Creates a thread called “Chief of staff” in Personal (no project), with standing instructions that include your ntfy topic.</string>
     <string name="t_64d60911" formatted="false">Using Talk Router</string>
     <string name="t_65211030" formatted="false">The server address starts with https://</string>
     <string name="t_653174a7" formatted="false">Redone with a smarter model</string>
@@ -237,6 +236,7 @@
     <string name="t_6575c78f" formatted="false">Talk Router calls the speech and text models through OpenRouter, with your own key. You pay OpenRouter for what you use; Talk Router has no server and takes no cut.</string>
     <string name="t_657ce781" formatted="false">No models match.</string>
     <string name="t_65c84835" formatted="false">No speech recognized</string>
+    <string name="t_65d60c24" formatted="false">Couldn\'t install the chief\'s skills: %1$s</string>
     <string name="t_66aa70b6" formatted="false">Connection</string>
     <string name="t_67c5a895" formatted="false">Yesterday</string>
     <string name="t_694eaa92" formatted="false">%1$s didn\'t answer.</string>
@@ -252,7 +252,6 @@
     <string name="t_6d7c0d41" formatted="false">price shown afterwards</string>
     <string name="t_6dde3895" formatted="false">Anthropic is busy right now.</string>
     <string name="t_6f2c1806" formatted="false">Remove</string>
-    <string name="t_70c25729" formatted="false">Checking the thread in bb…</string>
     <string name="t_714149a6" formatted="false">Send to chief when addressed</string>
     <string name="t_71cc04b4" formatted="false">bb sent no sign-in code. Start it again.</string>
     <string name="t_721589c1" formatted="false">Today</string>
@@ -263,9 +262,9 @@
     <string name="t_75cfcf01" formatted="false">Sign out</string>
     <string name="t_76b8be2f" formatted="false">Saved recording found. Open Talk Router to retry or discard.</string>
     <string name="t_77083f49" formatted="false">What leaves your phone</string>
+    <string name="t_772f8ccc" formatted="false">Your name</string>
     <string name="t_77a2a807" formatted="false">Delete note</string>
     <string name="t_77e5aff2" formatted="false">Sent to chief of staff ↗</string>
-    <string name="t_781df68b" formatted="false">✓  Saved. Your chief of staff was told.</string>
     <string name="t_783d9fbc" formatted="false">Could not read this image.</string>
     <string name="t_791246e5" formatted="false">Your chief\'s name</string>
     <string name="t_7a933498" formatted="false">Could not delete all audio</string>
@@ -301,6 +300,7 @@
     <string name="t_86889c2c" formatted="false">✓  Created %1$s (%2$s).</string>
     <string name="t_874caa6a" formatted="false">Microphone is unavailable.</string>
     <string name="t_87747dc3" formatted="false">Start with the tile or a volume key; Insert puts the text where you type.</string>
+    <string name="t_886029f0" formatted="false">Your chief\'s skills</string>
     <string name="t_8860ef62" formatted="false">Could not reach %1$s. Check the address and your connection.</string>
     <string name="t_88ea76d0" formatted="false">Finish or discard the pending recording first.</string>
     <string name="t_8ab1eddb" formatted="false">✓  Signed in to %1$s.getbb.app</string>
@@ -317,11 +317,13 @@
     <string name="t_9153ca96" formatted="false">%1$s so far</string>
     <string name="t_918020d9" formatted="false">handle</string>
     <string name="t_91d100de" formatted="false">Attached</string>
+    <string name="t_94476a26" formatted="false">bb didn\'t install the chief\'s skills in time. Try again.</string>
     <string name="t_946ab421" formatted="false">Search models</string>
     <string name="t_9486247d" formatted="false">Inserted</string>
     <string name="t_9493d3a2" formatted="false">Not sent to your chief of staff: %1$s Below is what you said.</string>
     <string name="t_9500493c" formatted="false">bb didn\'t say which thread it created.</string>
     <string name="t_95bed80b" formatted="false">Set the bb web address for links in Settings → bb.</string>
+    <string name="t_95c3fc8c" formatted="false">Optional: what your chief calls you</string>
     <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">redone</string>
     <string name="t_980cb9e2" formatted="false">Anthropic took too long.</string>
@@ -375,6 +377,7 @@
     <string name="t_aafc2622" formatted="false">No notes yet.</string>
     <string name="t_ab7143b8" formatted="false">Permissions</string>
     <string name="t_ac66579e" formatted="false">bb couldn\'t be reached. Try again.</string>
+    <string name="t_ad007023" formatted="false">Installs the chief\'s skills in bb if needed, then creates a thread called “Chief of staff” in Personal (no project) that uses them.</string>
     <string name="t_ad395bc2" formatted="false">Paste a new key to replace it</string>
     <string name="t_ad6a2fb1" formatted="false">Give Talk Router what you\'re talking about, like the offer you\'re replying to. It\'s used when you ask for something.</string>
     <string name="t_ad6a7ed6" formatted="false">✓ Saved</string>
@@ -392,9 +395,9 @@
     <string name="t_b0bc3188" formatted="false">Words</string>
     <string name="t_b0c515f3" formatted="false">✓  On</string>
     <string name="t_b15fa13c" formatted="false">No connection to %1$s. Check your internet connection.</string>
+    <string name="t_b1c2889b" formatted="false">Check the skills in bb</string>
     <string name="t_b203fda8" formatted="false">Custom address</string>
     <string name="t_b214280c" formatted="false">Delete template</string>
-    <string name="t_b23ea214" formatted="false">✓  Using %1$s (%2$s). It was told where to send notifications.</string>
     <string name="t_b28cda23" formatted="false">Refines</string>
     <string name="t_b4211199" formatted="false">Price unit unverified · see source</string>
     <string name="t_b50cba8b" formatted="false">Insert from chief</string>
@@ -498,6 +501,7 @@
     <string name="t_de8e5494" formatted="false">Tap the microphone to record</string>
     <string name="t_def9cb9f" formatted="false">Get started</string>
     <string name="t_df336a1d" formatted="false">Thread link or id (thr_…)</string>
+    <string name="t_dfb2c9e3" formatted="false">Your chief of staff follows two skills in bb, chief-of-staff and talk-router: how to work for you, and how to notify you and send text back. Talk Router installs and updates them in bb through a short thread.</string>
     <string name="t_dff4964d" formatted="false">Your OpenRouter credits are used up. Add credits on openrouter.ai, then try again.</string>
     <string name="t_e0b2ab27" formatted="false">That\'s it. It works the same in any app: start, talk, stop, insert. Your notes are saved in Talk Router, where you can also copy them or switch back to exactly what you said.</string>
     <string name="t_e124f150" formatted="false">For example: Ada</string>
@@ -507,6 +511,7 @@
     <string name="t_e2530adf" formatted="false">Insert here</string>
     <string name="t_e2774654" formatted="false">Open in ntfy</string>
     <string name="t_e281d2a6" formatted="false">The sign-in came back from an unexpected server (%1$s).</string>
+    <string name="t_e3725a1f" formatted="false">✓  Installed in bb</string>
     <string name="t_e3d95fe1" formatted="false">Where thread links open, usually https://&lt;handle&gt;.getbb.app.</string>
     <string name="t_e3e3bdf6" formatted="false">No text yet</string>
     <string name="t_e3ee070f" formatted="false">Could not read this file.</string>
@@ -534,8 +539,10 @@
     <string name="t_eb89173a" formatted="false">Open Accessibility settings</string>
     <string name="t_ec8fbe93" formatted="false">Its text, versions, costs and audio are removed. This can\'t be undone.</string>
     <string name="t_ed4646d0" formatted="false">Finish or discard the pending recording first</string>
+    <string name="t_ed783112" formatted="false">✓  Using %1$s (%2$s). It was told to use the skills.</string>
     <string name="t_ed8814bc" formatted="false">Copy</string>
     <string name="t_edd9ff2d" formatted="false">Templates</string>
+    <string name="t_ee5fc561" formatted="false">Checking the chief\'s skills in bb…</string>
     <string name="t_eea7466f" formatted="false">Puts the text at the cursor, where you\'re typing.</string>
     <string name="t_efc1065a" formatted="false">Not connected</string>
     <string name="t_f01551fb" formatted="false">Recording contains no readable audio.</string>
