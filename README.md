@@ -5,43 +5,35 @@
 Press a key and talk: dictation, text creation and independent agents, from one starting point.
 
 <table>
-<tr><td colspan="2"><b>Dictate while you look</b></td></tr>
+<tr><td colspan="4"><b>Dictate while you browse</b></td></tr>
 <tr>
-<td width="50%" valign="top"><img src="docs/images/steps/talk-1.png" width="300" alt="A chat with Sam, who sends a link to a café"></td>
-<td width="50%" valign="top"><img src="docs/images/steps/talk-2.png" width="300" alt="The café page with the floating panel recording and a speech bubble of what you say"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/talk-1.png" width="200" alt="A chat with Sam, who sends a link to a café"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/talk-2.png" width="200" alt="The café page, while you talk about it"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/talk-3.png" width="200" alt="The chat with your reply written into the message field"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/talk-4.png" width="200" alt="The chat with the reply sent and Sam answering"></td>
 </tr>
 <tr>
-<td valign="top">① A friend sends a link.</td>
-<td valign="top">② Open it, press the key and talk while you look.</td>
-</tr>
-<tr>
-<td width="50%" valign="top"><img src="docs/images/steps/talk-3.png" width="300" alt="The chat with the dictated reply in the message field and the panel saying Inserted"></td>
-<td width="50%" valign="top"><img src="docs/images/steps/talk-4.png" width="300" alt="The chat with the reply sent and Sam answering"></td>
-</tr>
-<tr>
-<td valign="top">③ Back in the chat, 📥 Insert puts your words in the field.</td>
+<td valign="top">① A friend sends you a place for Saturday.</td>
+<td valign="top">② Start talking while you look at it.</td>
+<td valign="top">③ Your words appear in the chat.</td>
 <td valign="top">④ Send.</td>
 </tr>
-<tr><td colspan="2"><b>Refine with a template</b></td></tr>
+<tr><td colspan="4"><b>Write from your own template</b></td></tr>
 <tr>
-<td width="50%" valign="top"><img src="docs/images/steps/refine-1.png" width="300" alt="Talk Router's New template screen with an apartment application saved"></td>
-<td width="50%" valign="top"><img src="docs/images/steps/refine-2.png" width="300" alt="An apartment listing with the panel recording and a speech bubble of the request"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/refine-1.png" width="200" alt="An apartment application saved as a template"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/refine-2.png" width="200" alt="An apartment listing, while you talk about it"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/refine-3.png" width="200" alt="The finished application is ready"></td>
+<td width="25%" valign="top"><img src="docs/images/steps/refine-4.png" width="200" alt="The contact form filled with the finished application"></td>
 </tr>
 <tr>
-<td valign="top">① Save a template once.</td>
-<td valign="top">② On a listing: <i>"Use my application template, mention that I have no pets and that I love the balcony."</i></td>
-</tr>
-<tr>
-<td width="50%" valign="top"><img src="docs/images/steps/refine-3.png" width="300" alt="The listing's contact form, with the panel showing the refined text ready to insert"></td>
-<td width="50%" valign="top"><img src="docs/images/steps/refine-4.png" width="300" alt="The contact form filled with the finished application"></td>
-</tr>
-<tr>
-<td valign="top">③ ✨ Refine fills in the template.</td>
-<td valign="top">④ ✨📥 puts it into the contact form.</td>
+<td valign="top">① Save your application once as a template.</td>
+<td valign="top">② Start talking while you look at the offer: <i>"Use my application template, mention that I have no pets and that I love the balcony."</i></td>
+<td valign="top">③ It writes the application from your template.</td>
+<td valign="top">④ It lands in the contact form, ready to send.</td>
 </tr>
 </table>
 
-<p><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</p>
+<p><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you make it better by talking while you play.</p>
 
 https://github.com/user-attachments/assets/1d1d507f-47d5-4513-99e1-ce83b8d83619
 
