@@ -5,19 +5,34 @@
 Press a key and talk: dictation, text creation and independent agents, from one starting point.
 
 <table>
+<tr><td colspan="3"><b>Dictate while you look</b></td></tr>
 <tr>
-<td width="50%" valign="top"><img src="docs/images/anim-talk.gif" alt="A friend sends a café link; you talk about it while looking at the page, go back to the chat, insert the text and send it"></td>
-<td width="50%" valign="top"><img src="docs/images/anim-refine.gif" alt="A template is saved in Talk Router; on an apartment listing you ask for an application from it, and the finished text goes into the contact form"></td>
+<td width="33%" valign="top"><img src="docs/images/steps/talk-1.gif" alt="A friend sends a café link in a chat, and you open it"></td>
+<td width="33%" valign="top"><img src="docs/images/steps/talk-2.gif" alt="You press the key and talk about the café while scrolling its page"></td>
+<td width="33%" valign="top"><img src="docs/images/steps/talk-3.gif" alt="Back in the chat, you insert the text and send it"></td>
 </tr>
 <tr>
-<td valign="top"><b>Dictate while you look.</b> Talk about what's on screen; the text lands in your chat.</td>
-<td valign="top"><b>Refine with a template.</b> <i>"Use my application template, mention that I have no pets."</i> The finished text goes into the form.</td>
+<td valign="top">① A friend sends a link.</td>
+<td valign="top">② Press the key and talk while you look.</td>
+<td valign="top">③ Back in the chat: insert, send.</td>
+</tr>
+<tr><td colspan="3"><b>Refine with a template</b></td></tr>
+<tr>
+<td valign="top"><img src="docs/images/steps/refine-1.gif" alt="You save an apartment application as a template in Talk Router"></td>
+<td valign="top"><img src="docs/images/steps/refine-2.gif" alt="On an apartment listing, you ask for an application from your template"></td>
+<td valign="top"><img src="docs/images/steps/refine-3.gif" alt="Refine fills in the template and you insert it into the contact form"></td>
 </tr>
 <tr>
-<td colspan="2"><img src="docs/images/anim-agent.gif" alt="You ask your agent for a snake game; it builds it on your computer and sends a link; while playing you ask for changes, and it updates the game"></td>
+<td valign="top">① Save a template once.</td>
+<td valign="top">② On a listing: <i>"Use my application template, mention that I have no pets."</i></td>
+<td valign="top">③ ✨ fills it in; insert it into the form.</td>
+</tr>
+<tr><td colspan="3"><b>Hand it to your agent</b></td></tr>
+<tr>
+<td colspan="3"><img src="docs/images/anim-agent.gif" alt="You ask your agent for a snake game; it builds it on your computer and sends a link; while playing you ask for changes, and it updates the game"></td>
 </tr>
 <tr>
-<td colspan="2"><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</td>
+<td colspan="3"><i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</td>
 </tr>
 </table>
 
