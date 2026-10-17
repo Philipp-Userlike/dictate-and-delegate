@@ -1,5 +1,5 @@
 {
-  "client_id": "https://raw.githubusercontent.com/Philipp258/talk-router/main/oauth/client.json",
+  "client_id": "https://philipp258.github.io/talk-router/oauth/client.json",
   "client_name": "Talk Router",
   "client_uri": "https://github.com/Philipp258/talk-router",
   "redirect_uris": ["talkrouter://oauth/callback"],

@@ -22,13 +22,14 @@ import org.json.JSONObject;
 /**
  * Signing in to bb Connect (https://<handle>.getbb.app/mcp) with OAuth 2.1: authorization code
  * with PKCE (S256), no client secret. The client ID is the URL of our client metadata document
- * (oauth/client.json in the repository); bb has no registration endpoint. The browser comes back
+ * (oauth/client.json, served as JSON from the gh-pages branch by GitHub Pages; bb rejects the
+ * text/plain of raw.githubusercontent.com); bb has no registration endpoint. The browser comes back
  * to talkrouter://oauth/callback (BbSignInActivity). Tokens are kept encrypted in Vault and
  * refreshed when they expire or bb answers 401.
  */
 final class BbOAuth {
   static final String CLIENT_ID =
-      "https://raw.githubusercontent.com/Philipp258/talk-router/main/oauth/client.json";
+      "https://philipp258.github.io/talk-router/oauth/client.json";
   static final String REDIRECT = "talkrouter://oauth/callback", SCOPE = "bb";
 
   /** bb's authorization server, used when its metadata can't be read. */
