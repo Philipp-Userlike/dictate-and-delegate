@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">Servidor ntfy</string>
     <string name="t_2f79a315" formatted="false">Estimado Sr. Weber:\n\nLe escribo para informarle de que el grifo del baño gotea desde el lunes.</string>
     <string name="t_2fc562b8" formatted="false">Nota no encontrada</string>
+    <string name="t_3017cfb9" formatted="false">no enviado: %1$s</string>
     <string name="t_30a4185d" formatted="false">Gastado</string>
     <string name="t_30a98a26" formatted="false">No se pudo actualizar el historial.</string>
     <string name="t_315f5fe4" formatted="false">Pulido</string>
@@ -271,6 +272,7 @@
     <string name="t_7c160dc5" formatted="false">Introduce la dirección MCP, empezando por https:// o http://</string>
     <string name="t_7c9185dc" formatted="false">Añade primero tu clave de OpenRouter en los ajustes de Talk Router.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh, o tu propio servidor ntfy.</string>
+    <string name="t_7cbef380" formatted="false">Esto es demasiado largo para bb (%1$d caracteres, máximo %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Insertar pulido</string>
     <string name="t_7e19ccd3" formatted="false">Dilo para enviar un dictado a tu jefe: \"Ada, …\", \"esto es para Ada\". Solo mencionar el nombre en un mensaje no lo envía. Sin nombre, toca 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Usa la burbuja o abre Talk Router para controlar el dictado.</string>
@@ -400,6 +402,7 @@
     <string name="t_b50cba8b" formatted="false">Insertar del jefe</string>
     <string name="t_b561b378" formatted="false">1 · Ajustes rápidos</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">es demasiado grande para enviarlo así</string>
     <string name="t_b67d60c1" formatted="false">No se pudo guardar la plantilla</string>
     <string name="t_b6a5c51b" formatted="false">Enviado como bearer token</string>
     <string name="t_b6cac25b_many" formatted="false">%1$d archivos</string>
@@ -491,6 +494,7 @@
     <string name="t_db5195fa" formatted="false">texto pegado</string>
     <string name="t_dbde124f" formatted="false">El audio de esta nota no se conservó, no se puede rehacer.</string>
     <string name="t_dbe48d14" formatted="false">Nunca</string>
+    <string name="t_dc3fc076" formatted="false">bb rechazó la subida (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Los días sin dictados no cuestan nada.</string>
     <string name="t_dcc7acfb" formatted="false">Tu jefe de gabinete envió texto para insertar</string>
     <string name="t_dcf39d20" formatted="false">Se lo pasa a tu jefe de gabinete en bb, si configuraste uno. Luego, Abrir chat ↗.</string>

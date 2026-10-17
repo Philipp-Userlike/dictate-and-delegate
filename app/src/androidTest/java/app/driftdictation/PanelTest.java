@@ -569,10 +569,19 @@ public class PanelTest {
     android.util.Log.i("TalkRouterReal", "chief " + created.getString("id"));
     bb.setChief(new BbBridge.ThreadInfo(created.getString("id"), args.getString("realTitle"), created.optString("status")));
     prefs.edit().putString(Profile.CHIEF_NAME, "Henry").commit();
-    android.graphics.Bitmap red = android.graphics.Bitmap.createBitmap(64, 64, android.graphics.Bitmap.Config.ARGB_8888);
-    red.eraseColor(0xffff0000);
+    // -e realBase64 true: as over bb Connect, the upload is refused and a large photo-sized
+    // picture (red with noise, over bb's 100,000-character limit as base64) goes in parts.
+    boolean base64 = "true".equals(args.getString("realBase64"));
+    BbBridge.refuseUploads = base64;
+    int side = base64 ? 1200 : 64;
+    android.graphics.Bitmap red = android.graphics.Bitmap.createBitmap(side, side, android.graphics.Bitmap.Config.ARGB_8888);
+    java.util.Random noise = new java.util.Random(3);
+    int[] pixels = new int[side * side];
+    for (int i = 0; i < pixels.length; i++) pixels[i] = 0xff000000 | ((200 + noise.nextInt(56)) << 16) | (noise.nextInt(40) << 8) | noise.nextInt(40);
+    red.setPixels(pixels, 0, side, 0, 0, side, side);
     java.io.ByteArrayOutputStream jpeg = new java.io.ByteArrayOutputStream();
-    red.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, jpeg);
+    red.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, jpeg);
+    android.util.Log.i("TalkRouterReal", "picture " + jpeg.size() + " bytes");
     new Attachments(context).add("image", "colour.jpg", jpeg.toByteArray(), ".jpg");
     TestServer.transcripts(
         "Henry, look at the attached picture and send me just the name of its colour, in English, as text to paste.");
@@ -586,7 +595,8 @@ public class PanelTest {
     until("the answer is in the field", () -> padText().toLowerCase().contains("red"));
     JSONArray steps = note().json.getJSONArray("steps");
     android.util.Log.i("TalkRouterReal", "answer: " + padText() + " · " + steps.getJSONObject(steps.length() - 1));
-    shot("real-4-image-answer");
+    shot(base64 ? "real-5-image-base64-answer" : "real-4-image-answer");
+    BbBridge.refuseUploads = false;
   }
 
   @Test

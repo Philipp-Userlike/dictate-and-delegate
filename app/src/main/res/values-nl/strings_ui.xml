@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">ntfy-server</string>
     <string name="t_2f79a315" formatted="false">Geachte heer Weber,\n\nIk wil u laten weten dat de kraan in de badkamer sinds maandag lekt.</string>
     <string name="t_2fc562b8" formatted="false">Notitie niet gevonden</string>
+    <string name="t_3017cfb9" formatted="false">niet doorgestuurd: %1$s</string>
     <string name="t_30a4185d" formatted="false">Besteed</string>
     <string name="t_30a98a26" formatted="false">Kon geschiedenis niet bijwerken.</string>
     <string name="t_315f5fe4" formatted="false">Verfijnd</string>
@@ -270,6 +271,7 @@
     <string name="t_7c160dc5" formatted="false">Voer het MCP-adres in, beginnend met https:// of http://</string>
     <string name="t_7c9185dc" formatted="false">Voeg eerst je OpenRouter-sleutel toe in de instellingen van Talk Router.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh of je eigen ntfy-server.</string>
+    <string name="t_7cbef380" formatted="false">Dit is te lang voor bb (%1$d tekens, maximaal %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Verfijnd invoegen</string>
     <string name="t_7e19ccd3" formatted="false">Zeg de naam om een dictaat naar je leidinggevende te sturen: \"Ada, …\", \"dit is voor Ada\". Alleen de naam noemen in een bericht verzendt het niet. Zonder naam, tik op 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Gebruik de bubbel of open Talk Router om het dicteren te bedienen.</string>
@@ -397,6 +399,7 @@
     <string name="t_b50cba8b" formatted="false">Invoegen van stafchef</string>
     <string name="t_b561b378" formatted="false">1 · Snelle instellingen-tegel</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">het is te groot om op deze manier door te sturen</string>
     <string name="t_b67d60c1" formatted="false">Kon het sjabloon niet opslaan</string>
     <string name="t_b6a5c51b" formatted="false">Verzonden als bearer-token</string>
     <string name="t_b6cac25b_one" formatted="false">%1$d bestand</string>
@@ -486,6 +489,7 @@
     <string name="t_db5195fa" formatted="false">geplakte tekst</string>
     <string name="t_dbde124f" formatted="false">Audio voor deze notitie is niet bewaard, kan niet opnieuw.</string>
     <string name="t_dbe48d14" formatted="false">Nooit</string>
+    <string name="t_dc3fc076" formatted="false">bb heeft de upload geweigerd (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Dagen zonder dicteren kosten niets.</string>
     <string name="t_dcc7acfb" formatted="false">Je stafchef heeft tekst gestuurd om in te voegen</string>
     <string name="t_dcf39d20" formatted="false">Draagt het over aan je stafchef in bb, als je die hebt ingesteld. Daarna Chat openen ↗.</string>

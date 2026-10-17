@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">Serveur ntfy</string>
     <string name="t_2f79a315" formatted="false">Bonjour M. Weber,\n\nJe tiens à vous informer que le robinet de la salle de bain goutte depuis lundi.</string>
     <string name="t_2fc562b8" formatted="false">Note introuvable</string>
+    <string name="t_3017cfb9" formatted="false">Non transmis : %1$s</string>
     <string name="t_30a4185d" formatted="false">Dépensé</string>
     <string name="t_30a98a26" formatted="false">Impossible de mettre à jour l\'historique.</string>
     <string name="t_315f5fe4" formatted="false">Peaufiné</string>
@@ -271,6 +272,7 @@
     <string name="t_7c160dc5" formatted="false">Saisis l\'adresse MCP, commençant par https:// ou http://</string>
     <string name="t_7c9185dc" formatted="false">Ajoute d\'abord ta clé OpenRouter dans les paramètres de Talk Router.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh, ou ton propre serveur ntfy.</string>
+    <string name="t_7cbef380" formatted="false">C\'est trop long pour bb (%1$d caractères, max. %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Insérer le texte peaufiné</string>
     <string name="t_7e19ccd3" formatted="false">Dis-le pour lui envoyer une dictée : « Ada, … », « c\'est pour Ada ». Mentionner simplement le nom dans un message ne l\'envoie pas. Sans nom, appuie sur 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Utilise la bulle ou ouvre Talk Router pour contrôler la dictée.</string>
@@ -400,6 +402,7 @@
     <string name="t_b50cba8b" formatted="false">Insérer du chef</string>
     <string name="t_b561b378" formatted="false">1 · Tuile des Paramètres rapides</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">Trop volumineux pour être transmis ainsi</string>
     <string name="t_b67d60c1" formatted="false">Impossible d\'enregistrer le modèle</string>
     <string name="t_b6a5c51b" formatted="false">Envoyé comme jeton Bearer</string>
     <string name="t_b6cac25b_many" formatted="false">%1$d de fichiers</string>
@@ -491,6 +494,7 @@
     <string name="t_db5195fa" formatted="false">texte collé</string>
     <string name="t_dbde124f" formatted="false">L\'audio n\'a pas été conservé, impossible de refaire.</string>
     <string name="t_dbe48d14" formatted="false">Jamais</string>
+    <string name="t_dc3fc076" formatted="false">bb a refusé le téléversement (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Les jours sans dictée ne coûtent rien.</string>
     <string name="t_dcc7acfb" formatted="false">Ton chef de cabinet a envoyé du texte à insérer</string>
     <string name="t_dcf39d20" formatted="false">Transmet la tâche à ton chef de cabinet dans bb, si configuré. Puis Ouvrir le chat ↗.</string>

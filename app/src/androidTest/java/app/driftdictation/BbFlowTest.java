@@ -398,27 +398,70 @@ public class BbFlowTest {
     assertEquals("upload", bb.getString("filesHow"));
   }
 
+  /** The fake's base64 uploads for a file, joined in part order and decoded. */
+  static byte[] joined(JSONArray uploads, String name) throws Exception {
+    java.util.TreeMap<String, String> parts = new java.util.TreeMap<>();
+    for (int i = 0; i < uploads.length(); i++) {
+      JSONObject u = uploads.getJSONObject(i);
+      if (u.getString("name").startsWith(name + ".part")) parts.put(u.getString("name"), u.getString("text"));
+    }
+    return android.util.Base64.decode(String.join("", parts.values()), android.util.Base64.DEFAULT);
+  }
+
   @Test
-  public void whenBbRefusesTheUploadFilesGoAsBase64ForTheChiefToDecode() throws Exception {
+  public void whenBbRefusesTheUploadALargeImageGoesAsBase64PartsUnderTheLimit() throws Exception {
     connectFake();
     TestServer.bbUploadStatus(401);
-    byte[] jpeg = new byte[] {(byte) 0xff, (byte) 0xd8, 0, 1, (byte) 0xfe, (byte) 0xff, (byte) 0xd9};
-    new Attachments(context).add("image", "flat.jpg", jpeg, ".jpg");
+    byte[] big = new byte[230_000]; // 306,668 base64 characters: four parts under bb's limit
+    new java.util.Random(7).nextBytes(big);
+    byte[] small = new byte[] {(byte) 0xff, (byte) 0xd8, 0, 1, (byte) 0xfe, (byte) 0xff, (byte) 0xd9};
+    Attachments a = new Attachments(context);
+    a.add("image", "flat.jpg", big, ".jpg");
+    a.add("image", "floor plan.jpg", small, ".jpg");
     TestServer.transcripts("Henry, what do you think of this flat");
     TestServer.decide(0, 0.97, "none");
     dictate("copied");
     HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
     JSONArray uploads = TestServer.bbUploads();
-    assertEquals(1, uploads.length());
-    assertEquals("mcp", uploads.getJSONObject(0).getString("via"));
-    assertEquals("flat.jpg.b64", uploads.getJSONObject(0).getString("name"));
-    assertEquals(sha256(jpeg), uploads.getJSONObject(0).getString("sha256"));
+    // Four parts for the big one, one for the small one; every snippet under 100,000 characters.
+    assertEquals(5, uploads.length());
+    for (int i = 0; i < uploads.length(); i++) {
+      assertEquals("mcp", uploads.getJSONObject(i).getString("via"));
+      assertTrue(uploads.getJSONObject(i).getInt("codeLength") < 100_000);
+    }
+    assertEquals("flat.jpg.part01of04.b64", uploads.getJSONObject(0).getString("name"));
+    assertEquals(sha256(big), sha256(joined(uploads, "flat.jpg")));
+    assertEquals(sha256(small), sha256(joined(uploads, "floor_plan.jpg")));
     List<String> snippets = TestServer.bbSnippets();
     String tell = snippets.get(snippets.size() - 1);
-    assertTrue(tell, tell.contains("\"--file\",\"" + uploads.getJSONObject(0).getString("path") + "\""));
-    assertTrue(tell, tell.contains("base64 -d <name>.b64 > <name>"));
-    assertTrue(tell, tell.contains("flat.jpg.)"));
-    assertEquals("base64", e.json.getJSONArray("steps").getJSONObject(e.json.getJSONArray("steps").length() - 1).getString("filesHow"));
+    for (int i = 0; i < uploads.length(); i++)
+      assertTrue(tell, tell.contains("\"--file\",\"" + uploads.getJSONObject(i).getString("path") + "\""));
+    assertTrue(tell, tell.contains("cat <name>.part*.b64 | base64 -d > <name>"));
+    assertTrue(tell, tell.contains("flat.jpg (4 parts), floor_plan.jpg (1 part)"));
+    JSONObject step = e.json.getJSONArray("steps").getJSONObject(e.json.getJSONArray("steps").length() - 1);
+    assertEquals("base64", step.getString("filesHow"));
+    assertEquals(2, step.getInt("files"));
+    assertEquals(401, step.getInt("uploadRefused"));
+  }
+
+  @Test
+  public void aFileThatCantGoIsNamedAndTheDictationStillGoes() throws Exception {
+    connectFake();
+    TestServer.bbUploadStatus(403);
+    // Over the base64 limit: it can't go, the dictation does, with a note.
+    new Attachments(context).add("pdf", "contract.pdf", new byte[BbBridge.BASE64_MAX + 1], ".pdf");
+    TestServer.transcripts("Henry, check the contract");
+    TestServer.decide(0, 0.97, "none");
+    dictate("copied");
+    HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    assertFalse(e.json.has("chiefFailed"));
+    String tell = TestServer.bbSnippets().get(TestServer.bbSnippets().size() - 1);
+    assertTrue(tell, tell.contains("Henry, check the contract"));
+    assertTrue(tell, tell.contains("(I also attached contract.pdf: it's too big to pass on this way. Talk Router couldn't pass that on.)"));
+    assertFalse(tell, tell.contains("--file"));
+    JSONObject step = e.json.getJSONArray("steps").getJSONObject(e.json.getJSONArray("steps").length() - 1);
+    assertTrue(step.getString("filesFailed").startsWith("contract.pdf"));
+    assertEquals(403, step.getInt("uploadRefused"));
   }
 
   /** Scrolls the page to its end. */

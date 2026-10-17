@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">Servidor ntfy</string>
     <string name="t_2f79a315" formatted="false">Caro Sr. Weber,\n\nGostaria de informar que a torneira da casa de banho está a pingar desde segunda-feira.</string>
     <string name="t_2fc562b8" formatted="false">Nota não encontrada</string>
+    <string name="t_3017cfb9" formatted="false">não enviado: %1$s</string>
     <string name="t_30a4185d" formatted="false">Gasto</string>
     <string name="t_30a98a26" formatted="false">Não foi possível atualizar o histórico.</string>
     <string name="t_315f5fe4" formatted="false">Refinado</string>
@@ -271,6 +272,7 @@
     <string name="t_7c160dc5" formatted="false">Introduz o endereço MCP, a começar por https:// ou http://</string>
     <string name="t_7c9185dc" formatted="false">Adiciona primeiro a tua chave do OpenRouter nas definições do Talk Router.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh, ou o teu próprio servidor ntfy.</string>
+    <string name="t_7cbef380" formatted="false">Isto é longo demais para o bb (%1$d caracteres, máximo: %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Inserir refinado</string>
     <string name="t_7e19ccd3" formatted="false">Diz o nome para enviar um ditado ao teu chefe: \"Ada, …\", \"isto é para a Ada\". Apenas mencionar o nome numa mensagem não o envia. Sem nome, toca em 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Usa o balão ou abre o Talk Router para controlar o ditado.</string>
@@ -400,6 +402,7 @@
     <string name="t_b50cba8b" formatted="false">Inserir do chief</string>
     <string name="t_b561b378" formatted="false">1 · Botão das Definições Rápidas</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">é grande demais para enviar assim</string>
     <string name="t_b67d60c1" formatted="false">Não foi possível guardar o modelo</string>
     <string name="t_b6a5c51b" formatted="false">Enviado como bearer token</string>
     <string name="t_b6cac25b_many" formatted="false">%1$d de arquivos</string>
@@ -491,6 +494,7 @@
     <string name="t_db5195fa" formatted="false">texto colado</string>
     <string name="t_dbde124f" formatted="false">O áudio desta nota não foi guardado, não pode ser refeita.</string>
     <string name="t_dbe48d14" formatted="false">Nunca</string>
+    <string name="t_dc3fc076" formatted="false">o bb recusou o envio (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Dias sem ditar não custam nada.</string>
     <string name="t_dcc7acfb" formatted="false">O teu chief of staff enviou texto para inserir</string>
     <string name="t_dcf39d20" formatted="false">Passa-o ao teu chief of staff no bb, se tiveres configurado um. Depois toca em Abrir chat ↗.</string>

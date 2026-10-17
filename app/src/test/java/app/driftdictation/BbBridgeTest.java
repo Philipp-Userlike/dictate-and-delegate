@@ -40,12 +40,21 @@ public class BbBridgeTest {
         BbBridge.message(
             " research flights to Lisbon ",
             List.<String[]>of(new String[] {"pasted text", "Dates: 3 to 7 May"}),
-            BbBridge.base64Note(List.of("map.jpg")),
+            BbBridge.base64Note(List.of("map.jpg (2 parts)")),
             "k3x9qa");
-    assertTrue(m.endsWith("map.jpg.)\n\n[request: k3x9qa]"));
+    assertTrue(m.endsWith("map.jpg (2 parts).)\n\n[request: k3x9qa]"));
     assertTrue(m.startsWith("research flights to Lisbon\n\n<pasted name=\"pasted text\">\nDates: 3 to 7 May\n</pasted>"));
-    assertTrue(m.contains("base64 -d <name>.b64 > <name>"));
+    assertTrue(m.contains("cat <name>.part*.b64 | base64 -d > <name>"));
     assertEquals("just this", BbBridge.message("just this", List.of(), "", ""));
+  }
+
+  @Test
+  public void pastedTextIsShortenedToStayWithinBbsLimit() {
+    String big = "x".repeat(70_000);
+    String m = BbBridge.message("look", List.<String[]>of(new String[] {"a", big}, new String[] {"b", "more"}), "", "r1");
+    assertTrue(m.length() < BbBridge.CODE_LIMIT - 5_000);
+    assertTrue(m.contains("[… shortened by Talk Router]"));
+    assertFalse(m.contains("<pasted name=\"b\">"));
   }
 
   @Test

@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">ntfy server</string>
     <string name="t_2f79a315" formatted="false">Dear Mr. Weber,\n\nI would like to let you know that the bathroom tap has been dripping since Monday.</string>
     <string name="t_2fc562b8" formatted="false">Note not found</string>
+    <string name="t_3017cfb9" formatted="false">not passed on: %1$s</string>
     <string name="t_30a4185d" formatted="false">Spent</string>
     <string name="t_30a98a26" formatted="false">Could not update history.</string>
     <string name="t_315f5fe4" formatted="false">Refined</string>
@@ -272,6 +273,7 @@
     <string name="t_7c160dc5" formatted="false">Enter the MCP address, starting with https:// or http://</string>
     <string name="t_7c9185dc" formatted="false">Add your OpenRouter key in Talk Router\'s Settings first.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh, or your own ntfy server.</string>
+    <string name="t_7cbef380" formatted="false">This is too long for bb (%1$d characters, at most %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Insert refined</string>
     <string name="t_7e19ccd3" formatted="false">Say it to send a dictation to your chief: \"Ada, …\", \"this is for Ada\". Just mentioning the name in a message doesn\'t send it. Without a name, tap 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Use the bubble or open Talk Router to control dictation.</string>
@@ -403,6 +405,7 @@
     <string name="t_b50cba8b" formatted="false">Insert from chief</string>
     <string name="t_b561b378" formatted="false">1 · Quick Settings tile</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">it\'s too big to pass on this way</string>
     <string name="t_b67d60c1" formatted="false">Could not save the template</string>
     <string name="t_b6a5c51b" formatted="false">Sent as a bearer token</string>
     <string name="t_b6cac25b_few" formatted="false">%1$d files</string>
@@ -496,6 +499,7 @@
     <string name="t_db5195fa" formatted="false">pasted text</string>
     <string name="t_dbde124f" formatted="false">Audio for this note wasn\'t kept, so it can\'t be redone.</string>
     <string name="t_dbe48d14" formatted="false">Never</string>
+    <string name="t_dc3fc076" formatted="false">bb refused the upload (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Days without dictation cost nothing.</string>
     <string name="t_dcc7acfb" formatted="false">Your chief of staff sent text to insert</string>
     <string name="t_dcf39d20" formatted="false">Hands it to your chief of staff in bb, if you set one up. Then Open chat ↗.</string>

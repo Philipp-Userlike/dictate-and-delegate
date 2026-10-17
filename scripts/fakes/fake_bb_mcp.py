@@ -199,6 +199,9 @@ class Handler(BaseHTTPRequestHandler):
         if method == "tools/list":
             return self.send_event({"jsonrpc": "2.0", "id": rid, "result": {"tools": TOOLS}})
         if method == "tools/call" and tool in ("run", "read"):
+            if len(code) > 100000:  # bb's inputSchema: maxLength 100000
+                return self.send_event({"jsonrpc": "2.0", "id": rid, "error": {
+                    "code": -32602, "message": "Input validation error: code is too big (maximum 100000)"}})
             return self.call(rid, code)
         self.send_event({"jsonrpc": "2.0", "id": rid, "error": {"code": -32601, "message": "Method not found"}})
 
@@ -248,11 +251,10 @@ class Handler(BaseHTTPRequestHandler):
         if kind == "upload":
             text = json.loads(re.search(r'\{stdin: ("(?:[^"\\]|\\.)*")\}', code).group(1))
             name = re.search(r'"--filename","([^"]*)"', code.replace(" ", "")).group(1)
-            data = base64.b64decode(text)
             path = "%s-fake-%d" % (name, len(uploads))
             with lock:
-                uploads.append({"name": name, "mimeType": "text/plain", "size": len(data),
-                                "sha256": hashlib.sha256(data).hexdigest(), "via": "mcp", "path": path})
+                uploads.append({"name": name, "mimeType": "text/plain", "size": len(text),
+                                "text": text, "via": "mcp", "path": path, "codeLength": len(code)})
             value = {"path": path}
         elif kind == "skills":
             with lock:

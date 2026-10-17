@@ -937,6 +937,8 @@ public final class DictationService extends Service {
             JSONObject step = e.step(CHIEF_STEP, CHIEF_TARGET, ms, null, failed);
             // Activity: how many files went along, and how ("upload", or "base64" as a fallback).
             if (files != null && files.files() > 0) step.put("files", files.files()).put("filesHow", files.how());
+            if (files != null && files.refused() > 0) step.put("uploadRefused", files.refused());
+            if (files != null && !files.failed().isEmpty()) step.put("filesFailed", String.join("; ", files.failed()));
             e.json.put("route", "chief");
             if (failed != null) {
               e.json.put("chiefFailed", failed);

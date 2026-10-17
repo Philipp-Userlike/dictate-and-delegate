@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">Serwer ntfy</string>
     <string name="t_2f79a315" formatted="false">Szanowny Panie Weber,\n\nchciałbym poinformować, że kran w łazience cieknie od poniedziałku.</string>
     <string name="t_2fc562b8" formatted="false">Nie znaleziono notatki</string>
+    <string name="t_3017cfb9" formatted="false">nie przekazano: %1$s</string>
     <string name="t_30a4185d" formatted="false">Wydano</string>
     <string name="t_30a98a26" formatted="false">Nie udało się zaktualizować historii.</string>
     <string name="t_315f5fe4" formatted="false">Dopracowano</string>
@@ -272,6 +273,7 @@
     <string name="t_7c160dc5" formatted="false">Wpisz adres MCP zaczynający się od https:// lub http://</string>
     <string name="t_7c9185dc" formatted="false">Najpierw dodaj swój klucz OpenRouter w Ustawieniach Talk Router.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh lub Twój własny serwer ntfy.</string>
+    <string name="t_7cbef380" formatted="false">To jest zbyt długie dla bb (znaków: %1$d, maks. %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Wstaw dopracowany</string>
     <string name="t_7e19ccd3" formatted="false">Powiedz je, aby wysłać dyktando do szefa: „Ada, …”, „to dla Ady”. Samo wspomnienie imienia w treści nie wysyła wiadomości. Bez użycia imienia stuknij 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Użyj dymka lub otwórz Talk Router, aby sterować dyktowaniem.</string>
@@ -403,6 +405,7 @@
     <string name="t_b50cba8b" formatted="false">Wstaw od szefa</string>
     <string name="t_b561b378" formatted="false">1 · Kafel szybkich ustawień</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">jest zbyt duże, aby przekazać w ten sposób</string>
     <string name="t_b67d60c1" formatted="false">Nie udało się zapisać szablonu</string>
     <string name="t_b6a5c51b" formatted="false">Wysyłany jako token Bearer</string>
     <string name="t_b6cac25b_few" formatted="false">%1$d pliki</string>
@@ -496,6 +499,7 @@
     <string name="t_db5195fa" formatted="false">wklejony tekst</string>
     <string name="t_dbde124f" formatted="false">Dźwięk dla tej notatki nie został zachowany, więc nie można jej poprawić.</string>
     <string name="t_dbe48d14" formatted="false">Nigdy</string>
+    <string name="t_dc3fc076" formatted="false">bb odrzuciło przesyłanie (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Dni bez dyktowania nic nie kosztują.</string>
     <string name="t_dcc7acfb" formatted="false">Szef sztabu przesłał tekst do wstawienia</string>
     <string name="t_dcf39d20" formatted="false">Przekazuje go twojemu szefowi sztabu w bb, jeśli został skonfigurowany. Następnie wybierz Otwórz czat ↗.</string>

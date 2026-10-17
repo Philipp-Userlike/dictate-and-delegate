@@ -2283,8 +2283,10 @@ public final class MainActivity extends Activity {
             + (step.has("files")
                 ? " · "
                     + plural(step.optInt("files"), "%1$d file", "%1$d files")
-                    + ("base64".equals(step.optString("filesHow")) ? " " + tr("(as base64)") : "")
-                : "");
+                    + (step.optString("filesHow").contains("base64") ? " " + tr("(as base64)") : "")
+                : "")
+            + (step.has("uploadRefused") ? " · " + tr("bb refused the upload (HTTP %1$d)", step.optInt("uploadRefused")) : "")
+            + (step.has("filesFailed") ? " · " + tr("not passed on: %1$s", step.optString("filesFailed")) : "");
     TextView t = ui.text(line, 13, failed ? Ui.WARN : Ui.BODY);
     t.setContentDescription(line + " (" + model + ")");
     return t;

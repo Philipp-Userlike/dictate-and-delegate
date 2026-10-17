@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">Server ntfy</string>
     <string name="t_2f79a315" formatted="false">Gentile signor Weber,\n\ndesidero informarla che il rubinetto del bagno perde da lunedì.</string>
     <string name="t_2fc562b8" formatted="false">Nota non trovata</string>
+    <string name="t_3017cfb9" formatted="false">non inoltrato: %1$s</string>
     <string name="t_30a4185d" formatted="false">Speso</string>
     <string name="t_30a98a26" formatted="false">Impossibile aggiornare la cronologia.</string>
     <string name="t_315f5fe4" formatted="false">Perfezionato</string>
@@ -271,6 +272,7 @@
     <string name="t_7c160dc5" formatted="false">Inserisci l\'indirizzo MCP, che inizia con https:// o http://</string>
     <string name="t_7c9185dc" formatted="false">Aggiungi prima la tua chiave OpenRouter nelle impostazioni di Talk Router.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh, oppure il tuo server ntfy.</string>
+    <string name="t_7cbef380" formatted="false">Troppo lungo per bb (%1$d caratteri, massimo %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Inserisci perfezionato</string>
     <string name="t_7e19ccd3" formatted="false">Pronuncialo per inviare un dettato al tuo capo: \"Ada, …\", \"questo è per Ada\". Menzionare solo il nome in un messaggio non lo invia. Senza nome, tocca 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Usa il fumetto o apri Talk Router per gestire la dettatura.</string>
@@ -400,6 +402,7 @@
     <string name="t_b50cba8b" formatted="false">Inserisci da chief</string>
     <string name="t_b561b378" formatted="false">1 · Riquadro Impostazioni rapide</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">è troppo grande per essere inoltrato così</string>
     <string name="t_b67d60c1" formatted="false">Impossibile salvare il modello</string>
     <string name="t_b6a5c51b" formatted="false">Inviato come token bearer</string>
     <string name="t_b6cac25b_many" formatted="false">%1$d di file</string>
@@ -491,6 +494,7 @@
     <string name="t_db5195fa" formatted="false">testo incollato</string>
     <string name="t_dbde124f" formatted="false">L\'audio di questa nota non è stato conservato, quindi non può essere rifatta.</string>
     <string name="t_dbe48d14" formatted="false">Mai</string>
+    <string name="t_dc3fc076" formatted="false">bb ha rifiutato il caricamento (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">I giorni senza dettature non costano nulla.</string>
     <string name="t_dcc7acfb" formatted="false">Il tuo chief of staff ha inviato del testo da inserire</string>
     <string name="t_dcf39d20" formatted="false">Lo affida al tuo chief of staff in bb, se ne hai configurato uno. Poi tocca Apri chat ↗.</string>

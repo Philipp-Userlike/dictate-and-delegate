@@ -105,6 +105,7 @@
     <string name="t_2ef3166c" formatted="false">ntfy-Server</string>
     <string name="t_2f79a315" formatted="false">Sehr geehrter Herr Weber,\n\nich möchte Ihnen mitteilen, dass der Wasserhahn im Badezimmer seit Montag tropft.</string>
     <string name="t_2fc562b8" formatted="false">Notiz nicht gefunden</string>
+    <string name="t_3017cfb9" formatted="false">nicht weitergeleitet: %1$s</string>
     <string name="t_30a4185d" formatted="false">Ausgegeben</string>
     <string name="t_30a98a26" formatted="false">Verlauf konnte nicht aktualisiert werden.</string>
     <string name="t_315f5fe4" formatted="false">Verfeinert</string>
@@ -270,6 +271,7 @@
     <string name="t_7c160dc5" formatted="false">Gib die MCP-Adresse ein, beginnend mit https:// oder http://</string>
     <string name="t_7c9185dc" formatted="false">Füge zuerst deinen OpenRouter-Schlüssel in den Einstellungen von Talk Router hinzu.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh oder dein eigener ntfy-Server.</string>
+    <string name="t_7cbef380" formatted="false">Das ist zu lang für bb (%1$d Zeichen, maximal %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Verfeinertes einfügen</string>
     <string name="t_7e19ccd3" formatted="false">Nenne den Namen, um ein Diktat an deinen Chief zu senden: „Ada, …“, „das ist für Ada“. Die bloße Erwähnung im Text sendet es nicht. Ohne Namen tippe auf 🧑‍💼.</string>
     <string name="t_7ea6be49" formatted="false">Nutze den Button oder öffne Talk Router, um das Diktat zu steuern.</string>
@@ -397,6 +399,7 @@
     <string name="t_b50cba8b" formatted="false">Vom Chief einfügen</string>
     <string name="t_b561b378" formatted="false">1 · Kachel in den Schnelleinstellungen</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
+    <string name="t_b60e80e5" formatted="false">zu groß, um so weitergeleitet zu werden</string>
     <string name="t_b67d60c1" formatted="false">Vorlage konnte nicht gespeichert werden</string>
     <string name="t_b6a5c51b" formatted="false">Wird als Bearer-Token gesendet</string>
     <string name="t_b6cac25b_one" formatted="false">%1$d Datei</string>
@@ -486,6 +489,7 @@
     <string name="t_db5195fa" formatted="false">eingefügter Text</string>
     <string name="t_dbde124f" formatted="false">Audio wurde nicht behalten und kann nicht neu verarbeitet werden.</string>
     <string name="t_dbe48d14" formatted="false">Nie</string>
+    <string name="t_dc3fc076" formatted="false">bb hat den Upload abgelehnt (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Tage ohne Diktat kosten nichts.</string>
     <string name="t_dcc7acfb" formatted="false">Dein Chief of Staff hat Text zum Einfügen gesendet</string>
     <string name="t_dcf39d20" formatted="false">Übergibt es an deinen Chief of Staff in bb, falls eingerichtet. Dann: Chat öffnen ↗.</string>
