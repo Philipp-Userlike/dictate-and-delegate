@@ -85,6 +85,15 @@ public class MvpFlowTest {
     return out;
   }
 
+  /** With -e shots true: a screenshot under the app's files/panel on the device. */
+  void shot(String name) throws Exception {
+    if (!"true".equals(InstrumentationRegistry.getArguments().getString("shots"))) return;
+    Thread.sleep(700);
+    java.io.File dir = new java.io.File(context.getExternalFilesDir(null), "panel");
+    dir.mkdirs();
+    device.takeScreenshot(new java.io.File(dir, name + ".png"));
+  }
+
   void launch() throws Exception {
     context.startActivity(
         new Intent(context, MainActivity.class)
@@ -187,12 +196,15 @@ public class MvpFlowTest {
     tap("Continue");
     find("Transcript first, then you decide");
     find("Insert");
+    shot("setup-1-how");
     tap("Continue");
     find("Start from any app");
     find("Volume down");
+    shot("setup-2-start");
     tap("Continue");
     find("Insert where you type");
     find("Insert · Accessibility permission");
+    shot("setup-3-accessibility");
     tap("Continue");
     find("Try it once");
     find("Start").click();
@@ -212,6 +224,17 @@ public class MvpFlowTest {
     find("Start dictating");
     assertTrue(prefs.getBoolean("onboarded", false));
     find("Speech model");
+    if ("true".equals(InstrumentationRegistry.getArguments().getString("shots"))) {
+      tap("Settings");
+      tap("Start and insert");
+      shot("settings-1-start");
+      device.pressBack();
+      tap("Refine");
+      shot("settings-2-refine");
+      new UiScrollable(new UiSelector().scrollable(true)).scrollToEnd(3);
+      shot("settings-3-refine-chief-name");
+      device.pressBack();
+    }
   }
 
   @Test

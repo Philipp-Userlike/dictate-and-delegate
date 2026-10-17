@@ -12,6 +12,7 @@ import androidx.test.uiautomator.*;
 import java.io.File;
 import java.util.List;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
@@ -279,7 +280,7 @@ public class PanelTest {
   @Test
   public void refineChosenWhileRecordingRunsOnceTheTranscriptIsReady() throws Exception {
     TestServer.transcripts("hello there");
-    TestServer.replies("Hello there!");
+    TestServer.script("text", new JSONObject().put("text", "Hello there!").put("delay", 2));
     send(DictationService.RECORD);
     waitFor("recording");
     find("✨ Refine").click();
@@ -287,6 +288,8 @@ public class PanelTest {
     assertTrue(TestServer.requests().length() == 0);
     send(DictationService.STOP);
     waitFor("copied");
+    find("✨ Refining…");
+    shot("2b-refining");
     find("Insert refined");
     assertEquals("Hello there!", note().json.optString("processed"));
   }
@@ -412,6 +415,46 @@ public class PanelTest {
     } finally {
       shell("cmd locale set-app-locales " + context.getPackageName() + " --locales en-US");
     }
+  }
+
+  /**
+   * Opt-in check against a real bb and a real ntfy server; speech and Jev stay fake. Run with
+   * -e realMcp <bb MCP address> -e realLinks <bb web address> -e realNtfy <ntfy server> and
+   * -e realTitle <thread title>. Creates a chief with that title (archive it afterwards; its ID is
+   * in logcat under TalkRouterReal) and waits for its text to paste as long as the panel does.
+   */
+  @Test
+  public void realBbChiefSendsTextBackToThePanel() throws Exception {
+    android.os.Bundle args = InstrumentationRegistry.getArguments();
+    Assume.assumeTrue(args.getString("realMcp") != null);
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(args.getString("realMcp"), "", args.getString("realLinks"));
+    bb.setNtfyServer(args.getString("realNtfy"));
+    String prompt = BbBridge.chiefPrompt(bb.ntfyServer(), bb.ntfyTopic(), args.getString("realLinks"));
+    String snippet =
+        BbBridge.spawnSnippet(prompt)
+            .replace(JSONObject.quote(BbBridge.CHIEF_TITLE), JSONObject.quote(args.getString("realTitle")));
+    JSONObject created = bb.run(snippet);
+    String chiefId = created.getString("id");
+    android.util.Log.i("TalkRouterReal", "chief " + chiefId + " topic " + bb.ntfyTopic());
+    bb.setChief(new BbBridge.ThreadInfo(chiefId, args.getString("realTitle"), created.optString("status")));
+    prefs.edit().putString(Profile.CHIEF_NAME, "Henry").commit();
+    TestServer.transcripts(
+        "Henry, write a two-sentence reply to Sarah saying I can't make it on Thursday but Friday"
+            + " works, and send me the text to paste.");
+    TestServer.decide(0.2, 0.97, "none");
+    pad("");
+    dictate();
+    find("Open chat ↗");
+    shot("real-1-chief-sent");
+    // The panel waits five minutes for the chief's text (DictationService.PANEL_WAIT_MS).
+    UiObject2 insert = device.wait(Until.findObject(By.text("Insert from chief")), DictationService.PANEL_WAIT_MS);
+    assertNotNull("the chief's text arrived while the panel waited", insert);
+    shot("real-2-insert-from-chief");
+    insert.click();
+    until("the chief's text is in the field", () -> padText().length() > 20);
+    android.util.Log.i("TalkRouterReal", "inserted: " + padText());
+    shot("real-3-inserted");
   }
 
   @Test

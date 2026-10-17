@@ -159,6 +159,8 @@ class Handler(BaseHTTPRequestHandler):
         if "error" in item:
             status, message = ERRORS.get(item["error"], ERRORS["provider"])
             return self.reply(status, {"error": {"code": status, "message": message}})
+        if item.get("delay"):
+            time.sleep(float(item["delay"]))
         cost = item.get("cost", COSTS[kind])
         usage = {} if cost is None else {"cost": cost}
         if chat:
