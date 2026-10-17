@@ -27,7 +27,6 @@
     <string name="t_0b47c5cb" formatted="false">Mentre detti, un piccolo pannello resta sopra le altre app: tocca ■ per fermare, poi Inserisci, Perfeziona o Chief. Per consentirlo, Android mostra un elenco di app: tocca Talk Router, attivalo e torna qui.</string>
     <string name="t_0b870de2" formatted="false">Dati locali eliminati</string>
     <string name="t_0bf045a7" formatted="false">Rimuovere la tua chiave Anthropic?</string>
-    <string name="t_0c392094" formatted="false">Privacy</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4ebb56" formatted="false">Prezzi per milione di token in ingresso / uscita, listino di Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Apri recupero registrazioni</string>
@@ -156,7 +155,6 @@
     <string name="t_3f983199" formatted="false">%1$s La registrazione è salvata.</string>
     <string name="t_400b4b63" formatted="false">Tu dici</string>
     <string name="t_4023fa4b" formatted="false">Scorri verso il basso, modifica le Impostazioni rapide, poi aggiungi Talk Router.</string>
-    <string name="t_40ddec3d" formatted="false">Leggi l\'informativa sulla privacy</string>
     <string name="t_41265b45" formatted="false">Tieni premuto per</string>
     <string name="t_41c5ed6f" formatted="false">Microfono consentito</string>
     <string name="t_4289563d" formatted="false">Con una sola autorizzazione, Inserisci posiziona il testo direttamente al cursore e tenendo premuto un tasto volume avvii la dettatura. Senza, Talk Router copia il testo e lo incolli tu.</string>
@@ -323,7 +321,6 @@
     <string name="t_8bec24cc" formatted="false">Verifica e salva</string>
     <string name="t_8bf10d56" formatted="false">Elimina</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Aggiungi</string>
-    <string name="t_8d096a2d" formatted="false">Audio e testo vanno a OpenRouter, Perfeziona ad Anthropic con la tua chiave</string>
     <string name="t_8edfe30e" formatted="false">richiede attenzione</string>
     <string name="t_8fe78547" formatted="false">nessun parlato</string>
     <string name="t_900e8667" formatted="false">Nulla questo mese.</string>
@@ -509,6 +506,7 @@
     <string name="t_d8427f19" formatted="false">La tua chiave OpenRouter</string>
     <string name="t_d97e8d4f" formatted="false">Aiuta Talk Router a scrivere correttamente i nomi e a elaborare ogni nota per il suo scopo.</string>
     <string name="t_db5195fa" formatted="false">testo incollato</string>
+    <string name="t_db5d28bc" formatted="false">La tua voce e il tuo testo vengono inviati solo ai provider che scegli. Non esiste alcun server Talk Router.</string>
     <string name="t_dbde124f" formatted="false">L\'audio di questa nota non è stato conservato, quindi non può essere rifatta.</string>
     <string name="t_dbe48d14" formatted="false">Mai</string>
     <string name="t_dc3fc076" formatted="false">bb ha rifiutato il caricamento (HTTP %1$d)</string>

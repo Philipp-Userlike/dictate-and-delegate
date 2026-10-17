@@ -27,7 +27,6 @@
     <string name="t_0b47c5cb" formatted="false">While you dictate, a small panel stays on top of other apps: tap ■ to stop, then Insert, Refine or Chief. To allow it, Android shows a list of apps: tap Talk Router, switch it on, and come back.</string>
     <string name="t_0b870de2" formatted="false">Local data deleted</string>
     <string name="t_0bf045a7" formatted="false">Remove your Anthropic key?</string>
-    <string name="t_0c392094" formatted="false">Privacy</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4ebb56" formatted="false">Prices per million tokens in / out, Anthropic\'s list prices.</string>
     <string name="t_0c4f3914" formatted="false">Open recording recovery</string>
@@ -157,7 +156,6 @@
     <string name="t_3f983199" formatted="false">%1$s The recording is saved.</string>
     <string name="t_400b4b63" formatted="false">You say</string>
     <string name="t_4023fa4b" formatted="false">Swipe down, edit Quick Settings, then add Talk Router.</string>
-    <string name="t_40ddec3d" formatted="false">Read the privacy policy</string>
     <string name="t_41265b45" formatted="false">Hold for</string>
     <string name="t_41c5ed6f" formatted="false">Microphone allowed</string>
     <string name="t_4289563d" formatted="false">With one permission, Insert puts your text right at the cursor, and holding a volume key starts a dictation. Without it, Talk Router copies the text and you paste it.</string>
@@ -325,7 +323,6 @@
     <string name="t_8bec24cc" formatted="false">Check and save</string>
     <string name="t_8bf10d56" formatted="false">Discard</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Add</string>
-    <string name="t_8d096a2d" formatted="false">Audio and text go to OpenRouter, Refine to Anthropic with your key</string>
     <string name="t_8edfe30e" formatted="false">needs attention</string>
     <string name="t_8fe78547" formatted="false">no speech</string>
     <string name="t_900e8667" formatted="false">Nothing this month.</string>
@@ -514,6 +511,7 @@
     <string name="t_d8427f19" formatted="false">Your OpenRouter key</string>
     <string name="t_d97e8d4f" formatted="false">Helps Talk Router spell names right and process each note for its purpose.</string>
     <string name="t_db5195fa" formatted="false">pasted text</string>
+    <string name="t_db5d28bc" formatted="false">Your voice and text go only to the providers you choose. There\'s no Talk Router server.</string>
     <string name="t_dbde124f" formatted="false">Audio for this note wasn\'t kept, so it can\'t be redone.</string>
     <string name="t_dbe48d14" formatted="false">Never</string>
     <string name="t_dc3fc076" formatted="false">bb refused the upload (HTTP %1$d)</string>

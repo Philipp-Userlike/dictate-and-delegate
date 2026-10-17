@@ -85,4 +85,4 @@ Have Anthropic API credits? Settings → **Models & providers** → **Anthropic 
 
 Talk Router has no server, so everything it keeps is on the phone. Settings → **Data on this phone**: **Keep audio for 7 days** (on by default) keeps recordings for redos, at most 100 MB, and **Delete saved audio** keeps text and costs. **Delete local data** removes notes, audio, templates, words, About you, both keys, your bb sign-in and settings from the phone; your accounts at OpenRouter, Anthropic and bb stay as they are. Talk Router's own language follows the system or Settings → **Using Talk Router** → **Language**.
 
-Settings → **About** has the privacy note (what goes to OpenRouter, Anthropic, bb and ntfy), the source code (MIT License) and **Report a problem** (GitHub issues).
+Settings → **About** says it in one line: your voice and text go only to the providers you choose, and there's no Talk Router server. It also has the source code (MIT License) and **Report a problem** (GitHub issues).

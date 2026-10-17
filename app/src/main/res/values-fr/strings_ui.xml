@@ -27,7 +27,6 @@
     <string name="t_0b47c5cb" formatted="false">Pendant que tu dictes, un petit panneau reste au-dessus des autres applis : appuie sur ■ pour arrêter, puis sur Insérer, Peaufiner ou Chef. Pour l\'autoriser, Android affiche une liste d\'applis : sélectionne Talk Router, active-le et reviens ici.</string>
     <string name="t_0b870de2" formatted="false">Données locales supprimées</string>
     <string name="t_0bf045a7" formatted="false">Supprimer ta clé Anthropic ?</string>
-    <string name="t_0c392094" formatted="false">Confidentialité</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chef ✓</string>
     <string name="t_0c4ebb56" formatted="false">Prix par million de tokens en entrée / sortie, tarifs publics d\'Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Ouvrir la récupération d\'enregistrements</string>
@@ -156,7 +155,6 @@
     <string name="t_3f983199" formatted="false">%1$s Enregistrement sauvegardé.</string>
     <string name="t_400b4b63" formatted="false">Tu dis</string>
     <string name="t_4023fa4b" formatted="false">Balaye vers le bas, modifie les Paramètres rapides et ajoute Talk Router.</string>
-    <string name="t_40ddec3d" formatted="false">Lire la politique de confidentialité</string>
     <string name="t_41265b45" formatted="false">Maintenir pour</string>
     <string name="t_41c5ed6f" formatted="false">Microphone autorisé</string>
     <string name="t_4289563d" formatted="false">Avec une seule autorisation, Insérer place ton texte au curseur, et maintenir une touche de volume lance la dictée. Sans cela, Talk Router copie le texte et tu le colles.</string>
@@ -323,7 +321,6 @@
     <string name="t_8bec24cc" formatted="false">Vérifier et enregistrer</string>
     <string name="t_8bf10d56" formatted="false">Supprimer</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Ajouter</string>
-    <string name="t_8d096a2d" formatted="false">L\'audio et le texte vont à OpenRouter, Peaufiner à Anthropic avec ta clé</string>
     <string name="t_8edfe30e" formatted="false">action requise</string>
     <string name="t_8fe78547" formatted="false">aucun son</string>
     <string name="t_900e8667" formatted="false">Rien ce mois-ci.</string>
@@ -509,6 +506,7 @@
     <string name="t_d8427f19" formatted="false">Ta clé OpenRouter</string>
     <string name="t_d97e8d4f" formatted="false">Aide Talk Router à bien orthographier les noms et à adapter chaque note à son usage.</string>
     <string name="t_db5195fa" formatted="false">texte collé</string>
+    <string name="t_db5d28bc" formatted="false">Ta voix et tes textes vont uniquement aux fournisseurs que tu choisis. Il n\'y a aucun serveur Talk Router.</string>
     <string name="t_dbde124f" formatted="false">L\'audio n\'a pas été conservé, impossible de refaire.</string>
     <string name="t_dbe48d14" formatted="false">Jamais</string>
     <string name="t_dc3fc076" formatted="false">bb a refusé le téléversement (HTTP %1$d)</string>

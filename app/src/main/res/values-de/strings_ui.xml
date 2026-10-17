@@ -27,7 +27,6 @@
     <string name="t_0b47c5cb" formatted="false">Beim Diktieren bleibt ein kleines Fenster über anderen Apps: Tippe auf ■ zum Beenden, dann auf Einfügen, Verfeinern oder Chief. Zur Aktivierung zeigt Android eine App-Liste: Tippe auf Talk Router, schalte es ein und kehre zurück.</string>
     <string name="t_0b870de2" formatted="false">Lokale Daten gelöscht</string>
     <string name="t_0bf045a7" formatted="false">Anthropic-Schlüssel entfernen?</string>
-    <string name="t_0c392094" formatted="false">Datenschutz</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4ebb56" formatted="false">Preise pro Million Tokens Eingabe / Ausgabe, Listenpreise von Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Aufnahmewiederherstellung öffnen</string>
@@ -155,7 +154,6 @@
     <string name="t_3f983199" formatted="false">%1$s Die Aufnahme wurde gespeichert.</string>
     <string name="t_400b4b63" formatted="false">Du sagst</string>
     <string name="t_4023fa4b" formatted="false">Nach unten wischen, Schnelleinstellungen bearbeiten und Talk Router hinzufügen.</string>
-    <string name="t_40ddec3d" formatted="false">Datenschutzerklärung lesen</string>
     <string name="t_41265b45" formatted="false">Gedrückt halten für</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon erlaubt</string>
     <string name="t_4289563d" formatted="false">Mit einer Berechtigung setzt Einfügen den Text direkt an den Cursor, und das Halten einer Lautstärketaste startet ein Diktat. Ohne kopiert Talk Router den Text, damit du ihn einfügst.</string>
@@ -321,7 +319,6 @@
     <string name="t_8bec24cc" formatted="false">Prüfen und speichern</string>
     <string name="t_8bf10d56" formatted="false">Verwerfen</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Hinzufügen</string>
-    <string name="t_8d096a2d" formatted="false">Audio und Text gehen an OpenRouter, Verfeinern mit deinem Schlüssel an Anthropic</string>
     <string name="t_8edfe30e" formatted="false">erfordert Aufmerksamkeit</string>
     <string name="t_8fe78547" formatted="false">keine Sprache</string>
     <string name="t_900e8667" formatted="false">Diesen Monat nichts.</string>
@@ -504,6 +501,7 @@
     <string name="t_d8427f19" formatted="false">Dein OpenRouter-Schlüssel</string>
     <string name="t_d97e8d4f" formatted="false">Hilft Talk Router, Namen richtig zu schreiben und Notizen passend aufzubereiten.</string>
     <string name="t_db5195fa" formatted="false">eingefügter Text</string>
+    <string name="t_db5d28bc" formatted="false">Deine Stimme und dein Text gehen nur an die Anbieter, die du wählst. Es gibt keinen Talk-Router-Server.</string>
     <string name="t_dbde124f" formatted="false">Audio wurde nicht behalten und kann nicht neu verarbeitet werden.</string>
     <string name="t_dbe48d14" formatted="false">Nie</string>
     <string name="t_dc3fc076" formatted="false">bb hat den Upload abgelehnt (HTTP %1$d)</string>

@@ -269,9 +269,11 @@ public class MvpFlowTest {
       tap("Refine instructions");
       find("Instructions for Refine");
       device.pressBack();
-      tap("Privacy");
-      assertNotNull(device.wait(Until.findObject(By.textContains("What leaves your phone")), 5000));
-      device.pressBack();
+      // No legal-style pages: one plain line in About.
+      assertNull(device.findObject(By.text("Privacy")));
+      new UiScrollable(new UiSelector().scrollable(true))
+          .scrollTextIntoView("Your voice and text go only to the providers you choose. There's no Talk Router server.");
+      find("Your voice and text go only to the providers you choose. There's no Talk Router server.");
       tap("Source code");
       device.pressBack();
       launch();

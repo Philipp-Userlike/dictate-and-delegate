@@ -27,7 +27,6 @@
     <string name="t_0b47c5cb" formatted="false">Podczas dyktowania mały panel wyświetla się nad innymi aplikacjami: dotknij ■, aby zatrzymać, a potem Wstaw, Dopracuj lub Szef. Aby zezwolić, wybierz Talk Router na liście aplikacji Androida, włącz opcję i wróć tutaj.</string>
     <string name="t_0b870de2" formatted="false">Usunięto dane lokalne</string>
     <string name="t_0bf045a7" formatted="false">Usunąć klucz Anthropic?</string>
-    <string name="t_0c392094" formatted="false">Prywatność</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Szef ✓</string>
     <string name="t_0c4ebb56" formatted="false">Ceny za milion tokenów wejścia / wyjścia, cennik Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Otwórz odzyskiwanie nagrań</string>
@@ -157,7 +156,6 @@
     <string name="t_3f983199" formatted="false">%1$s Nagranie zostało zapisane.</string>
     <string name="t_400b4b63" formatted="false">Mówisz</string>
     <string name="t_4023fa4b" formatted="false">Przesuń palcem w dół, edytuj szybkie ustawienia, a następnie dodaj Talk Router.</string>
-    <string name="t_40ddec3d" formatted="false">Przeczytaj politykę prywatności</string>
     <string name="t_41265b45" formatted="false">Przytrzymaj przez</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon dozwolony</string>
     <string name="t_4289563d" formatted="false">Dzięki jednemu uprawnieniu opcja Wstaw umieszcza tekst bezpośrednio przy kursorze, a przytrzymanie klawisza głośności uruchamia dyktowanie. Bez niego Talk Router kopiuje tekst do schowka, aby można go było wkleić.</string>
@@ -325,7 +323,6 @@
     <string name="t_8bec24cc" formatted="false">Sprawdź i zapisz</string>
     <string name="t_8bf10d56" formatted="false">Odrzuć</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Dodaj</string>
-    <string name="t_8d096a2d" formatted="false">Dźwięk i tekst trafiają do OpenRouter, Dopracuj do Anthropic z Twoim kluczem</string>
     <string name="t_8edfe30e" formatted="false">wymaga uwagi</string>
     <string name="t_8fe78547" formatted="false">brak mowy</string>
     <string name="t_900e8667" formatted="false">Brak aktywności w tym miesiącu.</string>
@@ -514,6 +511,7 @@
     <string name="t_d8427f19" formatted="false">Twój klucz OpenRouter</string>
     <string name="t_d97e8d4f" formatted="false">Pomaga Talk Router poprawnie pisać nazwiska i przetwarzać każdą notatkę zgodnie z jej przeznaczeniem.</string>
     <string name="t_db5195fa" formatted="false">wklejony tekst</string>
+    <string name="t_db5d28bc" formatted="false">Twój głos i tekst trafiają tylko do wybranych przez Ciebie dostawców. Talk Router nie ma własnego serwera.</string>
     <string name="t_dbde124f" formatted="false">Dźwięk dla tej notatki nie został zachowany, więc nie można jej poprawić.</string>
     <string name="t_dbe48d14" formatted="false">Nigdy</string>
     <string name="t_dc3fc076" formatted="false">bb odrzuciło przesyłanie (HTTP %1$d)</string>

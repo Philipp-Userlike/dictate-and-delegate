@@ -315,7 +315,6 @@ public final class MainActivity extends Activity {
       case "refine", "processing" -> refinePage();
       case "refineModel" -> refineModelPage();
       case "decisions" -> decisionsPage();
-      case "privacy" -> privacyPage();
       case "templates" -> templatesPage();
       case "activity" -> activityPage();
       case "template" -> templatePage();
@@ -662,8 +661,6 @@ public final class MainActivity extends Activity {
             14,
             Ui.BODY),
         6);
-    ui.add(
-        data, ui.button(tr("Read the privacy policy"), Ui.Kind.QUIET, v -> open("privacy")), 6);
   }
 
   private void aboutPage() {
@@ -2731,12 +2728,10 @@ public final class MainActivity extends Activity {
     ui.add(content, ui.label(tr("About")), 22);
     LinearLayout about = ui.add(content, ui.card(Ui.BG, 0), 8);
     about.setPadding(0, 0, 0, 0);
-    about.addView(
-        ui.row(
-            tr("Privacy"),
-            tr("Audio and text go to OpenRouter, Refine to Anthropic with your key"),
-            null,
-            v -> open("privacy")));
+    TextView facts =
+        ui.text(tr("Your voice and text go only to the providers you choose. There's no Talk Router server."), 14, Ui.MUTED);
+    facts.setPadding(ui.dp(18), ui.dp(14), ui.dp(18), ui.dp(14));
+    about.addView(facts);
     about.addView(ui.divider());
     about.addView(
         ui.row(
@@ -2869,22 +2864,6 @@ public final class MainActivity extends Activity {
           });
       ui.add(modelList, row, 8);
     }
-  }
-
-  /** Settings → About → Privacy: the short policy from res/raw (German in raw-de). */
-  private void privacyPage() {
-    String text;
-    try (java.io.InputStream in = getResources().openRawResource(R.raw.privacy)) {
-      text = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-    } catch (Exception ex) {
-      text = "";
-    }
-    int firstBreak = text.indexOf('\n');
-    heading(tr("Back"), firstBreak > 0 ? text.substring(0, firstBreak).trim() : "", null);
-    TextView body = ui.text(text.substring(Math.max(0, firstBreak)).trim(), 15, Ui.BODY);
-    body.setTextIsSelectable(true);
-    body.setLineSpacing(0, 1.35f);
-    ui.add(content, body, 14);
   }
 
   /** Everything Talk Router keeps lives on this phone; this removes all of it. */
