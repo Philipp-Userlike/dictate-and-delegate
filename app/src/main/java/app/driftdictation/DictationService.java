@@ -58,6 +58,10 @@ public final class DictationService extends Service {
     volatile boolean decided, hint, redo, chiefReady;
     volatile TalkAccessibility.Inserted inserted;
     volatile String insertedKind = "";
+    /** Refine was started by Jev, not tapped: it yields to the chief. */
+    volatile boolean autoRefine;
+    /** Counts Refine runs; a run whose number is no longer current is ignored when it ends. */
+    volatile int refineRun;
   }
 
   static volatile DictationService instance;
@@ -325,6 +329,11 @@ public final class DictationService extends Service {
                 else closePanel();
               }
 
+              public void expand() {
+                renderBubble();
+                touch();
+              }
+
               public void stop() {
                 if (RECORDING.equals(state)) stopRecording(true);
               }
@@ -488,6 +497,7 @@ public final class DictationService extends Service {
       case DONE -> insertText("refined", s.refined);
       default -> {
         s.refine = QUEUED;
+        s.autoRefine = false;
         startQueued();
       }
     }
@@ -517,11 +527,22 @@ public final class DictationService extends Service {
           return;
         }
         s.chief = QUEUED;
+        dropAutoRefine(s);
         startQueued();
       }
     }
     renderBubble();
     touch();
+  }
+
+  /** The chief gets it as said: a Refine that Jev started (not one you tapped) is dropped. */
+  private void dropAutoRefine(Session s) {
+    if (!s.autoRefine) return;
+    if (s.refine.equals(QUEUED) || s.refine.equals(RUNNING)) {
+      s.refine = IDLE;
+      s.refineRun++;
+    }
+    s.autoRefine = false;
   }
 
   /** Runs what's queued, once the transcript is there and Jev has answered (or isn't asked). */
@@ -531,7 +552,8 @@ public final class DictationService extends Service {
     if (s.refine.equals(QUEUED)) {
       s.refine = RUNNING;
       String template = s.template;
-      work(() -> refined(s, refineNote(this, s.noteId, new Profile(prefs), template)));
+      int run = ++s.refineRun;
+      work(() -> refined(s, run, refineNote(this, s.noteId, new Profile(prefs), template)));
     }
     if (s.chief.equals(QUEUED)) {
       s.chief = RUNNING;
@@ -608,8 +630,12 @@ public final class DictationService extends Service {
                 s.decided = true;
                 s.template = d.template();
                 s.hint = d.hint();
-                if (d.refine() && s.refine.equals(IDLE)) s.refine = QUEUED;
                 if (d.chief() && s.chief.equals(IDLE)) s.chief = QUEUED;
+                // What goes to the chief goes as said: Jev's Refine only when it doesn't.
+                if (d.refine() && s.refine.equals(IDLE) && s.chief.equals(IDLE)) {
+                  s.refine = QUEUED;
+                  s.autoRefine = true;
+                }
                 startQueued();
                 renderBubble();
               });
@@ -617,11 +643,20 @@ public final class DictationService extends Service {
   }
 
   /** Refine finished (failure: why, else null). */
-  private void refined(Session s, String failed) {
+  private void refined(Session s, int run, String failed) {
+    if (run != s.refineRun && failed == null) {
+      // Dropped for the chief: the note shows what was said; the refined text stays a version.
+      try {
+        update(this, s.noteId, e -> e.json.put("version", "original").put("text", e.json.optString("original", e.text())));
+      } catch (Exception ignored) {
+        /* The note just opens on the refined version. */
+      }
+    }
     String text = failed == null ? text(this, s.noteId) : "";
     main.post(
         () -> {
           prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
+          if (run != s.refineRun) return; // Dropped: the dictation went to the chief meanwhile.
           if (failed != null) {
             s.refine = FAILED;
             s.message = tr("Couldn't refine: %1$s", failed);

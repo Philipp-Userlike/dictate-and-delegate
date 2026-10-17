@@ -10,8 +10,9 @@ import android.view.*;
 import android.widget.*;
 
 /**
- * The floating panel over other apps. While recording: 📎, the timer with stop, ✕ to cancel, and
- * Refine and Chief to choose ahead. Afterwards: ✕, Insert, Refine (then Insert refined), Chief (then Open chat
+ * The floating panel over other apps, icon buttons named for accessibility (long press shows the
+ * name). While recording: the timer with stop and ⋯, which opens 📎, ✕ to cancel, and Refine and
+ * Chief to choose ahead. Afterwards: ✕, Insert, Refine (then Insert refined), Chief (then Open chat
  * ↗), and Insert from chief when the chief sent text back. Ready, error and empty show the small
  * icon instead. Its window never takes focus, so the cursor stays in the app you're in; drag it
  * anywhere.
@@ -32,6 +33,9 @@ final class FloatingPanel extends FrameLayout {
 
   interface Actions {
     void close();
+
+    /** ⋯ while recording: the panel shows all its buttons; it only needs drawing again. */
+    void expand();
 
     void stop();
 
@@ -60,13 +64,13 @@ final class FloatingPanel extends FrameLayout {
 
   private final OverlayIcon icon;
   private final LinearLayout bar, extra;
-  private final TextView attach, timer, close, insert, refine, chief, fromChief, status;
+  private final TextView more, attach, timer, close, insert, refine, chief, fromChief, status;
   private final Actions actions;
   private final Drag drag;
   private final float density;
   private final int slop;
   private float downX, downY;
-  private boolean dragging, small = true;
+  private boolean dragging, small = true, expanded;
 
   FloatingPanel(Context context, Actions actions, Drag drag) {
     super(context);
@@ -86,14 +90,22 @@ final class FloatingPanel extends FrameLayout {
     bar.setBackground(bg);
     Row row = new Row(context, dp(6));
     bar.addView(row, new LinearLayout.LayoutParams(-2, -2)); // Its own width: it sets the panel's.
-    attach = pill(row, "📎", v -> actions.attach());
-    attach.setContentDescription(tr("Add context to this dictation"));
     timer = pill(row, "", v -> actions.stop());
-    timer.setContentDescription(tr("Stop recording"));
+    name(timer, tr("Stop recording"));
     timer.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+    more =
+        pill(
+            row,
+            "⋯",
+            v -> {
+              expanded = true;
+              actions.expand();
+            });
+    name(more, tr("More"));
+    attach = pill(row, "📎", v -> actions.attach());
+    name(attach, tr("Add context to this dictation"));
     close = pill(row, "✕", v -> actions.close());
-    close.setContentDescription(tr("Close"));
-    insert = pill(row, tr("Insert"), v -> actions.insert());
+    insert = pill(row, "📥", v -> actions.insert());
     refine = pill(row, "", v -> actions.refine());
     chief = pill(row, "", v -> actions.chief());
     extra = new LinearLayout(context);
@@ -101,7 +113,8 @@ final class FloatingPanel extends FrameLayout {
     LinearLayout.LayoutParams el = new LinearLayout.LayoutParams(-2, -2);
     el.topMargin = dp(6);
     bar.addView(extra, el);
-    fromChief = pill(extra, tr("Insert from chief"), v -> actions.insertFromChief());
+    fromChief = pill(extra, "🧑‍💼 📥", v -> actions.insertFromChief());
+    name(fromChief, tr("Insert from chief"));
     status = new TextView(context);
     status.setTextColor(0xccffffff);
     status.setTextSize(12);
@@ -138,6 +151,12 @@ final class FloatingPanel extends FrameLayout {
     }
     style(t, PILL, 0);
     return t;
+  }
+
+  /** The button's name for TalkBack, also shown on a long press. */
+  private static void name(TextView t, String name) {
+    t.setContentDescription(name);
+    t.setTooltipText(name);
   }
 
   private void style(TextView t, int fill, int stroke) {
@@ -232,19 +251,34 @@ final class FloatingPanel extends FrameLayout {
       return;
     }
     setAlpha(1f);
-    attach.setVisibility(recording ? VISIBLE : GONE);
+    // While recording only the timer and ⋯ show, until ⋯ is tapped; afterwards everything does.
+    if (!recording) expanded = false;
+    boolean all = !recording || expanded;
+    more.setVisibility(recording && !expanded ? VISIBLE : GONE);
+    attach.setVisibility(recording && expanded ? VISIBLE : GONE);
     attach.setText(m.attached() > 0 ? "📎 " + m.attached() : "📎");
     timer.setVisibility(recording ? VISIBLE : GONE);
     timer.setText("● " + AudioFiles.elapsed(m.elapsed()) + "  ■");
     style(timer, 0xffe5484d, 0);
-    close.setVisibility(working ? GONE : VISIBLE);
-    close.setContentDescription(recording ? tr("Cancel: nothing is transcribed or sent") : tr("Close"));
+    close.setVisibility(working || !all ? GONE : VISIBLE);
+    name(close, recording ? tr("Cancel: nothing is transcribed or sent") : tr("Close"));
     insert.setVisibility(recording ? GONE : VISIBLE);
-    insert.setText(working ? tr("Transcribing…") : tr("Insert"));
+    insert.setText(working ? "…" : "📥");
+    name(insert, working ? tr("Transcribing…") : tr("Insert"));
     insert.setEnabled(ready);
     insert.setAlpha(ready ? 1f : 0.6f);
     style(insert, ready ? TEAL : PILL, 0);
+    refine.setVisibility(all ? VISIBLE : GONE);
     refine.setText(
+        switch (m.refine()) {
+          case DictationService.QUEUED -> "✨ ✓";
+          case DictationService.RUNNING -> "✨ …";
+          case DictationService.DONE -> "✨ 📥";
+          case DictationService.FAILED -> "✨ ↻";
+          default -> "✨";
+        });
+    name(
+        refine,
         switch (m.refine()) {
           case DictationService.QUEUED -> tr("✨ Refine ✓");
           case DictationService.RUNNING -> tr("✨ Refining…");
@@ -256,21 +290,28 @@ final class FloatingPanel extends FrameLayout {
         refine,
         m.refine().equals(DictationService.DONE) ? TEAL : PILL,
         m.refine().equals(DictationService.QUEUED) || m.refine().equals(DictationService.RUNNING) ? TEAL : 0);
-    chief.setVisibility(m.chiefAvailable() ? VISIBLE : GONE);
+    chief.setVisibility(all && m.chiefAvailable() ? VISIBLE : GONE);
     chief.setText(
+        switch (m.chief()) {
+          case DictationService.QUEUED -> "🧑‍💼 ✓";
+          case DictationService.RUNNING -> "🧑‍💼 …";
+          case DictationService.DONE -> "🧑‍💼 ↗";
+          case DictationService.FAILED -> "🧑‍💼 ↻";
+          default -> "🧑‍💼";
+        });
+    boolean hinted = m.hint() && m.chief().equals(DictationService.IDLE);
+    name(
+        chief,
         switch (m.chief()) {
           case DictationService.QUEUED -> tr("🧑‍💼 Chief ✓");
           case DictationService.RUNNING -> tr("🧑‍💼 Sending…");
           case DictationService.DONE -> tr("Open chat ↗");
           case DictationService.FAILED -> tr("🧑‍💼 Send again");
-          default -> tr("🧑‍💼 Chief");
+          default ->
+              hinted ? tr("Chief, suggested: this may be a task for your chief of staff") : tr("🧑‍💼 Chief");
         });
     boolean chiefBusy = m.chief().equals(DictationService.QUEUED) || m.chief().equals(DictationService.RUNNING);
-    style(chief, PILL, chiefBusy ? TEAL : m.hint() && m.chief().equals(DictationService.IDLE) ? AMBER : 0);
-    chief.setContentDescription(
-        m.hint() && m.chief().equals(DictationService.IDLE)
-            ? tr("Chief, suggested: this may be a task for your chief of staff")
-            : null);
+    style(chief, PILL, chiefBusy ? TEAL : hinted ? AMBER : 0);
     extra.setVisibility(m.reply() ? VISIBLE : GONE);
     style(fromChief, TEAL, 0);
     status.setText(m.message());

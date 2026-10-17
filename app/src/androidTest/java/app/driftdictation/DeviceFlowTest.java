@@ -108,7 +108,7 @@ public class DeviceFlowTest {
     stop.click();
     waitFor("copied");
     // The floating panel offers Insert; the text is copied too.
-    assertNotNull(device.wait(Until.findObject(By.text("Insert")), 2000));
+    assertNotNull(device.wait(Until.findObject(By.desc("Insert")), 2000));
     assertFalse(device.hasObject(By.text("Fix")));
     assertFalse(DictationService.audio(context).exists());
     device.wait(Until.findObject(By.text("Paste")), 5000).click();

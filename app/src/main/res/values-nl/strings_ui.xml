@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Eerder</string>
     <string name="t_29a545af" formatted="false">Beste meneer Weber, eh, de kraan in de keuken, nee eigenlijk die in de badkamer, lekt sinds maandag. Oh en maak dat wat formeler alsjeblieft.</string>
     <string name="t_2af8adac" formatted="false">Verzonden naar je stafchef</string>
+    <string name="t_2b605d42" formatted="false">Meer</string>
     <string name="t_2b61782b" formatted="false">Colofon</string>
     <string name="t_2c113272" formatted="false">Je bb Connect-gebruikersnaam</string>
     <string name="t_2c467e9e" formatted="false">Tik om te stoppen</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Besteed</string>
     <string name="t_30a98a26" formatted="false">Kon geschiedenis niet bijwerken.</string>
     <string name="t_315f5fe4" formatted="false">Verfijnd</string>
-    <string name="t_31c36aaf" formatted="false">Wanneer je je leidinggevende bij naam noemt, of zegt dat het voor hen is; tik anders op 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Tik op Start en spreek een zin in.\n2. Tik op Stop. Talk Router schrijft het uit.\n3. Tik op het veld hieronder en vervolgens op Invoegen op het zwevende paneel. Of houd het veld ingedrukt en tik op Plakken: de tekst is ook gekopieerd.</string>
     <string name="t_324be3eb" formatted="false">Kon het sjabloon niet verwijderen</string>
     <string name="t_32a5138e" formatted="false">zoals gezegd</string>
@@ -264,6 +264,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Opnieuw verzenden</string>
     <string name="t_81e2a271" formatted="false">Transcriptie</string>
     <string name="t_8250ae9b" formatted="false">Aanmelden bij bb…</string>
+    <string name="t_826621ab" formatted="false">Wanneer je je stafchef bij naam noemt (Instellingen → Stafchef); tik anders op 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">Het tekstmodel gaf niets terug. Probeer opnieuw.</string>
     <string name="t_82bad7d7" formatted="false">Deze aanmelding komt niet overeen met wat hier is gestart. Start opnieuw.</string>
     <string name="t_832a1910" formatted="false">Talk Router gebruikt nu altijd %1$s</string>
@@ -351,6 +352,7 @@
     <string name="t_ac66579e" formatted="false">bb kon niet worden bereikt. Probeer het opnieuw.</string>
     <string name="t_ad395bc2" formatted="false">Plak een nieuwe sleutel om deze te vervangen</string>
     <string name="t_ad6a2fb1" formatted="false">Geef Talk Router context over waar je het over hebt, zoals de offerte waarop je reageert. Dit wordt gebruikt wanneer je ergens om vraagt.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Opgeslagen</string>
     <string name="t_ae112605" formatted="false">Notities doorzoeken</string>
     <string name="t_ae292a04" formatted="false">Volume omhoog</string>
     <string name="t_ae368733" formatted="false">Starten en invoegen</string>

@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Precedenti</string>
     <string name="t_29a545af" formatted="false">Gentile signor Weber, ehm, il rubinetto in cucina, no in realtà quello in bagno, perde da lunedì. Ah e lo renda un po\' più formale per favore.</string>
     <string name="t_2af8adac" formatted="false">Inviato al tuo chief of staff</string>
+    <string name="t_2b605d42" formatted="false">Altro</string>
     <string name="t_2b61782b" formatted="false">Note legali</string>
     <string name="t_2c113272" formatted="false">Il tuo handle bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Tocca per fermare</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Speso</string>
     <string name="t_30a98a26" formatted="false">Impossibile aggiornare la cronologia.</string>
     <string name="t_315f5fe4" formatted="false">Perfezionato</string>
-    <string name="t_31c36aaf" formatted="false">Quando ti rivolgi al tuo capo per nome, o dici che è per lui; altrimenti tocca 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Tocca Avvia e pronuncia una frase.\n2. Tocca Ferma. Talk Router la trascrive.\n3. Tocca il riquadro sotto, poi Inserisci sul pannello mobile. Oppure tieni premuto il riquadro e tocca Incolla: il testo viene anche copiato.</string>
     <string name="t_324be3eb" formatted="false">Impossibile eliminare il modello</string>
     <string name="t_32a5138e" formatted="false">come detto</string>
@@ -266,6 +266,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Invia di nuovo</string>
     <string name="t_81e2a271" formatted="false">Trascrizione</string>
     <string name="t_8250ae9b" formatted="false">Accesso a bb…</string>
+    <string name="t_826621ab" formatted="false">Quando ti rivolgi al tuo capo chiamandolo per nome (Impostazioni → Capo di gabinetto); altrimenti tocca 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">Il modello di testo non ha restituito nulla. Riprova.</string>
     <string name="t_82bad7d7" formatted="false">Questo accesso non corrisponde a quello avviato qui. Riavvia la procedura.</string>
     <string name="t_832a1910" formatted="false">Talk Router ora usa sempre %1$s</string>
@@ -354,6 +355,7 @@
     <string name="t_ac66579e" formatted="false">Impossibile raggiungere bb. Riprova.</string>
     <string name="t_ad395bc2" formatted="false">Incolla una nuova chiave per sostituirla</string>
     <string name="t_ad6a2fb1" formatted="false">Fornisci a Talk Router il contesto di cui parli, come l\'offerta a cui stai rispondendo. Viene usato quando chiedi qualcosa.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Salvato</string>
     <string name="t_ae112605" formatted="false">Cerca nelle tue note</string>
     <string name="t_ae292a04" formatted="false">Volume su</string>
     <string name="t_ae368733" formatted="false">Avvio e inserimento</string>

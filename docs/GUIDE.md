@@ -24,13 +24,13 @@ Talk Router needs no language setting: the speech model recognises the language,
 
 ## The floating panel
 
-While you record, the panel shows 📎, the timer with ■ (stop), ✕ (cancel), **✨ Refine** and **🧑‍💼 Chief**. Tapping Refine or Chief now means "do this when the transcript is ready" (✓); tap again to undo. ✕ throws the recording away: nothing is transcribed or sent, so it costs nothing.
+The panel's buttons are icons, named for TalkBack; a long press shows the name. While you record, it's just the timer with ■ (stop) and ⋯, which opens 📎, ✕ (cancel), **✨ Refine** and **🧑‍💼 Chief**. Tapping Refine or Chief now means "do this when the transcript is ready" (✓); tap again to undo. ✕ throws the recording away: nothing is transcribed or sent, so it costs nothing.
 
 After you stop, your words are transcribed and copied, and the panel offers:
 
-- **Insert:** puts the transcript at the cursor of the field you're typing in, when you tap. You can move the cursor or switch fields first. With no field, or without the Accessibility permission, the text is copied and the panel says "Copied, paste with a long press".
-- **✨ Refine:** one call to the text model (Claude Sonnet 5.5) makes the text you need: it works out what the text is for (message, email, note, reply…) and improves it towards that, follows what you asked ("more formal", "turn it into bullet points", "translate to German"), fills in a template you named, and keeps your language and the facts. Then the button says **Insert refined**: if the transcript you inserted is still unchanged in the field, it's replaced in place; otherwise the refined text goes at the cursor. Refined text is copied too.
-- **🧑‍💼 Chief:** hands what you said to your chief of staff in bb (below). Then the button says **Open chat ↗**.
+- **📥 Insert:** puts the transcript at the cursor of the field you're typing in, when you tap. You can move the cursor or switch fields first. With no field, or without the Accessibility permission, the text is copied and the panel says "Copied, paste with a long press".
+- **✨ Refine:** one call to the text model (Claude Sonnet 5.5) makes the text you need: it works out what the text is for (message, email, note, reply…) and improves it towards that, follows what you asked ("more formal", "turn it into bullet points", "translate to German"), fills in a template you named, and keeps your language and the facts. Then the button becomes ✨📥, **Insert refined**: if the transcript you inserted is still unchanged in the field, it's replaced in place; otherwise the refined text goes at the cursor. Refined text is copied too.
+- **🧑‍💼 Chief:** hands what you said to your chief of staff in bb (below). Then the button becomes 🧑‍💼↗, **Open chat ↗**. Whatever goes to the chief goes as said: a Refine that Jev started is dropped.
 - **✕:** closes the panel. The note stays in Talk Router.
 
 The panel never takes focus, so the cursor stays in your app; drag it anywhere. It hides after a minute without a tap (five while Refine runs or the chief's text is awaited).
@@ -38,7 +38,7 @@ The panel never takes focus, so the cursor stays in your app; drag it anywhere. 
 **What starts by itself.** Jev, a fast decision model (about 0.3 s and $0.00003 per note), reads the transcript:
 
 - When you ask for a text or name a template, **Refine** starts by itself.
-- When your chief's name comes up (Settings → **Refine** → **Your chief's name**, for example "Ada"), Jev decides whether the dictation is meant for the chief: "Ada, …", "this is for Ada", "I want to talk to Ada about…", "send this to Ada". Then it goes to the chief by itself, and isn't refined. A name that only comes up in what you say ("say hi to Ada from me") stays with you. If Jev isn't sure, or fails, 🧑‍💼 is highlighted instead. The name also matches common mishearings (Henry: Henri, Henrie, Henry's).
+- When your chief's name comes up (Settings → **Chief of staff** → **Your chief's name**, for example "Ada"; it saves as you type and says ✓ Saved), Jev decides whether the dictation is meant for the chief: "Ada, …", "this is for Ada", "I want to talk to Ada about…", "send this to Ada". Then it goes to the chief by itself, and isn't refined. A name that only comes up in what you say ("say hi to Ada from me") stays with you. If Jev isn't sure, or fails, 🧑‍💼 is highlighted instead. The name also matches common mishearings (Henry: Henri, Henrie, Henry's).
 
 Settings → **Refine** turns both off and edits Refine's instructions. If Jev fails, nothing starts by itself; the buttons still work. If Refine fails, the panel and the note say why and offer to try again.
 

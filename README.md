@@ -49,7 +49,7 @@ flowchart LR
 | **🧑‍💼 Chief** | Sends what you said, plus pasted text, to your chief-of-staff thread in bb. | **Open chat ↗**, which opens the thread. If the chief sends text back for you to paste, **Insert from chief** appears. |
 | **✕** | While recording: cancels, nothing is transcribed or sent. Afterwards: closes the panel; the note stays in Talk Router. | – |
 
-Refine and Chief can be tapped while you're still recording; they run once the transcript is ready.
+The buttons are icons (📥 Insert, ✨ Refine, 🧑‍💼 Chief, ✕), named for TalkBack; a long press shows the name. While you record, the panel is just the timer with ■ and ⋯; ⋯ opens 📎, ✕, Refine and Chief, which you can tap while still recording: they run once the transcript is ready. Drag the panel anywhere; it remembers the spot.
 
 **What happens by itself.** After the transcript, Jev (TypeSafe's decision model, about 0.3 s and $0.00003) answers a few questions:
 - Do you ask for a text, or name a template ("turn this into an email", "use my apartment application…")? Then Refine starts by itself.
@@ -161,7 +161,7 @@ Instead of bb Connect you can also enter any address of bb's MCP server yourself
    2. In Talk Router, enter your bb Connect handle (the `<handle>` in `<handle>.getbb.app`) and tap **Sign in with bb**. Approve Talk Router on the bb page.
 4. **Chief of staff:** tap **Create**. Talk Router starts a thread called "Chief of staff" in your Personal project in bb, with standing instructions. You can also pick an existing thread.
 5. **Notifications:** tap **Open in ntfy** to subscribe to your topic in the ntfy app, then **Send test**.
-6. **Name your chief** in Settings → Refine, for example "Ada".
+6. **Name your chief** in Settings → Chief of staff, for example "Ada".
 7. **Try it:** "Ada, find three Italian places near the office and send me a short list."
 
 Everything can be changed later in Settings: the key, how you start, the speech model, Refine, words Talk Router should know, templates, bb and notifications.

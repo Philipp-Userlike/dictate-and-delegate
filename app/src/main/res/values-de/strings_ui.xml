@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Früher</string>
     <string name="t_29a545af" formatted="false">Sehr geehrter Herr Weber, äh, der Hahn in der Küche, nein eigentlich im Bad, tropft seit Montag. Ach und mach das bitte etwas förmlicher.</string>
     <string name="t_2af8adac" formatted="false">An deinen Chief of Staff gesendet</string>
+    <string name="t_2b605d42" formatted="false">Mehr</string>
     <string name="t_2b61782b" formatted="false">Impressum</string>
     <string name="t_2c113272" formatted="false">Dein bb Connect-Handle</string>
     <string name="t_2c467e9e" formatted="false">Tippen zum Stoppen</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Ausgegeben</string>
     <string name="t_30a98a26" formatted="false">Verlauf konnte nicht aktualisiert werden.</string>
     <string name="t_315f5fe4" formatted="false">Verfeinert</string>
-    <string name="t_31c36aaf" formatted="false">Wenn du deinen Chief beim Namen ansprichst oder sagst, dass es für ihn ist; sonst tippe auf 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Tippe auf Start und sprich einen Satz.\n2. Tippe auf Stopp. Talk Router schreibt ihn auf.\n3. Tippe in das Feld unten, dann im schwebenden Fenster auf Einfügen. Oder halte das Feld gedrückt und wähle im Menü „Einfügen“: Der Text ist auch kopiert.</string>
     <string name="t_324be3eb" formatted="false">Vorlage konnte nicht gelöscht werden</string>
     <string name="t_32a5138e" formatted="false">wie gesprochen</string>
@@ -264,6 +264,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Erneut senden</string>
     <string name="t_81e2a271" formatted="false">Transkription</string>
     <string name="t_8250ae9b" formatted="false">Bei bb anmelden…</string>
+    <string name="t_826621ab" formatted="false">Wenn du deinen Chief beim Namen ansprichst (Einstellungen → Chief of Staff); sonst tippe auf 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">Das Textmodell lieferte kein Ergebnis. Bitte erneut versuchen.</string>
     <string name="t_82bad7d7" formatted="false">Diese Anmeldung stimmt nicht mit der hier gestarteten überein. Starte sie erneut.</string>
     <string name="t_832a1910" formatted="false">Talk Router nutzt jetzt immer %1$s</string>
@@ -351,6 +352,7 @@
     <string name="t_ac66579e" formatted="false">bb konnte nicht erreicht werden. Versuche es erneut.</string>
     <string name="t_ad395bc2" formatted="false">Neuen Schlüssel einfügen, um ihn zu ersetzen</string>
     <string name="t_ad6a2fb1" formatted="false">Gib Talk Router den Kontext, z. B. das Angebot, auf das du antwortest. Wird genutzt, wenn du etwas anfragst.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Gespeichert</string>
     <string name="t_ae112605" formatted="false">Notizen durchsuchen</string>
     <string name="t_ae292a04" formatted="false">Lautstärke lauter</string>
     <string name="t_ae368733" formatted="false">Starten und einfügen</string>

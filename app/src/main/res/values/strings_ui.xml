@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Earlier</string>
     <string name="t_29a545af" formatted="false">Dear Mr. Weber, uh, the tap in the kitchen, no actually the one in the bathroom, has been dripping since Monday. Oh and make that a bit more formal please.</string>
     <string name="t_2af8adac" formatted="false">Sent to your chief of staff</string>
+    <string name="t_2b605d42" formatted="false">More</string>
     <string name="t_2b61782b" formatted="false">Imprint</string>
     <string name="t_2c113272" formatted="false">Your bb Connect handle</string>
     <string name="t_2c467e9e" formatted="false">Tap to stop</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Spent</string>
     <string name="t_30a98a26" formatted="false">Could not update history.</string>
     <string name="t_315f5fe4" formatted="false">Refined</string>
-    <string name="t_31c36aaf" formatted="false">When you speak to your chief by name, or say it\'s for them; otherwise tap 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Tap Start and say a sentence.\n2. Tap Stop. Talk Router writes it down.\n3. Tap the box below, then Insert on the floating panel. Or touch and hold the box and tap Paste: the text is copied too.</string>
     <string name="t_324be3eb" formatted="false">Could not delete the template</string>
     <string name="t_32a5138e" formatted="false">as said</string>
@@ -268,6 +268,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Send again</string>
     <string name="t_81e2a271" formatted="false">Transcription</string>
     <string name="t_8250ae9b" formatted="false">Signing in to bb…</string>
+    <string name="t_826621ab" formatted="false">When you speak to your chief by name (Settings → Chief of staff); otherwise tap 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">The text model returned nothing. Try again.</string>
     <string name="t_82bad7d7" formatted="false">This sign-in doesn\'t match the one started here. Start it again.</string>
     <string name="t_832a1910" formatted="false">Talk Router now always uses %1$s</string>
@@ -357,6 +358,7 @@
     <string name="t_ac66579e" formatted="false">bb couldn\'t be reached. Try again.</string>
     <string name="t_ad395bc2" formatted="false">Paste a new key to replace it</string>
     <string name="t_ad6a2fb1" formatted="false">Give Talk Router what you\'re talking about, like the offer you\'re replying to. It\'s used when you ask for something.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Saved</string>
     <string name="t_ae112605" formatted="false">Search your notes</string>
     <string name="t_ae292a04" formatted="false">Volume up</string>
     <string name="t_ae368733" formatted="false">Start and insert</string>

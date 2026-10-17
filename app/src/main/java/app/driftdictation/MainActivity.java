@@ -591,8 +591,8 @@ public final class MainActivity extends Activity {
             tr("For example: I build an app called Talk Router. Jana is a colleague. Write numbers as digits."),
             true);
     about.setFilters(new InputFilter[] {new InputFilter.LengthFilter(2000)});
-    about.addTextChangedListener(after(s -> profile.setAbout(s)));
     ui.add(content, about, 10);
+    autosave(about, s -> profile.setAbout(s));
   }
 
   private void wordsPage() {
@@ -1316,6 +1316,7 @@ public final class MainActivity extends Activity {
                 }),
             10);
     }
+    if (!id.isEmpty()) chiefNameField();
     TextView result = bbResultLine();
     if (id.isEmpty() || changingChief) {
       Button[] create = {null};
@@ -1374,6 +1375,22 @@ public final class MainActivity extends Activity {
         ui.add(content, ui.button(tr("Continue"), Ui.Kind.PRIMARY, v -> nextSetupPage()), 24);
       laterButton();
     }
+  }
+
+  /** The name that sends a dictation to the chief when you say it. */
+  private void chiefNameField() {
+    ui.add(content, ui.strong(tr("Your chief's name"), 15), 22);
+    ui.add(
+        content,
+        ui.text(
+            tr("Say it to send a dictation to your chief: \"Ada, …\", \"this is for Ada\". Just mentioning the name in a message doesn't send it. Without a name, tap 🧑‍💼."),
+            13,
+            Ui.MUTED),
+        4);
+    EditText name = ui.input(profile.chiefName(), tr("For example: Ada"), false);
+    name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(40)});
+    ui.add(content, name, 8);
+    autosave(name, t -> profile.setChiefName(t));
   }
 
   /** ntfy: where the chief's notifications go, with a link to subscribe and a test. */
@@ -2755,15 +2772,14 @@ public final class MainActivity extends Activity {
     prompt.setFilters(new InputFilter[] {new InputFilter.LengthFilter(4000)});
     prompt.setMinLines(8);
     prompt.setTextSize(14);
-    prompt.addTextChangedListener(
-        after(
-            t ->
-                prefs
-                    .edit()
-                    .putString(
-                        "processingPrompt", t.trim().equals(TextModel.DEFAULT_PROMPT) ? "" : t)
-                    .apply()));
     ui.add(content, prompt, 8);
+    autosave(
+        prompt,
+        t ->
+            prefs
+                .edit()
+                .putString("processingPrompt", t.trim().equals(TextModel.DEFAULT_PROMPT) ? "" : t)
+                .apply());
     ui.add(
         content,
         ui.button(
@@ -2926,22 +2942,9 @@ public final class MainActivity extends Activity {
     card.addView(
         ui.row(
             tr("Send to chief when addressed"),
-            tr("When you speak to your chief by name, or say it's for them; otherwise tap 🧑‍💼"),
+            tr("When you speak to your chief by name (Settings → Chief of staff); otherwise tap 🧑‍💼"),
             chief,
             null));
-    card.addView(ui.divider());
-    ui.add(card, ui.strong(tr("Your chief's name"), 15), 12);
-    ui.add(
-        card,
-        ui.text(
-            tr("Say it to send a dictation to your chief: \"Ada, …\", \"this is for Ada\". Just mentioning the name in a message doesn't send it. Without a name, tap 🧑‍💼."),
-            13,
-            Ui.MUTED),
-        4);
-    EditText name = ui.input(profile.chiefName(), tr("For example: Ada"), false);
-    name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(40)});
-    name.addTextChangedListener(after(t -> profile.setChiefName(t)));
-    ui.add(card, name, 8);
     card.addView(ui.divider());
     card.addView(ui.row(tr("Decides"), "Jev · " + Jev.MODEL, null, null));
     card.addView(ui.divider());
@@ -3212,6 +3215,25 @@ public final class MainActivity extends Activity {
 
   private interface OnText {
     void changed(String s);
+  }
+
+  /**
+   * Text settings save as you type; a "✓ Saved" line under the field (already added to its page)
+   * says so after each change.
+   */
+  private void autosave(EditText field, OnText save) {
+    LinearLayout parent = (LinearLayout) field.getParent();
+    TextView saved = ui.text(tr("✓ Saved"), 13, Ui.TEAL);
+    saved.setVisibility(View.INVISIBLE);
+    LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-2, -2);
+    l.topMargin = Math.round(4 * getResources().getDisplayMetrics().density);
+    parent.addView(saved, parent.indexOfChild(field) + 1, l);
+    field.addTextChangedListener(
+        after(
+            t -> {
+              save.changed(t);
+              saved.setVisibility(View.VISIBLE);
+            }));
   }
 
   private static TextWatcher after(OnText listener) {

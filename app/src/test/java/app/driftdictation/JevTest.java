@@ -152,5 +152,10 @@ public class JevTest {
     assertTrue(Jev.mentions("Josy, look", "Josie"));
     assertTrue(Jev.mentions("Zoë, schau mal", "zoë"));
     assertFalse(Jev.mentions("Zoëlle", "Zoë"));
+    // Alex: possessives yes; Alexa, Alexander and Alexandra are other names.
+    for (String said : new String[] {"Alex, book a table", "this is Alex' job", "Alexs Liste", "that's Alex's", "hey alex"})
+      assertTrue(said, Jev.mentions(said, "Alex"));
+    for (String said : new String[] {"Alexa, play music", "Alexander called", "ask Alexandra"})
+      assertFalse(said, Jev.mentions(said, "Alex"));
   }
 }

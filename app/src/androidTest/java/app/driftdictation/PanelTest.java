@@ -62,8 +62,21 @@ public class PanelTest {
     fail("Never happened: " + what);
   }
 
+  /** A text on screen, or a panel button by its name: the panel's buttons are icons. */
   UiObject2 find(String text) {
-    return find(By.text(text), text);
+    long end = SystemClock.uptimeMillis() + 10000;
+    while (SystemClock.uptimeMillis() < end) {
+      UiObject2 o = device.findObject(By.text(text));
+      if (o == null) o = device.findObject(By.desc(text));
+      if (o != null) return o;
+      SystemClock.sleep(200);
+    }
+    return find(By.desc(text), text);
+  }
+
+  /** ⋯ on the recording panel: shows 📎, ✕, Refine and Chief. */
+  void more() {
+    find(By.desc("More"), "⋯").click();
   }
 
   UiObject2 find(BySelector selector, String what) {
@@ -231,8 +244,11 @@ public class PanelTest {
     pad("Hi Jana, ");
     send(DictationService.RECORD);
     waitFor("recording");
-    find("✨ Refine");
     find(By.desc("Stop recording"), "the stop button");
+    find(By.desc("More"), "⋯");
+    shot("1a-recording-collapsed");
+    more();
+    find("✨ Refine");
     shot("1-recording");
     send(DictationService.STOP);
     waitFor("copied");
@@ -283,6 +299,7 @@ public class PanelTest {
     TestServer.script("text", new JSONObject().put("text", "Hello there!").put("delay", 2));
     send(DictationService.RECORD);
     waitFor("recording");
+    more();
     find("✨ Refine").click();
     find("✨ Refine ✓");
     assertTrue(TestServer.requests().length() == 0);
@@ -315,6 +332,7 @@ public class PanelTest {
     send(DictationService.RECORD);
     waitFor("recording");
     Thread.sleep(800);
+    more();
     find(By.desc("Cancel: nothing is transcribed or sent"), "✕").click();
     until("the panel is gone", () -> !DictationService.bubbleVisible());
     until("ready again", () -> DictationService.READY.equals(prefs.getString("state", "")) || DictationService.instance == null);
@@ -448,7 +466,7 @@ public class PanelTest {
     find("Open chat ↗");
     shot("real-1-chief-sent");
     // The panel waits five minutes for the chief's text (DictationService.PANEL_WAIT_MS).
-    UiObject2 insert = device.wait(Until.findObject(By.text("Insert from chief")), DictationService.PANEL_WAIT_MS);
+    UiObject2 insert = device.wait(Until.findObject(By.desc("Insert from chief")), DictationService.PANEL_WAIT_MS);
     assertNotNull("the chief's text arrived while the panel waited", insert);
     shot("real-2-insert-from-chief");
     insert.click();
@@ -493,6 +511,7 @@ public class PanelTest {
     assertTrue(key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOLUME_DOWN));
     waitFor("recording");
     find(By.desc("Stop recording"), "the stop button");
+    more();
     find("✨ Refine");
     shot("0b-volume-recording-again");
     assertTrue(key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN));
@@ -523,6 +542,7 @@ public class PanelTest {
     waitFor("recording");
     // The panel is there while recording, so Refine and Chief can be chosen while talking.
     find(By.desc("Stop recording"), "the stop button");
+    more();
     find("✨ Refine");
     shot("0-volume-recording");
     Thread.sleep(1000);
@@ -552,7 +572,6 @@ public class PanelTest {
     assertTrue(field.isFocused());
     find("Insert").click();
     until("inserted", () -> "drag me".equals(padText()));
-    List<UiObject2> unused = device.findObjects(By.text("Insert"));
-    assertFalse(unused.isEmpty());
+    assertFalse(device.findObjects(By.desc("Insert")).isEmpty()); // Still there.
   }
 }

@@ -231,8 +231,6 @@ public class MvpFlowTest {
       device.pressBack();
       tap("Refine");
       shot("settings-2-refine");
-      new UiScrollable(new UiSelector().scrollable(true)).scrollToEnd(3);
-      shot("settings-3-refine-chief-name");
       device.pressBack();
     }
   }

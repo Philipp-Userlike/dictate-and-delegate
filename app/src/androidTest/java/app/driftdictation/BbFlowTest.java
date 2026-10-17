@@ -100,8 +100,21 @@ public class BbFlowTest {
     Thread.sleep(500);
   }
 
+  /** A text on screen, or a panel button by its name: the panel's buttons are icons. */
   UiObject2 find(String text) {
-    return find(By.text(text), text);
+    long end = SystemClock.uptimeMillis() + 10000;
+    while (SystemClock.uptimeMillis() < end) {
+      UiObject2 o = device.findObject(By.text(text));
+      if (o == null) o = device.findObject(By.desc(text));
+      if (o != null) return o;
+      SystemClock.sleep(200);
+    }
+    return find(By.desc(text), text);
+  }
+
+  /** ⋯ on the recording panel: shows 📎, ✕, Refine and Chief. */
+  void more() {
+    find(By.desc("More"), "⋯").click();
   }
 
   UiObject2 find(BySelector selector, String what) {
@@ -292,6 +305,51 @@ public class BbFlowTest {
     find(By.desc("Chief, suggested: this may be a task for your chief of staff"), "the hint");
   }
 
+  @Test
+  public void tappingChiefWhileJevsRefineRunsDropsTheRefine() throws Exception {
+    connectFake();
+    // No name: Jev starts Refine by itself (slowly), then the chief is tapped.
+    TestServer.transcripts("um so the hotel booking for Lisbon, can you sort that out");
+    TestServer.decide(0.9, 0, "none");
+    TestServer.script("text", new JSONObject().put("text", "Refined, should be dropped.").put("delay", 3));
+    dictate("copied");
+    long deadline = SystemClock.elapsedRealtime() + 8000;
+    while (!DictationService.RUNNING.equals(DictationService.session().refine) && SystemClock.elapsedRealtime() < deadline)
+      Thread.sleep(100);
+    assertEquals(DictationService.RUNNING, DictationService.session().refine);
+    find("🧑‍💼 Chief").click();
+    HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    assertEquals(DictationService.IDLE, DictationService.session().refine);
+    Thread.sleep(3500); // The refine call ends and is ignored.
+    assertEquals(DictationService.IDLE, DictationService.session().refine);
+    e = latest();
+    assertEquals("original", e.json.optString("version"));
+    assertEquals("um so the hotel booking for Lisbon, can you sort that out", e.text());
+    String tell = TestServer.bbSnippets().get(TestServer.bbSnippets().size() - 1);
+    assertFalse(tell, tell.contains("should be dropped"));
+    find("Open chat ↗");
+  }
+
+  @Test
+  public void theChiefsNameIsSetOnTheChiefPageAndSaysSaved() throws Exception {
+    connectFake();
+    prefs.edit().remove(Profile.CHIEF_NAME).commit();
+    launch();
+    tap("Settings");
+    tap("Chief of staff");
+    find("Your chief's name");
+    UiObject2 field = find(By.text("For example: Ada"), "the name field");
+    field.setText("Alex");
+    find("✓ Saved");
+    assertEquals("Alex", new Profile(prefs).chiefName());
+    if ("true".equals(InstrumentationRegistry.getArguments().getString("shots"))) {
+      Thread.sleep(700);
+      java.io.File dir = new java.io.File(context.getExternalFilesDir(null), "panel");
+      dir.mkdirs();
+      device.takeScreenshot(new java.io.File(dir, "settings-3-chief-name.png"));
+    }
+  }
+
   void waitDecided() throws Exception {
     long deadline = SystemClock.elapsedRealtime() + 8000;
     while (!DictationService.session().decided && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
@@ -374,9 +432,9 @@ public class BbFlowTest {
     assertTrue(DictationService.session().hint);
     assertEquals(DictationService.IDLE, DictationService.session().chief);
     assertTrue(TestServer.bbSnippets().isEmpty());
-    find(By.desc("Chief, suggested: this may be a task for your chief of staff"), "the hint");
+    UiObject2 hinted = find(By.desc("Chief, suggested: this may be a task for your chief of staff"), "the hint");
     // One tap sends it.
-    find("🧑‍💼 Chief").click();
+    hinted.click();
     latestOnce(n -> n.json.has("chiefThread"), "the chief");
     assertEquals(1, TestServer.bbSnippets().size());
     find("Open chat ↗");
@@ -388,6 +446,7 @@ public class BbFlowTest {
     TestServer.transcripts("the build is red again");
     send(DictationService.RECORD);
     waitFor("recording");
+    more();
     find("🧑‍💼 Chief").click();
     find("🧑‍💼 Chief ✓");
     assertTrue(TestServer.bbSnippets().isEmpty());
@@ -457,7 +516,7 @@ public class BbFlowTest {
     while (!DictationService.session().decided && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
     assertFalse(sent("decide").get(0).getJSONObject("questions").has("chief"));
     assertEquals(0, TestServer.bbRequests().length());
-    assertNull(device.findObject(By.text("🧑‍💼 Chief")));
+    assertNull(device.findObject(By.desc("🧑‍💼 Chief")));
     send(DictationService.HIDE);
     launch();
     assertEquals("tell my chief of staff to call the plumber", clipboard());

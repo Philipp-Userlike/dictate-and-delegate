@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Plus tôt</string>
     <string name="t_29a545af" formatted="false">Cher M. Weber, euh, le robinet de la cuisine, non en fait celui de la salle de bain, goutte depuis lundi. Ah et formulez ça un peu plus poliment svp.</string>
     <string name="t_2af8adac" formatted="false">Envoyé à ton chef de cabinet</string>
+    <string name="t_2b605d42" formatted="false">Plus</string>
     <string name="t_2b61782b" formatted="false">Mentions légales</string>
     <string name="t_2c113272" formatted="false">Ton identifiant bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Appuie pour arrêter</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Dépensé</string>
     <string name="t_30a98a26" formatted="false">Impossible de mettre à jour l\'historique.</string>
     <string name="t_315f5fe4" formatted="false">Peaufiné</string>
-    <string name="t_31c36aaf" formatted="false">Quand tu t\'adresses à ton chef par son nom, ou dis que c\'est pour lui ; sinon appuie sur 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Appuie sur Démarrer et dis une phrase.\n2. Appuie sur Arrêter. Talk Router la transcrit.\n3. Touche le champ ci-dessous, puis Insérer sur le panneau flottant. Ou effectue un appui long sur le champ et touche Coller : le texte est aussi copié.</string>
     <string name="t_324be3eb" formatted="false">Impossible de supprimer le modèle</string>
     <string name="t_32a5138e" formatted="false">brut</string>
@@ -266,6 +266,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Renvoyer</string>
     <string name="t_81e2a271" formatted="false">Transcription</string>
     <string name="t_8250ae9b" formatted="false">Connexion à bb…</string>
+    <string name="t_826621ab" formatted="false">Quand tu t\'adresses à ton chef par son nom (Paramètres → Chef de cabinet) ; sinon appuie sur 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">Le modèle de texte n\'a rien renvoyé. Réessaie.</string>
     <string name="t_82bad7d7" formatted="false">Cette connexion ne correspond pas à celle démarrée ici. Recommence.</string>
     <string name="t_832a1910" formatted="false">Talk Router utilise désormais %1$s</string>
@@ -354,6 +355,7 @@
     <string name="t_ac66579e" formatted="false">bb n\'a pas pu être joint. Réessaie.</string>
     <string name="t_ad395bc2" formatted="false">Colle une nouvelle clé pour la remplacer</string>
     <string name="t_ad6a2fb1" formatted="false">Donne à Talk Router le contexte dont tu parles, comme l\'offre à laquelle tu réponds. Utilisé quand tu demandes quelque chose.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Enregistré</string>
     <string name="t_ae112605" formatted="false">Rechercher dans les notes</string>
     <string name="t_ae292a04" formatted="false">Volume haut</string>
     <string name="t_ae368733" formatted="false">Démarrer et insérer</string>

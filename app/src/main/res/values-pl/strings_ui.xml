@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Wcześniej</string>
     <string name="t_29a545af" formatted="false">Dzień dobry panie Weber, eee, kran w kuchni, nie, właściwie ten w łazience, cieknie od poniedziałku. A i niech to brzmi trochę bardziej formalnie.</string>
     <string name="t_2af8adac" formatted="false">Wysłano do szefa sztabu</string>
+    <string name="t_2b605d42" formatted="false">Więcej</string>
     <string name="t_2b61782b" formatted="false">Informacje prawne</string>
     <string name="t_2c113272" formatted="false">Twój identyfikator bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Dotknij, aby zatrzymać</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Wydano</string>
     <string name="t_30a98a26" formatted="false">Nie udało się zaktualizować historii.</string>
     <string name="t_315f5fe4" formatted="false">Dopracowano</string>
-    <string name="t_31c36aaf" formatted="false">Gdy zwracasz się do szefa po imieniu lub mówisz, że to dla niego; w przeciwnym razie stuknij 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Dotknij Start i powiedz zdanie.\n2. Dotknij Stop. Talk Router je zapisze.\n3. Dotknij pola poniżej, a potem Wstaw na pływającym panelu. Możesz też przytrzymać pole i wybrać Wklej: tekst jest również skopiowany.</string>
     <string name="t_324be3eb" formatted="false">Nie udało się usunąć szablonu</string>
     <string name="t_32a5138e" formatted="false">jak powiedziano</string>
@@ -268,6 +268,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Wyślij ponownie</string>
     <string name="t_81e2a271" formatted="false">Transkrypcja</string>
     <string name="t_8250ae9b" formatted="false">Logowanie do bb…</string>
+    <string name="t_826621ab" formatted="false">Gdy zwracasz się do szefa po imieniu (Ustawienia → Szef personelu); w przeciwnym razie dotknij 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">Model tekstu nic nie zwrócił. Spróbuj ponownie.</string>
     <string name="t_82bad7d7" formatted="false">To logowanie nie pasuje do rozpoczętego tutaj. Rozpocznij ponownie.</string>
     <string name="t_832a1910" formatted="false">Talk Router używa teraz zawsze %1$s</string>
@@ -357,6 +358,7 @@
     <string name="t_ac66579e" formatted="false">Nie udało się połączyć z bb. Spróbuj ponownie.</string>
     <string name="t_ad395bc2" formatted="false">Wklej nowy klucz, aby go zastąpić</string>
     <string name="t_ad6a2fb1" formatted="false">Podaj Talk Router kontekst, np. ofertę, na którą odpowiadasz. Zostanie użyty, gdy o coś poprosisz.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Zapisano</string>
     <string name="t_ae112605" formatted="false">Szukaj w notatkach</string>
     <string name="t_ae292a04" formatted="false">Głośniej</string>
     <string name="t_ae368733" formatted="false">Uruchamianie i wstawianie</string>

@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Anteriores</string>
     <string name="t_29a545af" formatted="false">Estimado Sr. Weber, eh, el grifo de la cocina, no, en realidad el del baño, gotea desde el lunes. Ah, y ponlo un poco más formal, por favor.</string>
     <string name="t_2af8adac" formatted="false">Enviado a tu jefe de gabinete</string>
+    <string name="t_2b605d42" formatted="false">Más</string>
     <string name="t_2b61782b" formatted="false">Aviso legal</string>
     <string name="t_2c113272" formatted="false">Tu usuario de bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Toca para detener</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Gastado</string>
     <string name="t_30a98a26" formatted="false">No se pudo actualizar el historial.</string>
     <string name="t_315f5fe4" formatted="false">Pulido</string>
-    <string name="t_31c36aaf" formatted="false">Al hablarle a tu jefe por su nombre o decir que es para él; si no, toca 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Pulsa Iniciar y di una frase.\n2. Pulsa Parar. Talk Router la transcribirá.\n3. Toca el cuadro inferior y pulsa Insertar en el panel flotante. O mantén pulsado el cuadro y toca Pegar: el texto también se copia.</string>
     <string name="t_324be3eb" formatted="false">No se pudo eliminar la plantilla</string>
     <string name="t_32a5138e" formatted="false">original</string>
@@ -266,6 +266,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Enviar de nuevo</string>
     <string name="t_81e2a271" formatted="false">Transcripción</string>
     <string name="t_8250ae9b" formatted="false">Iniciando sesión en bb…</string>
+    <string name="t_826621ab" formatted="false">Cuando le hables a tu jefe por su nombre (Ajustes → Jefe de gabinete); si no, toca 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">El modelo de texto no devolvió nada. Inténtalo de nuevo.</string>
     <string name="t_82bad7d7" formatted="false">Este inicio de sesión no coincide con el iniciado aquí. Inícialo de nuevo.</string>
     <string name="t_832a1910" formatted="false">Talk Router ahora siempre usa %1$s</string>
@@ -354,6 +355,7 @@
     <string name="t_ac66579e" formatted="false">No se pudo conectar con bb. Inténtalo de nuevo.</string>
     <string name="t_ad395bc2" formatted="false">Pega una clave nueva para sustituirla</string>
     <string name="t_ad6a2fb1" formatted="false">Dale a Talk Router aquello de lo que estás hablando, como la oferta a la que respondes. Se usa cuando pides algo.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Guardado</string>
     <string name="t_ae112605" formatted="false">Buscar en tus notas</string>
     <string name="t_ae292a04" formatted="false">Subir volumen</string>
     <string name="t_ae368733" formatted="false">Iniciar e insertar</string>

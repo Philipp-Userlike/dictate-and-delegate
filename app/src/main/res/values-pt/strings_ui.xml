@@ -89,6 +89,7 @@
     <string name="t_2994b473" formatted="false">‹ Anteriores</string>
     <string name="t_29a545af" formatted="false">Caro Sr. Weber, hum, a torneira da cozinha, não, aliás, a da casa de banho, está a pingar desde segunda-feira. Ah, e torne isso um pouco mais formal, por favor.</string>
     <string name="t_2af8adac" formatted="false">Enviado para o teu chief of staff</string>
+    <string name="t_2b605d42" formatted="false">Mais</string>
     <string name="t_2b61782b" formatted="false">Ficha técnica</string>
     <string name="t_2c113272" formatted="false">O teu handle do bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Toca para parar</string>
@@ -103,7 +104,6 @@
     <string name="t_30a4185d" formatted="false">Gasto</string>
     <string name="t_30a98a26" formatted="false">Não foi possível atualizar o histórico.</string>
     <string name="t_315f5fe4" formatted="false">Refinado</string>
-    <string name="t_31c36aaf" formatted="false">Quando falares com o teu chefe pelo nome ou disseres que é para ele; caso contrário, toca em 🧑‍💼</string>
     <string name="t_31e20d5f" formatted="false">1. Toca em Iniciar e diz uma frase.\n2. Toca em Parar. O Talk Router transcreve-a.\n3. Toca na caixa abaixo e depois em Inserir no painel flutuante. Em alternativa, prime continuamente a caixa e toca em Colar: o texto também é copiado.</string>
     <string name="t_324be3eb" formatted="false">Não foi possível eliminar o modelo</string>
     <string name="t_32a5138e" formatted="false">como dito</string>
@@ -266,6 +266,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Enviar de novo</string>
     <string name="t_81e2a271" formatted="false">Transcrição</string>
     <string name="t_8250ae9b" formatted="false">A iniciar sessão no bb…</string>
+    <string name="t_826621ab" formatted="false">Quando falares com o teu chefe pelo nome (Definições → Chefe de gabinete); caso contrário, toca em 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">O modelo de texto não devolveu nada. Tenta de novo.</string>
     <string name="t_82bad7d7" formatted="false">Este início de sessão não corresponde ao iniciado aqui. Começa novamente.</string>
     <string name="t_832a1910" formatted="false">O Talk Router agora usa sempre %1$s</string>
@@ -354,6 +355,7 @@
     <string name="t_ac66579e" formatted="false">Não foi possível contactar o bb. Tenta novamente.</string>
     <string name="t_ad395bc2" formatted="false">Cola uma nova chave para substituir</string>
     <string name="t_ad6a2fb1" formatted="false">Dá contexto ao Talk Router, como a proposta a que estás a responder. É usado quando pedes algo.</string>
+    <string name="t_ad6a7ed6" formatted="false">✓ Guardado</string>
     <string name="t_ae112605" formatted="false">Pesquisar notas</string>
     <string name="t_ae292a04" formatted="false">Aumentar volume</string>
     <string name="t_ae368733" formatted="false">Iniciar e inserir</string>
