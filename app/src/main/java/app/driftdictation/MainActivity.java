@@ -31,8 +31,8 @@ public final class MainActivity extends Activity {
   private Profile profile;
   private ModelCatalog catalog;
   private LinearLayout content;
-  private String page = "", noteId = "", redoSession = "", doc = "privacy", templateId = "";
-  static final String SUPPORT_EMAIL = "support@drift.example"; // Placeholder until the domain exists.
+  private String page = "", noteId = "", redoSession = "", templateId = "";
+  static final String SOURCE_URL = "https://github.com/Philipp258/talk-router";
   private long seenRevision = Long.MIN_VALUE;
   private boolean loading, allowScreenshots;
   private int usageMonth;
@@ -113,7 +113,6 @@ public final class MainActivity extends Activity {
       ArrayList<String> back = saved.getStringArrayList("stack");
       if (back != null) stack.addAll(back);
       noteId = saved.getString("noteId", "");
-      doc = saved.getString("doc", "privacy");
       templateId = saved.getString("templateId", "");
       usageMonth = saved.getInt("usageMonth");
       show(restored);
@@ -129,7 +128,6 @@ public final class MainActivity extends Activity {
     out.putString("page", page);
     out.putStringArrayList("stack", new ArrayList<>(stack));
     out.putString("noteId", noteId);
-    out.putString("doc", doc);
     out.putString("templateId", templateId);
     out.putInt("usageMonth", usageMonth);
   }
@@ -273,7 +271,7 @@ public final class MainActivity extends Activity {
     status = null;
     noteStatus = null;
     skillsLine = null;
-    recovery = recentBox = notesBox = monthBox = wordsBox = modelList = null;
+    recovery = recentBox = notesBox = monthBox = wordsBox = modelList = refineList = null;
     editor = practice = null;
     LinearLayout root = ui.vertical();
     root.setBackgroundColor(next.equals("settings") ? Ui.SOFT_BG : Ui.BG);
@@ -315,8 +313,9 @@ public final class MainActivity extends Activity {
       case "words" -> wordsPage();
       case "models" -> modelsPage();
       case "refine", "processing" -> refinePage();
-      case "legal" -> legalPage();
-      case "doc" -> docPage();
+      case "refineModel" -> refineModelPage();
+      case "decisions" -> decisionsPage();
+      case "privacy" -> privacyPage();
       case "templates" -> templatesPage();
       case "activity" -> activityPage();
       case "template" -> templatePage();
@@ -426,7 +425,7 @@ public final class MainActivity extends Activity {
     ui.add(content, note, 12);
   }
 
-  /** The user's OpenRouter key: the first setup page, and Settings → OpenRouter key. */
+  /** The user's OpenRouter key: the first setup page, and Settings → Keys → OpenRouter key. */
   private void keyPage(boolean onboarding) {
     boolean saved = OpenRouter.hasKey(this);
     if (onboarding) {
@@ -541,7 +540,7 @@ public final class MainActivity extends Activity {
         });
   }
 
-  /** Settings → Anthropic key (optional): Refine goes to Anthropic directly, on its credits. */
+  /** Settings → Keys → Anthropic key (optional): Refine goes to Anthropic directly, on its credits. */
   private void anthropicKeyPage() {
     boolean saved = Anthropic.hasKey(this);
     heading(
@@ -664,7 +663,7 @@ public final class MainActivity extends Activity {
             Ui.BODY),
         6);
     ui.add(
-        data, ui.button(tr("Read the privacy policy"), Ui.Kind.QUIET, v -> openDoc("privacy")), 6);
+        data, ui.button(tr("Read the privacy policy"), Ui.Kind.QUIET, v -> open("privacy")), 6);
   }
 
   private void aboutPage() {
@@ -769,7 +768,7 @@ public final class MainActivity extends Activity {
     LinearLayout panel = ui.add(content, ui.card(Ui.BG, Ui.LINE), 16);
     String[][] rows = {
       {tr("Insert"), tr("Puts the text at the cursor, where you're typing.")},
-      {tr("✨ Refine"), tr("%1$s makes it the text you need: an email, a reply, a tidy note, your template. Then Insert refined.", TextModel.NAME)},
+      {tr("✨ Refine"), tr("%1$s makes it the text you need: an email, a reply, a tidy note, your template. Then Insert refined.", TextModel.name(this))},
       {tr("🧑‍💼 Chief"), tr("Hands it to your chief of staff in bb, if you set one up. Then Open chat ↗.")},
       {"✕", tr("Closes the panel. The note stays in Talk Router.")}
     };
@@ -1728,7 +1727,7 @@ public final class MainActivity extends Activity {
             null,
             v -> open("models")));
     models.addView(ui.divider());
-    models.addView(ui.row(tr("Refine"), refineLabel(), null, v -> open("refine")));
+    models.addView(ui.row(tr("Refine"), refineLabel(), null, v -> open("refineModel")));
     LinearLayout recentHead = ui.horizontal();
     recentHead.addView(ui.label(tr("Recent")), new LinearLayout.LayoutParams(0, -2, 1));
     recentHead.addView(ui.button(tr("All notes"), Ui.Kind.QUIET, v -> open("notes")));
@@ -2607,32 +2606,54 @@ public final class MainActivity extends Activity {
 
   private void settingsPage() {
     heading(tr("Home"), tr("Settings"), null);
-    ui.add(content, ui.label(tr("OpenRouter")), 22);
-    LinearLayout openRouter = ui.add(content, ui.card(Ui.BG, 0), 8);
-    openRouter.setPadding(0, 0, 0, 0);
-    openRouter.addView(
+    // Every model and the keys they run on, in one place: who does each job, and on whose account.
+    ui.add(content, ui.label(tr("Models & providers")), 22);
+    LinearLayout models = ui.add(content, ui.card(Ui.BG, 0), 8);
+    models.setPadding(0, 0, 0, 0);
+    models.addView(
         ui.row(
             tr("OpenRouter key"),
-            OpenRouter.hasKey(this) ? tr("Saved, encrypted") : tr("Not set"),
+            OpenRouter.hasKey(this)
+                ? tr("Saved, encrypted · speech, decisions and Refine")
+                : tr("Not set"),
             null,
             v -> open("key")));
-    openRouter.addView(ui.divider());
-    openRouter.addView(ui.row(tr("Usage"), tr("What each month cost"), null, v -> open("usage")));
-    openRouter.addView(ui.divider());
-    openRouter.addView(
+    models.addView(ui.divider());
+    models.addView(
+        ui.row(
+            tr("Anthropic key"),
+            Anthropic.hasKey(this)
+                ? tr("Saved, encrypted · Refine uses your Anthropic credits")
+                : tr("Optional · Refine on your Anthropic credits"),
+            null,
+            v -> open("anthropic")));
+    models.addView(ui.divider());
+    models.addView(
+        ui.row(tr("Transcription"), modelName(profile.fixedModel()), null, v -> open("models")));
+    models.addView(ui.divider());
+    models.addView(ui.row(tr("Decisions"), decisionsLabel(), null, v -> open("decisions")));
+    models.addView(ui.divider());
+    models.addView(ui.row(tr("Refine"), refineModelLabel(), null, v -> open("refineModel")));
+    ui.add(content, ui.label(tr("Costs and activity")), 22);
+    LinearLayout costs = ui.add(content, ui.card(Ui.BG, 0), 8);
+    costs.setPadding(0, 0, 0, 0);
+    costs.addView(ui.row(tr("Usage"), tr("What each month cost"), null, v -> open("usage")));
+    costs.addView(ui.divider());
+    costs.addView(
         ui.row(
             tr("Activity"),
             tr("Which model did what, how long it took, what it cost"),
             null,
             v -> open("activity")));
-    bbRows();
     ui.add(content, ui.label(tr("Dictation")), 22);
     LinearLayout dictation = ui.add(content, ui.card(Ui.BG, 0), 8);
     dictation.setPadding(0, 0, 0, 0);
     dictation.addView(
-        ui.row(tr("Speech model"), modelName(profile.fixedModel()), null, v -> open("models")));
-    dictation.addView(ui.divider());
-    dictation.addView(ui.row(tr("Refine"), refineLabel(), null, v -> open("refine")));
+        ui.row(
+            tr("Refine instructions"),
+            profile.refinePrompt().equals(TextModel.DEFAULT_PROMPT) ? tr("Default") : tr("Your own"),
+            null,
+            v -> open("refine")));
     dictation.addView(ui.divider());
     int templates = new Templates(this).all().size();
     dictation.addView(
@@ -2660,6 +2681,7 @@ public final class MainActivity extends Activity {
                 : String.join(", ", topics.stream().map(I18n::tr).toList()),
             null,
             v -> open("about")));
+    bbRows();
     ui.add(content, ui.label(tr("Using Talk Router")), 22);
     LinearLayout using = ui.add(content, ui.card(Ui.BG, 0), 8);
     using.setPadding(0, 0, 0, 0);
@@ -2674,13 +2696,7 @@ public final class MainActivity extends Activity {
             null,
             v -> open("setup")));
     using.addView(ui.divider());
-    using.addView(keepAudioRow());
-    using.addView(ui.divider());
-    using.addView(ui.row(tr("Delete saved audio"), null, null, v -> deleteAudio()));
-    ui.add(content, ui.label(tr("App")), 22);
-    LinearLayout app = ui.add(content, ui.card(Ui.BG, 0), 8);
-    app.setPadding(0, 0, 0, 0);
-    app.addView(
+    using.addView(
         ui.row(
             tr("Language"),
             getResources().getConfiguration().getLocales().get(0).getDisplayLanguage(),
@@ -2695,13 +2711,42 @@ public final class MainActivity extends Activity {
                 toast(tr("Change the language in Android settings → Apps → Talk Router."));
               }
             }));
-    app.addView(ui.divider());
-    app.addView(ui.row(tr("Legal & support"), null, null, v -> open("legal")));
-    app.addView(ui.divider());
-    TextView wipe = ui.text(tr("Delete all my data"), 16, Ui.WARN);
-    wipe.setPadding(ui.dp(16), ui.dp(16), ui.dp(16), ui.dp(16));
-    wipe.setOnClickListener(v -> deleteAllData());
-    app.addView(wipe);
+    // Talk Router has no server: everything it keeps is here, on the phone.
+    ui.add(content, ui.label(tr("Data on this phone")), 22);
+    LinearLayout data = ui.add(content, ui.card(Ui.BG, 0), 8);
+    data.setPadding(0, 0, 0, 0);
+    data.addView(keepAudioRow());
+    data.addView(ui.divider());
+    data.addView(ui.row(tr("Delete saved audio"), null, null, v -> deleteAudio()));
+    data.addView(ui.divider());
+    LinearLayout wipe =
+        ui.row(
+            tr("Delete local data"),
+            tr("Notes, audio, templates, keys, bb sign-in and settings"),
+            null,
+            v -> deleteLocalData());
+    // The title in warning colour: this one can't be undone.
+    ((TextView) ((LinearLayout) wipe.getChildAt(0)).getChildAt(0)).setTextColor(Ui.WARN);
+    data.addView(wipe);
+    ui.add(content, ui.label(tr("About")), 22);
+    LinearLayout about = ui.add(content, ui.card(Ui.BG, 0), 8);
+    about.setPadding(0, 0, 0, 0);
+    about.addView(
+        ui.row(
+            tr("Privacy"),
+            tr("Audio and text go to OpenRouter, Refine to Anthropic with your key"),
+            null,
+            v -> open("privacy")));
+    about.addView(ui.divider());
+    about.addView(
+        ui.row(
+            tr("Source code"),
+            tr("Open source, MIT License · github.com/Philipp258/talk-router"),
+            null,
+            v -> openUrl(SOURCE_URL)));
+    about.addView(ui.divider());
+    about.addView(
+        ui.row(tr("Report a problem"), tr("On GitHub"), null, v -> openUrl(SOURCE_URL + "/issues")));
     TextView version = ui.text("Talk Router " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
     version.setGravity(Gravity.CENTER);
     ui.add(content, version, 18);
@@ -2826,42 +2871,10 @@ public final class MainActivity extends Activity {
     }
   }
 
-  private void legalPage() {
-    heading(tr("Settings"), tr("Legal & support"), null);
-    LinearLayout docs = ui.add(content, ui.card(Ui.BG, Ui.LINE), 18);
-    docs.setPadding(0, 0, 0, 0);
-    String[][] rows = {
-      {"privacy", tr("Privacy policy")},
-      {"impressum", tr("Imprint")},
-      {"licenses", tr("Open-source notices")}
-    };
-    for (int i = 0; i < rows.length; i++) {
-      String[] r = rows[i];
-      if (i > 0) docs.addView(ui.divider());
-      docs.addView(ui.row(r[1], null, null, v -> openDoc(r[0])));
-    }
-    LinearLayout help = ui.add(content, ui.card(Ui.BG, Ui.LINE), 12);
-    help.setPadding(0, 0, 0, 0);
-    help.addView(ui.row(tr("Send feedback"), SUPPORT_EMAIL, null, v -> feedback()));
-    TextView version = ui.text("Talk Router " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
-    version.setGravity(Gravity.CENTER);
-    ui.add(content, version, 18);
-  }
-
-  private void openDoc(String name) {
-    doc = name;
-    open("doc");
-  }
-
-  private void docPage() {
-    int id =
-        switch (doc) {
-          case "impressum" -> R.raw.impressum;
-          case "licenses" -> R.raw.licenses;
-          default -> R.raw.privacy;
-        };
+  /** Settings → About → Privacy: the short policy from res/raw (German in raw-de). */
+  private void privacyPage() {
     String text;
-    try (java.io.InputStream in = getResources().openRawResource(id)) {
+    try (java.io.InputStream in = getResources().openRawResource(R.raw.privacy)) {
       text = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
     } catch (Exception ex) {
       text = "";
@@ -2874,36 +2887,16 @@ public final class MainActivity extends Activity {
     ui.add(content, body, 14);
   }
 
-  /** Opens the mail app; the user sees and sends the message themselves. */
-  private void feedback() {
-    String body =
-        "\n\n—\nTalk Router "
-            + BuildConfig.VERSION_NAME
-            + " · Android "
-            + Build.VERSION.RELEASE
-            + " · "
-            + Build.MODEL;
-    Intent mail =
-        new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
-            .putExtra(Intent.EXTRA_EMAIL, new String[] {SUPPORT_EMAIL})
-            .putExtra(Intent.EXTRA_SUBJECT, tr("Talk Router feedback"))
-            .putExtra(Intent.EXTRA_TEXT, body);
-    try {
-      startActivity(mail);
-    } catch (Exception ex) {
-      toast(tr("No email app found. Write to %1$s", SUPPORT_EMAIL));
-    }
-  }
-
-  private void deleteAllData() {
+  /** Everything Talk Router keeps lives on this phone; this removes all of it. */
+  private void deleteLocalData() {
     if (DictationService.busy()) {
       toast(tr("Finish recording or upload first"));
       return;
     }
     new AlertDialog.Builder(this)
-        .setTitle(tr("Delete all your data?"))
+        .setTitle(tr("Delete local data?"))
         .setMessage(
-            tr("This deletes your notes, audio, templates, words, About you, your OpenRouter key, your bb sign-in and settings on this phone. It can't be undone."))
+            tr("Talk Router has no server, so everything it keeps is on this phone. This deletes your notes, audio, templates, words, About you, your OpenRouter and Anthropic keys, your bb sign-in and settings. It can't be undone. Your accounts at OpenRouter, Anthropic and bb stay as they are."))
         .setPositiveButton(
             tr("Delete everything"),
             (d, w) -> {
@@ -2912,6 +2905,7 @@ public final class MainActivity extends Activity {
                 DictationService.audio(this).delete();
                 deleteDatabase("history.db");
                 vault.remove(OpenRouter.KEY);
+                vault.remove(Anthropic.KEY);
                 vault.remove("templates");
                 new Attachments(this).deleteAll();
                 vault.remove("transcript");
@@ -2922,22 +2916,19 @@ public final class MainActivity extends Activity {
               }
               prefs.edit().clear().commit();
               stack.clear();
-              toast(tr("All your data was deleted"));
+              toast(tr("Local data deleted"));
               show("welcome");
             })
         .setNegativeButton(tr("Keep"), null)
         .show();
   }
 
-  /** Settings → Refine: what starts by itself, the models, and Refine's instructions. */
+  /** Settings → Dictation → Refine instructions: what Refine is told, with an example. */
   private void refinePage() {
     heading(
         tr("Back"),
-        tr("Refine"),
-        tr("Your words come first, always. Then ✨ Refine turns them into the text you need: it works out what it's for (a message, an email, a note), follows what you asked for and fills in your templates. Jev, a fast decision model, starts it by itself when you asked for a text, and sends a task to your chief of staff only when you clearly address it."));
-    LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 18);
-    card.setPadding(0, 0, 0, 0);
-    refineRows(card);
+        tr("Refine instructions"),
+        tr("Your words come first, always. Then ✨ Refine turns them into the text you need: it works out what it's for (a message, an email, a note), follows what you asked for and fills in your templates."));
     example();
     ui.add(content, ui.strong(tr("Instructions for Refine"), 15), 22);
     ui.add(content, ui.text(tr("About you, your words and the template you name are added automatically."), 13, Ui.MUTED), 2);
@@ -2963,6 +2954,192 @@ public final class MainActivity extends Activity {
               show("refine");
             }),
         4);
+  }
+
+  /** Settings → Models & providers → Decisions: Jev, and what it may start by itself. */
+  private void decisionsPage() {
+    heading(
+        tr("Back"),
+        tr("Decisions"),
+        tr("After each transcript, Jev, a fast decision model, decides what happens next: whether you asked for a text, which template you named, and whether you were talking to your chief of staff. It takes about a third of a second and runs on your OpenRouter key."));
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 18);
+    card.setPadding(0, 0, 0, 0);
+    Switch refine = ui.toggle(profile.autoRefine());
+    refine.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean(Profile.AUTO_REFINE, c).apply());
+    card.addView(
+        ui.row(
+            tr("Refine automatically"),
+            tr("When you ask for a text, name a template, or the dictation needs tidying"),
+            refine,
+            null));
+    card.addView(ui.divider());
+    Switch chief = ui.toggle(profile.autoChief());
+    chief.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean(Profile.AUTO_CHIEF, c).apply());
+    card.addView(
+        ui.row(
+            tr("Send to chief when addressed"),
+            tr("When you speak to your chief by name (Settings → Chief of staff); otherwise tap 🧑‍💼"),
+            chief,
+            null));
+    card.addView(ui.divider());
+    card.addView(ui.row(tr("Model"), "Jev · " + Jev.MODEL, null, null));
+    ui.add(
+        content,
+        ui.text(
+            tr("The ✨ and 🧑‍💼 buttons always work, whatever is set here."),
+            13,
+            Ui.MUTED),
+        12);
+  }
+
+  private String decisionsLabel() {
+    if (profile.autoRefine() && profile.autoChief()) return tr("Jev · refines and sends to your chief by itself");
+    if (profile.autoRefine()) return tr("Jev · refines by itself");
+    if (profile.autoChief()) return tr("Jev · sends to your chief by itself");
+    return tr("Jev · nothing starts by itself");
+  }
+
+  private String refineModelLabel() {
+    return Anthropic.hasKey(this)
+        ? tr("%1$s · Anthropic, your key", TextModel.claude(this).name())
+        : TextModel.modelName(this) + " · OpenRouter";
+  }
+
+  /** Which tab the Refine model page shows, and OpenRouter's catalog once loaded. */
+  private boolean refineOpenRouterTab;
+  private List<JSONObject> refineCatalog;
+  private String refineQuery = "";
+  private LinearLayout refineList;
+
+  /**
+   * Settings → Models & providers → Refine: the Claude models on the Anthropic key, or any text
+   * model in OpenRouter's catalog. With an Anthropic key, the OpenRouter model is the fallback.
+   */
+  private void refineModelPage() {
+    boolean direct = Anthropic.hasKey(this);
+    boolean openRouterTab = !direct || refineOpenRouterTab;
+    heading(
+        tr("Back"),
+        tr("Refine model"),
+        direct
+            ? tr("With your Anthropic key, ✨ Refine goes to the Claude model you pick here. If Anthropic fails, it goes through OpenRouter, to the OpenRouter model.")
+            : tr("✨ Refine goes through OpenRouter to the model you pick here. Add an Anthropic key under Models & providers to use Claude on your Anthropic credits."));
+    if (direct) {
+      Ui.Flow tabs = ui.add(content, ui.flow(), 14);
+      tabs.addView(
+          ui.chip(
+              tr("Anthropic · %1$s", TextModel.claude(this).name()),
+              !openRouterTab,
+              v -> {
+                refineOpenRouterTab = false;
+                show("refineModel");
+              }));
+      tabs.addView(
+          ui.chip(
+              tr("OpenRouter · %1$s", TextModel.modelName(this)),
+              openRouterTab,
+              v -> {
+                refineOpenRouterTab = true;
+                show("refineModel");
+              }));
+    }
+    if (!openRouterTab) {
+      String selected = TextModel.claude(this).id();
+      for (Anthropic.Claude c : Anthropic.MODELS) {
+        boolean on = c.id().equals(selected);
+        LinearLayout row = ui.card(on ? Ui.TEAL_TINT : Ui.BG, on ? Ui.TEAL : Ui.LINE);
+        LinearLayout top = ui.horizontal();
+        top.addView(ui.strong(c.name(), 16), new LinearLayout.LayoutParams(0, -2, 1));
+        top.addView(ui.mono(TextModel.dollars(c.input()) + " / " + TextModel.dollars(c.output()), 12, Ui.INK));
+        row.addView(top);
+        ui.add(
+            row,
+            ui.mono(
+                c.id() + (c.id().equals(Anthropic.MODELS.get(0).id()) ? " · " + tr("default") : ""),
+                11,
+                Ui.MUTED),
+            4);
+        row.setOnClickListener(
+            v -> {
+              prefs.edit().putString(TextModel.PREF_CLAUDE, c.id()).apply();
+              toast(tr("Refine now uses %1$s", c.name()));
+              show("refineModel");
+            });
+        ui.add(content, row, 8);
+      }
+      ui.add(content, ui.text(tr("Prices per million tokens in / out, Anthropic's list prices."), 12, Ui.MUTED), 14);
+      return;
+    }
+    EditText search = ui.input(refineQuery, tr("Search models"), false);
+    search.setBackground(ui.shape(Ui.PANEL, 0, 14));
+    search.addTextChangedListener(
+        after(
+            q -> {
+              refineQuery = q;
+              renderRefineModels();
+            }));
+    ui.add(content, search, 4);
+    refineList = ui.add(content, ui.vertical(), 8);
+    ui.add(content, ui.text(tr("Prices per million tokens in / out, from OpenRouter."), 12, Ui.MUTED), 14);
+    if (refineCatalog != null) {
+      renderRefineModels();
+      return;
+    }
+    ui.add(refineList, ui.text(tr("Loading OpenRouter's models…"), 14, Ui.MUTED), 10);
+    io.execute(
+        () -> {
+          List<JSONObject> list = null;
+          String failed = null;
+          try {
+            list = TextModel.catalog(OpenRouter.models());
+          } catch (Exception ex) {
+            failed = DictationService.friendly(ex);
+          }
+          List<JSONObject> loaded = list;
+          String message = failed;
+          main.post(
+              () -> {
+                if (loaded != null) refineCatalog = loaded;
+                if (!page.equals("refineModel") || refineList == null) return;
+                if (loaded != null) renderRefineModels();
+                else {
+                  refineList.removeAllViews();
+                  ui.add(refineList, ui.text(message, 14, Ui.WARN), 10);
+                }
+              });
+        });
+  }
+
+  private void renderRefineModels() {
+    if (refineList == null || refineCatalog == null) return;
+    refineList.removeAllViews();
+    String selected = TextModel.model(this);
+    String q = refineQuery.trim().toLowerCase(java.util.Locale.ROOT);
+    int shown = 0;
+    for (JSONObject m : refineCatalog) {
+      String id = m.optString("id"), name = m.optString("name", id);
+      if (!q.isEmpty()
+          && !id.toLowerCase(java.util.Locale.ROOT).contains(q)
+          && !name.toLowerCase(java.util.Locale.ROOT).contains(q)) continue;
+      // The whole catalog is long; without a search, the first 40 (the default comes first).
+      if (q.isEmpty() && shown >= 40 && !id.equals(selected)) continue;
+      shown++;
+      boolean on = id.equals(selected);
+      LinearLayout row = ui.card(on ? Ui.TEAL_TINT : Ui.BG, on ? Ui.TEAL : Ui.LINE);
+      LinearLayout top = ui.horizontal();
+      top.addView(ui.strong(name, 16), new LinearLayout.LayoutParams(0, -2, 1));
+      top.addView(ui.mono(TextModel.price(m), 12, Ui.INK));
+      row.addView(top);
+      ui.add(row, ui.mono(id + (id.equals(TextModel.MODEL) ? " · " + tr("default") : ""), 11, Ui.MUTED), 4);
+      row.setOnClickListener(
+          v -> {
+            prefs.edit().putString(TextModel.PREF_MODEL, id).putString(TextModel.PREF_NAME, name).apply();
+            toast(tr("Refine now uses %1$s", name));
+            show("refineModel");
+          });
+      ui.add(refineList, row, 8);
+    }
+    if (shown == 0) ui.add(refineList, ui.text(tr("No models match."), 14, Ui.MUTED), 10);
   }
 
   /** Templates: texts you reuse, which a dictation can ask for and adapt. */
@@ -3099,53 +3276,19 @@ public final class MainActivity extends Activity {
     }
   }
 
-  /** The two switches and the two fixed models, for the Refine page. */
-  private void refineRows(LinearLayout card) {
-    Switch refine = ui.toggle(profile.autoRefine());
-    refine.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean(Profile.AUTO_REFINE, c).apply());
-    card.addView(
-        ui.row(
-            tr("Refine automatically"),
-            tr("When you ask for a text, name a template, or the dictation needs tidying"),
-            refine,
-            null));
-    card.addView(ui.divider());
-    Switch chief = ui.toggle(profile.autoChief());
-    chief.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean(Profile.AUTO_CHIEF, c).apply());
-    card.addView(
-        ui.row(
-            tr("Send to chief when addressed"),
-            tr("When you speak to your chief by name (Settings → Chief of staff); otherwise tap 🧑‍💼"),
-            chief,
-            null));
-    card.addView(ui.divider());
-    card.addView(ui.row(tr("Decides"), "Jev · " + Jev.MODEL, null, null));
-    card.addView(ui.divider());
-    boolean direct = Anthropic.hasKey(this);
-    card.addView(
-        ui.row(
-            tr("Refines"),
-            TextModel.NAME + " · " + (direct ? tr("Anthropic, your key") : TextModel.MODEL),
-            null,
-            null));
-    card.addView(ui.divider());
-    card.addView(
-        ui.row(
-            tr("Anthropic key"),
-            direct ? tr("Saved, encrypted · Refine uses your Anthropic credits") : tr("Optional · Refine on your Anthropic credits"),
-            null,
-            v -> open("anthropic")));
-  }
-
   private String refineLabel() {
-    return profile.autoRefine() ? tr("Automatic · %1$s", TextModel.NAME) : tr("When you tap ✨ Refine");
+    return profile.autoRefine()
+        ? tr("Automatic · %1$s", TextModel.name(this))
+        : tr("When you tap ✨ Refine · %1$s", TextModel.name(this));
   }
 
   private String textModelName(String id) {
     if (LEGACY_CHECK.equals(id)) return tr("Request check · %1$s", LEGACY_CHECK_NAME);
     if (Jev.MODEL.equals(id)) return "Jev";
     if (TextModel.MODEL.equals(id)) return TextModel.NAME;
-    if (Anthropic.model(TextModel.MODEL).equals(id)) return TextModel.NAME + " · Anthropic";
+    if (TextModel.model(this).equals(id)) return TextModel.modelName(this);
+    Anthropic.Claude claude = Anthropic.claude(id);
+    if (claude != null) return claude.name() + " · Anthropic";
     return id;
   }
 

@@ -148,6 +148,9 @@ public class MvpFlowTest {
         .putBoolean(Profile.AUTO_CHIEF, true)
         .remove("processingPrompt")
         .remove("profileWords")
+        .remove(TextModel.PREF_MODEL)
+        .remove(TextModel.PREF_NAME)
+        .remove(TextModel.PREF_CLAUDE)
         .commit();
     new Attachments(context).clearPending();
     Templates templates = new Templates(context);
@@ -236,6 +239,82 @@ public class MvpFlowTest {
       shot("settings-2-refine");
       device.pressBack();
     }
+  }
+
+  /** Keys and models together, costs apart from any provider, About instead of a legal page, a local wipe. */
+  @Test
+  public void settingsGroupModelsCostsDataAndAbout() throws Exception {
+    new Vault(context).put(Anthropic.KEY, "sk-ant-test");
+    try {
+      launch();
+      tap("Settings");
+      shot("settings-1-top");
+      int[] order = {
+        find("MODELS & PROVIDERS").getVisibleBounds().top,
+        find("OpenRouter key").getVisibleBounds().top,
+        find("Anthropic key").getVisibleBounds().top,
+        find("Transcription").getVisibleBounds().top,
+        find("Decisions").getVisibleBounds().top,
+        find("Refine").getVisibleBounds().top
+      };
+      for (int i = 1; i < order.length; i++) assertTrue("order " + i, order[i] > order[i - 1]);
+      find("Saved, encrypted · Refine uses your Anthropic credits");
+      find("Claude Sonnet 5.5 · Anthropic, your key");
+      tap("Decisions");
+      find("Refine automatically");
+      find("Send to chief when addressed");
+      find("Jev · " + Jev.MODEL);
+      shot("settings-4-decisions");
+      device.pressBack();
+      tap("Refine instructions");
+      find("Instructions for Refine");
+      device.pressBack();
+      tap("Privacy");
+      assertNotNull(device.wait(Until.findObject(By.textContains("What leaves your phone")), 5000));
+      device.pressBack();
+      tap("Source code");
+      device.pressBack();
+      launch();
+      tap("Settings");
+      tap("Report a problem");
+      device.pressBack();
+      launch();
+      tap("Settings");
+      assertNull(device.findObject(By.text("Legal & support")));
+      assertNull(device.findObject(By.text("Imprint")));
+      tap("Delete local data");
+      find("Delete local data?");
+      shot("settings-3-delete-local");
+      tap("Delete everything");
+      find("Get started");
+      assertFalse(OpenRouter.hasKey(context));
+      assertFalse(Anthropic.hasKey(context));
+      assertFalse(prefs.getBoolean("onboarded", false));
+    } finally {
+      new Vault(context).remove(Anthropic.KEY);
+    }
+  }
+
+  @Test
+  public void refinePicksAnyOpenRouterTextModel() throws Exception {
+    launch();
+    tap("Settings");
+    tap("Refine");
+    find("Refine model");
+    // The catalog's text models, the default first; the image model is left out.
+    find("Anthropic: Claude Sonnet 5.5");
+    assertNull(device.findObject(By.text("Fake Image Maker")));
+    find("$1.00 / $4.00");
+    shot("settings-5-refine-model");
+    tap("Fake GPT");
+    assertEquals("openai/gpt-fake", prefs.getString(TextModel.PREF_MODEL, ""));
+    device.pressBack();
+    find("Fake GPT · OpenRouter");
+    TestServer.decide(0.95, 0, "none");
+    dictate();
+    HistoryEntry e = latestOnce(n -> n.json.has("processed"), "the refined text");
+    assertEquals("openai/gpt-fake", sent("text").get(0).getString("model"));
+    assertEquals("openai/gpt-fake", e.json.optString("textModel"));
   }
 
   @Test
@@ -499,8 +578,8 @@ public class MvpFlowTest {
     device.executeShellCommand("cmd locale set-app-locales app.driftdictation --locales de-DE");
     launch();
     find("Einstellungen").click();
-    find("Sprachmodell");
-    tap("Alle meine Daten löschen");
+    find("Transkription");
+    tap("Lokale Daten löschen");
     assertNotNull(
         device.wait(Until.findObject(By.text(Pattern.compile("(?i)alles löschen"))), 5000));
     device.pressBack();

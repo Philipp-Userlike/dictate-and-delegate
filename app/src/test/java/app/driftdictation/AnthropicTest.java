@@ -26,6 +26,21 @@ public class AnthropicTest {
     JSONObject m = b.getJSONArray("messages").getJSONObject(0);
     assertEquals("user", m.getString("role"));
     assertEquals("hello", m.getString("content"));
+    // Only Sonnet 5.5 takes between_tools; the others think adaptively, still at low effort.
+    JSONObject opus = Anthropic.body("claude-opus-5-5", "s", "hi", 10);
+    assertFalse(opus.has("thinking"));
+    assertEquals("low", opus.getJSONObject("output_config").getString("effort"));
+  }
+
+  @Test
+  public void eachClaudeModelHasItsListPrice() throws Exception {
+    assertEquals("claude-sonnet-5-5", Anthropic.MODELS.get(0).id());
+    assertEquals(Anthropic.model(TextModel.MODEL), Anthropic.MODELS.get(0).id());
+    JSONObject usage = new JSONObject("{\"usage\": {\"input_tokens\": 1000, \"output_tokens\": 100}}");
+    // Opus 5.5: 1,000 × $4/M + 100 × $20/M = $0.006; Haiku 5.5: $0.0001 + $0.00005.
+    assertEquals(0, new BigDecimal("0.006").compareTo(Anthropic.cost(usage, "claude-opus-5-5")));
+    assertEquals(0, new BigDecimal("0.00015").compareTo(Anthropic.cost(usage, "claude-haiku-5-5")));
+    assertNull(Anthropic.cost(usage, "claude-unknown"));
   }
 
   @Test
@@ -70,23 +85,23 @@ public class AnthropicTest {
             "{\"content\": [{\"type\": \"thinking\", \"thinking\": \"\"}, {\"type\": \"text\", \"text\": \"Hi \"},"
                 + " {\"type\": \"text\", \"text\": \"there.\"}], \"stop_reason\": \"end_turn\","
                 + " \"usage\": {\"input_tokens\": 1000, \"output_tokens\": 100}}");
-    OpenRouter.Result result = Anthropic.parse(r);
+    OpenRouter.Result result = Anthropic.parse(r, "claude-sonnet-5-5");
     assertEquals("Hi there.", result.text());
     // 1,000 × $2/M + 100 × $10/M = $0.003
     assertEquals(0, new BigDecimal("0.003").compareTo(result.cost()));
-    assertNull(Anthropic.cost(new JSONObject()));
+    assertNull(Anthropic.cost(new JSONObject(), "claude-sonnet-5-5"));
   }
 
   @Test
   public void aRefusalOrNothingFails() throws Exception {
     try {
-      Anthropic.parse(new JSONObject("{\"content\": [], \"stop_reason\": \"refusal\"}"));
+      Anthropic.parse(new JSONObject("{\"content\": [], \"stop_reason\": \"refusal\"}"), "claude-sonnet-5-5");
       fail();
     } catch (Anthropic.Failure f) {
       assertEquals(Anthropic.Problem.OTHER, f.problem);
     }
     try {
-      Anthropic.parse(new JSONObject("{\"content\": [{\"type\": \"thinking\", \"thinking\": \"\"}]}"));
+      Anthropic.parse(new JSONObject("{\"content\": [{\"type\": \"thinking\", \"thinking\": \"\"}]}"), "claude-sonnet-5-5");
       fail();
     } catch (Anthropic.Failure f) {
       assertEquals(Anthropic.Problem.OTHER, f.problem);

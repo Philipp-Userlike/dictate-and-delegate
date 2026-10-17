@@ -54,6 +54,15 @@ final class OpenRouter {
     }
   }
 
+  /** OpenRouter's model catalog (GET /models), for the Refine model picker. */
+  static JSONObject models() throws Exception {
+    try {
+      return send("GET", base() + "/models", null, "", 20000, 60000);
+    } catch (Busy ex) {
+      throw new IOException(busy(), ex);
+    }
+  }
+
   // ------------------------------------------------------------------ calls
 
   Result transcribe(byte[] wav, String model, List<String> words) throws Exception {
@@ -228,7 +237,7 @@ final class OpenRouter {
       c.setReadTimeout(readMs);
       c.setInstanceFollowRedirects(false);
       c.setRequestMethod(method);
-      c.setRequestProperty("Authorization", "Bearer " + key);
+      if (!key.isEmpty()) c.setRequestProperty("Authorization", "Bearer " + key);
       c.setRequestProperty("X-Title", "Talk Router"); // OpenRouter's app attribution
       if (body != null) {
         byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);

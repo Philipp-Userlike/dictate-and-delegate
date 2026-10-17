@@ -145,7 +145,7 @@ final class BbBridge {
     } else BbOAuth.signOut(context);
   }
 
-  /** Forgets everything about bb on this phone (Delete all my data); revokes in the background. */
+  /** Forgets everything about bb on this phone (Delete local data); revokes in the background. */
   static void forgetAll(Context context) {
     String tokens = BbOAuth.forget(context);
     new java.lang.Thread(() -> BbOAuth.revoke(tokens)).start();

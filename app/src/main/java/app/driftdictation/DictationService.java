@@ -864,19 +864,19 @@ public final class DictationService extends Service {
           e -> {
             if (result == null) {
               e.json.put("processingFailed", why);
-              e.step("refine", TextModel.MODEL, ms, null, why);
+              e.step("refine", TextModel.model(context), ms, null, why);
               return;
             }
             if (result.anthropic()) {
               // Anthropic credits: kept apart, never in the note's or the month's cost.
               e.addCost("anthropicCost", result.cost());
-              e.step("refine", Anthropic.model(TextModel.MODEL), ms, result.cost(), null)
+              e.step("refine", result.model(), ms, result.cost(), null)
                   .put("provider", "anthropic")
                   .put("approx", true);
             } else {
               e.charge(result.cost());
               e.addCost("textCost", result.cost());
-              JSONObject step = e.step("refine", TextModel.MODEL, ms, result.cost(), null).put("provider", "openrouter");
+              JSONObject step = e.step("refine", result.model(), ms, result.cost(), null).put("provider", "openrouter");
               if (result.fallback() != null) step.put("fallback", result.fallback());
             }
             if (result.keyProblem()) e.json.put("anthropicWarning", result.fallback());
@@ -885,7 +885,7 @@ public final class DictationService extends Service {
                 .put("processed", result.text())
                 .put("text", result.text())
                 .put("version", "processed")
-                .put("textModel", TextModel.MODEL)
+                .put("textModel", result.model())
                 .remove("processingFailed");
             if (template == null || template.isEmpty()) e.json.remove("template");
             else e.json.put("template", template);

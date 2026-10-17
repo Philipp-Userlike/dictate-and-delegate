@@ -4,6 +4,7 @@
 Serves the OpenRouter endpoints Talk Router uses, under /api/v1 and /api/alpha like the real one:
 
   GET  /api/v1/key                    the key check in setup ("bad" keys get 401)
+  GET  /api/v1/models                 a small catalog (CATALOG) for the Refine model picker
   POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."
   POST /api/v1/chat/completions       Refine: a queued reply, or the dictation echoed
   POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
@@ -31,6 +32,18 @@ import json
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+def catalog_entry(id, name, prompt, completion, output=("text",)):
+    return {"id": id, "name": name, "pricing": {"prompt": prompt, "completion": completion},
+            "architecture": {"input_modalities": ["text", "image"], "output_modalities": list(output)}}
+
+
+CATALOG = {"data": [
+    catalog_entry("openai/gpt-fake", "Fake GPT", "0.000001", "0.000004"),
+    catalog_entry("anthropic/claude-opus-5.5", "Anthropic: Claude Opus 5.5", "0.000004", "0.00002"),
+    catalog_entry("anthropic/claude-sonnet-5.5", "Anthropic: Claude Sonnet 5.5", "0.000002", "0.00001"),
+    catalog_entry("fake/image-maker", "Fake Image Maker", "0.000001", "0.000001", ("image",)),
+]}
 
 COSTS = {"transcribe": 0.001, "text": 0.0003, "decide": 0.00002}
 ERRORS = {"provider": (502, "Fake provider error"),
@@ -103,6 +116,8 @@ class Handler(BaseHTTPRequestHandler):
             if self.headers.get("x-api-key", "") in ("", "sk-ant-bad") or not self.headers.get("anthropic-version"):
                 return self.anthropic_error("key")
             return self.reply(200, {"data": [{"type": "model", "id": "claude-sonnet-5-5"}], "has_more": False})
+        if self.path == "/api/v1/models":
+            return self.reply(200, CATALOG)
         if self.path == "/api/v1/key":
             if self.authorized():
                 self.reply(200, {"data": {"label": "fake", "usage": 0, "limit": None}})

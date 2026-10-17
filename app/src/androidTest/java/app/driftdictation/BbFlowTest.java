@@ -221,6 +221,8 @@ public class BbFlowTest {
     assertTrue(listed);
 
     device.pressBack();
+    // bb sits below Keys, Costs and Dictation in Settings.
+    scrollTo(new UiSelector().textStartsWith("Custom address · 127.0.0.1"));
     find(By.textStartsWith("Custom address · 127.0.0.1"), "the connection");
     tap("Chief of staff");
     tap("Create chief of staff");
@@ -246,6 +248,7 @@ public class BbFlowTest {
     find("Open in bb ↗");
 
     device.pressBack();
+    scrollTo(new UiSelector().text("Chief of staff · " + TestServer.CHIEF));
     find("Chief of staff · " + TestServer.CHIEF);
     tap("Notifications");
     find(topic);
@@ -465,6 +468,11 @@ public class BbFlowTest {
   }
 
   /** Scrolls the page to its end. */
+  void scrollTo(UiSelector selector) throws Exception {
+    new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(selector);
+    Thread.sleep(300);
+  }
+
   void toEnd() throws Exception {
     new UiScrollable(new UiSelector().scrollable(true)).scrollToEnd(5);
     Thread.sleep(500);

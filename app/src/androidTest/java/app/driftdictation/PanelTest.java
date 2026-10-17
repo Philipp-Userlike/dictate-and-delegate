@@ -234,6 +234,9 @@ public class PanelTest {
     prefs
         .edit()
         .remove(BbBridge.CHIEF_ID)
+        .remove(TextModel.PREF_MODEL)
+        .remove(TextModel.PREF_NAME)
+        .remove(TextModel.PREF_CLAUDE)
         .remove(BbBridge.CHIEF_NAME)
         .remove(BbBridge.MODE)
         .remove(BbBridge.NTFY_SERVER)
@@ -346,6 +349,35 @@ public class PanelTest {
       assertFalse(e.json.has("anthropicWarning"));
     } finally {
       new Vault(context).remove(Anthropic.KEY);
+    }
+  }
+
+  @Test
+  public void thePickedClaudeModelIsCalledAndPricedAsItself() throws Exception {
+    new Vault(context).put(Anthropic.KEY, "sk-ant-good");
+    prefs.edit().putString(TextModel.PREF_CLAUDE, "claude-opus-5-5").commit();
+    try {
+      TestServer.transcripts("tell Jana see you at ten");
+      TestServer.script("anthropic", new JSONObject().put("text", "Hi Jana, see you at ten!"));
+      dictate();
+      find("✨ Refine").click();
+      find("Insert refined");
+      JSONObject body = null;
+      JSONArray r = TestServer.requests();
+      for (int i = 0; i < r.length(); i++)
+        if (r.getJSONObject(i).getString("kind").equals("anthropic")) body = r.getJSONObject(i).getJSONObject("body");
+      assertNotNull(body);
+      assertEquals("claude-opus-5-5", body.getString("model"));
+      // Opus rejects between_tools: no thinking setting, low effort.
+      assertFalse(body.has("thinking"));
+      HistoryEntry e = note();
+      // 1,000 × $4/M + 100 × $20/M.
+      assertEquals(0, new java.math.BigDecimal("0.006").compareTo(e.anthropicCost()));
+      JSONArray steps = e.json.getJSONArray("steps");
+      assertEquals("claude-opus-5-5", steps.getJSONObject(steps.length() - 1).getString("model"));
+    } finally {
+      new Vault(context).remove(Anthropic.KEY);
+      prefs.edit().remove(TextModel.PREF_CLAUDE).commit();
     }
   }
 
