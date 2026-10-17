@@ -5,40 +5,46 @@
 Press a key and talk: dictation, text creation and independent agents, from one starting point.
 
 <table>
-<tr><td colspan="3"><b>Dictate while you look</b></td></tr>
+<tr><td colspan="2"><b>Dictate while you look</b></td></tr>
 <tr>
-<td width="33%" valign="top"><img src="docs/images/steps/talk-1.gif" alt="A friend sends a café link in a chat, and you open it"></td>
-<td width="33%" valign="top"><img src="docs/images/steps/talk-2.gif" alt="You press the key and talk about the café while scrolling its page"></td>
-<td width="33%" valign="top"><img src="docs/images/steps/talk-3.gif" alt="Back in the chat, you insert the text and send it"></td>
+<td width="50%" valign="top"><img src="docs/images/steps/talk-1.png" width="300" alt="A chat with Sam, who sends a link to a café"></td>
+<td width="50%" valign="top"><img src="docs/images/steps/talk-2.png" width="300" alt="The café page with the floating panel recording and a speech bubble of what you say"></td>
 </tr>
 <tr>
 <td valign="top">① A friend sends a link.</td>
-<td valign="top">② Press the key and talk while you look.</td>
-<td valign="top">③ Back in the chat: insert, send.</td>
+<td valign="top">② Open it, press the key and talk while you look.</td>
 </tr>
-<tr><td colspan="3"><b>Refine with a template</b></td></tr>
 <tr>
-<td valign="top"><img src="docs/images/steps/refine-1.gif" alt="You save an apartment application as a template in Talk Router"></td>
-<td valign="top"><img src="docs/images/steps/refine-2.gif" alt="On an apartment listing, you ask for an application from your template"></td>
-<td valign="top"><img src="docs/images/steps/refine-3.gif" alt="Refine fills in the template and you insert it into the contact form"></td>
+<td width="50%" valign="top"><img src="docs/images/steps/talk-3.png" width="300" alt="The chat with the dictated reply in the message field and the panel saying Inserted"></td>
+<td width="50%" valign="top"><img src="docs/images/steps/talk-4.png" width="300" alt="The chat with the reply sent and Sam answering"></td>
+</tr>
+<tr>
+<td valign="top">③ Back in the chat, 📥 Insert puts your words in the field.</td>
+<td valign="top">④ Send.</td>
+</tr>
+<tr><td colspan="2"><b>Refine with a template</b></td></tr>
+<tr>
+<td width="50%" valign="top"><img src="docs/images/steps/refine-1.png" width="300" alt="Talk Router's New template screen with an apartment application saved"></td>
+<td width="50%" valign="top"><img src="docs/images/steps/refine-2.png" width="300" alt="An apartment listing with the panel recording and a speech bubble of the request"></td>
 </tr>
 <tr>
 <td valign="top">① Save a template once.</td>
-<td valign="top">② On a listing: <i>"Use my application template, mention that I have no pets."</i></td>
-<td valign="top">③ ✨ fills it in; insert it into the form.</td>
+<td valign="top">② On a listing: <i>"Use my application template, mention that I have no pets and that I love the balcony."</i></td>
 </tr>
-<tr><td colspan="3"><b>Hand it to your agent</b></td></tr>
 <tr>
-<td colspan="3"><img src="docs/images/anim-agent.gif" alt="You ask your agent for a snake game; it builds it on your computer and sends a link; while playing you ask for changes, and it updates the game">
+<td width="50%" valign="top"><img src="docs/images/steps/refine-3.png" width="300" alt="The listing's contact form, with the panel showing the refined text ready to insert"></td>
+<td width="50%" valign="top"><img src="docs/images/steps/refine-4.png" width="300" alt="The contact form filled with the finished application"></td>
+</tr>
+<tr>
+<td valign="top">③ ✨ Refine fills in the template.</td>
+<td valign="top">④ ✨📥 puts it into the contact form.</td>
+</tr>
+</table>
+
+<p><b>Hand it to your agent.</b> <i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</p>
 
 https://github.com/user-attachments/assets/1d1d507f-47d5-4513-99e1-ce83b8d83619
 
-</td>
-</tr>
-<tr>
-<td colspan="3"><i>"Ada, build me a little snake game."</i> Your agent builds it on your computer, and you improve it by talking while you play.</td>
-</tr>
-</table>
 
 ## What it does
 
