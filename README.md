@@ -1,10 +1,10 @@
 # Talk Router
 
-**Start anything by voice, from anywhere on your phone.** Tap, talk, stop. Talk Router works out what you meant:
+**Start anything by voice, from anywhere on your phone.** Tap the tile or hold a volume key, talk, stop. Your words come first, and a small floating panel lets you decide what happens with them:
 
-- you just wanted it **written down**,
-- you wanted a **text** made from it,
-- or you wanted your **agent** to take care of it.
+- **Insert** them where you're typing,
+- **✨ Refine** them into the text you need,
+- or hand them to your **🧑‍💼 chief**, an agent that takes care of it.
 
 <p>
   <img src="docs/images/note.png" width="30%" alt="A note written by the text model, with its cost">
@@ -16,8 +16,8 @@
 
 You already talk to agents all day: in chat apps, IDEs, terminals. Each has its own window and its own microphone button. Talk Router is the one place in front of all of them:
 
-- **It's always there.** A Quick Settings tile and a floating button work over any app. You keep reading, scrolling or switching apps while you talk; silence never ends a recording.
-- **It decides where your words go.** A fast model reads every dictation and picks one of three routes. You steer it just by how you talk.
+- **It's always there.** A Quick Settings tile, or holding a volume key, starts it over any app. You keep reading, scrolling or switching apps while you talk; silence never ends a recording.
+- **You decide where your words go.** The floating panel offers Insert, Refine and Chief, even while you're still talking. A fast decision model starts Refine by itself when you ask for a text, and sends to your chief by itself only when you say it's for them, by name.
 - **It hands tasks off instead of doing them itself.** Real work happens in your agent ([bb](https://getbb.app), running on your own computer), where the thread is saved, visible and can continue later. Talk Router is only the entry point.
 
 ### Values
@@ -27,29 +27,36 @@ You already talk to agents all day: in chat apps, IDEs, terminals. Each has its 
 3. **One entry point.** Text right away, or handed to your agent.
 4. **Yours.** Open source, your own keys, no server in between.
 
-## The three routes
+## One start, three ways on
 
 ```mermaid
 flowchart LR
-    rec["🎙️ You talk<br/>(tile or floating button)"] --> stt["Speech model<br/>MAI-Transcribe 2"]
-    stt --> check{"Request check<br/>DeepSeek V4.1 Flash"}
-    check -->|"nothing asked<br/>(default)"| t["📝 Transcript<br/>exactly what you said"]
-    check -->|"'clean this up', 'reply to…',<br/>'use my template…'"| x["✍️ Text<br/>one call to Claude Sonnet 5.5"]
-    check -->|"'chief of staff, …'<br/>'let the agent do this'"| c["🧑‍💼 Chief of staff<br/>your bb thread"]
-    t --> paste["Copied: paste anywhere"]
-    x --> paste
-    c --> later["Notification when done<br/>tap → opens the thread"]
+    rec["🎙️ You talk<br/>(tile or hold a volume key)"] --> stt["Speech model<br/>MAI-Transcribe 2"]
+    stt --> panel["Floating panel<br/>✕ · Insert · ✨ Refine · 🧑‍💼 Chief"]
+    stt --> jev{"Jev<br/>decision model"}
+    jev -->|"'make this an email',<br/>'use my template…'"| x
+    jev -->|"your chief's name, and<br/>it's meant for them"| c
+    panel -->|Insert| t["📝 Transcript<br/>at the cursor"]
+    panel -->|"✨ Refine"| x["✍️ Refined text<br/>Claude Sonnet 5.5<br/>→ Insert refined"]
+    panel -->|"🧑‍💼 Chief"| c["🧑‍💼 Your chief<br/>a bb thread<br/>→ Open chat ↗"]
+    c -.->|"text to paste,<br/>via ntfy"| back["Insert from chief"]
 ```
 
-| Route | When | What you get |
+| Button | Does | Then turns into |
 |---|---|---|
-| **Transcript** | You didn't ask for anything. This is the default. | Exactly what you said, copied, ready to paste. |
-| **Text** | You asked for a text: "make this more formal", "reply to this offer", "turn it into bullet points", "use my apartment application, but for…" | One model call writes it. Copied, ready to paste. What you said stays one tap away. |
-| **Chief of staff** | You addressed your agent: "chief of staff, find me…", "tell my chief of staff…", "let the agent do this…" | The task goes to your chief-of-staff thread in bb. You get a notification when it's done, and the thread holds the result. |
+| **Insert** | Puts what you said at the cursor of the app you're in (through Android's Accessibility service). Without that permission, or without a text field, it's copied for you to paste. | – |
+| **✨ Refine** | One call to Claude Sonnet 5.5 makes the text you need: works out what it's for (message, email, note, reply), follows what you asked, fills in a template you named, keeps your language and facts. | **Insert refined**. If the transcript you inserted is still unchanged in the field, it's replaced in place. |
+| **🧑‍💼 Chief** | Sends what you said, plus pasted text, to your chief-of-staff thread in bb. | **Open chat ↗**, which opens the thread. If the chief sends text back for you to paste, **Insert from chief** appears. |
+| **✕** | While recording: cancels, nothing is transcribed or sent. Afterwards: closes the panel; the note stays in Talk Router. | – |
 
-**Tip:** say where it goes at the start: "Chief of staff, …". Without a clear address, Talk Router plays it safe and gives you a transcript.
+Refine and Chief can be tapped while you're still recording; they run once the transcript is ready.
 
-Templates (texts you reuse) and 📎 context (something you copied, an image, a PDF) go along with the text route. For the chief of staff, pasted text goes along; files don't yet.
+**What happens by itself.** After the transcript, Jev (TypeSafe's decision model, about 0.3 s and $0.00003) answers a few questions:
+- Do you ask for a text, or name a template ("turn this into an email", "use my apartment application…")? Then Refine starts by itself.
+- Your chief has a name you choose in Settings, for example "Ada". Only when that name comes up does Jev decide whether the dictation is meant for the chief ("Ada, …", "this is for Ada", "I want to talk to Ada about…") or just mentions them ("say hi to Ada"). If it's meant for the chief, it goes there by itself and isn't refined; if Jev isn't sure, 🧑‍💼 is only highlighted.
+- If Jev fails, nothing happens by itself; the buttons still work.
+
+Templates (texts you reuse) and 📎 context (something you copied, an image, a PDF) go along with Refine. For the chief, pasted text goes along; files don't yet.
 
 ## How it fits together
 
@@ -80,9 +87,9 @@ flowchart TB
     ntfyapp -- "tap" --> pwa
 ```
 
-- **OpenRouter:** speech, the request check and the text call. You pay OpenRouter directly for what you use; every note shows what it cost, and Settings → Activity shows which model did what, how long it took and what it cost.
+- **OpenRouter:** speech, Jev's decision and Refine. You pay OpenRouter directly for what you use; every note shows what it cost, and Settings → Activity shows which model did what, how long it took and what it cost.
 - **bb:** an agentic IDE that runs coding agents (Claude Code, Codex, …) on your own computer. Talk Router uses bb's built-in MCP server and its `run` tool to create the chief-of-staff thread (`bb thread spawn`) and to send it your dictations (`bb thread tell`). The chief does small things itself and hands bigger work to child threads.
-- **ntfy:** a simple notification service. The chief sends exactly one notification per request, with a summary it writes itself and a link to its thread. The topic is a long random name that only you know. Talk Router itself sends no notifications.
+- **ntfy:** a simple notification service. The chief sends exactly one notification per request, with a summary it writes itself and a link to its thread. Text meant for you to paste goes as a second message tagged with the request's ID: while the panel is open, Talk Router reads your topic and shows **Insert from chief**; otherwise the notification's **Copy** button hands it to Talk Router. The topic is a long random name that only you know. Talk Router itself sends no notifications.
 
 ### What happens when you hand off a task
 
@@ -94,13 +101,17 @@ sequenceDiagram
     participant BB as bb (MCP)
     participant CoS as Chief of staff
     participant N as ntfy
-    You->>TR: "Chief of staff, find three Italian places near the office"
-    TR->>OR: transcribe, then check the request
-    OR-->>TR: route = chief
-    TR->>BB: run: bb thread tell (what you said + pasted text)
+    You->>TR: "Ada, find three Italian places near the office"
+    TR->>OR: transcribe, then ask Jev (the name came up)
+    OR-->>TR: meant for the chief: 0.98
+    TR->>BB: run: bb thread tell (what you said + pasted text + [request: k3x9qa])
     BB->>CoS: new message
-    TR-->>You: "Sent to chief of staff ↗"
+    TR-->>You: panel: "Open chat ↗"
     CoS->>CoS: works, maybe with child threads
+    opt text for you to paste
+        CoS->>N: message tagged talkrouter-paste, req-k3x9qa
+        N-->>TR: panel open: "Insert from chief"
+    end
     CoS->>N: one notification: summary + link to the thread
     N-->>You: notification on your phone
     You->>BB: tap → the thread opens in bb
@@ -144,28 +155,29 @@ Instead of bb Connect you can also enter any address of bb's MCP server yourself
 
 **Steps:**
 1. **Install** the APK from the [latest release](https://github.com/Philipp258/talk-router/releases/latest), or build it yourself ([Build & test](docs/DEVELOPMENT.md)).
-2. **Open Talk Router.** Setup asks for your OpenRouter key and checks it, asks for the microphone, and shows how to start, stop and paste from any app (tile and floating button).
+2. **Open Talk Router.** Setup asks for your OpenRouter key and checks it, asks for the microphone, and sets up how you start (the tile, or holding a volume key) and the floating panel. Insert and the volume key need Android's Accessibility permission for Talk Router; setup explains what it's used for.
 3. **Connect bb** (or tap *Later*):
    1. On your computer, turn on bb's MCP server once: `bb plugin enable bb--mcp`.
    2. In Talk Router, enter your bb Connect handle (the `<handle>` in `<handle>.getbb.app`) and tap **Sign in with bb**. Approve Talk Router on the bb page.
 4. **Chief of staff:** tap **Create**. Talk Router starts a thread called "Chief of staff" in your Personal project in bb, with standing instructions. You can also pick an existing thread.
 5. **Notifications:** tap **Open in ntfy** to subscribe to your topic in the ntfy app, then **Send test**.
-6. **Try it:** "Chief of staff, find three Italian places near the office and send me a short list."
+6. **Name your chief** in Settings → Refine, for example "Ada".
+7. **Try it:** "Ada, find three Italian places near the office and send me a short list."
 
-Everything can be changed later in Settings: the key, the speech model, words Talk Router should know, templates, bb and notifications.
+Everything can be changed later in Settings: the key, how you start, the speech model, Refine, words Talk Router should know, templates, bb and notifications.
 
 ## Privacy
 
 - Notes and audio stay on the phone, encrypted. There's no Talk Router account and no server.
-- When you dictate, audio and text go to OpenRouter and the model provider it uses. When you hand off a task, what you said (and text you pasted) goes to your bb.
+- When you dictate, audio and text go to OpenRouter and the model providers it uses (speech, Jev, and Claude when you Refine). When you hand off a task, what you said (and text you pasted) goes to your bb.
 - Your chief's notifications pass through ntfy.sh (or your own ntfy server) under your random topic.
-- No Accessibility access, no screen reading.
+- Accessibility is used only for Insert and the volume key: Talk Router asks for no accessibility events and looks up the text field you're typing in only when you tap Insert. No screen reading.
 
 Details: [Privacy & storage](docs/PRIVACY.md).
 
 ## More
 
-[Using the app](docs/GUIDE.md) · [Build & test](docs/DEVELOPMENT.md) · [Plan and decisions: agents through bb](docs/plans/bb-bridge.md)
+[Using the app](docs/GUIDE.md) · [Build & test](docs/DEVELOPMENT.md) · Plans and decisions: [agents through bb](docs/plans/bb-bridge.md), [the floating panel](docs/plans/floating-panel.md)
 
 Eight languages: English, German, French, Spanish, Italian, Portuguese, Dutch, Polish.
 

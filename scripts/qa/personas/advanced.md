@@ -5,7 +5,7 @@ You're Alex, 34, a software developer. You dictate code review comments, Slack m
 ## Your tasks
 
 1. Open Talk Router and go through setup, with your OpenRouter key. Then tell Talk Router a little about you, and add the words "Kubernetes" and "Ljubljana".
-2. Check which models Talk Router uses for speech, the request check and text, and that the instructions for the text model are visible and editable. Change them slightly (e.g. ask it to keep technical terms in English) and make sure the change is kept.
+2. Check which models Talk Router uses for speech, Jev's decisions and Refine, and that the instructions for Refine are visible and editable. Change them slightly (e.g. ask it to keep technical terms in English) and make sure the change is kept.
 3. Dictate a review comment into the "Notes test field" app, starting from the tile or floating button while that app is open. For example: "so in the Kubernetes config, uh, the replica count should be three not two, and add a comment about Ljubljana's data center".
 4. Open that note in Talk Router. Check which models processed it and what it cost. Redo it with a smarter speech model and check the new cost.
 5. Check Settings → Activity and Usage: can you see what each call cost and which model made it?
