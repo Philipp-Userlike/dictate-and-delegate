@@ -1,0 +1,4 @@
+<resources>
+    <string name="accessibility_summary">Insérer au curseur, démarrer avec une touche de volume</string>
+    <string name="accessibility_description">Talk Router s\'en sert uniquement pour placer votre texte au curseur quand vous touchez Insérer, et pour détecter quand vous maintenez la touche de volume choisie pour démarrer ou arrêter une dictée. Il ne demande aucun événement d\'accessibilité et ne lit rien à l\'écran : il ne cherche le champ de texte où vous écrivez que lorsque vous touchez Insérer. Talk Router est open source.</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="accessibility_summary">Wstawianie przy kursorze, start klawiszem głośności</string>
+    <string name="accessibility_description">Talk Router używa tego tylko do wstawiania tekstu przy kursorze po dotknięciu Wstaw oraz do wykrywania, że przytrzymujesz wybrany klawisz głośności, aby rozpocząć lub zakończyć dyktowanie. Nie prosi o zdarzenia ułatwień dostępu i niczego nie czyta z ekranu: pole tekstowe, w którym piszesz, wyszukuje dopiero po dotknięciu Wstaw. Talk Router jest open source.</string>
+</resources>

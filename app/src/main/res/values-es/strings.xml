@@ -1,0 +1,4 @@
+<resources>
+    <string name="accessibility_summary">Insertar en el cursor, empezar con una tecla de volumen</string>
+    <string name="accessibility_description">Talk Router lo usa solo para poner tu texto en el cursor al tocar Insertar y para notar cuándo mantienes pulsada la tecla de volumen elegida para empezar o terminar un dictado. No pide eventos de accesibilidad ni lee nada de tu pantalla: busca el campo de texto en el que escribes solo cuando tocas Insertar. Talk Router es de código abierto.</string>
+</resources>

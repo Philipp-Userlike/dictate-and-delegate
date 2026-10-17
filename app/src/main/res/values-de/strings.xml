@@ -1,0 +1,4 @@
+<resources>
+    <string name="accessibility_summary">Am Cursor einfügen, mit einer Lautstärketaste starten</string>
+    <string name="accessibility_description">Talk Router nutzt dies nur, um deinen Text beim Tippen auf Einfügen an den Cursor zu setzen und um zu erkennen, wenn du die gewählte Lautstärketaste hältst, um ein Diktat zu starten oder zu beenden. Es fordert keine Bedienungshilfen-Ereignisse an und liest nichts auf deinem Bildschirm: Das Textfeld, in dem du tippst, sucht es erst, wenn du auf Einfügen tippst. Talk Router ist Open Source.</string>
+</resources>

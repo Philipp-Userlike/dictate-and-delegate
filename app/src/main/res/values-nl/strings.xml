@@ -1,0 +1,4 @@
+<resources>
+    <string name="accessibility_summary">Invoegen bij de cursor, starten met een volumeknop</string>
+    <string name="accessibility_description">Talk Router gebruikt dit alleen om je tekst bij de cursor te zetten als je op Invoegen tikt, en om te merken wanneer je de gekozen volumeknop ingedrukt houdt om een dictaat te starten of te stoppen. Het vraagt geen toegankelijkheidsgebeurtenissen op en leest niets op je scherm: het zoekt het tekstveld waarin je typt pas op als je op Invoegen tikt. Talk Router is open source.</string>
+</resources>
