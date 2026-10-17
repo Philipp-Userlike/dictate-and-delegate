@@ -35,7 +35,7 @@ Talk Router is the entry point, not the agent. It doesn't try to do the work its
 | **Start anywhere** | Hold volume down or up (Accessibility), tap the Quick Settings tile, or use the button in the app. A short press still changes the volume. |
 | **Floating panel** | Appears over any app, never takes focus, and can be dragged anywhere. While you record: ■ stop, ✨ Refine, 🧑‍💼 Chief, ✕ cancel, 📎 attach. Tap ✨ or 🧑‍💼 while still talking, and it runs as soon as the transcript is ready. |
 | **📥 Insert** | Puts the text at the cursor of the app you're in. Talk Router never puts anything on your clipboard by itself; only if Insert can't reach a field does it copy instead, and the panel tells you. |
-| **✨ Refine** | One call to Claude Sonnet 5.5 works out what the text is for (message, email, note, reply), follows what you asked, fills in a template you named, and keeps your language and facts. **Insert refined** then replaces the raw transcript in place, if you haven't changed it. Runs through OpenRouter, or through Anthropic directly with your own Anthropic key. |
+| **✨ Refine** | One call to Claude Sonnet 5.5 (or the model you pick) works out what the text is for (message, email, note, reply), follows what you asked, fills in a template you named, and keeps your language and facts. **Insert refined** then replaces the raw transcript in place, if you haven't changed it. Runs through OpenRouter, or through Anthropic directly with your own Anthropic key. |
 | **Templates** | Texts you write again and again (an application, a standard reply). Say "use my apartment application for…" and Refine fills it in. |
 | **📎 Attach** | Talking about something, like a listing you're replying to? While you record, add what you copied, an image or a PDF. Refine reads it, and the chief gets it too. |
 | **🧑‍💼 Chief of staff** | Sends what you said, plus anything you attached with 📎 (copied text, images, PDFs), to a bb thread on your computer that acts for you: small things itself, bigger work in parallel child threads. It notifies you through [ntfy](https://ntfy.sh) when it's done or needs you. |
@@ -181,7 +181,7 @@ The redirect goes through a page on GitHub Pages because bb only accepts an `htt
 6. **Name your chief** in Settings, for example "Ada".
 7. **Try it:** "Ada, find three Italian places near the office and send me a short list."
 
-Everything can be changed later in Settings. Optional: your own Anthropic key for Refine, templates, words Talk Router should know, and a different speech model. More in [Using the app](docs/GUIDE.md).
+Everything can be changed later in Settings; **Models & providers** keeps both keys and the model for each job together. Optional: your own Anthropic key for Refine, another Refine or speech model, templates and words Talk Router should know. More in [Using the app](docs/GUIDE.md).
 
 ## Privacy
 

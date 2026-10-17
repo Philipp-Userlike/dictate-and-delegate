@@ -7,6 +7,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.json.*;
 
 /**
@@ -21,8 +22,25 @@ final class Anthropic {
 
   static final String VERSION = "2023-06-01";
 
-  /** Claude Sonnet 5.5's list price, in dollars per million tokens. */
-  static final BigDecimal INPUT_PRICE = new BigDecimal("2"), OUTPUT_PRICE = new BigDecimal("10");
+  /** A Claude model Refine can use on the user's key, with its list price in dollars per million tokens. */
+  record Claude(String id, String name, BigDecimal input, BigDecimal output) {}
+
+  /**
+   * The current Claude models, Sonnet (the default) first. Anthropic's API reports no price, so
+   * the cost comes from here (Haiku's price for prompts up to 100K tokens; Refine's are far shorter).
+   */
+  static final List<Claude> MODELS =
+      List.of(
+          new Claude("claude-sonnet-5-5", "Claude Sonnet 5.5", new BigDecimal("2"), new BigDecimal("10")),
+          new Claude("claude-opus-5-5", "Claude Opus 5.5", new BigDecimal("4"), new BigDecimal("20")),
+          new Claude("claude-haiku-5-5", "Claude Haiku 5.5", new BigDecimal("0.10"), new BigDecimal("0.50")),
+          new Claude("claude-fable-5-1", "Claude Fable 5.1", new BigDecimal("10"), new BigDecimal("50")));
+
+  /** One of MODELS by ID, or null. */
+  static Claude claude(String id) {
+    for (Claude c : MODELS) if (c.id().equals(id)) return c;
+    return null;
+  }
 
   /** Why a call failed, which decides whether the note warns about the key. */
   enum Problem {
@@ -74,20 +92,23 @@ final class Anthropic {
 
   /**
    * The Messages API request for Refine: the system prompt, and the user's message as text or as
-   * parts converted from OpenRouter's (text, image_url data URLs, file data URLs). Thinking off
-   * (between_tools) at low effort: Refine is a rewrite, and quick.
+   * parts converted from OpenRouter's (text, image_url data URLs, file data URLs). Low effort:
+   * Refine is a rewrite, and quick. Sonnet 5.5 can turn thinking off (between_tools); the others
+   * reject that and think adaptively.
    */
   static JSONObject body(String model, String system, Object user, int maxTokens) throws JSONException {
     Object content = user instanceof JSONArray parts ? parts(parts) : user;
-    return new JSONObject()
-        .put("model", model)
-        .put("max_tokens", maxTokens)
-        .put("system", system)
-        .put("thinking", new JSONObject().put("type", "between_tools"))
-        .put("output_config", new JSONObject().put("effort", "low"))
-        .put(
-            "messages",
-            new JSONArray().put(new JSONObject().put("role", "user").put("content", content)));
+    JSONObject body =
+        new JSONObject()
+            .put("model", model)
+            .put("max_tokens", maxTokens)
+            .put("system", system)
+            .put("output_config", new JSONObject().put("effort", "low"))
+            .put(
+                "messages",
+                new JSONArray().put(new JSONObject().put("role", "user").put("content", content)));
+    if (model.equals("claude-sonnet-5-5")) body.put("thinking", new JSONObject().put("type", "between_tools"));
+    return body;
   }
 
   /** OpenRouter's message parts as Anthropic content blocks; documents and images go first. */
@@ -126,8 +147,8 @@ final class Anthropic {
     return new String[] {url.substring(5, comma - 7), url.substring(comma + 1)};
   }
 
-  /** The answer's text (thinking blocks skipped) and its cost at list price. */
-  static OpenRouter.Result parse(JSONObject response) throws IOException {
+  /** The answer's text (thinking blocks skipped) and its cost at the model's list price. */
+  static OpenRouter.Result parse(JSONObject response, String model) throws IOException {
     if ("refusal".equals(response.optString("stop_reason")))
       throw new Failure(Problem.OTHER, tr("Claude declined to refine this text."), null);
     StringBuilder text = new StringBuilder();
@@ -138,21 +159,23 @@ final class Anthropic {
     }
     String t = text.toString().trim();
     if (t.isEmpty()) throw new Failure(Problem.OTHER, tr("The text model returned nothing. Try again."), null);
-    return new OpenRouter.Result(t, cost(response));
+    return new OpenRouter.Result(t, cost(response, model));
   }
 
-  /** usage at list price; null when the usage is missing. */
-  static BigDecimal cost(JSONObject response) {
+  /** usage at the model's list price; null when the usage or the price is missing. */
+  static BigDecimal cost(JSONObject response, String model) {
     JSONObject usage = response.optJSONObject("usage");
-    if (usage == null || !usage.has("input_tokens")) return null;
+    Claude price = claude(model);
+    if (usage == null || !usage.has("input_tokens") || price == null) return null;
     long in =
         usage.optLong("input_tokens")
             + usage.optLong("cache_creation_input_tokens")
             + usage.optLong("cache_read_input_tokens");
     BigDecimal million = new BigDecimal(1_000_000);
-    return INPUT_PRICE
+    return price
+        .input()
         .multiply(BigDecimal.valueOf(in))
-        .add(OUTPUT_PRICE.multiply(BigDecimal.valueOf(usage.optLong("output_tokens"))))
+        .add(price.output().multiply(BigDecimal.valueOf(usage.optLong("output_tokens"))))
         .divide(million);
   }
 
@@ -162,7 +185,7 @@ final class Anthropic {
     if (key.isBlank()) throw new Failure(Problem.KEY, tr("No Anthropic key is set."), null);
     for (int attempt = 0; ; attempt++) {
       try {
-        return parse(send("POST", base() + "/v1/messages", body, key, 20000, 120000));
+        return parse(send("POST", base() + "/v1/messages", body, key, 20000, 120000), body.getString("model"));
       } catch (Failure f) {
         if (f.problem != Problem.BUSY || attempt >= 2) throw f;
         Thread.sleep(1500L * (attempt + 1));
@@ -216,7 +239,7 @@ final class Anthropic {
   static Failure failure(int status, String message) {
     String detail = message.length() > 300 ? message.substring(0, 300) + "…" : message;
     if (status == 401 || status == 403)
-      return new Failure(Problem.KEY, tr("Your Anthropic key isn't valid. Check it in Settings → Anthropic key."), null);
+      return new Failure(Problem.KEY, tr("Your Anthropic key isn't valid. Check it in Settings → Models & providers → Anthropic key."), null);
     if (status == 400 && message.toLowerCase(java.util.Locale.ROOT).contains("credit balance"))
       return new Failure(Problem.CREDITS, tr("Your Anthropic credits are used up."), null);
     if (status == 429 || status == 529) return new Failure(Problem.BUSY, tr("Anthropic is busy right now."), null);

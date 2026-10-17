@@ -166,7 +166,7 @@ final class Jev {
   }
 
   /**
-   * autoRefine and autoChief are the two switches in Settings → Refine; chiefReady: bb is
+   * autoRefine and autoChief are the two switches in Settings → Models & providers → Decisions; chiefReady: bb is
    * connected and a chief is set; named: the chief's name comes up (mentions). Only then can it go
    * to the chief, at CHIEF_AT; between HINT_AT and CHIEF_AT, or when Jev failed, 🧑‍💼 is only
    * highlighted. What goes to the chief isn't refined by itself.

@@ -12,7 +12,7 @@ Install the APK (Android 14+) and open Talk Router. You need an [OpenRouter](htt
 6. **Try it once.** Start, say a sentence, stop, tap the practice box, then **Insert** on the panel.
 7. **Connect bb, Chief of staff, Notifications** (optional, **Later** skips them): see [Your chief of staff in bb](#your-chief-of-staff-in-bb). Without bb, Talk Router is a dictation app.
 
-Settings → **OpenRouter key** replaces or removes the key. Without one, Talk Router doesn't record.
+Settings → **Models & providers** → **OpenRouter key** replaces or removes the key. Without one, Talk Router doesn't record.
 
 ## Record
 
@@ -20,7 +20,7 @@ Start with the Talk Router tile in Quick Settings, by holding the volume key you
 
 **Volume key:** Settings → **Start** picks off, volume down or volume up, and how long to hold (0.5 s by default). A short press still changes the volume. It works while the screen is on and unlocked, not during calls.
 
-Talk Router needs no language setting: the speech model recognises the language, also when you switch languages in one note. Settings → **Speech model** picks the model (all of them take your words as spelling hints); the default is MAI-Transcribe 2.
+Talk Router needs no language setting: the speech model recognises the language, also when you switch languages in one note. Settings → **Models & providers** → **Transcription** (or **Speech model** on Home) picks the model (all of them take your words as spelling hints); the default is MAI-Transcribe 2.
 
 ## The floating panel
 
@@ -29,7 +29,7 @@ The panel's buttons are icons, named for TalkBack; a long press shows the name. 
 After you stop, your words are transcribed and the panel offers the following. Talk Router never puts anything on your clipboard by itself, so whatever you copied stays there:
 
 - **📥 Insert:** puts the transcript at the cursor of the field you're typing in, when you tap. You can move the cursor or switch fields first. Insert sets the field's text directly, without the clipboard; only an app that accepts nothing but a paste gets it through the clipboard, and the panel says so. With no field, or without the Accessibility permission, the text is copied instead and the panel says "Copied instead, paste with a long press".
-- **✨ Refine:** one call to the text model (Claude Sonnet 5.5) makes the text you need: it works out what the text is for (message, email, note, reply…) and improves it towards that, follows what you asked ("more formal", "turn it into bullet points", "translate to German"), fills in a template you named, and keeps your language and the facts. Then the button becomes ✨📥, **Insert refined**: if the transcript you inserted is still unchanged in the field, it's replaced in place; otherwise the refined text goes at the cursor.
+- **✨ Refine:** one call to the text model (Claude Sonnet 5.5 unless you pick another) makes the text you need: it works out what the text is for (message, email, note, reply…) and improves it towards that, follows what you asked ("more formal", "turn it into bullet points", "translate to German"), fills in a template you named, and keeps your language and the facts. Then the button becomes ✨📥, **Insert refined**: if the transcript you inserted is still unchanged in the field, it's replaced in place; otherwise the refined text goes at the cursor.
 - **🧑‍💼 Chief:** hands what you said to your chief of staff in bb (below). Then the button becomes 🧑‍💼↗, **Open chat ↗**. Whatever goes to the chief goes as said: a Refine that Jev started is dropped.
 - **✕:** closes the panel. The note stays in Talk Router.
 
@@ -40,7 +40,7 @@ The panel never takes focus, so the cursor stays in your app; drag it anywhere. 
 - When you ask for a text or name a template, **Refine** starts by itself.
 - When your chief's name comes up (Settings → **Chief of staff** → **Your chief's name**, for example "Ada"; it saves as you type and says ✓ Saved), Jev decides whether the dictation is meant for the chief: "Ada, …", "this is for Ada", "I want to talk to Ada about…", "send this to Ada". Then it goes to the chief by itself, and isn't refined. A name that only comes up in what you say ("say hi to Ada from me") stays with you. If Jev isn't sure, or fails, 🧑‍💼 is highlighted instead. The name also matches common mishearings (Henry: Henri, Henrie, Henry's).
 
-Settings → **Refine** turns both off and edits Refine's instructions. If Jev fails, nothing starts by itself; the buttons still work. If Refine fails, the panel and the note say why and offer to try again.
+Settings → **Models & providers** → **Decisions** turns both off (**Refine automatically**, **Send to chief when addressed**); Settings → **Dictation** → **Refine instructions** edits what Refine is told. If Jev fails, nothing starts by itself; the buttons still work. If Refine fails, the panel and the note say why and offer to try again.
 
 ## Your chief of staff in bb
 
@@ -73,12 +73,16 @@ Settings → **Templates** keeps texts you write again and again, like an applic
 
 Open a note to copy it (**Copy**), edit it, or switch between **Talk Router's version** and **What you said**. Each note shows what it cost, as OpenRouter reported it for each call; when OpenRouter reports no cost, Talk Router shows none rather than $0.00. **Redo with a smarter model** transcribes the saved audio again with a more accurate speech model.
 
-Settings → **Activity** lists your latest notes with each step: the transcription (speech model), Jev with what it answered (e.g. "refine 0.82 · chief 0.97"), Refine, and the hand-over to bb, each with the time it took and what it cost (bb costs nothing here), or the error if a step failed. **Usage** shows each month's minutes and cost by model; Home shows this month and the last 14 days. Your OpenRouter account has the authoritative numbers.
+Settings → **Costs and activity** → **Activity** lists your latest notes with each step: the transcription (speech model), Jev with what it answered (e.g. "refine 0.82 · chief 0.97"), Refine, and the hand-over to bb, each with the time it took and what it cost (bb costs nothing here), or the error if a step failed. **Usage** shows each month's minutes and cost by model; Home shows this month and the last 14 days. Your OpenRouter account has the authoritative numbers.
 
-## Refine with your Anthropic key
+## Models and keys
 
-Have Anthropic API credits? Settings → **Refine** → **Anthropic key** (optional) takes your own Anthropic key; Talk Router checks it with Anthropic and keeps it encrypted. Then ✨ Refine goes to Claude Sonnet 5.5 at Anthropic directly; speech and Jev stay on OpenRouter, so the OpenRouter key is still needed. If Anthropic fails (key, credits, an outage), the same request goes through OpenRouter, and the note says why when it was the key or the credits. Anthropic reports no price, so Talk Router computes it at list price ($2 / $10 per million tokens) and marks it "≈". Because it comes out of credits you already have, it's kept apart: the note shows "Refine: Anthropic credits ≈…" on its own line, Usage shows "Anthropic credits used this month", and neither counts in the OpenRouter totals. A fallback through OpenRouter counts as real money.
+Settings → **Models & providers** has both keys and the model for each job: **Transcription** (the speech model), **Decisions** (Jev, with its two switches; there is no other decision model to pick) and **Refine**. **Refine** lists the text models in OpenRouter's catalog with their prices per million tokens, searchable; the default is Claude Sonnet 5.5.
+
+Have Anthropic API credits? Settings → **Models & providers** → **Anthropic key** (optional) takes your own Anthropic key; Talk Router checks it with Anthropic and keeps it encrypted. Then ✨ Refine goes to Claude at Anthropic directly, and **Refine** offers the current Claude models (Sonnet 5.5 by default, Opus 5.5, Haiku 5.5, Fable 5.1) in an **Anthropic** tab; the **OpenRouter** tab picks the fallback. Speech and Jev stay on OpenRouter, so the OpenRouter key is still needed. If Anthropic fails (key, credits, an outage), the same request goes through OpenRouter, to the OpenRouter model, and the note says why when it was the key or the credits. Anthropic reports no price, so Talk Router computes it at the model's list price (Sonnet 5.5: $2 / $10 per million tokens) and marks it "≈". Because it comes out of credits you already have, it's kept apart: the note shows "Refine: Anthropic credits ≈…" on its own line, Usage shows "Anthropic credits used this month", and neither counts in the OpenRouter totals. A fallback through OpenRouter counts as real money.
 
 ## Data
 
-Settings → **Keep audio for 7 days** (on by default) keeps recordings for redos, at most 100 MB, and **Delete saved audio** keeps text and costs. **Delete all my data** removes notes, audio, templates, words, About you, your key, your bb sign-in and settings on the phone. Talk Router's own language follows the system or Settings → Language.
+Talk Router has no server, so everything it keeps is on the phone. Settings → **Data on this phone**: **Keep audio for 7 days** (on by default) keeps recordings for redos, at most 100 MB, and **Delete saved audio** keeps text and costs. **Delete local data** removes notes, audio, templates, words, About you, both keys, your bb sign-in and settings from the phone; your accounts at OpenRouter, Anthropic and bb stay as they are. Talk Router's own language follows the system or Settings → **Using Talk Router** → **Language**.
+
+Settings → **About** has the privacy note (what goes to OpenRouter, Anthropic, bb and ntfy), the source code (MIT License) and **Report a problem** (GitHub issues).
