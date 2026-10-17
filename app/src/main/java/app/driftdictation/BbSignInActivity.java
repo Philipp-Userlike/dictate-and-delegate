@@ -58,15 +58,15 @@ public final class BbSignInActivity extends Activity {
               boolean success = ok;
               main.post(
                   () -> {
+                    MainActivity.handoffOk = success;
+                    MainActivity.handoffMessage = result;
                     startActivity(
                         new Intent(this, MainActivity.class)
                             .addFlags(
                                 Intent.FLAG_ACTIVITY_NEW_TASK
                                     | Intent.FLAG_ACTIVITY_CLEAR_TOP
                                     | Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                            .putExtra("open", "bb")
-                            .putExtra("bbResult", result)
-                            .putExtra("bbOk", success));
+                            .putExtra("open", "bb"));
                     finish();
                   });
             });

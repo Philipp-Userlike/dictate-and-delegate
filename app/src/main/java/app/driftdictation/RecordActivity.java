@@ -79,12 +79,13 @@ public final class RecordActivity extends Activity {
   /** Opens Talk Router, on a given page with a message when there is one (e.g. the key is missing). */
   private void openApp(String page, String message) {
     Intent intent = new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    if (page != null)
+    if (page != null) {
+      MainActivity.handoffMessage = message;
       intent
           // Reach a Talk Router that is already open, too (onNewIntent).
           .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
-          .putExtra("open", page)
-          .putExtra("message", message);
+          .putExtra("open", page);
+    }
     startActivity(intent);
     finishAndRemoveTask();
   }

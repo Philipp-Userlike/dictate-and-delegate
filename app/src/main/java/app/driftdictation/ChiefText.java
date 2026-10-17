@@ -48,13 +48,15 @@ final class ChiefText {
 
   /**
    * The text of a matching message. ntfy turns messages over 4,096 bytes into a text attachment;
-   * then the text is fetched from its URL.
+   * then the text is fetched from its URL, but only from the ntfy server itself: an attachment
+   * elsewhere (ntfy's Attach header) could make the phone fetch any address.
    */
-  static String text(JSONObject message) throws IOException {
+  static String text(JSONObject message, String server) throws IOException {
     JSONObject attachment = message.optJSONObject("attachment");
-    if (attachment != null && !attachment.optString("url").isEmpty()) {
+    String url = attachment == null ? "" : attachment.optString("url");
+    if (!url.isEmpty() && url.startsWith(server + "/")) {
       String type = attachment.optString("type", "text/plain");
-      if (type.startsWith("text/")) return get(attachment.optString("url"), 200_000).trim();
+      if (type.startsWith("text/")) return get(url, 200_000).trim();
     }
     return message.optString("message").trim();
   }
@@ -126,7 +128,7 @@ final class ChiefText {
                 continue;
               }
               if (matches(m, request)) {
-                String t = text(m);
+                String t = text(m, server);
                 if (!t.isEmpty()) {
                   found.accept(t);
                   return;
@@ -151,13 +153,14 @@ final class ChiefText {
   /** The text for a request, from the messages the topic still holds (ntfy keeps them 12 h). */
   static String fetch(Context context, String request) throws Exception {
     BbBridge bb = new BbBridge(context);
+    String server = bb.ntfyServer();
     long since = System.currentTimeMillis() / 1000 - 12 * 3600;
-    String all = get(streamUrl(bb.ntfyServer(), bb.ntfyTopic(), since, true), 2_000_000);
+    String all = get(streamUrl(server, bb.ntfyTopic(), since, true), 2_000_000);
     String text = "";
     for (String line : all.split("\n")) {
       try {
         JSONObject m = new JSONObject(line);
-        if (matches(m, request)) text = text(m); // The latest one wins.
+        if (matches(m, request)) text = text(m, server); // The latest one wins.
       } catch (Exception ignored) {
         /* Not a message. */
       }
