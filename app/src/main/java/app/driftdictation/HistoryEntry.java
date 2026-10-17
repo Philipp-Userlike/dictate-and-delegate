@@ -83,6 +83,14 @@ final class HistoryEntry {
     return new BigDecimal(json.optString("jevCost", "0"));
   }
 
+  /**
+   * What Refine through the user's own Anthropic key cost, at list price. Paid from Anthropic
+   * credits, so never part of cost().
+   */
+  BigDecimal anthropicCost() {
+    return new BigDecimal(json.optString("anthropicCost", "0"));
+  }
+
   /** Adds to a cost kept apart ("textCost", "jevCost") for Usage; null adds nothing. */
   void addCost(String key, BigDecimal cost) throws Exception {
     if (cost != null)

@@ -841,7 +841,7 @@ public final class DictationService extends Service {
     if (entry == null) return tr("This note was deleted.");
     String said = entry.json.optString("original", entry.text());
     long asked = SystemClock.elapsedRealtime();
-    OpenRouter.Result r = null;
+    TextModel.Refined r = null;
     String failed = null;
     try {
       r =
@@ -855,7 +855,7 @@ public final class DictationService extends Service {
     } catch (Exception ex) {
       failed = friendly(ex);
     }
-    OpenRouter.Result result = r;
+    TextModel.Refined result = r;
     String why = failed;
     long ms = SystemClock.elapsedRealtime() - asked;
     try {
@@ -868,9 +868,20 @@ public final class DictationService extends Service {
               e.step("refine", TextModel.MODEL, ms, null, why);
               return;
             }
-            e.charge(result.cost());
-            e.addCost("textCost", result.cost());
-            e.step("refine", TextModel.MODEL, ms, result.cost(), null);
+            if (result.anthropic()) {
+              // Anthropic credits: kept apart, never in the note's or the month's cost.
+              e.addCost("anthropicCost", result.cost());
+              e.step("refine", Anthropic.model(TextModel.MODEL), ms, result.cost(), null)
+                  .put("provider", "anthropic")
+                  .put("approx", true);
+            } else {
+              e.charge(result.cost());
+              e.addCost("textCost", result.cost());
+              JSONObject step = e.step("refine", TextModel.MODEL, ms, result.cost(), null).put("provider", "openrouter");
+              if (result.fallback() != null) step.put("fallback", result.fallback());
+            }
+            if (result.keyProblem()) e.json.put("anthropicWarning", result.fallback());
+            else e.json.remove("anthropicWarning");
             e.json
                 .put("processed", result.text())
                 .put("text", result.text())

@@ -20,6 +20,12 @@ final class NoteList {
       return total;
     }
 
+    BigDecimal anthropicCost() {
+      BigDecimal total = BigDecimal.ZERO;
+      for (HistoryEntry v : versions) total = total.add(v.anthropicCost());
+      return total;
+    }
+
     boolean incompleteCost() {
       return versions.stream().anyMatch(HistoryEntry::incompleteCost);
     }

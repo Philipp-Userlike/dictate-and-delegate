@@ -312,6 +312,65 @@ public class PanelTest {
   }
 
   @Test
+  public void withAnAnthropicKeyRefineGoesToAnthropicOnItsCredits() throws Exception {
+    new Vault(context).put(Anthropic.KEY, "sk-ant-good");
+    try {
+      TestServer.transcripts("tell Jana see you at ten");
+      TestServer.script("anthropic", new JSONObject().put("text", "Hi Jana, see you at ten!"));
+      dictate();
+      find("✨ Refine").click();
+      find("Insert refined");
+      JSONArray r = TestServer.requests();
+      boolean anthropic = false, openRouterText = false;
+      for (int i = 0; i < r.length(); i++) {
+        String kind = r.getJSONObject(i).getString("kind");
+        anthropic |= kind.equals("anthropic");
+        openRouterText |= kind.equals("text");
+      }
+      assertTrue(anthropic);
+      assertFalse(openRouterText);
+      HistoryEntry e = note();
+      assertEquals("Hi Jana, see you at ten!", e.json.optString("processed"));
+      // 1,000 input and 100 output tokens at list price: $0.003, kept apart from the note's cost.
+      assertEquals(0, new java.math.BigDecimal("0.003").compareTo(e.anthropicCost()));
+      assertEquals(0, TestServer.SPEECH.add(TestServer.JEV).compareTo(e.cost()));
+      JSONArray steps = e.json.getJSONArray("steps");
+      JSONObject refine = steps.getJSONObject(steps.length() - 1);
+      assertEquals("anthropic", refine.getString("provider"));
+      assertEquals("claude-sonnet-5-5", refine.getString("model"));
+      assertTrue(refine.getBoolean("approx"));
+      assertFalse(e.json.has("anthropicWarning"));
+    } finally {
+      new Vault(context).remove(Anthropic.KEY);
+    }
+  }
+
+  @Test
+  public void aBadAnthropicKeyFallsBackToOpenRouterAndSaysSo() throws Exception {
+    new Vault(context).put(Anthropic.KEY, "sk-ant-good");
+    try {
+      TestServer.transcripts("tell Jana see you at ten");
+      TestServer.script("anthropic", new JSONObject().put("error", "key"));
+      TestServer.replies("Hi Jana, see you at ten.");
+      dictate();
+      find("✨ Refine").click();
+      find("Insert refined");
+      HistoryEntry e = note();
+      assertEquals("Hi Jana, see you at ten.", e.json.optString("processed"));
+      assertEquals(0, e.anthropicCost().signum());
+      // The fallback costs real money, like any OpenRouter call.
+      assertEquals(0, TestServer.SPEECH.add(TestServer.JEV).add(TestServer.TEXT).compareTo(e.cost()));
+      JSONArray steps = e.json.getJSONArray("steps");
+      JSONObject refine = steps.getJSONObject(steps.length() - 1);
+      assertEquals("openrouter", refine.getString("provider"));
+      assertTrue(refine.getString("fallback"), refine.getString("fallback").contains("Anthropic key"));
+      assertTrue(e.json.optString("anthropicWarning").contains("Anthropic key"));
+    } finally {
+      new Vault(context).remove(Anthropic.KEY);
+    }
+  }
+
+  @Test
   public void withoutTheServiceInsertCopiesInstead() throws Exception {
     accessibility(false);
     TestServer.transcripts("copy me please");

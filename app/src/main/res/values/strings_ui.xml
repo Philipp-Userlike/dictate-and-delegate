@@ -13,6 +13,7 @@
     <string name="t_05db04e6" formatted="false">Price unavailable · see source</string>
     <string name="t_05ff3c07" formatted="false">Nothing to paste: copy some text first.</string>
     <string name="t_064b8a10" formatted="false">Couldn\'t refine this note: %1$s Below is what you said.</string>
+    <string name="t_068966f6" formatted="false">Refine: Anthropic credits ≈%1$s</string>
     <string name="t_07290dc9" formatted="false">Talk Router uses this model for every note.</string>
     <string name="t_07ee7593" formatted="false">Talking about something? Add it, like an offer you reply to.</string>
     <string name="t_081d6c35" formatted="false">When you tap ✨ Refine</string>
@@ -23,6 +24,7 @@
     <string name="t_0ae539d0" formatted="false">Your words</string>
     <string name="t_0ae65fda" formatted="false">Start dictation</string>
     <string name="t_0b47c5cb" formatted="false">While you dictate, a small panel stays on top of other apps: tap ■ to stop, then Insert, Refine or Chief. To allow it, Android shows a list of apps: tap Talk Router, switch it on, and come back.</string>
+    <string name="t_0bf045a7" formatted="false">Remove your Anthropic key?</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4f3914" formatted="false">Open recording recovery</string>
     <string name="t_0c8b88ef" formatted="false">%1$s answered with HTTP %2$d.</string>
@@ -63,7 +65,9 @@
     <string name="t_1e8f2a1c" formatted="false">Forget this address</string>
     <string name="t_1f0e3297" formatted="false">Speech model</string>
     <string name="t_1f3603cf" formatted="false">Start from any app</string>
+    <string name="t_1f8d5f9c" formatted="false">Optional. With your own Anthropic key, ✨ Refine goes to Claude directly and is paid from your Anthropic credits. Speech and Jev stay on OpenRouter. If Anthropic fails, Refine goes through OpenRouter instead.</string>
     <string name="t_1fd08398" formatted="false">This deletes your notes, audio, templates, words, About you, your OpenRouter key, your bb sign-in and settings on this phone. It can\'t be undone.</string>
+    <string name="t_1fde91b3" formatted="false">Your Anthropic credits are used up.</string>
     <string name="t_200afc5b" formatted="false">Edit template</string>
     <string name="t_202ddf1f" formatted="false">Images and PDFs aren\'t sent to the chief of staff yet; pasted text is.</string>
     <string name="t_215d7d37" formatted="false">Replaced with the refined text</string>
@@ -85,6 +89,7 @@
     <string name="t_27a92292" formatted="false">bb didn\'t allow the sign-in.</string>
     <string name="t_27c5b8ea" formatted="false">Remove key</string>
     <string name="t_2893e4d7" formatted="false">Request check</string>
+    <string name="t_296a5e55" formatted="false">Optional · Refine on your Anthropic credits</string>
     <string name="t_296a6921" formatted="false">The model took too long. The recording is kept; try again.</string>
     <string name="t_2994b473" formatted="false">‹ Earlier</string>
     <string name="t_29a545af" formatted="false">Dear Mr. Weber, uh, the tap in the kitchen, no actually the one in the bathroom, has been dripping since Monday. Oh and make that a bit more formal please.</string>
@@ -98,6 +103,7 @@
     <string name="t_2dad13e3" formatted="false">Language</string>
     <string name="t_2dc29d4d" formatted="false">Later</string>
     <string name="t_2dd159ed" formatted="false">No browser available</string>
+    <string name="t_2e5c65fd" formatted="false">via OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">ntfy server</string>
     <string name="t_2f79a315" formatted="false">Dear Mr. Weber,\n\nI would like to let you know that the bathroom tap has been dripping since Monday.</string>
     <string name="t_2fc562b8" formatted="false">Note not found</string>
@@ -126,6 +132,7 @@
     <string name="t_3c847f8f" formatted="false">Floating panel · optional</string>
     <string name="t_3d344edd" formatted="false">Creating the thread in bb…</string>
     <string name="t_3d38c7ad" formatted="false">Saving recording…</string>
+    <string name="t_3dbbd3aa" formatted="false">Anthropic key</string>
     <string name="t_3dbe79b1" formatted="false">Delete</string>
     <string name="t_3e12df1c" formatted="false">Attach a file</string>
     <string name="t_3e15b1f4" formatted="false">$%1$s in / $%2$s out per 1M tokens</string>
@@ -147,6 +154,8 @@
     <string name="t_4289563d" formatted="false">With one permission, Insert puts your text right at the cursor, and holding a volume key starts a dictation. Without it, Talk Router copies the text and you paste it.</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Remove %1$s</string>
+    <string name="t_452f2b66" formatted="false">Anthropic, your key</string>
+    <string name="t_45a0c8fa" formatted="false">Refined through OpenRouter instead of Anthropic: %1$s</string>
     <string name="t_45cb3322" formatted="false">Send test</string>
     <string name="t_45d08313" formatted="false">OpenRouter couldn\'t run this request (HTTP %1$d).</string>
     <string name="t_46202182" formatted="false">No speech recognized. Ready to try again.</string>
@@ -162,11 +171,14 @@
     <string name="t_4ae2821e" formatted="false">in progress</string>
     <string name="t_4b2ded64" formatted="false">Emails</string>
     <string name="t_4bfe4352" formatted="false">Open recovery</string>
+    <string name="t_4c0014e2" formatted="false">Refine goes through OpenRouter again.</string>
+    <string name="t_4c2540de" formatted="false">Anthropic couldn\'t run this request (HTTP %1$d): %2$s</string>
     <string name="t_4c463ae2" formatted="false">Tap Talk Router there and switch it on. If Android says the setting is restricted, open App info → ⋮ → Allow restricted settings, then try again.</string>
     <string name="t_4c8985b5" formatted="false">What each month cost</string>
     <string name="t_4d67a5d5" formatted="false">Signed in to %1$s.getbb.app</string>
     <string name="t_4da08f61" formatted="false">Which model did what, how long it took, what it cost</string>
     <string name="t_4ef77ff2" formatted="false">Recording interrupted. Saved audio can be retried.</string>
+    <string name="t_4f3f4751" formatted="false">Anthropic couldn\'t run this request (HTTP %1$d).</string>
     <string name="t_4f723805" formatted="false">2 · Or hold a volume key</string>
     <string name="t_4f95835a" formatted="false">The web address starts with https://</string>
     <string name="t_4fcbfdd0" formatted="false">This file is too large (at most 10 MB).</string>
@@ -233,14 +245,17 @@
     <string name="t_6af514f2" formatted="false">From your chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Saved</string>
     <string name="t_6bc2e735" formatted="false">Keep</string>
+    <string name="t_6c3844cb" formatted="false">Your Anthropic key isn\'t valid. Check it in Settings → Anthropic key.</string>
     <string name="t_6cf58428" formatted="false">Only while you record.</string>
     <string name="t_6d7c0d41" formatted="false">price shown afterwards</string>
+    <string name="t_6dde3895" formatted="false">Anthropic is busy right now.</string>
     <string name="t_6f2c1806" formatted="false">Remove</string>
     <string name="t_70c25729" formatted="false">Checking the thread in bb…</string>
     <string name="t_714149a6" formatted="false">Send to chief when addressed</string>
     <string name="t_71cc04b4" formatted="false">bb sent no sign-in code. Start it again.</string>
     <string name="t_721589c1" formatted="false">Today</string>
     <string name="t_7382e59f" formatted="false">Signing out…</string>
+    <string name="t_73c2d986" formatted="false">Saved, encrypted · Refine uses your Anthropic credits</string>
     <string name="t_73f57971" formatted="false">Decides</string>
     <string name="t_748c88bc" formatted="false">Open-source notices</string>
     <string name="t_75cfcf01" formatted="false">Sign out</string>
@@ -266,6 +281,7 @@
     <string name="t_7fd53415_one" formatted="false">%1$d template</string>
     <string name="t_7fd53415_other" formatted="false">%1$d templates</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Send again</string>
+    <string name="t_8108fc2e" formatted="false">No connection to Anthropic.</string>
     <string name="t_81e2a271" formatted="false">Transcription</string>
     <string name="t_8250ae9b" formatted="false">Signing in to bb…</string>
     <string name="t_826621ab" formatted="false">When you speak to your chief by name (Settings → Chief of staff); otherwise tap 🧑‍💼</string>
@@ -308,6 +324,7 @@
     <string name="t_95bed80b" formatted="false">Set the bb web address for links in Settings → bb.</string>
     <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">redone</string>
+    <string name="t_980cb9e2" formatted="false">Anthropic took too long.</string>
     <string name="t_980e859d" formatted="false">Talk Router feedback</string>
     <string name="t_9931e57c" formatted="false">Could not start. Check permissions and try again.</string>
     <string name="t_9aefa862" formatted="false">Get a key on openrouter.ai</string>
@@ -343,6 +360,7 @@
     <string name="t_a475c571" formatted="false">This recording didn\'t finish (%1$s). Retry it from Home.</string>
     <string name="t_a47dbae1" formatted="false">This note already used the most accurate model.</string>
     <string name="t_a599a01d" formatted="false">Open source. Your own OpenRouter key, no Talk Router server in between.</string>
+    <string name="t_a5b51395" formatted="false">Anthropic had a problem (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Connect bb</string>
     <string name="t_a61f511e" formatted="false">Talk Router couldn\'t read or write its files. Check available storage, then retry.</string>
     <string name="t_a6ab7640" formatted="false">You\'re signed out of bb. Sign in again in Settings → bb.</string>
@@ -391,6 +409,7 @@
     <string name="t_b8663ec6" formatted="false">Medical</string>
     <string name="t_b8d84684" formatted="false">Microphone not allowed</string>
     <string name="t_b942a462" formatted="false">no details</string>
+    <string name="t_b99de9e8" formatted="false">No Anthropic key is set.</string>
     <string name="t_b9c5766f" formatted="false">Talk Router calls the speech and text models through OpenRouter with this key.</string>
     <string name="t_bc1b2887" formatted="false">The ntfy server answered with HTTP %1$d.</string>
     <string name="t_bdae2794" formatted="false">Used to spell names and terms right, in transcription and processing.</string>
@@ -414,6 +433,7 @@
     <string name="t_c34fa500" formatted="false">Give the template a name and a text</string>
     <string name="t_c37292d9" formatted="false">about %1$s</string>
     <string name="t_c38dbe97" formatted="false">Insert on</string>
+    <string name="t_c3cd3265" formatted="false">(Anthropic credits)</string>
     <string name="t_c42f4dd6" formatted="false">No speech was recognized in this recording.</string>
     <string name="t_c5501bfa" formatted="false">✨ Refine</string>
     <string name="t_c5573507" formatted="false">Add</string>
@@ -429,6 +449,7 @@
     <string name="t_c8d72e3b" formatted="false">Add Talk Router to Quick Settings</string>
     <string name="t_c997df74" formatted="false">bb refused the sign-in: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio has expired or was deleted. Text is still saved.</string>
+    <string name="t_caf67b49" formatted="false">Claude declined to refine this text.</string>
     <string name="t_cba5c7dd" formatted="false">Volume down</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy is free and open source. Install it, then tap Open in ntfy again.</string>
     <string name="t_cc95b0c8" formatted="false">Approve Talk Router in your browser, then come back.</string>
@@ -474,6 +495,7 @@
     <string name="t_dd6fa894" formatted="false">Text and costs stay. Notes can no longer be redone.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">chief of staff</string>
+    <string name="t_ddd7f31e" formatted="false">Anthropic credits used this month ≈%1$s (Refine with your Anthropic key, at list price; not in the total)</string>
     <string name="t_de8e5494" formatted="false">Tap the microphone to record</string>
     <string name="t_def9cb9f" formatted="false">Get started</string>
     <string name="t_df336a1d" formatted="false">Thread link or id (thr_…)</string>
@@ -518,6 +540,7 @@
     <string name="t_efc1065a" formatted="false">Not connected</string>
     <string name="t_f01551fb" formatted="false">Recording contains no readable audio.</string>
     <string name="t_f01db452" formatted="false">Create a key there and copy it, then paste it above. Add a few dollars of credits on OpenRouter too: a one-minute note usually costs well under one cent.</string>
+    <string name="t_f032e365" formatted="false">Get a key on console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Cheapest</string>
     <string name="t_f0d83244" formatted="false">The speech model returned no transcript. The recording is kept; try again.</string>
     <string name="t_f123362f" formatted="false">App</string>

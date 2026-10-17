@@ -13,6 +13,7 @@
     <string name="t_05db04e6" formatted="false">Prezzo non disponibile · vedi fonte</string>
     <string name="t_05ff3c07" formatted="false">Nulla da incollare: copia prima del testo.</string>
     <string name="t_064b8a10" formatted="false">Impossibile perfezionare questa nota: %1$s Di seguito trovi ciò che hai detto.</string>
+    <string name="t_068966f6" formatted="false">Perfeziona: crediti Anthropic ≈%1$s</string>
     <string name="t_07290dc9" formatted="false">Talk Router usa questo modello per ogni nota.</string>
     <string name="t_07ee7593" formatted="false">Ti riferisci a qualcosa? Aggiungilo, come un\'offerta a cui rispondi.</string>
     <string name="t_081d6c35" formatted="false">Quando tocchi ✨ Perfeziona</string>
@@ -23,6 +24,7 @@
     <string name="t_0ae539d0" formatted="false">Le tue parole</string>
     <string name="t_0ae65fda" formatted="false">Avvia dettatura</string>
     <string name="t_0b47c5cb" formatted="false">Mentre detti, un piccolo pannello resta sopra le altre app: tocca ■ per fermare, poi Inserisci, Perfeziona o Chief. Per consentirlo, Android mostra un elenco di app: tocca Talk Router, attivalo e torna qui.</string>
+    <string name="t_0bf045a7" formatted="false">Rimuovere la tua chiave Anthropic?</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4f3914" formatted="false">Apri recupero registrazioni</string>
     <string name="t_0c8b88ef" formatted="false">%1$s ha risposto con HTTP %2$d.</string>
@@ -63,7 +65,9 @@
     <string name="t_1e8f2a1c" formatted="false">Dimentica questo indirizzo</string>
     <string name="t_1f0e3297" formatted="false">Modello vocale</string>
     <string name="t_1f3603cf" formatted="false">Avvia da qualsiasi app</string>
+    <string name="t_1f8d5f9c" formatted="false">Facoltativo. Con la tua chiave Anthropic, ✨ Perfeziona va direttamente a Claude e viene scalato dai tuoi crediti Anthropic. Voce e Jev restano su OpenRouter. Se Anthropic non risponde, Perfeziona passa attraverso OpenRouter.</string>
     <string name="t_1fd08398" formatted="false">Verranno eliminati note, audio, modelli, parole, Informazioni su di te, chiave OpenRouter, credenziali bb e impostazioni su questo telefono. L\'azione è irreversibile.</string>
+    <string name="t_1fde91b3" formatted="false">I tuoi crediti Anthropic sono esauriti.</string>
     <string name="t_200afc5b" formatted="false">Modifica modello</string>
     <string name="t_202ddf1f" formatted="false">Immagini e PDF non vengono ancora inviati al chief of staff; il testo incollato sì.</string>
     <string name="t_215d7d37" formatted="false">Sostituito con il testo perfezionato</string>
@@ -85,6 +89,7 @@
     <string name="t_27a92292" formatted="false">bb non ha autorizzato l\'accesso.</string>
     <string name="t_27c5b8ea" formatted="false">Rimuovi chiave</string>
     <string name="t_2893e4d7" formatted="false">Verifica richiesta</string>
+    <string name="t_296a5e55" formatted="false">Facoltativo · Perfeziona con i tuoi crediti Anthropic</string>
     <string name="t_296a6921" formatted="false">Il modello ha impiegato troppo tempo. Registrazione salvata; riprova.</string>
     <string name="t_2994b473" formatted="false">‹ Precedenti</string>
     <string name="t_29a545af" formatted="false">Gentile signor Weber, ehm, il rubinetto in cucina, no in realtà quello in bagno, perde da lunedì. Ah e lo renda un po\' più formale per favore.</string>
@@ -98,6 +103,7 @@
     <string name="t_2dad13e3" formatted="false">Lingua</string>
     <string name="t_2dc29d4d" formatted="false">Più tardi</string>
     <string name="t_2dd159ed" formatted="false">Nessun browser disponibile</string>
+    <string name="t_2e5c65fd" formatted="false">tramite OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">Server ntfy</string>
     <string name="t_2f79a315" formatted="false">Gentile signor Weber,\n\ndesidero informarla che il rubinetto del bagno perde da lunedì.</string>
     <string name="t_2fc562b8" formatted="false">Nota non trovata</string>
@@ -126,6 +132,7 @@
     <string name="t_3c847f8f" formatted="false">Pannello mobile · facoltativo</string>
     <string name="t_3d344edd" formatted="false">Creazione del thread in bb…</string>
     <string name="t_3d38c7ad" formatted="false">Salvataggio registrazione…</string>
+    <string name="t_3dbbd3aa" formatted="false">Chiave Anthropic</string>
     <string name="t_3dbe79b1" formatted="false">Elimina</string>
     <string name="t_3e12df1c" formatted="false">Allega un file</string>
     <string name="t_3e15b1f4" formatted="false">$%1$s in / $%2$s out per 1M token</string>
@@ -146,6 +153,8 @@
     <string name="t_4289563d" formatted="false">Con una sola autorizzazione, Inserisci posiziona il testo direttamente al cursore e tenendo premuto un tasto volume avvii la dettatura. Senza, Talk Router copia il testo e lo incolli tu.</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Rimuovi %1$s</string>
+    <string name="t_452f2b66" formatted="false">Anthropic, la tua chiave</string>
+    <string name="t_45a0c8fa" formatted="false">Perfezionato tramite OpenRouter invece di Anthropic: %1$s</string>
     <string name="t_45cb3322" formatted="false">Invia test</string>
     <string name="t_45d08313" formatted="false">OpenRouter non ha potuto eseguire questa richiesta (HTTP %1$d).</string>
     <string name="t_46202182" formatted="false">Nessun parlato riconosciuto. Pronto a riprovare.</string>
@@ -161,11 +170,14 @@
     <string name="t_4ae2821e" formatted="false">in corso</string>
     <string name="t_4b2ded64" formatted="false">Email</string>
     <string name="t_4bfe4352" formatted="false">Apri recupero</string>
+    <string name="t_4c0014e2" formatted="false">Perfeziona passerà di nuovo attraverso OpenRouter.</string>
+    <string name="t_4c2540de" formatted="false">Anthropic non ha potuto eseguire questa richiesta (HTTP %1$d): %2$s</string>
     <string name="t_4c463ae2" formatted="false">Lì tocca Talk Router e attivalo. Se Android dice che l\'impostazione è limitata, apri Info app → ⋮ → Consenti impostazioni con restrizioni, poi riprova.</string>
     <string name="t_4c8985b5" formatted="false">Costo mensile</string>
     <string name="t_4d67a5d5" formatted="false">Accesso effettuato a %1$s.getbb.app</string>
     <string name="t_4da08f61" formatted="false">Quale modello è stato usato, quanto tempo ha richiesto, il costo</string>
     <string name="t_4ef77ff2" formatted="false">Registrazione interrotta. Puoi riprovare con l\'audio salvato.</string>
+    <string name="t_4f3f4751" formatted="false">Anthropic non ha potuto eseguire questa richiesta (HTTP %1$d).</string>
     <string name="t_4f723805" formatted="false">2 · Oppure tieni premuto un tasto volume</string>
     <string name="t_4f95835a" formatted="false">L\'indirizzo web inizia con https://</string>
     <string name="t_4fcbfdd0" formatted="false">Questo file è troppo grande (max 10 MB).</string>
@@ -232,14 +244,17 @@
     <string name="t_6af514f2" formatted="false">Dal tuo chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Salvato</string>
     <string name="t_6bc2e735" formatted="false">Mantieni</string>
+    <string name="t_6c3844cb" formatted="false">La tua chiave Anthropic non è valida. Verificala in Impostazioni → Chiave Anthropic.</string>
     <string name="t_6cf58428" formatted="false">Solo durante la registrazione.</string>
     <string name="t_6d7c0d41" formatted="false">prezzo mostrato dopo</string>
+    <string name="t_6dde3895" formatted="false">Anthropic è occupato al momento.</string>
     <string name="t_6f2c1806" formatted="false">Rimuovi</string>
     <string name="t_70c25729" formatted="false">Verifica del thread in bb…</string>
     <string name="t_714149a6" formatted="false">Invia a chief se interpellato</string>
     <string name="t_71cc04b4" formatted="false">bb non ha inviato alcun codice di accesso. Riavvia la procedura.</string>
     <string name="t_721589c1" formatted="false">Oggi</string>
     <string name="t_7382e59f" formatted="false">Disconnessione…</string>
+    <string name="t_73c2d986" formatted="false">Salvata, crittografata · Perfeziona usa i tuoi crediti Anthropic</string>
     <string name="t_73f57971" formatted="false">Decide</string>
     <string name="t_748c88bc" formatted="false">Note open-source</string>
     <string name="t_75cfcf01" formatted="false">Disconnetti</string>
@@ -264,6 +279,7 @@
     <string name="t_7fd53415_one" formatted="false">%1$d modello</string>
     <string name="t_7fd53415_other" formatted="false">%1$d modelli</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Invia di nuovo</string>
+    <string name="t_8108fc2e" formatted="false">Nessuna connessione ad Anthropic.</string>
     <string name="t_81e2a271" formatted="false">Trascrizione</string>
     <string name="t_8250ae9b" formatted="false">Accesso a bb…</string>
     <string name="t_826621ab" formatted="false">Quando ti rivolgi al tuo capo chiamandolo per nome (Impostazioni → Capo di gabinetto); altrimenti tocca 🧑‍💼</string>
@@ -306,6 +322,7 @@
     <string name="t_95bed80b" formatted="false">Imposta l\'indirizzo web di bb per i link in Impostazioni → bb.</string>
     <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">rifatto</string>
+    <string name="t_980cb9e2" formatted="false">Anthropic ha impiegato troppo tempo.</string>
     <string name="t_980e859d" formatted="false">Feedback su Talk Router</string>
     <string name="t_9931e57c" formatted="false">Impossibile avviare. Controlla i permessi e riprova.</string>
     <string name="t_9aefa862" formatted="false">Ottieni una chiave su openrouter.ai</string>
@@ -340,6 +357,7 @@
     <string name="t_a475c571" formatted="false">Questa registrazione non è terminata (%1$s). Riprovala dalla Home.</string>
     <string name="t_a47dbae1" formatted="false">Questa nota ha già usato il modello più accurato.</string>
     <string name="t_a599a01d" formatted="false">Open source. La tua chiave OpenRouter personale, nessun server Talk Router di mezzo.</string>
+    <string name="t_a5b51395" formatted="false">Si è verificato un problema con Anthropic (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Connetti bb</string>
     <string name="t_a61f511e" formatted="false">Talk Router non riesce a leggere o scrivere i suoi file. Controlla lo spazio disponibile e riprova.</string>
     <string name="t_a6ab7640" formatted="false">Disconnesso da bb. Accedi di nuovo in Impostazioni → bb.</string>
@@ -388,6 +406,7 @@
     <string name="t_b8663ec6" formatted="false">Medico</string>
     <string name="t_b8d84684" formatted="false">Microfono non consentito</string>
     <string name="t_b942a462" formatted="false">nessun dettaglio</string>
+    <string name="t_b99de9e8" formatted="false">Nessuna chiave Anthropic impostata.</string>
     <string name="t_b9c5766f" formatted="false">Talk Router chiama i modelli vocali e di testo tramite OpenRouter con questa chiave.</string>
     <string name="t_bc1b2887" formatted="false">Il server ntfy ha risposto con HTTP %1$d.</string>
     <string name="t_bdae2794" formatted="false">Utilizzate per scrivere correttamente nomi e termini, nella trascrizione e nell\'elaborazione.</string>
@@ -410,6 +429,7 @@
     <string name="t_c34fa500" formatted="false">Assegna un nome e un testo al modello</string>
     <string name="t_c37292d9" formatted="false">circa %1$s</string>
     <string name="t_c38dbe97" formatted="false">Inserisci attivo</string>
+    <string name="t_c3cd3265" formatted="false">(crediti Anthropic)</string>
     <string name="t_c42f4dd6" formatted="false">Nessun parlato riconosciuto in questa registrazione.</string>
     <string name="t_c5501bfa" formatted="false">✨ Perfeziona</string>
     <string name="t_c5573507" formatted="false">Aggiungi</string>
@@ -425,6 +445,7 @@
     <string name="t_c8d72e3b" formatted="false">Aggiungi Talk Router alle Impostazioni rapide</string>
     <string name="t_c997df74" formatted="false">bb ha rifiutato l\'accesso: %1$s</string>
     <string name="t_c998a38e" formatted="false">L\'audio è scaduto o è stato eliminato. Il testo è ancora salvato.</string>
+    <string name="t_caf67b49" formatted="false">Claude ha rifiutato di perfezionare questo testo.</string>
     <string name="t_cba5c7dd" formatted="false">Volume giù</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy è gratuita e open source. Installala, poi tocca di nuovo Apri in ntfy.</string>
     <string name="t_cc95b0c8" formatted="false">Autorizza Talk Router nel browser, poi torna qui.</string>
@@ -470,6 +491,7 @@
     <string name="t_dd6fa894" formatted="false">Testo e costi rimangono. Le note non potranno più essere rifatte.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">chief of staff</string>
+    <string name="t_ddd7f31e" formatted="false">Crediti Anthropic usati questo mese ≈%1$s (Perfeziona con la tua chiave Anthropic, a prezzo di listino; non incluso nel totale)</string>
     <string name="t_de8e5494" formatted="false">Tocca il microfono per registrare</string>
     <string name="t_def9cb9f" formatted="false">Inizia</string>
     <string name="t_df336a1d" formatted="false">Link o ID del thread (thr_…)</string>
@@ -514,6 +536,7 @@
     <string name="t_efc1065a" formatted="false">Non connesso</string>
     <string name="t_f01551fb" formatted="false">La registrazione non contiene audio leggibile.</string>
     <string name="t_f01db452" formatted="false">Crea una chiave lì, copiala e incollala qui sopra. Aggiungi anche qualche dollaro di credito su OpenRouter: una nota di un minuto costa solitamente molto meno di un centesimo.</string>
+    <string name="t_f032e365" formatted="false">Ottieni una chiave su console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Più economico</string>
     <string name="t_f0d83244" formatted="false">Il modello vocale non ha restituito alcuna trascrizione. La registrazione è conservata; riprova.</string>
     <string name="t_f123362f" formatted="false">App</string>

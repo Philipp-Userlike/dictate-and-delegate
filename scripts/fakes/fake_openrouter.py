@@ -9,6 +9,11 @@ Serves the OpenRouter endpoints Talk Router uses, under /api/v1 and /api/alpha l
   POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
                                       only the questions asked are answered
 
+And Anthropic's two endpoints, for Refine with an Anthropic key (-PanthropicUrl=<this server>):
+  GET  /v1/models                     the key check ("sk-ant-bad" gets 401)
+  POST /v1/messages                   a queued "anthropic" item, or the dictation echoed;
+                                      {"error": "key"} 401, "credits" 400 credit balance,
+                                      "busy" 429, "overloaded" 529, "provider" 500
 Test control (not part of OpenRouter):
 
   POST /test/script   {"transcribe": [...], "text": [...], "decide": [...]}; each item is
@@ -34,7 +39,13 @@ ERRORS = {"provider": (502, "Fake provider error"),
           "invalid": (400, "Fake invalid request")}
 
 lock = threading.Lock()
-queues = {"transcribe": [], "text": [], "decide": []}
+queues = {"transcribe": [], "text": [], "decide": [], "anthropic": []}
+ANTHROPIC_ERRORS = {"key": (401, "authentication_error", "invalid x-api-key"),
+                    "credits": (400, "invalid_request_error",
+                                "Your credit balance is too low to access the Anthropic API."),
+                    "busy": (429, "rate_limit_error", "Rate limited"),
+                    "overloaded": (529, "overloaded_error", "Overloaded"),
+                    "provider": (500, "api_error", "Internal server error")}
 requests = []
 
 
@@ -88,6 +99,10 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/test/requests":
             with lock:
                 return self.reply(200, {"requests": list(requests)})
+        if self.path == "/v1/models":
+            if self.headers.get("x-api-key", "") in ("", "sk-ant-bad") or not self.headers.get("anthropic-version"):
+                return self.anthropic_error("key")
+            return self.reply(200, {"data": [{"type": "model", "id": "claude-sonnet-5-5"}], "has_more": False})
         if self.path == "/api/v1/key":
             if self.authorized():
                 self.reply(200, {"data": {"label": "fake", "usage": 0, "limit": None}})
@@ -108,6 +123,18 @@ class Handler(BaseHTTPRequestHandler):
                     if kind in queues:
                         queues[kind].extend(items)
             return self.reply(200, {})
+        if self.path == "/v1/messages":
+            self.log("anthropic", body)
+            item = next_item("anthropic", user_text(body))
+            if "error" in item:
+                return self.anthropic_error(item["error"])
+            if self.headers.get("x-api-key", "") in ("", "sk-ant-bad"):
+                return self.anthropic_error("key")
+            return self.reply(200, {
+                "id": "msg_fake", "type": "message", "role": "assistant", "model": body.get("model"),
+                "content": [{"type": "thinking", "thinking": ""}, {"type": "text", "text": item.get("text", "")}],
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 1000, "output_tokens": 100}})
         if not self.authorized():
             return
         if self.path == "/api/v1/audio/transcriptions":
@@ -120,6 +147,10 @@ class Handler(BaseHTTPRequestHandler):
             self.log("text", body)
             return self.answer("text", next_item("text", user_text(body)), chat=True)
         self.reply(404, {"error": {"code": 404, "message": "Not found"}})
+
+    def anthropic_error(self, name):
+        status, kind, message = ANTHROPIC_ERRORS[name]
+        self.reply(status, {"type": "error", "error": {"type": kind, "message": message}})
 
     def log(self, kind, body):
         summary = dict(body)

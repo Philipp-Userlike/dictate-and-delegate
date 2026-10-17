@@ -13,6 +13,7 @@
     <string name="t_05db04e6" formatted="false">Prijs niet beschikbaar · zie bron</string>
     <string name="t_05ff3c07" formatted="false">Niets om te plakken: kopieer eerst tekst.</string>
     <string name="t_064b8a10" formatted="false">Kon deze notitie niet verfijnen: %1$s Hieronder staat wat je zei.</string>
+    <string name="t_068966f6" formatted="false">Verfijnen: Anthropic-tegoed ≈%1$s</string>
     <string name="t_07290dc9" formatted="false">Talk Router gebruikt dit model voor elke notitie.</string>
     <string name="t_07ee7593" formatted="false">Heb je het ergens over? Voeg het toe, zoals een offerte waarop je reageert.</string>
     <string name="t_081d6c35" formatted="false">Wanneer je op ✨ Verfijn tikt</string>
@@ -23,6 +24,7 @@
     <string name="t_0ae539d0" formatted="false">Jouw woorden</string>
     <string name="t_0ae65fda" formatted="false">Dicteren starten</string>
     <string name="t_0b47c5cb" formatted="false">Terwijl je dicteert, blijft een klein paneel boven andere apps zweven: tik op ■ om te stoppen, en daarna op Invoegen, Verfijn of Stafchef. Om dit toe te staan, toont Android een lijst met apps: tik op Talk Router, schakel het in en ga terug.</string>
+    <string name="t_0bf045a7" formatted="false">Je Anthropic-sleutel verwijderen?</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Stafchef ✓</string>
     <string name="t_0c4f3914" formatted="false">Opnameherstel openen</string>
     <string name="t_0c8b88ef" formatted="false">%1$s antwoordde met HTTP %2$d.</string>
@@ -63,7 +65,9 @@
     <string name="t_1e8f2a1c" formatted="false">Dit adres vergeten</string>
     <string name="t_1f0e3297" formatted="false">Spraakmodel</string>
     <string name="t_1f3603cf" formatted="false">Start vanuit elke app</string>
+    <string name="t_1f8d5f9c" formatted="false">Optioneel. Met je eigen Anthropic-sleutel gaat ✨ Verfijnen direct naar Claude en wordt het betaald van je Anthropic-tegoed. Spraak en Jev blijven op OpenRouter. Als Anthropic mislukt, loopt Verfijnen via OpenRouter.</string>
     <string name="t_1fd08398" formatted="false">Dit verwijdert je notities, audio, sjablonen, woorden, Over jou, je OpenRouter-sleutel, je bb-aanmelding en instellingen op deze telefoon. Dit kan niet ongedaan worden gemaakt.</string>
+    <string name="t_1fde91b3" formatted="false">Je Anthropic-tegoed is op.</string>
     <string name="t_200afc5b" formatted="false">Sjabloon bewerken</string>
     <string name="t_202ddf1f" formatted="false">Afbeeldingen en pdf\'s worden nog niet naar de stafchef verzonden; geplakte tekst wel.</string>
     <string name="t_215d7d37" formatted="false">Vervangen door de verfijnde tekst</string>
@@ -85,6 +89,7 @@
     <string name="t_27a92292" formatted="false">bb heeft de aanmelding niet toegestaan.</string>
     <string name="t_27c5b8ea" formatted="false">Sleutel verwijderen</string>
     <string name="t_2893e4d7" formatted="false">Verzoekcontrole</string>
+    <string name="t_296a5e55" formatted="false">Optioneel · Verfijnen via je Anthropic-tegoed</string>
     <string name="t_296a6921" formatted="false">Het model deed er te lang over. De opname is bewaard; probeer het opnieuw.</string>
     <string name="t_2994b473" formatted="false">‹ Eerder</string>
     <string name="t_29a545af" formatted="false">Beste meneer Weber, eh, de kraan in de keuken, nee eigenlijk die in de badkamer, lekt sinds maandag. Oh en maak dat wat formeler alsjeblieft.</string>
@@ -98,6 +103,7 @@
     <string name="t_2dad13e3" formatted="false">Taal</string>
     <string name="t_2dc29d4d" formatted="false">Later</string>
     <string name="t_2dd159ed" formatted="false">Geen browser beschikbaar</string>
+    <string name="t_2e5c65fd" formatted="false">via OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">ntfy-server</string>
     <string name="t_2f79a315" formatted="false">Geachte heer Weber,\n\nIk wil u laten weten dat de kraan in de badkamer sinds maandag lekt.</string>
     <string name="t_2fc562b8" formatted="false">Notitie niet gevonden</string>
@@ -126,6 +132,7 @@
     <string name="t_3c847f8f" formatted="false">Zwevend paneel · optioneel</string>
     <string name="t_3d344edd" formatted="false">Thread aanmaken in bb…</string>
     <string name="t_3d38c7ad" formatted="false">Opname opslaan…</string>
+    <string name="t_3dbbd3aa" formatted="false">Anthropic-sleutel</string>
     <string name="t_3dbe79b1" formatted="false">Verwijderen</string>
     <string name="t_3e12df1c" formatted="false">Bestand bijvoegen</string>
     <string name="t_3e15b1f4" formatted="false">$%1$s in / $%2$s uit per 1M tokens</string>
@@ -145,6 +152,8 @@
     <string name="t_4289563d" formatted="false">Met één toestemming zet Invoegen je tekst direct bij de cursor, en start een volumeknop ingedrukt houden een dictaat. Zonder toestemming kopieert Talk Router de tekst en plak je deze zelf.</string>
     <string name="t_446b3ccc" formatted="false">%1$d u %2$d min</string>
     <string name="t_449d8bae" formatted="false">%1$s verwijderen</string>
+    <string name="t_452f2b66" formatted="false">Anthropic, jouw sleutel</string>
+    <string name="t_45a0c8fa" formatted="false">Verfijnd via OpenRouter in plaats van Anthropic: %1$s</string>
     <string name="t_45cb3322" formatted="false">Test verzenden</string>
     <string name="t_45d08313" formatted="false">OpenRouter kon dit verzoek niet uitvoeren (HTTP %1$d).</string>
     <string name="t_46202182" formatted="false">Geen spraak herkend. Klaar om opnieuw te proberen.</string>
@@ -160,11 +169,14 @@
     <string name="t_4ae2821e" formatted="false">bezig</string>
     <string name="t_4b2ded64" formatted="false">E-mails</string>
     <string name="t_4bfe4352" formatted="false">Herstel openen</string>
+    <string name="t_4c0014e2" formatted="false">Verfijnen loopt weer via OpenRouter.</string>
+    <string name="t_4c2540de" formatted="false">Anthropic kon dit verzoek niet uitvoeren (HTTP %1$d): %2$s</string>
     <string name="t_4c463ae2" formatted="false">Tik daar op Talk Router en schakel het in. Als Android aangeeft dat de instelling beperkt is, open dan App-info → ⋮ → Beperkte instellingen toestaan en probeer het opnieuw.</string>
     <string name="t_4c8985b5" formatted="false">Kosten per maand</string>
     <string name="t_4d67a5d5" formatted="false">Aangemeld bij %1$s.getbb.app</string>
     <string name="t_4da08f61" formatted="false">Welk model wat deed, hoe lang het duurde, wat het kostte</string>
     <string name="t_4ef77ff2" formatted="false">Opname onderbroken. Opgeslagen audio kan opnieuw worden geprobeerd.</string>
+    <string name="t_4f3f4751" formatted="false">Anthropic kon dit verzoek niet uitvoeren (HTTP %1$d).</string>
     <string name="t_4f723805" formatted="false">2 · Of houd een volumeknop ingedrukt</string>
     <string name="t_4f95835a" formatted="false">Het webadres begint met https://</string>
     <string name="t_4fcbfdd0" formatted="false">Dit bestand is te groot (maximaal 10 MB).</string>
@@ -231,14 +243,17 @@
     <string name="t_6af514f2" formatted="false">Van je stafchef</string>
     <string name="t_6b228094" formatted="false">✓  Opgeslagen</string>
     <string name="t_6bc2e735" formatted="false">Behouden</string>
+    <string name="t_6c3844cb" formatted="false">Je Anthropic-sleutel is ongeldig. Controleer deze via Instellingen → Anthropic-sleutel.</string>
     <string name="t_6cf58428" formatted="false">Alleen tijdens het opnemen.</string>
     <string name="t_6d7c0d41" formatted="false">prijs achteraf getoond</string>
+    <string name="t_6dde3895" formatted="false">Anthropic is momenteel overbelast.</string>
     <string name="t_6f2c1806" formatted="false">Verwijderen</string>
     <string name="t_70c25729" formatted="false">Thread controleren in bb…</string>
     <string name="t_714149a6" formatted="false">Naar stafchef sturen indien aangesproken</string>
     <string name="t_71cc04b4" formatted="false">bb stuurde geen aanmeldcode. Start opnieuw.</string>
     <string name="t_721589c1" formatted="false">Vandaag</string>
     <string name="t_7382e59f" formatted="false">Uitloggen…</string>
+    <string name="t_73c2d986" formatted="false">Opgeslagen, versleuteld · Verfijnen gebruikt je Anthropic-tegoed</string>
     <string name="t_73f57971" formatted="false">Beslist</string>
     <string name="t_748c88bc" formatted="false">Open-source-kennisgevingen</string>
     <string name="t_75cfcf01" formatted="false">Uitloggen</string>
@@ -262,6 +277,7 @@
     <string name="t_7fd53415_one" formatted="false">%1$d sjabloon</string>
     <string name="t_7fd53415_other" formatted="false">%1$d sjablonen</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Opnieuw verzenden</string>
+    <string name="t_8108fc2e" formatted="false">Geen verbinding met Anthropic.</string>
     <string name="t_81e2a271" formatted="false">Transcriptie</string>
     <string name="t_8250ae9b" formatted="false">Aanmelden bij bb…</string>
     <string name="t_826621ab" formatted="false">Wanneer je je stafchef bij naam noemt (Instellingen → Stafchef); tik anders op 🧑‍💼</string>
@@ -304,6 +320,7 @@
     <string name="t_95bed80b" formatted="false">Stel het bb-webadres voor links in via Instellingen → bb.</string>
     <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">opnieuw gedaan</string>
+    <string name="t_980cb9e2" formatted="false">Anthropic deed er te lang over.</string>
     <string name="t_980e859d" formatted="false">Talk Router-feedback</string>
     <string name="t_9931e57c" formatted="false">Kon niet starten. Controleer machtigingen en probeer opnieuw.</string>
     <string name="t_9aefa862" formatted="false">Haal een sleutel op openrouter.ai</string>
@@ -337,6 +354,7 @@
     <string name="t_a475c571" formatted="false">Deze opname is niet voltooid (%1$s). Probeer opnieuw vanaf Start.</string>
     <string name="t_a47dbae1" formatted="false">Deze notitie heeft al het meest nauwkeurige model gebruikt.</string>
     <string name="t_a599a01d" formatted="false">Open source. Je eigen OpenRouter-sleutel, geen Talk Router-server ertussen.</string>
+    <string name="t_a5b51395" formatted="false">Er was een probleem met Anthropic (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Verbind bb</string>
     <string name="t_a61f511e" formatted="false">Talk Router kon bestanden niet lezen of schrijven. Controleer je opslagruimte en probeer het opnieuw.</string>
     <string name="t_a6ab7640" formatted="false">Je bent uitgelogd bij bb. Log opnieuw in via Instellingen → bb.</string>
@@ -385,6 +403,7 @@
     <string name="t_b8663ec6" formatted="false">Medisch</string>
     <string name="t_b8d84684" formatted="false">Microfoon niet toegestaan</string>
     <string name="t_b942a462" formatted="false">geen details</string>
+    <string name="t_b99de9e8" formatted="false">Geen Anthropic-sleutel ingesteld.</string>
     <string name="t_b9c5766f" formatted="false">Talk Router roept de spraak- en tekstmodellen aan via OpenRouter met deze sleutel.</string>
     <string name="t_bc1b2887" formatted="false">De ntfy-server antwoordde met HTTP %1$d.</string>
     <string name="t_bdae2794" formatted="false">Gebruikt om namen en termen correct te spellen bij transcriptie en verwerking.</string>
@@ -406,6 +425,7 @@
     <string name="t_c34fa500" formatted="false">Geef het sjabloon een naam en een tekst</string>
     <string name="t_c37292d9" formatted="false">ongeveer %1$s</string>
     <string name="t_c38dbe97" formatted="false">Invoegen aan</string>
+    <string name="t_c3cd3265" formatted="false">(Anthropic-tegoed)</string>
     <string name="t_c42f4dd6" formatted="false">Er is geen spraak herkend in deze opname.</string>
     <string name="t_c5501bfa" formatted="false">✨ Verfijn</string>
     <string name="t_c5573507" formatted="false">Toevoegen</string>
@@ -421,6 +441,7 @@
     <string name="t_c8d72e3b" formatted="false">Talk Router toevoegen aan Snelle instellingen</string>
     <string name="t_c997df74" formatted="false">bb weigerde de aanmelding: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio is verlopen of verwijderd. Tekst is nog bewaard.</string>
+    <string name="t_caf67b49" formatted="false">Claude heeft geweigerd deze tekst te verfijnen.</string>
     <string name="t_cba5c7dd" formatted="false">Volume omlaag</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy is gratis en open source. Installeer het en tik nogmaals op Openen in ntfy.</string>
     <string name="t_cc95b0c8" formatted="false">Keur Talk Router goed in je browser en kom dan terug.</string>
@@ -466,6 +487,7 @@
     <string name="t_dd6fa894" formatted="false">Tekst en kosten blijven behouden. Notities kunnen niet meer opnieuw gedaan worden.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">stafchef</string>
+    <string name="t_ddd7f31e" formatted="false">Deze maand gebruikt Anthropic-tegoed ≈%1$s (Verfijnen met je Anthropic-sleutel, tegen catalogusprijs; niet inbegrepen in totaal)</string>
     <string name="t_de8e5494" formatted="false">Tik op de microfoon om op te nemen</string>
     <string name="t_def9cb9f" formatted="false">Aan de slag</string>
     <string name="t_df336a1d" formatted="false">Threadlink of -id (thr_…)</string>
@@ -510,6 +532,7 @@
     <string name="t_efc1065a" formatted="false">Niet verbonden</string>
     <string name="t_f01551fb" formatted="false">Opname bevat geen leesbare audio.</string>
     <string name="t_f01db452" formatted="false">Maak daar een sleutel aan, kopieer hem en plak hem hierboven. Voeg ook een paar dollar tegoed toe op OpenRouter: een notitie van één minuut kost meestal ruim minder dan een cent.</string>
+    <string name="t_f032e365" formatted="false">Haal een sleutel op via console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Goedkoopste</string>
     <string name="t_f0d83244" formatted="false">Het spraakmodel gaf geen transcriptie terug. De opname is bewaard; probeer het opnieuw.</string>
     <string name="t_f123362f" formatted="false">App</string>

@@ -13,6 +13,7 @@
     <string name="t_05db04e6" formatted="false">Kein Preis verfügbar · siehe Quelle</string>
     <string name="t_05ff3c07" formatted="false">Nichts zum Einfügen: Kopiere zuerst etwas Text.</string>
     <string name="t_064b8a10" formatted="false">Notiz konnte nicht verfeinert werden: %1$s Unten steht das Gesagte.</string>
+    <string name="t_068966f6" formatted="false">Verfeinern: Anthropic-Guthaben ≈%1$s</string>
     <string name="t_07290dc9" formatted="false">Talk Router nutzt dieses Modell für jede Notiz.</string>
     <string name="t_07ee7593" formatted="false">Geht es um etwas Bestimmtes? Füge es hinzu, z. B. ein Angebot, auf das du antwortest.</string>
     <string name="t_081d6c35" formatted="false">Beim Tippen auf ✨ Verfeinern</string>
@@ -23,6 +24,7 @@
     <string name="t_0ae539d0" formatted="false">Deine Wörter</string>
     <string name="t_0ae65fda" formatted="false">Diktat starten</string>
     <string name="t_0b47c5cb" formatted="false">Beim Diktieren bleibt ein kleines Fenster über anderen Apps: Tippe auf ■ zum Beenden, dann auf Einfügen, Verfeinern oder Chief. Zur Aktivierung zeigt Android eine App-Liste: Tippe auf Talk Router, schalte es ein und kehre zurück.</string>
+    <string name="t_0bf045a7" formatted="false">Anthropic-Schlüssel entfernen?</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4f3914" formatted="false">Aufnahmewiederherstellung öffnen</string>
     <string name="t_0c8b88ef" formatted="false">%1$s hat mit HTTP %2$d geantwortet.</string>
@@ -63,7 +65,9 @@
     <string name="t_1e8f2a1c" formatted="false">Diese Adresse vergessen</string>
     <string name="t_1f0e3297" formatted="false">Sprachmodell</string>
     <string name="t_1f3603cf" formatted="false">Aus jeder App starten</string>
+    <string name="t_1f8d5f9c" formatted="false">Optional. Mit deinem eigenen Anthropic-Schlüssel geht ✨ Verfeinern direkt an Claude und wird von deinem Anthropic-Guthaben bezahlt. Spracherkennung und Jev bleiben bei OpenRouter. Wenn Anthropic fehlschlägt, läuft Verfeinern stattdessen über OpenRouter.</string>
     <string name="t_1fd08398" formatted="false">Dadurch werden deine Notizen, Audiodaten, Vorlagen, Wörter, „Über dich“, dein OpenRouter-Schlüssel sowie deine bb-Anmeldung und -Einstellungen auf diesem Smartphone gelöscht. Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="t_1fde91b3" formatted="false">Dein Anthropic-Guthaben ist aufgebraucht.</string>
     <string name="t_200afc5b" formatted="false">Vorlage bearbeiten</string>
     <string name="t_202ddf1f" formatted="false">Bilder und PDFs werden noch nicht an den Chief of Staff gesendet; eingefügter Text schon.</string>
     <string name="t_215d7d37" formatted="false">Durch verfeinerten Text ersetzt</string>
@@ -85,6 +89,7 @@
     <string name="t_27a92292" formatted="false">bb hat die Anmeldung nicht erlaubt.</string>
     <string name="t_27c5b8ea" formatted="false">Schlüssel entfernen</string>
     <string name="t_2893e4d7" formatted="false">Anweisungsprüfung</string>
+    <string name="t_296a5e55" formatted="false">Optional · Verfeinern über dein Anthropic-Guthaben</string>
     <string name="t_296a6921" formatted="false">Das Modell hat zu lange gebraucht. Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_2994b473" formatted="false">‹ Früher</string>
     <string name="t_29a545af" formatted="false">Sehr geehrter Herr Weber, äh, der Hahn in der Küche, nein eigentlich im Bad, tropft seit Montag. Ach und mach das bitte etwas förmlicher.</string>
@@ -98,6 +103,7 @@
     <string name="t_2dad13e3" formatted="false">Sprache</string>
     <string name="t_2dc29d4d" formatted="false">Später</string>
     <string name="t_2dd159ed" formatted="false">Kein Browser vorhanden</string>
+    <string name="t_2e5c65fd" formatted="false">über OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">ntfy-Server</string>
     <string name="t_2f79a315" formatted="false">Sehr geehrter Herr Weber,\n\nich möchte Ihnen mitteilen, dass der Wasserhahn im Badezimmer seit Montag tropft.</string>
     <string name="t_2fc562b8" formatted="false">Notiz nicht gefunden</string>
@@ -126,6 +132,7 @@
     <string name="t_3c847f8f" formatted="false">Schwebendes Fenster · optional</string>
     <string name="t_3d344edd" formatted="false">Thread wird in bb erstellt…</string>
     <string name="t_3d38c7ad" formatted="false">Aufnahme wird gespeichert…</string>
+    <string name="t_3dbbd3aa" formatted="false">Anthropic-Schlüssel</string>
     <string name="t_3dbe79b1" formatted="false">Löschen</string>
     <string name="t_3e12df1c" formatted="false">Datei anhängen</string>
     <string name="t_3e15b1f4" formatted="false">$%1$s in / $%2$s out pro 1 Mio. Token</string>
@@ -145,6 +152,8 @@
     <string name="t_4289563d" formatted="false">Mit einer Berechtigung setzt Einfügen den Text direkt an den Cursor, und das Halten einer Lautstärketaste startet ein Diktat. Ohne kopiert Talk Router den Text, damit du ihn einfügst.</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">%1$s entfernen</string>
+    <string name="t_452f2b66" formatted="false">Anthropic, eigener Schlüssel</string>
+    <string name="t_45a0c8fa" formatted="false">Über OpenRouter statt Anthropic verfeinert: %1$s</string>
     <string name="t_45cb3322" formatted="false">Test senden</string>
     <string name="t_45d08313" formatted="false">OpenRouter konnte diese Anfrage nicht ausführen (HTTP %1$d).</string>
     <string name="t_46202182" formatted="false">Keine Sprache erkannt. Bereit für neuen Versuch.</string>
@@ -160,11 +169,14 @@
     <string name="t_4ae2821e" formatted="false">in Bearbeitung</string>
     <string name="t_4b2ded64" formatted="false">E-Mails</string>
     <string name="t_4bfe4352" formatted="false">Wiederherstellung öffnen</string>
+    <string name="t_4c0014e2" formatted="false">Verfeinern läuft wieder über OpenRouter.</string>
+    <string name="t_4c2540de" formatted="false">Anthropic konnte die Anfrage nicht verarbeiten (HTTP %1$d): %2$s</string>
     <string name="t_4c463ae2" formatted="false">Tippe dort auf Talk Router und aktiviere es. Falls Android meldet, dass die Einstellung eingeschränkt ist: App-Info → ⋮ → Eingeschränkte Einstellungen zulassen, dann erneut versuchen.</string>
     <string name="t_4c8985b5" formatted="false">Monatliche Kosten</string>
     <string name="t_4d67a5d5" formatted="false">Angemeldet bei %1$s.getbb.app</string>
     <string name="t_4da08f61" formatted="false">Welches Modell was erledigt hat, wie lange es dauerte, was es kostete</string>
     <string name="t_4ef77ff2" formatted="false">Aufnahme unterbrochen. Gespeichertes Audio kann wiederholt werden.</string>
+    <string name="t_4f3f4751" formatted="false">Anthropic konnte die Anfrage nicht verarbeiten (HTTP %1$d).</string>
     <string name="t_4f723805" formatted="false">2 · Oder Lautstärketaste halten</string>
     <string name="t_4f95835a" formatted="false">Die Webadresse beginnt mit https://</string>
     <string name="t_4fcbfdd0" formatted="false">Diese Datei ist zu groß (maximal 10 MB).</string>
@@ -231,14 +243,17 @@
     <string name="t_6af514f2" formatted="false">Von deinem Chief of Staff</string>
     <string name="t_6b228094" formatted="false">✓  Gespeichert</string>
     <string name="t_6bc2e735" formatted="false">Behalten</string>
+    <string name="t_6c3844cb" formatted="false">Dein Anthropic-Schlüssel ist ungültig. Überprüfe ihn unter Einstellungen → Anthropic-Schlüssel.</string>
     <string name="t_6cf58428" formatted="false">Nur während der Aufnahme.</string>
     <string name="t_6d7c0d41" formatted="false">Preis wird danach angezeigt</string>
+    <string name="t_6dde3895" formatted="false">Anthropic ist gerade ausgelastet.</string>
     <string name="t_6f2c1806" formatted="false">Entfernen</string>
     <string name="t_70c25729" formatted="false">Thread in bb wird geprüft…</string>
     <string name="t_714149a6" formatted="false">Bei Ansprache an Chief senden</string>
     <string name="t_71cc04b4" formatted="false">bb hat keinen Anmeldecode gesendet. Starte sie erneut.</string>
     <string name="t_721589c1" formatted="false">Heute</string>
     <string name="t_7382e59f" formatted="false">Abmelden…</string>
+    <string name="t_73c2d986" formatted="false">Gespeichert, verschlüsselt · Verfeinern nutzt dein Anthropic-Guthaben</string>
     <string name="t_73f57971" formatted="false">Entscheidet</string>
     <string name="t_748c88bc" formatted="false">Open-Source-Hinweise</string>
     <string name="t_75cfcf01" formatted="false">Abmelden</string>
@@ -262,6 +277,7 @@
     <string name="t_7fd53415_one" formatted="false">%1$d Vorlage</string>
     <string name="t_7fd53415_other" formatted="false">%1$d Vorlagen</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Erneut senden</string>
+    <string name="t_8108fc2e" formatted="false">Keine Verbindung zu Anthropic.</string>
     <string name="t_81e2a271" formatted="false">Transkription</string>
     <string name="t_8250ae9b" formatted="false">Bei bb anmelden…</string>
     <string name="t_826621ab" formatted="false">Wenn du deinen Chief beim Namen ansprichst (Einstellungen → Chief of Staff); sonst tippe auf 🧑‍💼</string>
@@ -304,6 +320,7 @@
     <string name="t_95bed80b" formatted="false">Lege die bb-Webadresse für Links unter Einstellungen → bb fest.</string>
     <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">neu gemacht</string>
+    <string name="t_980cb9e2" formatted="false">Anthropic hat zu lange gebraucht.</string>
     <string name="t_980e859d" formatted="false">Talk-Router-Feedback</string>
     <string name="t_9931e57c" formatted="false">Konnte nicht starten. Berechtigungen prüfen und erneut versuchen.</string>
     <string name="t_9aefa862" formatted="false">Schlüssel auf openrouter.ai holen</string>
@@ -337,6 +354,7 @@
     <string name="t_a475c571" formatted="false">Aufnahme nicht abgeschlossen (%1$s). Auf Startseite wiederholen.</string>
     <string name="t_a47dbae1" formatted="false">Diese Notiz hat bereits das genaueste Modell verwendet.</string>
     <string name="t_a599a01d" formatted="false">Open Source. Dein eigener OpenRouter-Schlüssel, kein Talk-Router-Server dazwischen.</string>
+    <string name="t_a5b51395" formatted="false">Anthropic hatte ein Problem (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">bb verbinden</string>
     <string name="t_a61f511e" formatted="false">Talk Router konnte Dateien nicht lesen oder schreiben. Speicherplatz prüfen und erneut versuchen.</string>
     <string name="t_a6ab7640" formatted="false">Du bist bei bb abgemeldet. Melde dich unter Einstellungen → bb wieder an.</string>
@@ -385,6 +403,7 @@
     <string name="t_b8663ec6" formatted="false">Medizin</string>
     <string name="t_b8d84684" formatted="false">Mikrofon nicht erlaubt</string>
     <string name="t_b942a462" formatted="false">keine Details</string>
+    <string name="t_b99de9e8" formatted="false">Kein Anthropic-Schlüssel festgelegt.</string>
     <string name="t_b9c5766f" formatted="false">Talk Router ruft die Sprach- und Textmodelle über OpenRouter mit diesem Schlüssel auf.</string>
     <string name="t_bc1b2887" formatted="false">Der ntfy-Server hat mit HTTP %1$d geantwortet.</string>
     <string name="t_bdae2794" formatted="false">Für korrekte Namen und Begriffe bei Transkription und Überarbeitung.</string>
@@ -406,6 +425,7 @@
     <string name="t_c34fa500" formatted="false">Gib der Vorlage einen Namen und einen Text</string>
     <string name="t_c37292d9" formatted="false">etwa %1$s</string>
     <string name="t_c38dbe97" formatted="false">Einfügen an</string>
+    <string name="t_c3cd3265" formatted="false">(Anthropic-Guthaben)</string>
     <string name="t_c42f4dd6" formatted="false">In dieser Aufnahme wurde keine Sprache erkannt.</string>
     <string name="t_c5501bfa" formatted="false">✨ Verfeinern</string>
     <string name="t_c5573507" formatted="false">Hinzufügen</string>
@@ -421,6 +441,7 @@
     <string name="t_c8d72e3b" formatted="false">Talk Router zu Schnelleinstellungen hinzufügen</string>
     <string name="t_c997df74" formatted="false">bb hat die Anmeldung abgelehnt: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio ist abgelaufen oder wurde gelöscht. Text ist weiterhin gespeichert.</string>
+    <string name="t_caf67b49" formatted="false">Claude hat es abgelehnt, diesen Text zu verfeinern.</string>
     <string name="t_cba5c7dd" formatted="false">Lautstärke leiser</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy ist kostenlos und Open Source. Installiere es und tippe erneut auf „In ntfy öffnen“.</string>
     <string name="t_cc95b0c8" formatted="false">Bestätige Talk Router im Browser und kehre dann zurück.</string>
@@ -466,6 +487,7 @@
     <string name="t_dd6fa894" formatted="false">Texte und Kosten bleiben. Notizen können nicht mehr neu verarbeitet werden.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">Chief of Staff</string>
+    <string name="t_ddd7f31e" formatted="false">Diesen Monat genutztes Anthropic-Guthaben ≈%1$s (Verfeinern mit eigenem Anthropic-Schlüssel, zum Listenpreis; nicht in der Gesamtsumme)</string>
     <string name="t_de8e5494" formatted="false">Tippe auf das Mikrofon zur Aufnahme</string>
     <string name="t_def9cb9f" formatted="false">Loslegen</string>
     <string name="t_df336a1d" formatted="false">Thread-Link oder -ID (thr_…)</string>
@@ -510,6 +532,7 @@
     <string name="t_efc1065a" formatted="false">Nicht verbunden</string>
     <string name="t_f01551fb" formatted="false">Aufnahme enthält keine lesbaren Audiodaten.</string>
     <string name="t_f01db452" formatted="false">Erstelle dort einen Schlüssel, kopiere ihn und füge ihn oben ein. Lade auch ein paar Dollar Guthaben auf OpenRouter auf: Eine einminütige Notiz kostet meist deutlich unter einem Cent.</string>
+    <string name="t_f032e365" formatted="false">Schlüssel auf console.anthropic.com abrufen</string>
     <string name="t_f05beeb6" formatted="false">Am günstigsten</string>
     <string name="t_f0d83244" formatted="false">Das Sprachmodell hat kein Transkript zurückgegeben. Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_f123362f" formatted="false">App</string>

@@ -36,4 +36,4 @@ if [ -z "${JAVA_HOME:-}" ]; then
     done
 fi
 export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/.tools/gradle-user}"
-./gradlew -PopenrouterUrl="http://127.0.0.1:$PORT/api/v1" connectedDebugAndroidTest --console=plain "$@"
+./gradlew -PopenrouterUrl="http://127.0.0.1:$PORT/api/v1" -PanthropicUrl="http://127.0.0.1:$PORT" connectedDebugAndroidTest --console=plain "$@"

@@ -292,6 +292,7 @@ public final class MainActivity extends Activity {
       case "usage" -> usagePage();
       case "settings" -> settingsPage();
       case "key" -> keyPage(false);
+      case "anthropic" -> anthropicKeyPage();
       case "about" -> aboutPage();
       case "words" -> wordsPage();
       case "models" -> modelsPage();
@@ -520,6 +521,89 @@ public final class MainActivity extends Activity {
                 else show("key");
               });
         });
+  }
+
+  /** Settings → Anthropic key (optional): Refine goes to Anthropic directly, on its credits. */
+  private void anthropicKeyPage() {
+    boolean saved = Anthropic.hasKey(this);
+    heading(
+        tr("Settings"),
+        tr("Anthropic key"),
+        tr("Optional. With your own Anthropic key, ✨ Refine goes to Claude directly and is paid from your Anthropic credits. Speech and Jev stay on OpenRouter. If Anthropic fails, Refine goes through OpenRouter instead."));
+    if (saved)
+      ui.add(content, ui.text(tr("✓  A key is saved on this phone, encrypted."), 14, Ui.TEAL), 16);
+    EditText input = ui.input("", saved ? tr("Paste a new key to replace it") : "sk-ant-…", false);
+    android.graphics.Typeface face = input.getTypeface();
+    input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+    input.setTypeface(face);
+    ui.add(content, input, 16);
+    TextView result = ui.add(content, ui.text("", 13, Ui.MUTED), 6);
+    result.setVisibility(View.GONE);
+    Button[] check = {null};
+    check[0] =
+        ui.add(
+            content,
+            ui.button(
+                tr("Check and save"),
+                saved ? Ui.Kind.OUTLINE : Ui.Kind.PRIMARY,
+                v -> {
+                  String key = input.getText().toString().trim();
+                  if (key.isEmpty()) {
+                    toast(tr("Paste your key first"));
+                    return;
+                  }
+                  check[0].setEnabled(false);
+                  result.setVisibility(View.VISIBLE);
+                  result.setTextColor(Ui.MUTED);
+                  result.setText(tr("Checking…"));
+                  io.execute(
+                      () -> {
+                        String failed = null;
+                        try {
+                          Anthropic.check(key);
+                          vault.put(Anthropic.KEY, key);
+                        } catch (Exception ex) {
+                          failed = DictationService.friendly(ex);
+                        }
+                        String message = failed;
+                        main.post(
+                            () -> {
+                              if (message != null) {
+                                check[0].setEnabled(true);
+                                result.setTextColor(Ui.WARN);
+                                result.setText(message);
+                                return;
+                              }
+                              toast(tr("Key saved"));
+                              show("anthropic");
+                            });
+                      });
+                }),
+            10);
+    ui.add(
+        content,
+        ui.button(tr("Get a key on console.anthropic.com"), Ui.Kind.QUIET, v -> openUrl("https://console.anthropic.com/settings/keys")),
+        4);
+    if (saved) {
+      Button remove =
+          ui.button(
+              tr("Remove key"),
+              Ui.Kind.QUIET,
+              v ->
+                  new AlertDialog.Builder(this)
+                      .setTitle(tr("Remove your Anthropic key?"))
+                      .setMessage(tr("Refine goes through OpenRouter again."))
+                      .setPositiveButton(
+                          tr("Remove"),
+                          (d, w) -> {
+                            vault.remove(Anthropic.KEY);
+                            show("anthropic");
+                          })
+                      .setNegativeButton(tr("Keep"), null)
+                      .show());
+      remove.setTextColor(Ui.WARN);
+      ui.add(content, remove, 18);
+    }
   }
 
   private void allowPage() {
@@ -1891,6 +1975,17 @@ public final class MainActivity extends Activity {
             13,
             Ui.MUTED),
         8);
+    if (n.anthropicCost().signum() > 0)
+      ui.add(
+          content,
+          ui.text(tr("Refine: Anthropic credits ≈%1$s", exact(n.anthropicCost())), 13, Ui.MUTED),
+          2);
+    String warning = e.json.optString("anthropicWarning");
+    if (!warning.isEmpty())
+      ui.add(
+          content,
+          ui.text(tr("Refined through OpenRouter instead of Anthropic: %1$s", warning), 13, Ui.WARN),
+          4);
     noteStatus = ui.add(content, ui.text("", 14, Ui.TEAL), 8);
     LinearLayout links = ui.horizontal();
     noteDetails(n, e, redoing, links);
@@ -2133,8 +2228,12 @@ public final class MainActivity extends Activity {
             + (name.isEmpty() ? "" : " · " + name)
             + " · "
             + String.format(Locale.getDefault(), "%.1f s", step.optLong("ms") / 1000.0)
-            + (step.has("cost") ? " · " + exact(new BigDecimal(step.optString("cost"))) : "")
-            + (failed ? " · " + detail : answer != null && !answer.isEmpty() ? " → " + answer : "");
+            + (step.has("cost")
+                ? " · " + (step.optBoolean("approx") ? "≈" : "") + exact(new BigDecimal(step.optString("cost")))
+                : "")
+            + (step.optBoolean("approx") ? " " + tr("(Anthropic credits)") : "")
+            + (failed ? " · " + detail : answer != null && !answer.isEmpty() ? " → " + answer : "")
+            + (step.has("fallback") ? " · " + tr("via OpenRouter: %1$s", step.optString("fallback")) : "");
     TextView t = ui.text(line, 13, failed ? Ui.WARN : Ui.BODY);
     t.setContentDescription(line + " (" + model + ")");
     return t;
@@ -2339,7 +2438,7 @@ public final class MainActivity extends Activity {
           }
           long from = monthStart(month).getTimeInMillis(),
               to = monthStart(month - 1).getTimeInMillis();
-          BigDecimal spent = BigDecimal.ZERO;
+          BigDecimal spent = BigDecimal.ZERO, credits = BigDecimal.ZERO;
           double seconds = 0;
           int count = 0;
           boolean incomplete = false;
@@ -2347,6 +2446,7 @@ public final class MainActivity extends Activity {
           for (HistoryEntry e : all) {
             if (e.created() < from || e.created() >= to) continue;
             spent = spent.add(e.cost());
+            credits = credits.add(e.anthropicCost());
             incomplete |= e.incompleteCost();
             if (e.recordingId().equals(e.id())) {
               seconds += e.duration();
@@ -2369,7 +2469,8 @@ public final class MainActivity extends Activity {
           double talked = seconds;
           int notesCount = count;
           boolean partial = incomplete;
-          main.post(() -> renderUsage(box, total, talked, notesCount, partial, byModel));
+          BigDecimal anthropic = credits;
+          main.post(() -> renderUsage(box, total, talked, notesCount, partial, byModel, anthropic));
         });
   }
 
@@ -2379,7 +2480,8 @@ public final class MainActivity extends Activity {
       double seconds,
       int count,
       boolean partial,
-      Map<String, double[]> byModel) {
+      Map<String, double[]> byModel,
+      BigDecimal anthropic) {
     if (!page.equals("usage")) return;
     LinearLayout tiles = ui.horizontal();
     String[][] values = {
@@ -2428,6 +2530,12 @@ public final class MainActivity extends Activity {
             13,
             Ui.MUTED),
         14);
+    // Anthropic credits are already paid for: shown apart, never in the total.
+    if (anthropic.signum() > 0)
+      ui.add(
+          box,
+          ui.text(tr("Anthropic credits used this month ≈%1$s (Refine with your Anthropic key, at list price; not in the total)", exact(anthropic)), 13, Ui.MUTED),
+          10);
   }
 
   // ---------------------------------------------------------------- settings
@@ -2948,7 +3056,20 @@ public final class MainActivity extends Activity {
     card.addView(ui.divider());
     card.addView(ui.row(tr("Decides"), "Jev · " + Jev.MODEL, null, null));
     card.addView(ui.divider());
-    card.addView(ui.row(tr("Refines"), TextModel.NAME + " · " + TextModel.MODEL, null, null));
+    boolean direct = Anthropic.hasKey(this);
+    card.addView(
+        ui.row(
+            tr("Refines"),
+            TextModel.NAME + " · " + (direct ? tr("Anthropic, your key") : TextModel.MODEL),
+            null,
+            null));
+    card.addView(ui.divider());
+    card.addView(
+        ui.row(
+            tr("Anthropic key"),
+            direct ? tr("Saved, encrypted · Refine uses your Anthropic credits") : tr("Optional · Refine on your Anthropic credits"),
+            null,
+            v -> open("anthropic")));
   }
 
   private String refineLabel() {
@@ -2959,6 +3080,7 @@ public final class MainActivity extends Activity {
     if (LEGACY_CHECK.equals(id)) return tr("Request check · %1$s", LEGACY_CHECK_NAME);
     if (Jev.MODEL.equals(id)) return "Jev";
     if (TextModel.MODEL.equals(id)) return TextModel.NAME;
+    if (Anthropic.model(TextModel.MODEL).equals(id)) return TextModel.NAME + " · Anthropic";
     return id;
   }
 
