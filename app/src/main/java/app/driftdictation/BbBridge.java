@@ -20,7 +20,8 @@ import org.json.JSONObject;
  * local address http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp).
  *
  * <p>The chief of staff is one bb thread in Personal that receives every agent request. It
- * notifies the user through ntfy itself; Talk Router sends no notifications.
+ * notifies the user through ntfy itself; Talk Router sends no notifications. Each request carries a
+ * short ID; text meant for pasting comes back as an ntfy message tagged with it (ChiefText).
  */
 final class BbBridge {
   static final String CONNECT = "connect", CUSTOM = "custom";
@@ -39,7 +40,9 @@ final class BbBridge {
       CHIEF_NAME = "chiefTitle",
       NTFY_SERVER = "ntfyServer",
       TOKEN = "bbToken",
-      NTFY_TOPIC = "ntfyTopic";
+      NTFY_TOPIC = "ntfyTopic",
+      /** The chief knows the paste command (its instructions are from version 2.2 or later). */
+      CHIEF_KNOWS_PASTE = "chiefKnowsPaste";
 
   static final String NTFY_DEFAULT = "https://ntfy.sh";
 
@@ -94,7 +97,7 @@ final class BbBridge {
     return prefs.getString(CHIEF_NAME, "");
   }
 
-  /** The request check offers the chief only when bb is connected and a chief is set. */
+  /** The chief can get requests: bb is connected and a chief is set. */
   static boolean ready(Context context) {
     BbBridge b = new BbBridge(context);
     return b.connected() && !b.chiefId().isEmpty();
@@ -124,11 +127,16 @@ final class BbBridge {
   }
 
   void setChief(ThreadInfo t) {
-    prefs.edit().putString(CHIEF_ID, t.id()).putString(CHIEF_NAME, t.title()).apply();
+    prefs
+        .edit()
+        .putString(CHIEF_ID, t.id())
+        .putString(CHIEF_NAME, t.title())
+        .putBoolean(CHIEF_KNOWS_PASTE, true)
+        .apply();
   }
 
   void forgetChief() {
-    prefs.edit().remove(CHIEF_ID).remove(CHIEF_NAME).apply();
+    prefs.edit().remove(CHIEF_ID).remove(CHIEF_NAME).remove(CHIEF_KNOWS_PASTE).apply();
   }
 
   /** Signs out of bb Connect (revoking the tokens) or forgets the custom address. */
@@ -235,6 +243,41 @@ final class BbBridge {
         + " <<'EOF'\n<one or two sentences: what's done, or what you need from me>\nEOF";
   }
 
+  /** The ntfy tag that marks text meant for pasting, and the one that names its request. */
+  static final String PASTE_TAG = "talkrouter-paste";
+
+  static String requestTag(String request) {
+    return "req-" + request;
+  }
+
+  /**
+   * The curl line for text to paste: tagged for Talk Router, with the request ID, and a Copy
+   * button whose broadcast Talk Router receives (ntfy's "broadcast" action).
+   */
+  static String pasteCommand(String server, String topic) {
+    return "curl -s -H \"Title: Text to paste\" -H \"Tags: "
+        + PASTE_TAG
+        + ","
+        + requestTag("<request ID>")
+        + "\" -H \"Actions: broadcast, Copy, intent="
+        + TalkAccessibility.COPY_ACTION
+        + ", extras.request=<request ID>, clear=true\" --data-binary @- "
+        + server
+        + "/"
+        + topic
+        + " <<'EOF'\n<only the text to paste>\nEOF";
+  }
+
+  /** How to send text back for pasting; part of the standing instructions. */
+  static String pasteInstructions(String server, String topic) {
+    return "Each message from Talk Router ends with a request ID, like [request: k3x9qa]. When a"
+        + " request asks for a text I'll paste somewhere (a message, an email, a reply, a"
+        + " command), send that text, and nothing else, as soon as it's ready, with:\n\n"
+        + pasteCommand(server, topic)
+        + "\n\n  Talk Router shows it with an Insert button. Then finish as usual, including the"
+        + " notification.";
+  }
+
   /** The chief's standing instructions, its first message. */
   static String chiefPrompt(String server, String topic, String linkBase) {
     return "You are my chief of staff. I talk to you by voice from Talk Router, an app on my phone:"
@@ -253,7 +296,10 @@ final class BbBridge {
         + " end your turn:\n\n"
         + notifyCommand(server, topic, linkBase)
         + "\n\n"
-        + "  Plain text, no secrets. No notification for intermediate steps.\n\n"
+        + "  Plain text, no secrets. No notification for intermediate steps.\n"
+        + "- "
+        + pasteInstructions(server, topic)
+        + "\n\n"
         + "Now reply with one short line saying you're ready. Don't run anything and don't send a"
         + " notification for this message.";
   }
@@ -267,6 +313,8 @@ final class BbBridge {
         + " are my chief of staff. When a request is done, or when you need me, send exactly one"
         + " notification, from now on like this:\n\n"
         + notifyCommand(server, topic, linkBase)
+        + "\n\n"
+        + pasteInstructions(server, topic)
         + "\n\nReply with one short line. Don't send a notification for this message.";
   }
 
@@ -280,7 +328,7 @@ final class BbBridge {
    * The message for the chief: the dictation as said, then pasted text as context. Images and
    * PDFs aren't sent in this version; the chief hears that they existed.
    */
-  static String message(String said, List<String[]> pasted, List<String> notSent) {
+  static String message(String said, List<String[]> pasted, List<String> notSent, String request) {
     StringBuilder s = new StringBuilder(said.trim());
     for (String[] p : pasted)
       s.append("\n\n<pasted name=\"")
@@ -292,6 +340,7 @@ final class BbBridge {
       s.append("\n\n(I also attached ")
           .append(String.join(", ", notSent))
           .append(", which Talk Router can't pass on yet.)");
+    if (!request.isEmpty()) s.append("\n\n[request: ").append(request).append("]");
     return s.toString();
   }
 
@@ -365,10 +414,23 @@ final class BbBridge {
     run(tellSnippet(chiefId, message));
   }
 
+  /**
+   * Sends a request: a chief from before version 2.2 is first told (once) how to send text back
+   * for pasting, then gets the request.
+   */
+  void sendRequest(String chiefId, String message) throws Exception {
+    if (!prefs.getBoolean(CHIEF_KNOWS_PASTE, false)) {
+      send(chiefId, settingsMessage(ntfyServer(), ntfyTopic(), linkBase()));
+      prefs.edit().putBoolean(CHIEF_KNOWS_PASTE, true).apply();
+    }
+    send(chiefId, message);
+  }
+
   /** Tells the chief where notifications go now (after the ntfy server or links changed). */
   void updateChief() throws Exception {
     if (chiefId().isEmpty()) return;
     send(chiefId(), settingsMessage(ntfyServer(), ntfyTopic(), linkBase()));
+    prefs.edit().putBoolean(CHIEF_KNOWS_PASTE, true).apply();
   }
 
   String threadLink(String id) {

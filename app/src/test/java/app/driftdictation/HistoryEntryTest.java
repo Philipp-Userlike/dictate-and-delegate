@@ -73,8 +73,8 @@ public class HistoryEntryTest {
     e.step("speech", "speech-model", 1200, new BigDecimal("0.001"), null);
     e = new HistoryEntry(new JSONObject(e.json.toString()));
     e.step("speech", "speech-model", 800, new BigDecimal("0.002"), null);
-    e.step("check", Router.MODEL, 700, new BigDecimal("0.000009"), "text · Apartment application");
-    e.step("text", "text-model", 2500, null, null);
+    e.step("jev", Jev.MODEL, 400, new BigDecimal("0.000009"), null).put("answer", "refine 0.97");
+    e.step("refine", "text-model", 2500, null, null);
     JSONArray steps = e.json.getJSONArray("steps");
     assertEquals(3, steps.length());
     JSONObject speech = steps.getJSONObject(0);
@@ -83,9 +83,10 @@ public class HistoryEntryTest {
     assertEquals("0.003", speech.getString("cost"));
     assertFalse(speech.has("detail"));
     JSONObject check = steps.getJSONObject(1);
-    assertEquals(Router.MODEL, check.getString("model"));
+    assertEquals(Jev.MODEL, check.getString("model"));
     assertEquals("0.000009", check.getString("cost"));
-    assertEquals("text · Apartment application", check.getString("detail"));
+    assertEquals("refine 0.97", check.getString("answer"));
+    assertFalse(check.has("detail"));
     assertFalse(steps.getJSONObject(2).has("cost")); // Unknown, never shown as free.
 
     // One chunk without a price makes the whole step's cost unknown; a failed chunk ends it.

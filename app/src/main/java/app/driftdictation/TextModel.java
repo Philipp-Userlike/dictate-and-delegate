@@ -4,7 +4,7 @@ import android.content.Context;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** The text model that does what a dictation asks for: one fixed model, through OpenRouter. */
+/** Refine: one call to one fixed text model, through OpenRouter. */
 final class TextModel {
   /** Claude Sonnet 5.5: careful with the user's words and quick enough to wait for. */
   static final String MODEL = "anthropic/claude-sonnet-5.5", NAME = "Claude Sonnet 5.5";
@@ -12,52 +12,62 @@ final class TextModel {
   static final int MAX_TOKENS = 4096;
 
   /**
-   * For dictations that ask Talk Router for something; the request check sends nothing else here.
-   * Tested on tidy-ups, tone changes, templates, drafts and plain-transcript requests.
+   * Refine's instructions: work out what the text is for and make it that, follow what the
+   * dictation asks, keep the language and the facts. The named template comes after (Templates).
    */
   static final String DEFAULT_PROMPT =
-      "You are used inside a dictation app. The following is what the user dictated, written down"
-          + " by a speech model, and it asks you, the dictation handler, for something: for example"
-          + " to tidy it up, make it more formal, turn it into an email or bullet points, translate"
-          + " it, fill in a template, or write, answer or plan something. Do what is asked and"
-          + " reply with the resulting text only, ready to paste. Leave out the remarks addressed"
-          + " to you. Change only what the request covers; if the user asks for a plain"
-          + " transcript, keep their words exactly. Keep the user's language unless asked"
-          + " otherwise. Don't invent facts about the user; where a draft needs details you don't"
-          + " have, keep it general instead of adding placeholders.";
+      "You refine dictations inside a dictation app. The user spoke; a speech model wrote it down"
+          + " (expect the odd misheard word). Turn it into the text the user needs.\n\n"
+          + "1. Work out what the text is for: a chat message, an email, a reply, a note, a list, a"
+          + " post, a prompt for an AI, a document… Then make it a good text of that kind: remove"
+          + " filler words, false starts and repetitions, apply the user's own corrections (\"no,"
+          + " I mean Thursday\"), and fix grammar, punctuation and structure, in the tone that fits.\n"
+          + "2. Follow any instructions in the dictation about the text (\"make it formal\", \"turn"
+          + " it into bullet points\", \"translate to English\", \"reply to this offer\", \"write"
+          + " a draft that…\"), and leave those instructions out of the result.\n"
+          + "3. Keep the user's language unless asked otherwise, and keep their voice: a casual"
+          + " message stays casual.\n"
+          + "4. Keep every fact (names, numbers, dates, places) as said. Invent nothing; where a"
+          + " draft needs details you don't have, keep it general instead of adding placeholders.\n\n"
+          + "Reply with the finished text only, ready to paste: no preface, no quotes, no comments.";
 
   static final String ATTACHED =
       "\n\nThe user attached material to this dictation (pasted text, images or files). Use it"
-          + " where the request refers to it, for example the offer to reply to.";
+          + " where the dictation refers to it, for example the offer to reply to.";
+
+  /** The system prompt: instructions, the template asked for, attachments, about the user. */
+  static String system(String prompt, String template, boolean attached, String context) {
+    return prompt
+        + template
+        + (attached ? ATTACHED : "")
+        + (context.isBlank() ? "" : "\n\nAbout the user:\n" + context);
+  }
 
   /**
-   * templates: Templates.prompt(), empty when none was asked for. attachments: message parts
-   * (pasted text, images, PDFs) from Attachments.parts(), sent along with the dictation.
+   * template: Templates.prompt(), empty when none was named. attachments: message parts (pasted
+   * text, images, PDFs) from Attachments.parts(), sent along with the dictation.
    */
   static OpenRouter.Result process(
       Context app,
       String text,
       JSONArray attachments,
       String prompt,
-      String templates,
+      String template,
       String context)
       throws Exception {
     Object user = text;
-    String system = prompt + templates;
     if (attachments.length() > 0) {
       JSONArray parts = new JSONArray().put(new JSONObject().put("type", "text").put("text", text));
       for (int i = 0; i < attachments.length(); i++) parts.put(attachments.get(i));
       user = parts;
-      system += ATTACHED;
     }
     JSONArray messages =
         new JSONArray()
-            .put(new JSONObject().put("role", "system").put("content", system + background(context)))
+            .put(
+                new JSONObject()
+                    .put("role", "system")
+                    .put("content", system(prompt, template, attachments.length() > 0, context)))
             .put(new JSONObject().put("role", "user").put("content", user));
     return new OpenRouter(app).chat(OpenRouter.chatBody(MODEL, messages, MAX_TOKENS, false));
-  }
-
-  private static String background(String context) {
-    return context.isBlank() ? "" : "\n\nAbout the user:\n" + context;
   }
 }

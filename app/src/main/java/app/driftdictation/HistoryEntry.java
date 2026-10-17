@@ -73,17 +73,29 @@ final class HistoryEntry {
     return new BigDecimal(json.optString("textCost", "0"));
   }
 
-  /** The part of cost the request check charged. */
+  /** The part of cost the request check of versions 2.0 and 2.1 charged. */
   BigDecimal routeCost() {
     return new BigDecimal(json.optString("routeCost", "0"));
   }
 
+  /** The part of cost Jev charged. */
+  BigDecimal jevCost() {
+    return new BigDecimal(json.optString("jevCost", "0"));
+  }
+
+  /** Adds to a cost kept apart ("textCost", "jevCost") for Usage; null adds nothing. */
+  void addCost(String key, BigDecimal cost) throws Exception {
+    if (cost != null)
+      json.put(key, new BigDecimal(json.optString(key, "0")).add(cost).toPlainString());
+  }
+
   /**
-   * One step of the activity log: "speech", "check" or "text" (older notes: "simple", "smart",
-   * agent steps), the model, how long it took and what it cost (null when unknown); detail is the
-   * check's answer or an error. The speech chunks of one recording add up to one step.
+   * One step of the activity log: "speech", "jev", "refine" or "bb" (older notes: "check",
+   * "text", "simple", "smart", agent steps), the model, how long it took and what it cost (null
+   * when unknown); detail is an error (in older notes, also the check's answer). The speech chunks
+   * of one recording add up to one step. Returns the step, e.g. to add Jev's "answer".
    */
-  void step(String kind, String model, long ms, BigDecimal cost, String detail) throws Exception {
+  JSONObject step(String kind, String model, long ms, BigDecimal cost, String detail) throws Exception {
     JSONArray steps = json.optJSONArray("steps");
     if (steps == null) json.put("steps", steps = new JSONArray());
     JSONObject last = steps.length() == 0 ? null : steps.getJSONObject(steps.length() - 1);
@@ -96,12 +108,13 @@ final class HistoryEntry {
       if (cost == null || !last.has("cost")) last.remove("cost");
       else last.put("cost", new BigDecimal(last.getString("cost")).add(cost).toPlainString());
       if (detail != null) last.put("detail", detail);
-      return;
+      return last;
     }
     JSONObject s = new JSONObject().put("kind", kind).put("model", model).put("ms", ms);
     if (cost != null) s.put("cost", cost.toPlainString());
     if (detail != null) s.put("detail", detail);
     steps.put(s);
+    return s;
   }
 
   /** Some call's cost is unknown ("estimated": charged at an estimate by the former server). */

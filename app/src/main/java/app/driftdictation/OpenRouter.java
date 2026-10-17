@@ -12,8 +12,7 @@ import java.util.List;
 import org.json.*;
 
 /**
- * OpenRouter, the only thing the app talks to over the network: speech, the request check and the
- * text model, each called directly with the user's own key (kept encrypted in Vault). Every call
+ * OpenRouter: speech, Jev's decisions and the text model, each called directly with the user's own key (kept encrypted in Vault). Every call
  * reports what it cost (usage.cost); notes and Activity show that, and nothing when it's missing.
  */
 final class OpenRouter {
@@ -47,7 +46,7 @@ final class OpenRouter {
   /** Checks a key before it is saved (GET /key); throws with a readable message if it doesn't work. */
   static void check(String key) throws Exception {
     try {
-      send("GET", "/key", null, key.trim());
+      send("GET", base() + "/key", null, key.trim(), 20000, 120000);
     } catch (Unauthorized ex) {
       throw new IOException(tr("This key isn't valid. Check that you copied all of it."), ex);
     } catch (Busy ex) {
@@ -81,6 +80,27 @@ final class OpenRouter {
     // A reply of nothing is still a paid call (e.g. all tokens spent on reasoning).
     if (text.isEmpty()) throw new IOException(tr("The text model returned nothing. Try again."));
     return new Result(text, cost(r));
+  }
+
+  /**
+   * Jev's decisions (POST /api/alpha/decisions, next to /api/v1): the whole answer, once. No
+   * retries and a short timeout, because nothing waits for it.
+   */
+  JSONObject decide(JSONObject body, int timeoutMs) throws Exception {
+    String key = vault.get(KEY);
+    if (key.isBlank()) throw new IOException(tr("Add your OpenRouter key in Talk Router's Settings first."));
+    try {
+      return send("POST", decisionsUrl(), body, key, timeoutMs, timeoutMs);
+    } catch (Unauthorized ex) {
+      throw new IOException(tr("Your OpenRouter key isn't valid anymore. Change it in Talk Router's Settings."), ex);
+    } catch (Busy ex) {
+      throw new IOException(busy(), ex);
+    }
+  }
+
+  /** The decisions endpoint lives at /api/alpha, beside the /api/v1 base. */
+  static String decisionsUrl() {
+    return base().replaceFirst("/api/v1/?$", "") + "/api/alpha/decisions";
   }
 
   // ------------------------------------------------------------------ request bodies
@@ -179,7 +199,7 @@ final class OpenRouter {
     if (key.isBlank()) throw new IOException(tr("Add your OpenRouter key in Talk Router's Settings first."));
     for (int attempt = 0; ; attempt++) {
       try {
-        return send("POST", path, body, key);
+        return send("POST", base() + path, body, key, 20000, 120000);
       } catch (Unauthorized ex) {
         throw new IOException(tr("Your OpenRouter key isn't valid anymore. Change it in Talk Router's Settings."), ex);
       } catch (Busy ex) {
@@ -199,12 +219,13 @@ final class OpenRouter {
     return tr("The model is busy right now. Wait a moment, then try again.");
   }
 
-  private static JSONObject send(String method, String path, JSONObject body, String key)
+  private static JSONObject send(
+      String method, String url, JSONObject body, String key, int connectMs, int readMs)
       throws Exception {
-    HttpURLConnection c = (HttpURLConnection) new URL(base() + path).openConnection();
+    HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
     try {
-      c.setConnectTimeout(20000);
-      c.setReadTimeout(120000);
+      c.setConnectTimeout(connectMs);
+      c.setReadTimeout(readMs);
       c.setInstanceFollowRedirects(false);
       c.setRequestMethod(method);
       c.setRequestProperty("Authorization", "Bearer " + key);

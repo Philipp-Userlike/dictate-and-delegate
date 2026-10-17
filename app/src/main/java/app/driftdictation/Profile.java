@@ -36,9 +36,16 @@ final class Profile {
 
   /**
    * Removes settings from earlier versions: spoken languages, words collected from fixes, the
-   * Simple/Advanced mode, the text model choices, and the account at Drift's former server.
+   * Simple/Advanced mode, the text model choices, the account at Drift's former server, and "Act on
+   * requests" (off becomes both Refine switches off).
    */
   void forgetRetired() {
+    if (prefs.contains("processing")) {
+      boolean on = prefs.getBoolean("processing", true);
+      SharedPreferences.Editor e = prefs.edit().remove("processing");
+      if (!on) e.putBoolean(AUTO_REFINE, false).putBoolean(AUTO_CHIEF, false);
+      e.apply();
+    }
     prefs
         .edit()
         .remove("profileLanguages")
@@ -80,12 +87,21 @@ final class Profile {
     return words();
   }
 
-  /** Talk Router acts on requests in a dictation unless the user turned it off; then it only transcribes. */
-  boolean processing() {
-    return prefs.getBoolean("processing", true);
+  /** Settings → Refine: the two switches. */
+  static final String AUTO_REFINE = "autoRefine", AUTO_CHIEF = "autoChief";
+
+  /** Refine starts by itself when Jev says the dictation asks for it or names a template. */
+  boolean autoRefine() {
+    return prefs.getBoolean(AUTO_REFINE, true);
   }
 
-  String processingPrompt() {
+  /** The dictation goes to the chief by itself when Jev is sure it was addressed. */
+  boolean autoChief() {
+    return prefs.getBoolean(AUTO_CHIEF, true);
+  }
+
+  /** Refine's instructions: the user's own, or the default. */
+  String refinePrompt() {
     String value = prefs.getString("processingPrompt", "").trim();
     return value.isEmpty() ? TextModel.DEFAULT_PROMPT : value;
   }

@@ -9,13 +9,13 @@ import org.json.*;
 
 /**
  * The fake OpenRouter (scripts/fakes/fake_openrouter.py; scripts/device-test.sh starts it and
- * forwards it with adb reverse). Tests queue the transcripts, request-check answers and text-model
- * replies they expect, and read back what the app sent.
+ * forwards it with adb reverse). Tests queue the transcripts, Jev's answers and Refine's replies
+ * they expect, and read back what the app sent.
  */
 final class TestServer {
   /** What the fake reports per call as usage.cost; notes show exactly these. */
   static final BigDecimal SPEECH = new BigDecimal("0.001"),
-      ROUTE = new BigDecimal("0.00005"),
+      JEV = new BigDecimal("0.00002"),
       TEXT = new BigDecimal("0.0003");
 
   /** The fake accepts any key except "bad". */
@@ -44,12 +44,9 @@ final class TestServer {
     post("/test/script", new JSONObject().put("transcribe", answers(texts)));
   }
 
-  /** Queues answers of the request check: "transcript" or "text", with no template. */
-  static void routes(String... kinds) throws Exception {
-    JSONArray list = new JSONArray();
-    for (String k : kinds)
-      list.put(new JSONObject().put("text", "{\"route\": \"" + k + "\", \"template\": \"\"}"));
-    post("/test/script", new JSONObject().put("route", list));
+  /** Queues one answer of Jev: the refine and chief probabilities and the template ("none"). */
+  static void decide(double refine, double chief, String template) throws Exception {
+    script("decide", new JSONObject().put("refine", refine).put("chief", chief).put("template", template));
   }
 
   /** Queues text-model replies; null queues a provider error. */
@@ -57,7 +54,7 @@ final class TestServer {
     post("/test/script", new JSONObject().put("text", answers(texts)));
   }
 
-  /** Queues one error answer of the given kind ("transcribe", "route", "text"): "credits" is a 402. */
+  /** Queues one error answer of the given kind ("transcribe", "decide", "text"): "credits" is a 402. */
   static void error(String kind, String error) throws Exception {
     script(kind, new JSONObject().put("error", error));
   }
@@ -127,6 +124,47 @@ final class TestServer {
       if (all.getJSONObject(i).optString("tool").equals("run"))
         out.add(all.getJSONObject(i).getString("code"));
     return out;
+  }
+
+  // ------------------------------------------------------------------ the fake ntfy
+
+  /** The fake ntfy (scripts/fakes/fake_ntfy.py) listens on the OpenRouter fake's port + 2. */
+  static String ntfyRoot() {
+    java.net.URI u = java.net.URI.create(root());
+    return u.getScheme() + "://" + u.getHost() + ":" + (u.getPort() + 2);
+  }
+
+  static void ntfyReset() throws Exception {
+    postTo(ntfyRoot(), "/test/reset", new JSONObject());
+  }
+
+  /** Publishes as the chief would: text to paste, tagged with the request ID. */
+  static void ntfyPaste(String topic, String request, String text) throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(ntfyRoot() + "/" + topic).openConnection();
+    try {
+      byte[] payload = text.getBytes(StandardCharsets.UTF_8);
+      c.setRequestMethod("POST");
+      c.setDoOutput(true);
+      c.setRequestProperty("Title", "Text to paste");
+      c.setRequestProperty("Tags", BbBridge.PASTE_TAG + "," + BbBridge.requestTag(request));
+      try (OutputStream out = c.getOutputStream()) {
+        out.write(payload);
+      }
+      if (c.getResponseCode() >= 300) throw new IOException("ntfy publish → HTTP " + c.getResponseCode());
+    } finally {
+      c.disconnect();
+    }
+  }
+
+  /** What the fake ntfy saw: publishes and subscriptions, oldest first. */
+  static JSONArray ntfyRequests() throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(ntfyRoot() + "/test/requests").openConnection();
+    try (InputStream in = c.getInputStream()) {
+      return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8))
+          .getJSONArray("requests");
+    } finally {
+      c.disconnect();
+    }
   }
 
   private static JSONArray answers(String... texts) throws JSONException {

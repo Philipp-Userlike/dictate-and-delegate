@@ -195,10 +195,10 @@ public final class MainActivity extends Activity {
             .put("knownCost", String.valueOf(0.0001 * Double.parseDouble(samples[i][2]) / 2));
         if (i < 2) {
           // The last sample stays as notes from before the activity log were.
-          BigDecimal check = new BigDecimal("0.00005");
-          e.json.put("route", Router.TRANSCRIPT);
+          BigDecimal check = new BigDecimal("0.00002");
           e.step("speech", samples[i][0], 1700, e.cost().subtract(check), null);
-          e.step("check", Router.MODEL, 700, check, Router.TRANSCRIPT);
+          e.step("jev", Jev.MODEL, 400, check, null).put("answer", "refine 0.06");
+          e.json.put("jevCost", check.toPlainString());
         }
         h.save(e);
       }
@@ -213,12 +213,13 @@ public final class MainActivity extends Activity {
           .put("version", "processed")
           .put("status", "complete")
           .put("requests", 1)
-          .put("knownCost", "0.0011")
-          .put("route", Router.TEXT)
-          .put("textModel", TextModel.MODEL);
+          .put("knownCost", "0.00107")
+          .put("textModel", TextModel.MODEL)
+          .put("textCost", "0.000323")
+          .put("jevCost", "0.00002");
       email.step("speech", email.model(), 1900, new BigDecimal("0.000727"), null);
-      email.step("check", Router.MODEL, 700, new BigDecimal("0.00005"), Router.TEXT);
-      email.step(Router.TEXT, TextModel.MODEL, 2100, new BigDecimal("0.000323"), null);
+      email.step("jev", Jev.MODEL, 400, new BigDecimal("0.00002"), null).put("answer", "refine 0.97");
+      email.step("refine", TextModel.MODEL, 2100, new BigDecimal("0.000323"), null);
       h.save(email);
       // Short silent audio, so "Redo with a smarter model" is available as it is on real notes.
       File silence = new File(getCacheDir(), "sample.pcm");
@@ -276,6 +277,8 @@ public final class MainActivity extends Activity {
       case "allow1" -> allowPage();
       case "how1" -> howPage();
       case "start1" -> startPage();
+      case "insert1" -> insertPage();
+      case "start" -> startSettingsPage();
       case "try1" -> tryPage();
       case "bb1" -> bbPage(true);
       case "chief1" -> chiefPage(true);
@@ -292,7 +295,7 @@ public final class MainActivity extends Activity {
       case "about" -> aboutPage();
       case "words" -> wordsPage();
       case "models" -> modelsPage();
-      case "processing" -> processingPage();
+      case "refine", "processing" -> refinePage();
       case "legal" -> legalPage();
       case "doc" -> docPage();
       case "templates" -> templatesPage();
@@ -319,7 +322,7 @@ public final class MainActivity extends Activity {
 
   /** Setup pages in order, after the welcome page; the last three (bb) are optional. */
   private static final List<String> SETUP =
-      List.of("key1", "allow1", "how1", "start1", "try1", "bb1", "chief1", "ntfy1");
+      List.of("key1", "allow1", "how1", "start1", "insert1", "try1", "bb1", "chief1", "ntfy1");
 
   /** Progress dots for the setup page shown now, and an optional Skip to the next page. */
   private void steps(boolean skippable) {
@@ -392,7 +395,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("Start Talk Router, then keep using any app: read, look things up, switch. When you stop, your words are written down and copied, ready to paste. Ask for more, like “make this an email” or “reply to this offer”, and you get that text instead."),
+            tr("Start Talk Router, then keep using any app: read, look things up, switch. When you stop, your words are written down, ready to insert where you type. Then decide: ✨ Refine makes them the text you need, and your chief of staff takes on tasks."),
             16,
             Ui.MUTED),
         12);
@@ -554,7 +557,7 @@ public final class MainActivity extends Activity {
     ui.add(
         data,
         ui.text(
-            tr("• Your notes, audio, words and templates stay on this phone.\n• To write down what you said, your recording goes straight to OpenRouter with your key, and on to the speech model's provider. The text goes the same way to a fast model that checks whether you asked for something. If you did, it goes to the text model, with what you told Talk Router about you, your words, the template you asked for and what you attached.\n• If you connect bb, a task you hand to your chief of staff goes to your bb, with the text you pasted.\n• Talk Router has no server and collects nothing. OpenRouter and the model providers handle the data under their own policies."),
+            tr("• Your notes, audio, words and templates stay on this phone.\n• To write down what you said, your recording goes straight to OpenRouter with your key, and on to the speech model's provider. The text goes the same way to Jev, a fast model that decides whether to refine it, with your template names. When it's refined, it goes to the text model, with what you told Talk Router about you, your words, the template you named and what you attached.\n• If you connect bb, a task you hand to your chief of staff goes to your bb, with the text you pasted.\n• Talk Router has no server and collects nothing. OpenRouter and the model providers handle the data under their own policies."),
             14,
             Ui.BODY),
         6);
@@ -654,50 +657,88 @@ public final class MainActivity extends Activity {
     return tr("Dear Mr. Weber,\n\nI would like to let you know that the bathroom tap has been dripping since Monday.");
   }
 
-  /** What Talk Router makes of a dictation: the transcript, or the text asked for. */
+  /** What happens after you stop: the transcript first, then the floating panel's choices. */
   private void howPage() {
     steps(false);
     heading(
         null,
-        tr("Transcript or text"),
-        tr("Talk Router writes down what you say and copies it, ready to paste. Ask for more in the same breath, like “make this an email”, “reply to this offer” or “use my apartment application”: a quick check notices, and %1$s writes that text instead.", TextModel.NAME));
-    example();
-    LinearLayout more = ui.add(content, ui.card(Ui.BG, Ui.LINE), 16);
-    more.addView(ui.strong(tr("📎 Context"), 15));
-    ui.add(
-        more,
-        ui.text(
-            tr("While you record, add what you're talking about: pasted text, an image or a PDF. The text model reads it with your request."),
-            14,
-            Ui.MUTED),
-        4);
-    ui.add(more, ui.strong(tr("Templates"), 15), 12);
-    ui.add(
-        more,
-        ui.text(
-            tr("Texts you write again and again, adapted by voice. Add them in Settings → Templates."),
-            14,
-            Ui.MUTED),
-        4);
+        tr("Transcript first, then you decide"),
+        tr("When you stop, your words are written down and a small panel floats over the app you're in."));
+    LinearLayout panel = ui.add(content, ui.card(Ui.BG, Ui.LINE), 16);
+    String[][] rows = {
+      {tr("Insert"), tr("Puts the text at the cursor, where you're typing.")},
+      {tr("✨ Refine"), tr("%1$s makes it the text you need: an email, a reply, a tidy note, your template. Then Insert refined.", TextModel.NAME)},
+      {tr("🧑‍💼 Chief"), tr("Hands it to your chief of staff in bb, if you set one up. Then Open chat ↗.")},
+      {"✕", tr("Closes the panel. The note stays in Talk Router.")}
+    };
+    for (int i = 0; i < rows.length; i++) {
+      ui.add(panel, ui.strong(rows[i][0], 15), i == 0 ? 0 : 12);
+      ui.add(panel, ui.text(rows[i][1], 14, Ui.MUTED), 2);
+    }
     ui.add(
         content,
         ui.text(
-            tr("Each note shows what it cost, as OpenRouter reports it. The request check costs about $0.00003, a minute of speech with the default model about $0.002."),
+            tr("You can tap Refine or Chief while you're still talking. Ask in the same breath (“make this an email”, “use my apartment application”) and Refine starts by itself. Tasks go to your chief by themselves only when you address it: “chief of staff, …”."),
+            14,
+            Ui.BODY),
+        14);
+    example();
+    ui.add(
+        content,
+        ui.text(
+            tr("Each note shows what it cost, as OpenRouter reports it. Jev's decision costs about $0.00002, a minute of speech with the default model about $0.002."),
             13,
             Ui.MUTED),
         12);
     continueButton(tr("Continue"));
   }
 
-  /** How to start and stop from any app: the Quick Settings tile and the floating button. */
+  /** How to start and stop from any app: the tile or a volume key, and the floating panel. */
   private void startPage() {
     steps(true);
     heading(
         null,
         tr("Start from any app"),
         tr("You don't need to open Talk Router. Start and stop wherever you are."));
+    tileCard(tr("1 · Quick Settings tile"));
+    volumeCard(tr("2 · Or hold a volume key"));
+    overlayCard(tr("3 · Floating panel"));
+    continueButton(tr("Continue"));
+  }
+
+  /** Setup: the Accessibility permission, for Insert and the volume key. */
+  private void insertPage() {
+    steps(true);
+    heading(
+        null,
+        tr("Insert where you type"),
+        tr("With one permission, Insert puts your text right at the cursor, and holding a volume key starts a dictation. Without it, Talk Router copies the text and you paste it."));
+    accessCard();
+    continueButton(tr("Continue"));
+  }
+
+  /** Settings → Start and insert. */
+  private void startSettingsPage() {
+    heading(tr("Settings"), tr("Start and insert"), tr("Start with the tile or a volume key; Insert puts the text where you type."));
+    tileCard(tr("Quick Settings tile"));
+    volumeCard(tr("Hold a volume key"));
+    accessCard();
+  }
+
+  private String startLabel() {
+    String key = prefs.getString(TalkAccessibility.VOLUME_KEY, TalkAccessibility.OFF);
+    String start =
+        switch (key) {
+          case TalkAccessibility.DOWN -> tr("Tile or hold volume down");
+          case TalkAccessibility.UP -> tr("Tile or hold volume up");
+          default -> tr("Tile");
+        };
+    return start + " · " + (TalkAccessibility.enabled(this) ? tr("Insert on") : tr("Insert copies"));
+  }
+
+  private void tileCard(String title) {
     LinearLayout tile = ui.add(content, ui.card(Ui.BG, Ui.LINE), 16);
-    tile.addView(ui.strong(tr("1 · Quick Settings tile"), 16));
+    tile.addView(ui.strong(title, 16));
     ui.add(
         tile,
         ui.text(
@@ -709,8 +750,93 @@ public final class MainActivity extends Activity {
       ui.add(tile, ui.text(tr("✓  Added"), 14, Ui.TEAL), 8);
     else
       ui.add(tile, ui.button(tr("Add Talk Router to Quick Settings"), Ui.Kind.PRIMARY, v -> addTile()), 10);
-    overlayCard(tr("2 · Floating stop button"));
-    continueButton(tr("Continue"));
+  }
+
+  /** Off, volume down or volume up, and how long to hold it. */
+  private void volumeCard(String title) {
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 12);
+    card.addView(ui.strong(title, 16));
+    ui.add(
+        card,
+        ui.text(
+            tr("Hold the key to start, hold it or press it again to stop. A short press still changes the volume. Works while the screen is on and unlocked, not during calls."),
+            14,
+            Ui.MUTED),
+        4);
+    String key = prefs.getString(TalkAccessibility.VOLUME_KEY, TalkAccessibility.OFF);
+    Ui.Flow keys = ui.add(card, ui.flow(), 10);
+    String[][] options = {
+      {TalkAccessibility.OFF, tr("Off")},
+      {TalkAccessibility.DOWN, tr("Volume down")},
+      {TalkAccessibility.UP, tr("Volume up")}
+    };
+    for (String[] o : options)
+      keys.addView(
+          ui.chip(
+              o[1],
+              key.equals(o[0]),
+              v -> {
+                prefs.edit().putString(TalkAccessibility.VOLUME_KEY, o[0]).apply();
+                show(page);
+              }));
+    if (key.equals(TalkAccessibility.OFF)) return;
+    ui.add(card, ui.text(tr("Hold for"), 13, Ui.MUTED), 12);
+    int hold = TalkAccessibility.holdMs(prefs);
+    Ui.Flow holds = ui.add(card, ui.flow(), 6);
+    for (int ms : new int[] {300, 500, 800, 1000})
+      holds.addView(
+          ui.chip(
+              String.format(Locale.getDefault(), "%.1f s", ms / 1000.0),
+              hold == ms,
+              v -> {
+                prefs.edit().putInt(TalkAccessibility.HOLD_MS, ms).apply();
+                show(page);
+              }));
+    if (!TalkAccessibility.enabled(this))
+      ui.add(card, ui.text(tr("Needs the Accessibility permission: see Insert."), 13, Ui.WARN), 10);
+  }
+
+  /** The Accessibility permission: what it's for, what it doesn't do, and where to turn it on. */
+  private void accessCard() {
+    LinearLayout card = ui.add(content, ui.card(Ui.TEAL_TINT, Ui.BAR), 12);
+    card.addView(ui.strong(tr("Insert · Accessibility permission"), 16));
+    ui.add(
+        card,
+        ui.text(
+            tr("Talk Router uses Android's Accessibility permission for two things only: to put your text at the cursor when you tap Insert, and to notice when you hold the volume key you chose. It asks for no accessibility events and reads nothing on your screen; it looks up the text field you're typing in only when you tap Insert. Talk Router is open source, so you can check."),
+            14,
+            Ui.BODY),
+        4);
+    if (TalkAccessibility.enabled(this)) {
+      ui.add(card, ui.text(tr("✓  On"), 14, Ui.TEAL), 8);
+      return;
+    }
+    ui.add(
+        card,
+        ui.button(tr("Open Accessibility settings"), Ui.Kind.PRIMARY, v -> openAccessibility()),
+        10);
+    ui.add(
+        card,
+        ui.text(
+            tr("Tap Talk Router there and switch it on. If Android says the setting is restricted, open App info → ⋮ → Allow restricted settings, then try again."),
+            12,
+            Ui.MUTED),
+        8);
+  }
+
+  /** Android's Accessibility settings, with Talk Router highlighted where Settings supports it. */
+  private void openAccessibility() {
+    String me = new ComponentName(this, TalkAccessibility.class).flattenToString();
+    Bundle args = new Bundle();
+    args.putString(":settings:fragment_args_key", me);
+    try {
+      startActivity(
+          new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+              .putExtra(":settings:fragment_args_key", me)
+              .putExtra(":settings:show_fragment_args", args));
+    } catch (ActivityNotFoundException ex) {
+      toast(tr("Open Android settings → Accessibility → Talk Router."));
+    }
   }
 
   private void overlayCard(String title) {
@@ -719,7 +845,7 @@ public final class MainActivity extends Activity {
     ui.add(
         overlay,
         ui.text(
-            tr("While you record, a small red button stays on top of other apps. Tap it to stop. When your text is ready, it says “Ready to paste”. Android then shows a list of apps: tap Talk Router, switch it on, and come back."),
+            tr("While you dictate, a small panel stays on top of other apps: tap ■ to stop, then Insert, Refine or Chief. To allow it, Android shows a list of apps: tap Talk Router, switch it on, and come back."),
             14,
             Ui.MUTED),
         4);
@@ -754,7 +880,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Talk Router writes it down and copies it.\n3. When you see “Ready to paste”, touch and hold the box below, then tap Paste."),
+            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Talk Router writes it down.\n3. Tap the box below, then Insert on the floating panel. Or touch and hold the box and tap Paste: the text is copied too."),
             15,
             Ui.BODY),
         12);
@@ -805,12 +931,13 @@ public final class MainActivity extends Activity {
   private void setupPage() {
     heading(tr("Settings"), tr("Permissions"), null);
     microphoneCard();
-    overlayCard(tr("Floating stop button · optional"));
+    overlayCard(tr("Floating panel · optional"));
+    accessCard();
     dataCard();
     ui.add(
         content,
         ui.text(
-            tr("Not needed: Accessibility, screen recording, notifications, contacts, location."),
+            tr("Not needed: screen recording, notifications, contacts, location."),
             13,
             Ui.MUTED),
         14);
@@ -1432,7 +1559,7 @@ public final class MainActivity extends Activity {
             null,
             v -> open("models")));
     models.addView(ui.divider());
-    models.addView(ui.row(tr("Requests"), requestsLabel(), null, v -> open("processing")));
+    models.addView(ui.row(tr("Refine"), refineLabel(), null, v -> open("refine")));
     LinearLayout recentHead = ui.horizontal();
     recentHead.addView(ui.label(tr("Recent")), new LinearLayout.LayoutParams(0, -2, 1));
     recentHead.addView(ui.button(tr("All notes"), Ui.Kind.QUIET, v -> open("notes")));
@@ -1603,10 +1730,15 @@ public final class MainActivity extends Activity {
         case "no speech" -> tr("no speech");
         default -> tr("unfinished");
       };
-    if (Router.CHIEF.equals(n.shown().json.optString("route")))
+    if (chiefNote(n.shown()))
       return DictationService.sentToChief(n.shown()) ? tr("chief of staff") : tr("not sent");
     if (n.versions().size() > 1) return tr("redone");
     return "original".equals(n.shown().json.optString("version")) ? tr("as said") : null;
+  }
+
+  /** The note was sent to the chief of staff, or sending it failed. */
+  private static boolean chiefNote(HistoryEntry e) {
+    return e.json.has("chiefThread") || e.json.has("chiefFailed") || "chief".equals(e.json.optString("route"));
   }
 
   private void openNote(String id) {
@@ -1669,63 +1801,52 @@ public final class MainActivity extends Activity {
               14,
               Ui.WARN));
     }
-    boolean chief = Router.CHIEF.equals(e.json.optString("route"));
+    boolean chief = chiefNote(e);
     boolean sent = chief && DictationService.sentToChief(e);
     if (chief) chiefBanner(e, sent);
+    if (e.json.has("chiefReply")) chiefReply(e);
     if (e.json.has("processingFailed")) {
       ui.add(
           content,
           ui.text(
               tr(
-                  "Couldn't process this note: %1$s Below is what you said.",
+                  "Couldn't refine this note: %1$s Below is what you said.",
                   e.json.optString("processingFailed")),
               14,
               Ui.WARN),
           12);
-      ui.add(content, ui.button(tr("Process again"), Ui.Kind.OUTLINE, v -> processAgain()), 8);
+      ui.add(content, ui.button(tr("Refine again"), Ui.Kind.OUTLINE, v -> processAgain()), 8);
     }
     boolean twoVersions =
-        !sent
-            && e.json.has("processed")
+        e.json.has("processed")
             && !e.json.optString("processed").equals(e.json.optString("original"));
     boolean original =
         twoVersions && (showOriginal || "original".equals(e.json.optString("version")));
     String shown = original ? e.json.optString("original", e.raw()) : e.text();
     if (twoVersions) {
       Ui.Flow versions = ui.add(content, ui.flow(), 14);
-      versions.addView(ui.chip(tr("Talk Router's version"), !original, v -> switchVersion(false)));
+      versions.addView(ui.chip(tr("Refined"), !original, v -> switchVersion(false)));
       versions.addView(ui.chip(tr("What you said"), original, v -> switchVersion(true)));
-    }
-    if (sent) {
-      // Sent: the chief of staff has it; what was said stays readable, with nothing to paste.
-      ui.add(content, ui.strong(tr("What you said"), 15), 18);
-      TextView said = ui.text(e.json.optString("original", e.text()), 17, Ui.INK);
-      said.setTextIsSelectable(true);
-      said.setLineSpacing(0, 1.3f);
-      said.setBackground(ui.shape(Ui.PANEL, 0, 16));
-      said.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
-      ui.add(content, said, 8);
-    } else {
-      editor = ui.input(shown, tr("No text yet"), true);
-      editor.setTextSize(18);
-      editor.setLineSpacing(0, 1.3f);
-      editor.setMinLines(6);
-      editor.setBackground(ui.shape(Ui.PANEL, 0, 16));
-      editor.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
-      editorBase = shown;
-      ui.add(content, editor, 14);
-      ui.add(
-          content,
-          ui.button(
-              tr("Copy"),
-              Ui.Kind.PRIMARY,
-              v -> {
-                saveEdits();
-                DictationService.copy(this, editor.getText().toString());
-                toast(tr("Copied"));
-              }),
-          14);
-    }
+    } else if (sent) ui.add(content, ui.strong(tr("What you said"), 15), 18);
+    editor = ui.input(shown, tr("No text yet"), true);
+    editor.setTextSize(18);
+    editor.setLineSpacing(0, 1.3f);
+    editor.setMinLines(6);
+    editor.setBackground(ui.shape(Ui.PANEL, 0, 16));
+    editor.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
+    editorBase = shown;
+    ui.add(content, editor, 14);
+    ui.add(
+        content,
+        ui.button(
+            tr("Copy"),
+            Ui.Kind.PRIMARY,
+            v -> {
+              saveEdits();
+              DictationService.copy(this, editor.getText().toString());
+              toast(tr("Copied"));
+            }),
+        14);
     java.util.List<Attachments.Item> files = new Attachments(this).of(noteId);
     if (!files.isEmpty()) {
       StringBuilder names = new StringBuilder();
@@ -1760,6 +1881,26 @@ public final class MainActivity extends Activity {
     delete.setTextColor(Ui.WARN);
     links.addView(delete);
     ui.add(content, links, 8);
+  }
+
+  /** What the chief of staff sent back for pasting, with Copy. */
+  private void chiefReply(HistoryEntry e) {
+    LinearLayout card = ui.add(content, ui.card(Ui.TEAL_TINT, Ui.BAR), 14);
+    card.addView(ui.label(tr("From your chief of staff")));
+    TextView text = ui.text(e.json.optString("chiefReply"), 16, Ui.INK);
+    text.setTextIsSelectable(true);
+    text.setLineSpacing(0, 1.25f);
+    ui.add(card, text, 6);
+    ui.add(
+        card,
+        ui.button(
+            tr("Copy"),
+            Ui.Kind.QUIET,
+            v -> {
+              DictationService.copy(this, e.json.optString("chiefReply"));
+              toast(tr("Copied"));
+            }),
+        4);
   }
 
   /**
@@ -1806,13 +1947,10 @@ public final class MainActivity extends Activity {
     io.execute(
         () -> {
           String failed = null;
-          try (HistoryStore h = new HistoryStore(this)) {
+          try {
             NoteList.Note n = currentNote();
             if (n == null) throw new IOException(tr("This note was deleted."));
-            HistoryEntry e = h.get(n.shown().id());
-            DictationService.sendToChief(this, e);
-            h.save(e);
-            failed = e.json.optString("chiefFailed", null);
+            failed = DictationService.sendNote(this, n.shown().id());
             prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
           } catch (Exception ex) {
             failed = DictationService.friendly(ex);
@@ -1849,8 +1987,7 @@ public final class MainActivity extends Activity {
                 ? tr("This note already used the most accurate model.")
                 : modelName(smarter.optString("id"))
                     + " · "
-                    + estimate(smarter, e.duration())
-                    + (profile.processing() ? " " + tr("plus the request check") : "");
+                    + estimate(smarter, e.duration());
     if (!audio || smarter == null || redoing) {
       redo.setEnabled(false);
       redo.setAlpha(0.5f);
@@ -1908,7 +2045,7 @@ public final class MainActivity extends Activity {
       LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 10);
       LinearLayout head = ui.horizontal();
       boolean routed =
-          e.json.has("route") || e.json.has("routeFailed") || e.json.has("textModel");
+          e.json.has("route") || e.json.has("routeFailed") || e.json.has("textModel") || chiefNote(e);
       head.addView(
           ui.text(
               DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
@@ -1945,63 +2082,66 @@ public final class MainActivity extends Activity {
     }
   }
 
-  /** "Request check · DeepSeek V4.1 Flash · 0.7 s · $0.00005 → Text". */
+  /** The request check of versions 2.0 and 2.1, in older notes' activity. */
+  static final String LEGACY_CHECK = "deepseek/deepseek-v4.1-flash", LEGACY_CHECK_NAME = "DeepSeek V4.1 Flash";
+
+  /** "Jev · 0.4 s · $0.00002 → refine 0.97", "Refine · Claude Sonnet 5.5 · 2.1 s · $0.0003". */
   private View stepRow(JSONObject step) {
     String kind = step.optString("kind"), model = step.optString("model");
     String detail = step.optString("detail");
     String label =
         switch (kind) {
           case "speech" -> tr("Transcription");
+          case "jev" -> "Jev";
           case "check" -> tr("Request check");
-          // "simple" and "smart": notes from before there was one text model.
-          case Router.TEXT, "simple", "smart" -> tr("Text");
+          // "text", "simple" and "smart": notes from before Refine.
+          case "refine", "text", "simple", "smart" -> tr("Refine");
           case DictationService.CHIEF_STEP -> "bb";
           default -> kind;
         };
     String name =
-        kind.equals("speech")
-            ? modelName(model)
-            : kind.equals("check")
-                ? Router.NAME
-                : kind.equals(DictationService.CHIEF_STEP) ? tr("Chief of staff") : textModelName(model);
-    // A step's detail is an error, except the check's answer.
-    String answer = kind.equals("check") ? checkDetail(detail) : null;
-    boolean failed = !detail.isEmpty() && answer == null;
+        switch (kind) {
+          case "speech" -> modelName(model);
+          case "jev" -> "";
+          case "check" -> LEGACY_CHECK_NAME;
+          case DictationService.CHIEF_STEP -> tr("Chief of staff");
+          default -> textModelName(model);
+        };
+    // A step's detail is an error, except the old check's answer; Jev's answer is kept apart.
+    String answer =
+        kind.equals("check") ? checkDetail(detail) : step.has("answer") ? step.optString("answer") : null;
+    boolean failed = !detail.isEmpty() && !kind.equals("check");
     String line =
         label
-            + " · "
-            + name
+            + (name.isEmpty() ? "" : " · " + name)
             + " · "
             + String.format(Locale.getDefault(), "%.1f s", step.optLong("ms") / 1000.0)
             + (step.has("cost") ? " · " + exact(new BigDecimal(step.optString("cost"))) : "")
-            + (answer != null ? " → " + answer : failed ? " · " + detail : "");
+            + (failed ? " · " + detail : answer != null && !answer.isEmpty() ? " → " + answer : "");
     TextView t = ui.text(line, 13, failed ? Ui.WARN : Ui.BODY);
     t.setContentDescription(line + " (" + model + ")");
     return t;
   }
 
-  /** The check's answer in words ("Text · Apartment application"); null for an error. */
+  /** The old check's answer in words ("Text · Apartment application"); null for an error. */
   private static String checkDetail(String detail) {
     int cut = detail.indexOf(" · ");
     String rest = cut < 0 ? "" : detail.substring(cut);
     return switch (cut < 0 ? detail : detail.substring(0, cut)) {
-      case Router.TRANSCRIPT -> tr("Transcript only") + rest;
-      case Router.TEXT, "simple", "smart" -> tr("Text") + rest;
-      case Router.CHIEF -> tr("Chief of staff");
+      case "transcript" -> tr("Transcript only") + rest;
+      case "text", "simple", "smart" -> tr("Refine") + rest;
+      case "chief" -> tr("Chief of staff");
       default -> null;
     };
   }
 
-  /** What the request check decided for this note. */
+  /** What happened to this note: refined, sent to the chief, or the transcript as said. */
   private static String routeLabel(HistoryEntry e) {
+    if (chiefNote(e))
+      return DictationService.sentToChief(e) ? tr("Sent to chief of staff") : tr("Not sent to chief of staff");
+    if (e.json.has("processed")) return tr("Refined");
     if (e.json.has("routeFailed")) return tr("Request check failed, kept as said");
-    return switch (e.json.optString("route")) {
-      case Router.CHIEF ->
-          DictationService.sentToChief(e) ? tr("Sent to chief of staff") : tr("Not sent to chief of staff");
-      case Router.TEXT, "simple", "smart" -> tr("Text");
-      case Router.TRANSCRIPT -> tr("Transcript only");
-      default -> tr("Processed");
-    };
+    return tr("Transcript only");
   }
 
   private boolean redoing() {
@@ -2039,7 +2179,7 @@ public final class MainActivity extends Activity {
     show("note");
   }
 
-  /** Runs processing once more on a note where it failed. */
+  /** Runs Refine once more on a note where it failed. */
   private void processAgain() {
     if (applying) return;
     try {
@@ -2051,34 +2191,26 @@ public final class MainActivity extends Activity {
     }
     saveEdits(); // Unsaved typing would otherwise overwrite the new result.
     applying = true;
-    toast(tr("Processing your text…"));
+    toast(tr("Refining your text…"));
     io.execute(
         () -> {
           String failed = null;
-          boolean sent = false;
-          try (HistoryStore h = new HistoryStore(this)) {
+          try {
             NoteList.Note n = currentNote();
             if (n == null) throw new IOException(tr("This note was deleted."));
-            HistoryEntry e = h.get(n.shown().id());
-            DictationService.process(this, e, profile);
-            h.save(e);
-            failed = e.json.optString("processingFailed", null);
-            if (failed == null) failed = e.json.optString("chiefFailed", null);
-            sent = DictationService.sentToChief(e);
-            if (failed == null && !sent) DictationService.copy(this, e.text());
+            HistoryEntry e = n.shown();
+            failed = DictationService.refineNote(this, e.id(), profile, e.json.optString("template"));
+            HistoryEntry now = DictationService.load(this, e.id());
+            if (failed == null && now != null) DictationService.copy(this, now.text());
             prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
           } catch (Exception ex) {
             failed = DictationService.friendly(ex);
           } finally {
             String message = failed;
-            boolean toChief = sent;
             main.post(
                 () -> {
                   applying = false;
-                  toast(
-                      message != null
-                          ? message
-                          : toChief ? tr("Sent to chief of staff") : tr("Processed · copied"));
+                  toast(message != null ? message : tr("Refined · copied"));
                   if (page.equals("note")) show("note");
                 });
           }
@@ -2205,14 +2337,16 @@ public final class MainActivity extends Activity {
             }
             double[] m = byModel.computeIfAbsent(e.model(), k -> new double[2]);
             m[0] += e.duration();
-            m[1] += e.cost().subtract(e.textCost()).subtract(e.routeCost()).doubleValue();
+            m[1] += e.cost().subtract(e.textCost()).subtract(e.routeCost()).subtract(e.jevCost()).doubleValue();
             if (e.textCost().signum() > 0) {
               double[] t = byModel.computeIfAbsent(e.json.optString("textModel"), k -> new double[2]);
               t[1] += e.textCost().doubleValue();
             }
             if (e.routeCost().signum() > 0)
-              byModel.computeIfAbsent(Router.MODEL, k -> new double[2])[1] +=
+              byModel.computeIfAbsent(LEGACY_CHECK, k -> new double[2])[1] +=
                   e.routeCost().doubleValue();
+            if (e.jevCost().signum() > 0)
+              byModel.computeIfAbsent(Jev.MODEL, k -> new double[2])[1] += e.jevCost().doubleValue();
           }
           BigDecimal total = spent;
           double talked = seconds;
@@ -2308,7 +2442,7 @@ public final class MainActivity extends Activity {
     dictation.addView(
         ui.row(tr("Speech model"), modelName(profile.fixedModel()), null, v -> open("models")));
     dictation.addView(ui.divider());
-    dictation.addView(ui.row(tr("Requests"), requestsLabel(), null, v -> open("processing")));
+    dictation.addView(ui.row(tr("Refine"), refineLabel(), null, v -> open("refine")));
     dictation.addView(ui.divider());
     int templates = new Templates(this).all().size();
     dictation.addView(
@@ -2339,9 +2473,9 @@ public final class MainActivity extends Activity {
     ui.add(content, ui.label(tr("Using Talk Router")), 22);
     LinearLayout using = ui.add(content, ui.card(Ui.BG, 0), 8);
     using.setPadding(0, 0, 0, 0);
-    using.addView(ui.row(tr("Floating button"), bubbleLabel(), null, v -> bubbleOptions()));
+    using.addView(ui.row(tr("Start and insert"), startLabel(), null, v -> open("start")));
     using.addView(ui.divider());
-    using.addView(ui.row(tr("Add Quick Settings tile"), null, null, v -> addTile()));
+    using.addView(ui.row(tr("Floating panel"), bubbleLabel(), null, v -> bubbleOptions()));
     using.addView(ui.divider());
     using.addView(
         ui.row(
@@ -2605,18 +2739,19 @@ public final class MainActivity extends Activity {
         .show();
   }
 
-  private void processingPage() {
+  /** Settings → Refine: what starts by itself, the models, and Refine's instructions. */
+  private void refinePage() {
     heading(
         tr("Back"),
-        tr("Requests"),
-        tr("Talk Router writes down what you say. When you ask for more, like “clean this up”, “make it an email” or “use my apartment application”, a fast check sends it to the text model. Otherwise your note is the transcript, as you said it."));
+        tr("Refine"),
+        tr("Your words come first, always. Then ✨ Refine turns them into the text you need: it works out what it's for (a message, an email, a note), follows what you asked for and fills in your templates. Jev, a fast decision model, starts it by itself when you asked for a text, and sends a task to your chief of staff only when you clearly address it."));
     LinearLayout card = ui.add(content, ui.card(Ui.BG, Ui.LINE), 18);
     card.setPadding(0, 0, 0, 0);
-    requestRows(card);
+    refineRows(card);
     example();
-    ui.add(content, ui.strong(tr("Instructions for requests"), 15), 22);
-    ui.add(content, ui.text(tr("About you, your words and the template you ask for are added automatically."), 13, Ui.MUTED), 2);
-    EditText prompt = ui.input(profile.processingPrompt(), "", true);
+    ui.add(content, ui.strong(tr("Instructions for Refine"), 15), 22);
+    ui.add(content, ui.text(tr("About you, your words and the template you name are added automatically."), 13, Ui.MUTED), 2);
+    EditText prompt = ui.input(profile.refinePrompt(), "", true);
     prompt.setFilters(new InputFilter[] {new InputFilter.LengthFilter(4000)});
     prompt.setMinLines(8);
     prompt.setTextSize(14);
@@ -2636,7 +2771,7 @@ public final class MainActivity extends Activity {
             Ui.Kind.QUIET,
             v -> {
               prefs.edit().remove("processingPrompt").apply();
-              show("processing");
+              show("refine");
             }),
         4);
   }
@@ -2661,13 +2796,13 @@ public final class MainActivity extends Activity {
         ui.text(
             tr("Talk Router writes your application with these details, ready to paste."), 14, Ui.MUTED),
         6);
-    if (!profile.processing())
+    if (!profile.autoRefine())
       ui.add(
           content,
           ui.text(
-              tr("Requests are off, so templates aren't used. Turn them on in Settings → Requests."),
+              tr("Refine automatically is off: a template is used when you tap ✨ Refine."),
               14,
-              Ui.WARN),
+              Ui.MUTED),
           14);
     List<Templates.Template> all = new Templates(this).all();
     if (all.isEmpty())
@@ -2775,37 +2910,52 @@ public final class MainActivity extends Activity {
     }
   }
 
-  /** On/off and the two fixed models, for the Requests page. */
-  private void requestRows(LinearLayout card) {
-    Switch on = ui.toggle(profile.processing());
-    on.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean("processing", c).apply());
-    card.addView(ui.row(tr("Act on requests"), tr("When off, Talk Router only writes down what you say"), on, null));
+  /** The two switches and the two fixed models, for the Refine page. */
+  private void refineRows(LinearLayout card) {
+    Switch refine = ui.toggle(profile.autoRefine());
+    refine.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean(Profile.AUTO_REFINE, c).apply());
+    card.addView(
+        ui.row(
+            tr("Refine automatically"),
+            tr("When you ask for a text, name a template, or the dictation needs tidying"),
+            refine,
+            null));
     card.addView(ui.divider());
-    card.addView(ui.row(tr("Request check"), Router.NAME + " · " + Router.MODEL, null, null));
+    Switch chief = ui.toggle(profile.autoChief());
+    chief.setOnCheckedChangeListener((b, c) -> prefs.edit().putBoolean(Profile.AUTO_CHIEF, c).apply());
+    card.addView(
+        ui.row(
+            tr("Send to chief when addressed"),
+            tr("Only when you clearly speak to your chief of staff or agent; otherwise tap 🧑‍💼"),
+            chief,
+            null));
     card.addView(ui.divider());
-    card.addView(ui.row(tr("Text model"), TextModel.NAME + " · " + TextModel.MODEL, null, null));
+    card.addView(ui.row(tr("Decides"), "Jev · " + Jev.MODEL, null, null));
+    card.addView(ui.divider());
+    card.addView(ui.row(tr("Refines"), TextModel.NAME + " · " + TextModel.MODEL, null, null));
   }
 
-  private String requestsLabel() {
-    return profile.processing() ? tr("On · %1$s", TextModel.NAME) : tr("Off");
+  private String refineLabel() {
+    return profile.autoRefine() ? tr("Automatic · %1$s", TextModel.NAME) : tr("When you tap ✨ Refine");
   }
 
   private String textModelName(String id) {
-    if (Router.MODEL.equals(id)) return tr("Request check · %1$s", Router.NAME);
+    if (LEGACY_CHECK.equals(id)) return tr("Request check · %1$s", LEGACY_CHECK_NAME);
+    if (Jev.MODEL.equals(id)) return "Jev";
     if (TextModel.MODEL.equals(id)) return TextModel.NAME;
     return id;
   }
 
   private String bubbleLabel() {
-    return "never".equals(prefs.getString("bubbleMode", "recording")) ? tr("Never") : tr("While recording");
+    return "never".equals(prefs.getString("bubbleMode", "recording")) ? tr("Never") : tr("While you dictate");
   }
 
   private void bubbleOptions() {
-    String[] labels = {tr("While recording"), tr("Never")};
+    String[] labels = {tr("While you dictate"), tr("Never")};
     String[] values = {"recording", "never"};
     int current = Arrays.asList(values).indexOf(prefs.getString("bubbleMode", "recording"));
     new AlertDialog.Builder(this)
-        .setTitle(tr("Floating button"))
+        .setTitle(tr("Floating panel"))
         .setSingleChoiceItems(
             labels,
             Math.max(0, current),
@@ -2838,7 +2988,7 @@ public final class MainActivity extends Activity {
                     || result == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
                   prefs.edit().putBoolean("tileAdded", true).apply();
                   toast(tr("Talk Router is in Quick Settings, at the end. Swipe down, then left to find it."));
-                  if (page.equals("start1") || page.equals("home")) show(page);
+                  if (List.of("start1", "home", "start").contains(page)) show(page);
                 } else toast(tr("You can also add Talk Router using the Quick Settings edit button."));
               });
     } catch (RuntimeException ex) {
@@ -2909,7 +3059,7 @@ public final class MainActivity extends Activity {
         && Settings.canDrawOverlays(this)
         && DictationService.instance == null
         && setupComplete()) send(DictationService.CONFIGURE);
-    if (List.of("setup", "settings", "allow1", "start1").contains(page)) show(page);
+    if (List.of("setup", "settings", "allow1", "start1", "insert1", "start").contains(page)) show(page);
     main.post(refresh);
   }
 

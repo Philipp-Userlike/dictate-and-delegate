@@ -39,7 +39,8 @@ public class ComparisonTest {
         .edit()
         .putBoolean("retainAudio", true)
         .putString("bubbleMode", "recording")
-        .putBoolean("processing", false)
+        .putBoolean(Profile.AUTO_REFINE, false)
+        .putBoolean(Profile.AUTO_CHIEF, false)
         .commit();
     TestServer.useKey(c);
     send(DictationService.DISCARD);

@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """A fake OpenRouter for tests: no provider calls, no money, answers tests queue up front.
 
-Serves the three OpenRouter endpoints Talk Router uses, under /api/v1 like the real one:
+Serves the OpenRouter endpoints Talk Router uses, under /api/v1 and /api/alpha like the real one:
 
   GET  /api/v1/key                    the key check in setup ("bad" keys get 401)
   POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."
-  POST /api/v1/chat/completions       the request check (ROUTER_MODEL) gets a queued route, or
-                                      transcript; any other model a queued reply, or the dictation
+  POST /api/v1/chat/completions       Refine: a queued reply, or the dictation echoed
+  POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
+                                      only the questions asked are answered
 
 Test control (not part of OpenRouter):
 
-  POST /test/script   {"transcribe": [...], "route": [...], "text": [...]}; each item is
+  POST /test/script   {"transcribe": [...], "text": [...], "decide": [...]}; each item is
                       {"text": "...", "cost": 0.001} ("cost": null: no usage.cost), or an error:
-                      {"error": "provider"} 502, "credits" 402, "busy" 429, "invalid" 400
+                      {"error": "provider"} 502, "credits" 402, "busy" 429, "invalid" 400.
+                      "decide" items: {"refine": 0.9, "chief": 0.1, "template": "none",
+                      "cost": 0.00002, "delay": 5} (delay in seconds, to test Jev's timeout)
   POST /test/reset    empties the queues and the request log
   GET  /test/requests the requests received since the last reset, newest last
 
@@ -21,17 +24,17 @@ Usage: python3 scripts/fakes/fake_openrouter.py [--port 8797]
 import argparse
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-ROUTER_MODEL = "deepseek/deepseek-v4.1-flash"
-COSTS = {"transcribe": 0.001, "route": 0.00005, "text": 0.0003}
+COSTS = {"transcribe": 0.001, "text": 0.0003, "decide": 0.00002}
 ERRORS = {"provider": (502, "Fake provider error"),
           "credits": (402, "Insufficient credits"),
           "busy": (429, "Rate limit exceeded"),
           "invalid": (400, "Fake invalid request")}
 
 lock = threading.Lock()
-queues = {"transcribe": [], "route": [], "text": []}
+queues = {"transcribe": [], "text": [], "decide": []}
 requests = []
 
 
@@ -39,7 +42,7 @@ def next_item(kind, default_text):
     with lock:
         if queues[kind]:
             return queues[kind].pop(0)
-    return {"text": default_text}
+    return default_text if isinstance(default_text, dict) else {"text": default_text}
 
 
 def user_text(body):
@@ -110,11 +113,10 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/v1/audio/transcriptions":
             self.log("transcribe", body)
             return self.answer("transcribe", next_item("transcribe", "Fake transcript."), chat=False)
+        if self.path == "/api/alpha/decisions":
+            self.log("decide", body)
+            return self.decide(body, next_item("decide", {}))
         if self.path == "/api/v1/chat/completions":
-            if body.get("model") == ROUTER_MODEL:
-                self.log("route", body)
-                default = '{"route": "transcript", "template": ""}'
-                return self.answer("route", next_item("route", default), chat=True)
             self.log("text", body)
             return self.answer("text", next_item("text", user_text(body)), chat=True)
         self.reply(404, {"error": {"code": 404, "message": "Not found"}})
@@ -126,6 +128,32 @@ class Handler(BaseHTTPRequestHandler):
             summary["input_audio"] = {"format": audio.get("format"), "bytes": len(audio.get("data") or "")}
         with lock:
             requests.append({"kind": kind, "body": summary})
+
+    def decide(self, body, item):
+        """Jev's answer shape: a noul per yes/no question, a choice with probabilities."""
+        if "error" in item:
+            status, message = ERRORS.get(item["error"], ERRORS["provider"])
+            return self.reply(status, {"error": {"code": status, "message": message}})
+        if item.get("delay"):
+            time.sleep(float(item["delay"]))
+        answers = {}
+        for name, q in (body.get("questions") or {}).items():
+            if q.get("type") == "noul":
+                answers[name] = {"type": "noul", "noul": float(item.get(name, 0.0))}
+            elif q.get("type") == "choice":
+                options = list((q.get("criteria") or {}).keys()) or ["none"]
+                choice = item.get(name, options[0])
+                if choice not in options:
+                    choice = options[0]
+                answers[name] = {"type": "choice", "choice": choice, "confidence": 0.95,
+                                 "probabilities": {o: (0.95 if o == choice else 0.05 / max(1, len(options) - 1))
+                                                   for o in options}}
+        cost = item.get("cost", COSTS["decide"])
+        usage = {"input_tokens": 400, "output_tokens": 40}
+        if cost is not None:
+            usage["cost"] = cost
+        self.reply(200, {"model": "typesafe/jev-fake", "answers": answers, "usage": usage,
+                         "id": "gen-dec-fake", "provider": "TypeSafe"})
 
     def answer(self, kind, item, chat):
         if "error" in item:

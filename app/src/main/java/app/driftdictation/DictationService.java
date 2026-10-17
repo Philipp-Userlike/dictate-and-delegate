@@ -7,6 +7,7 @@ import android.app.*;
 import android.content.*;
 import android.content.pm.*;
 import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.os.*;
 import android.provider.Settings;
 import android.view.*;
@@ -15,6 +16,12 @@ import java.io.*;
 import java.util.concurrent.*;
 import org.json.JSONObject;
 
+/**
+ * Recording, transcription and the floating panel. The transcript always comes first; then the
+ * panel offers Insert, Refine and Chief. Jev decides what starts by itself: Refine when the
+ * dictation asks for a text or names a template, the chief only when it was explicitly addressed.
+ * Refine and Chief can be chosen while recording; they run once the transcript is ready.
+ */
 public final class DictationService extends Service {
   static final String ENABLE = "enable",
       RECORD = "record",
@@ -29,24 +36,50 @@ public final class DictationService extends Service {
       STOPPING = "stopping",
       UPLOADING = "uploading",
       COPIED = "copied",
-      SENT = "sent",
       ERROR = "error",
       EMPTY = "empty";
+
+  /** Where Refine and Chief are for this dictation. */
+  static final String IDLE = "idle", QUEUED = "queued", RUNNING = "running", DONE = "done", FAILED = "failed";
+
+  /** The panel hides after this long without a tap; longer while something is under way. */
+  static final long PANEL_IDLE_MS = 60_000, PANEL_WAIT_MS = 5 * 60_000;
+
+  /** Notes change from several threads (upload, Refine, the chief, the app); one at a time. */
+  static final Object NOTES = new Object();
+
+  /** One dictation as the panel sees it. Changed on the main thread only. */
+  static final class Session {
+    volatile String noteId = "", transcript = "", refined = "", reply = "";
+    volatile String refine = IDLE, chief = IDLE, template = "", chiefLink = "", request = "";
+    volatile String message = "";
+    /** Jev answered or isn't asked; until then queued choices wait (a template may come). */
+    volatile boolean decided, hint, redo, chiefReady;
+    volatile TalkAccessibility.Inserted inserted;
+    volatile String insertedKind = "";
+  }
+
   static volatile DictationService instance;
   private final Handler main = new Handler(Looper.getMainLooper());
   private final ExecutorService worker = Executors.newSingleThreadExecutor();
+  private final ExecutorService actions = Executors.newFixedThreadPool(3);
+  private final ExecutorService inserter = Executors.newSingleThreadExecutor();
   private String state = READY, detail = tr("Tap the bubble to record");
   private volatile boolean alive;
   private long started;
   private PcmRecorder recorder;
   private PowerManager.WakeLock wake;
-  private OverlayIcon bubble;
-  /** Where the last tap on the floating button landed, to tell the 📎 from Stop. */
-  private float touchX;
+  private FloatingPanel bubble;
   private WindowManager windows;
   private WindowManager.LayoutParams layout;
   private Vault vault;
   private SharedPreferences prefs;
+  private Session session = new Session();
+  private ChiefText.Listener listener;
+  /** Refine, Jev and the chief running in the background; the service waits for them. */
+  private int working;
+  private boolean closing;
+  private int lastWidth;
 
   static File audio(Context context) {
     return new File(context.getNoBackupFilesDir(), "pending.pcm");
@@ -54,6 +87,16 @@ public final class DictationService extends Service {
 
   static boolean busy() {
     return instance != null && instance.isBusy();
+  }
+
+  /** The current dictation's session, for tests and the app; null without a running service. */
+  static Session session() {
+    DictationService s = instance;
+    return s == null ? null : s.session;
+  }
+
+  String state() {
+    return state;
   }
 
   private boolean isBusy() {
@@ -119,9 +162,12 @@ public final class DictationService extends Service {
                     : session)
             .putLong("sessionCreated", System.currentTimeMillis())
             .commit();
+        newSession();
         upload();
-      } else if (RETRY.equals(action) && !isBusy()) upload();
-      else if (DISCARD.equals(action) && !isBusy()) {
+      } else if (RETRY.equals(action) && !isBusy()) {
+        newSession();
+        upload();
+      } else if (DISCARD.equals(action) && !isBusy()) {
         clearPending();
         transition(READY, tr("Tap the bubble to record"));
       } else if (HIDE.equals(action)) {
@@ -130,7 +176,7 @@ public final class DictationService extends Service {
         if (!isBusy()) finishIdle();
       } else if (CONFIGURE.equals(action)) {
         update();
-        if (!isBusy() && !"always".equals(mode())) finishIdle();
+        if (!isBusy() && !"always".equals(mode()) && !done(state)) finishIdle();
       }
     } catch (Exception ex) {
       transition(ERROR, friendly(ex));
@@ -161,10 +207,15 @@ public final class DictationService extends Service {
         .build();
   }
 
-  /**
-   * After a note is copied, the floating button turns into "Ready to paste" for a moment. Without
-   * it, and for problems, a toast says the same where the user is.
-   */
+  /** A new dictation: the panel forgets the last one. */
+  private void newSession() {
+    stopListening();
+    session = new Session();
+    session.chiefReady = BbBridge.ready(this);
+    closing = false;
+  }
+
+  /** Without the panel, a toast says where the user is what the panel would show. */
   private void transition(String next, String message) {
     transition(next, message, false);
   }
@@ -177,7 +228,7 @@ public final class DictationService extends Service {
     if ((bubble == null || alsoToast)
         && (done(next) || ERROR.equals(next) || EMPTY.equals(next)))
       Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-    if (done(next)) main.postDelayed(finishFeedback, 6000);
+    if (done(next)) touch();
     else if (ERROR.equals(next) || EMPTY.equals(next)) main.postDelayed(finishFeedback, 3500);
     else if (READY.equals(next) && !"always".equals(mode())) finishIdle();
   }
@@ -189,9 +240,9 @@ public final class DictationService extends Service {
     DictationTile.refresh(this);
   }
 
-  /** A note is finished: copied ("Ready to paste") or sent to the chief of staff. */
+  /** The transcript is ready: the panel offers Insert, Refine and Chief. */
   static boolean done(String state) {
-    return COPIED.equals(state) || SENT.equals(state);
+    return COPIED.equals(state);
   }
 
   private String mode() {
@@ -210,9 +261,28 @@ public final class DictationService extends Service {
         }
       };
 
+  /**
+   * The panel stays while it's used: it hides after a minute without a tap, or five while Refine
+   * runs or the chief's text is awaited. Without the panel, the service ends soon after.
+   */
+  private void touch() {
+    main.removeCallbacks(finishFeedback);
+    if (!done(state)) return;
+    boolean waiting =
+        session.refine.equals(RUNNING)
+            || session.chief.equals(RUNNING)
+            || (session.chief.equals(DONE) && session.reply.isEmpty() && listener != null);
+    main.postDelayed(finishFeedback, bubble == null ? 6000 : waiting ? PANEL_WAIT_MS : PANEL_IDLE_MS);
+  }
+
   private void finishIdle() {
     if (isBusy()) return;
     removeBubble();
+    if (working > 0) {
+      closing = true; // Refine or the chief are still running; their results are saved.
+      return;
+    }
+    stopListening();
     stopForeground(STOP_FOREGROUND_REMOVE);
     stopSelf();
   }
@@ -224,14 +294,9 @@ public final class DictationService extends Service {
     }
   }
 
-  private void endFeedback() {
-    main.removeCallbacks(finishFeedback);
-    finishFeedback.run();
-  }
-
   private void syncBubble() {
     boolean visible =
-        "always".equals(mode()) || ("recording".equals(mode()) && !READY.equals(state));
+        !closing && ("always".equals(mode()) || ("recording".equals(mode()) && !READY.equals(state)));
     if (visible && Settings.canDrawOverlays(this)) showBubble();
     else removeBubble();
     renderBubble();
@@ -248,74 +313,88 @@ public final class DictationService extends Service {
 
   private void showBubble() {
     if (bubble != null || !Settings.canDrawOverlays(this)) return;
-    bubble = new OverlayIcon(this);
+    int[] from = new int[2];
+    bubble =
+        new FloatingPanel(
+            this,
+            new FloatingPanel.Actions() {
+              public void close() {
+                closePanel();
+              }
+
+              public void stop() {
+                if (RECORDING.equals(state)) stopRecording(true);
+              }
+
+              public void attach() {
+                // The 📎: add context while recording goes on.
+                startActivity(
+                    new Intent(DictationService.this, AttachActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+              }
+
+              public void insert() {
+                if (done(state)) insertText("transcript", session.transcript);
+              }
+
+              public void refine() {
+                tapRefine();
+              }
+
+              public void chief() {
+                tapChief();
+              }
+
+              public void insertFromChief() {
+                if (!session.reply.isEmpty()) insertText("chief", session.reply);
+              }
+
+              public void tapIcon() {
+                if (isBusy()) return;
+                if (audio(DictationService.this).exists() || ERROR.equals(state)) {
+                  finishIdle();
+                  startActivity(
+                      new Intent(DictationService.this, MainActivity.class)
+                          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                } else
+                  startActivity(
+                      new Intent(DictationService.this, RecordActivity.class)
+                          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+              }
+            },
+            new FloatingPanel.Drag() {
+              public void start() {
+                from[0] = layout.x;
+                from[1] = layout.y;
+                touch();
+              }
+
+              public void move(float dx, float dy) {
+                if (bubble == null) return;
+                layout.x = from[0] + (int) dx;
+                layout.y = from[1] + (int) dy;
+                clampPosition();
+                windows.updateViewLayout(bubble, layout);
+              }
+
+              public void end() {
+                prefs.edit().putInt("bubbleX", layout.x).putInt("bubbleY", layout.y).apply();
+              }
+            });
     layout =
         new WindowManager.LayoutParams(
-            dp(48),
-            dp(48),
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            // Never focusable: the cursor stays in the app you're in, so Insert lands there.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT);
     layout.gravity = Gravity.TOP | Gravity.LEFT;
+    lastWidth = 0;
     layout.x = prefs.getInt("bubbleX", 16);
     layout.y = prefs.getInt("bubbleY", 220);
     clampPosition();
-    bubble.setOnClickListener(
-        v -> {
-          if (RECORDING.equals(state) && touchX < dp(OverlayIcon.ATTACH_DP)) {
-            // The 📎: add context while recording goes on.
-            startActivity(
-                new Intent(this, AttachActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
-            return;
-          }
-          if (RECORDING.equals(state)) stopRecording(true);
-          else if (isBusy()) return;
-          else if (done(state)) endFeedback(); // Tapping "Ready to paste" hides it.
-          else if (audio(this).exists() || ERROR.equals(state)) {
-            finishIdle();
-            startActivity(
-                new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-          } else
-            startActivity(
-                new Intent(this, RecordActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        });
-    bubble.setOnTouchListener(
-        new View.OnTouchListener() {
-          float downX, downY;
-          int x, y;
-          boolean dragged;
-
-          public boolean onTouch(View v, android.view.MotionEvent e) {
-            if (e.getAction() == MotionEvent.ACTION_DOWN) {
-              downX = e.getRawX();
-              downY = e.getRawY();
-              x = layout.x;
-              y = layout.y;
-              dragged = false;
-              return true;
-            }
-            if (e.getAction() == MotionEvent.ACTION_MOVE) {
-              float dx = e.getRawX() - downX, dy = e.getRawY() - downY;
-              if (Math.hypot(dx, dy) > dp(8)) dragged = true;
-              if (dragged) {
-                layout.x = x + (int) dx;
-                layout.y = y + (int) dy;
-                clampPosition();
-                windows.updateViewLayout(bubble, layout);
-              }
-              return true;
-            }
-            if (e.getAction() == MotionEvent.ACTION_UP) {
-              touchX = e.getX();
-              if (!dragged) v.performClick();
-              else prefs.edit().putInt("bubbleX", layout.x).putInt("bubbleY", layout.y).apply();
-              return true;
-            }
-            return true;
-          }
-        });
     windows.addView(bubble, layout);
     renderBubble();
   }
@@ -326,7 +405,8 @@ public final class DictationService extends Service {
 
   private void clampPosition() {
     android.graphics.Rect bounds = windows.getCurrentWindowMetrics().getBounds();
-    layout.x = Math.max(0, Math.min(layout.x, bounds.width() - layout.width));
+    int width = layout.width > 0 ? layout.width : dp(48);
+    layout.x = Math.max(0, Math.min(layout.x, bounds.width() - width));
     layout.y = Math.max(dp(32), Math.min(layout.y, bounds.height() - dp(80)));
   }
 
@@ -337,29 +417,362 @@ public final class DictationService extends Service {
     if (bubble != null) {
       clampPosition();
       windows.updateViewLayout(bubble, layout);
+      renderBubble();
     }
   }
 
   private void renderBubble() {
     if (bubble == null) return;
-    int width =
-        RECORDING.equals(state)
-            ? dp(132 + OverlayIcon.ATTACH_DP)
-            : done(state) ? bubble.doneWidth(state) : dp(48);
-    if (layout.width != width) {
-      layout.width = width;
-      clampPosition();
+    Session s = session;
+    bubble.render(
+        new FloatingPanel.Model(
+            state,
+            RECORDING.equals(state) ? SystemClock.elapsedRealtime() - started : 0,
+            RECORDING.equals(state) ? new Attachments(this).pending().size() : 0,
+            s.refine,
+            s.chief,
+            s.chiefReady || !s.chief.equals(IDLE),
+            s.hint,
+            !s.reply.isEmpty(),
+            s.message,
+            prefs.getInt("bubbleOpacity", 65)));
+    // The panel grows and shrinks with its buttons. Android would squeeze a wrap-content overlay
+    // to dialog width, so the window gets the width its buttons need, and stays on screen.
+    int screen = windows.getCurrentWindowMetrics().getBounds().width();
+    bubble.measure(
+        View.MeasureSpec.makeMeasureSpec(screen - dp(16), View.MeasureSpec.AT_MOST),
+        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+    int width = bubble.getMeasuredWidth(), x = layout.x;
+    layout.width = width;
+    clampPosition();
+    if (width != lastWidth || x != layout.x) {
+      lastWidth = width;
       windows.updateViewLayout(bubble, layout);
     }
-    if (RECORDING.equals(state)) bubble.attached(new Attachments(this).pending().size());
-    bubble.update(
-        state,
-        prefs.getInt("bubbleOpacity", 65),
-        RECORDING.equals(state) ? SystemClock.elapsedRealtime() - started : 0);
   }
 
   static boolean bubbleVisible() {
     return instance != null && instance.bubble != null;
+  }
+
+  private void closePanel() {
+    if ("always".equals(mode())) {
+      newSession();
+      transition(READY, tr("Tap the microphone to record"));
+    } else finishIdle();
+  }
+
+  private void say(String message) {
+    session.message = message;
+    renderBubble();
+    touch();
+  }
+
+  // ------------------------------------------------------------------ the panel's choices
+
+  /** Refine: chosen ahead while recording, started once the transcript is ready, then inserted. */
+  private void tapRefine() {
+    Session s = session;
+    switch (s.refine) {
+      case QUEUED -> s.refine = IDLE;
+      case RUNNING -> {}
+      case DONE -> insertText("refined", s.refined);
+      default -> {
+        s.refine = QUEUED;
+        startQueued();
+      }
+    }
+    renderBubble();
+    touch();
+  }
+
+  /** Chief: chosen ahead while recording, sent once the transcript is ready; then opens the chat. */
+  private void tapChief() {
+    Session s = session;
+    switch (s.chief) {
+      case QUEUED -> s.chief = IDLE;
+      case RUNNING -> {}
+      case DONE -> {
+        if (s.chiefLink.isEmpty()) say(tr("Set the bb web address for links in Settings → bb."));
+        else
+          try {
+            startActivity(
+                new Intent(Intent.ACTION_VIEW, Uri.parse(s.chiefLink))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          } catch (ActivityNotFoundException ex) {
+            say(tr("No browser available"));
+          }
+      }
+      default -> {
+        if (!BbBridge.ready(this)) {
+          say(tr("Set up your chief of staff in Talk Router → Settings → bb."));
+          return;
+        }
+        s.chief = QUEUED;
+        startQueued();
+      }
+    }
+    renderBubble();
+    touch();
+  }
+
+  /** Runs what's queued, once the transcript is there and Jev has answered (or isn't asked). */
+  private void startQueued() {
+    Session s = session;
+    if (!done(state) || !s.decided || s.noteId.isEmpty()) return;
+    if (s.refine.equals(QUEUED)) {
+      s.refine = RUNNING;
+      String template = s.template;
+      work(() -> refined(s, refineNote(this, s.noteId, new Profile(prefs), template)));
+    }
+    if (s.chief.equals(QUEUED)) {
+      s.chief = RUNNING;
+      work(() -> sent(s, sendNote(this, s.noteId)));
+    }
+    renderBubble();
+    touch();
+  }
+
+  private void work(Runnable task) {
+    working++;
+    actions.execute(
+        () -> {
+          try {
+            task.run();
+          } finally {
+            main.post(
+                () -> {
+                  working--;
+                  if (working == 0 && closing) finishIdle();
+                });
+          }
+        });
+  }
+
+  /** Jev, right after the transcript: what starts by itself, the template, the chief hint. */
+  private void decide() {
+    Session s = session;
+    Profile profile = new Profile(prefs);
+    boolean chiefReady = BbBridge.ready(this);
+    java.util.List<String> templates = new Templates(this).names();
+    if (s.redo || (!profile.autoRefine() && !chiefReady && templates.isEmpty())) {
+      s.decided = true;
+      startQueued();
+      return;
+    }
+    String id = s.noteId, said = s.transcript;
+    work(
+        () -> {
+          Jev.Answers a = null;
+          String failed = null;
+          long asked = SystemClock.elapsedRealtime();
+          try {
+            a = Jev.ask(this, said, templates, profile.autoRefine(), chiefReady);
+          } catch (Exception ex) {
+            failed = friendly(ex);
+          }
+          Jev.Answers answers = a;
+          String why = failed;
+          long ms = SystemClock.elapsedRealtime() - asked;
+          try {
+            update(
+                this,
+                id,
+                e -> {
+                  JSONObject step = e.step("jev", Jev.MODEL, ms, answers == null ? null : answers.cost(), why);
+                  if (answers != null) {
+                    step.put("answer", Jev.detail(answers));
+                    e.charge(answers.cost());
+                    e.addCost("jevCost", answers.cost());
+                  }
+                });
+          } catch (Exception ignored) {
+            /* The note keeps the transcript; Activity just lacks this step. */
+          }
+          Jev.Decision d = Jev.decide(answers, profile.autoRefine(), profile.autoChief(), chiefReady);
+          main.post(
+              () -> {
+                if (session != s) return;
+                s.decided = true;
+                s.template = d.template();
+                s.hint = d.hint();
+                if (d.refine() && s.refine.equals(IDLE)) s.refine = QUEUED;
+                if (d.chief() && s.chief.equals(IDLE)) s.chief = QUEUED;
+                startQueued();
+                renderBubble();
+              });
+        });
+  }
+
+  /** Refine finished (failure: why, else null). */
+  private void refined(Session s, String failed) {
+    String text = failed == null ? text(this, s.noteId) : "";
+    main.post(
+        () -> {
+          prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
+          if (failed != null) {
+            s.refine = FAILED;
+            s.message = tr("Couldn't refine: %1$s", failed);
+          } else {
+            s.refine = DONE;
+            s.refined = text;
+            copy(this, text);
+            try {
+              vault.put("transcript", text);
+            } catch (Exception ignored) {
+              /* Only the last-transcript shortcut. */
+            }
+            s.message = bubble == null ? "" : tr("Refined, and copied");
+            if (bubble == null && session == s) Toast.makeText(this, tr("Refined text copied"), Toast.LENGTH_LONG).show();
+          }
+          if (session == s) {
+            renderBubble();
+            touch();
+          }
+        });
+  }
+
+  /** The chief got it (failure: why, else null): the button opens the chat; its text may follow. */
+  private void sent(Session s, String failed) {
+    HistoryEntry e = load(this, s.noteId);
+    main.post(
+        () -> {
+          prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
+          if (failed != null || e == null) {
+            s.chief = FAILED;
+            s.message = tr("Not sent to your chief of staff: %1$s", failed == null ? "" : failed);
+          } else {
+            s.chief = DONE;
+            s.chiefLink = e.json.optString("chiefLink");
+            s.request = e.json.optString("chiefRequest");
+            s.message = tr("Sent to your chief of staff");
+            if (bubble == null && session == s) Toast.makeText(this, tr("Sent to chief of staff"), Toast.LENGTH_LONG).show();
+            if (session == s && bubble != null) listen(s, e.json.optLong("chiefSent"));
+          }
+          if (session == s) {
+            renderBubble();
+            touch();
+          }
+        });
+  }
+
+  /** While the panel is open: the chief's text for this request, from the ntfy topic. */
+  private void listen(Session s, long sentAt) {
+    stopListening();
+    BbBridge bb = new BbBridge(this);
+    String topic;
+    try {
+      topic = bb.ntfyTopic();
+    } catch (Exception ex) {
+      return;
+    }
+    listener =
+        new ChiefText.Listener(
+            bb.ntfyServer(),
+            topic,
+            s.request,
+            Math.max(0, sentAt / 1000 - 5),
+            text -> {
+              keepReply(this, s.request, text);
+              main.post(
+                  () -> {
+                    if (session != s) return;
+                    s.reply = text;
+                    s.message = tr("Your chief of staff sent text to insert");
+                    listener = null;
+                    prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
+                    renderBubble();
+                    touch();
+                  });
+            });
+    listener.start();
+  }
+
+  private void stopListening() {
+    if (listener != null) {
+      listener.finish();
+      listener = null;
+    }
+  }
+
+  /**
+   * Insert: at the cursor of the field in the app you're in, through the Accessibility service.
+   * The refined text replaces the transcript it follows if the field still holds that unchanged.
+   * Without the service, or when the app refuses, the text is copied instead.
+   */
+  private void insertText(String kind, String text) {
+    if (text.isEmpty()) return;
+    Session s = session;
+    TalkAccessibility.Inserted earlier = "transcript".equals(s.insertedKind) ? s.inserted : null;
+    touch();
+    inserter.execute(
+        () -> {
+          TalkAccessibility a = TalkAccessibility.instance;
+          TalkAccessibility.Inserted r = null;
+          boolean replaced = false;
+          try {
+            if (a != null && kind.equals("refined") && earlier != null) {
+              r = a.replace(this, earlier, text);
+              replaced = r != null;
+            }
+            if (a != null && r == null) r = a.insert(this, text);
+          } catch (RuntimeException ex) {
+            r = null; // The app went away mid-way: copy instead.
+          }
+          TalkAccessibility.Inserted done = r;
+          boolean swapped = replaced;
+          main.post(
+              () -> {
+                if (done == null) {
+                  copy(this, text);
+                  s.message =
+                      a == null
+                          ? tr("Copied, paste with a long press. Insert needs the Accessibility permission (Settings → Start).")
+                          : tr("Copied, paste with a long press");
+                } else {
+                  s.inserted = done;
+                  s.insertedKind = kind;
+                  s.message = swapped ? tr("Replaced with the refined text") : tr("Inserted");
+                }
+                if (session == s) {
+                  renderBubble();
+                  touch();
+                }
+              });
+        });
+  }
+
+  // ------------------------------------------------------------------ notes
+
+  interface Change {
+    void apply(HistoryEntry e) throws Exception;
+  }
+
+  /** Loads a note, changes it and saves it, one change at a time. */
+  static void update(Context context, String id, Change change) throws Exception {
+    synchronized (NOTES) {
+      try (HistoryStore h = new HistoryStore(context)) {
+        HistoryEntry e = h.get(id);
+        if (e == null) throw new IOException(tr("This note was deleted."));
+        change.apply(e);
+        h.save(e);
+      }
+    }
+  }
+
+  static HistoryEntry load(Context context, String id) {
+    synchronized (NOTES) {
+      try (HistoryStore h = new HistoryStore(context)) {
+        return h.get(id);
+      } catch (Exception ex) {
+        return null;
+      }
+    }
+  }
+
+  private static String text(Context context, String id) {
+    HistoryEntry e = load(context, id);
+    return e == null ? "" : e.text();
   }
 
   /**
@@ -372,124 +785,141 @@ public final class DictationService extends Service {
   }
 
   /**
-   * The request check, then whatever it asks for. Nothing asked: the note is the transcript, as
-   * said. A request goes to the text model, with the template asked for and the attachments, if
-   * any. If the check fails, the transcript stays; if the request fails, the note keeps what was
-   * said and records why, so it can say so and offer to try again.
+   * Refine: what was said, with the template named and the attachments, through the text model.
+   * The note gets the refined version (what was said stays); on failure it records why. Returns
+   * null, or why it failed.
    */
-  static void process(Context context, HistoryEntry entry, Profile profile) throws Exception {
+  static String refineNote(Context context, String id, Profile profile, String template) {
+    HistoryEntry entry = load(context, id);
+    if (entry == null) return tr("This note was deleted.");
     String said = entry.json.optString("original", entry.text());
-    String note = entry.recordingId();
-    Templates templates = new Templates(context);
-    Attachments attachments = new Attachments(context);
-    Router.Route route;
     long asked = SystemClock.elapsedRealtime();
+    OpenRouter.Result r = null;
+    String failed = null;
     try {
-      route =
-          Router.route(
-              context, said, templates.names(), attachments.summary(note), BbBridge.ready(context));
-      entry.json.remove("routeFailed");
-      entry.step(
-          "check",
-          Router.MODEL,
-          SystemClock.elapsedRealtime() - asked,
-          route.result().cost(),
-          route.kind() + (route.template().isEmpty() ? "" : " · " + route.template()));
-    } catch (Exception ex) {
-      route = new Router.Route(Router.TRANSCRIPT, "", null);
-      entry.json.put("routeFailed", friendly(ex));
-      entry.step("check", Router.MODEL, SystemClock.elapsedRealtime() - asked, null, friendly(ex));
-    }
-    if (route.result() != null) {
-      entry.charge(route.result().cost());
-      if (route.result().cost() != null)
-        entry.json.put("routeCost", entry.routeCost().add(route.result().cost()).toPlainString());
-    }
-    entry.json.put("route", route.kind());
-    if (route.template().isEmpty()) entry.json.remove("template");
-    else entry.json.put("template", route.template());
-    if (route.kind().equals(Router.TRANSCRIPT)) {
-      entry.json.remove("processingFailed");
-      return;
-    }
-    if (route.kind().equals(Router.CHIEF)) {
-      entry.json.remove("processingFailed");
-      // A redo of a note isn't sent again by itself: the chief already has the first version.
-      if (!entry.recordingId().equals(entry.id()))
-        entry.json.put("chiefFailed", tr("A redo isn't sent by itself. Tap Send again to send it."));
-      else sendToChief(context, entry);
-      return;
-    }
-    asked = SystemClock.elapsedRealtime();
-    try {
-      OpenRouter.Result r =
+      r =
           TextModel.process(
               context,
               said,
-              attachments.parts(note),
-              profile.processingPrompt(),
-              templates.prompt(route.template()),
+              new Attachments(context).parts(entry.recordingId()),
+              profile.refinePrompt(),
+              new Templates(context).prompt(template),
               profile.context());
-      entry.charge(r.cost());
-      entry.step(Router.TEXT, TextModel.MODEL, SystemClock.elapsedRealtime() - asked, r.cost(), null);
-      entry
-          .json
-          .put("processed", r.text())
-          .put("text", r.text())
-          .put("version", "processed")
-          .put("textModel", TextModel.MODEL)
-          .remove("processingFailed");
-      // Kept apart too, so Usage can show the speech and the text models separately.
-      if (r.cost() != null)
-        entry.json.put("textCost", entry.textCost().add(r.cost()).toPlainString());
     } catch (Exception ex) {
-      entry.json.put("processingFailed", friendly(ex));
-      entry.step(Router.TEXT, TextModel.MODEL, SystemClock.elapsedRealtime() - asked, null, friendly(ex));
+      failed = friendly(ex);
     }
+    OpenRouter.Result result = r;
+    String why = failed;
+    long ms = SystemClock.elapsedRealtime() - asked;
+    try {
+      update(
+          context,
+          id,
+          e -> {
+            if (result == null) {
+              e.json.put("processingFailed", why);
+              e.step("refine", TextModel.MODEL, ms, null, why);
+              return;
+            }
+            e.charge(result.cost());
+            e.addCost("textCost", result.cost());
+            e.step("refine", TextModel.MODEL, ms, result.cost(), null);
+            e.json
+                .put("processed", result.text())
+                .put("text", result.text())
+                .put("version", "processed")
+                .put("textModel", TextModel.MODEL)
+                .remove("processingFailed");
+            if (template == null || template.isEmpty()) e.json.remove("template");
+            else e.json.put("template", template);
+          });
+    } catch (Exception ex) {
+      return friendly(ex);
+    }
+    return why;
   }
 
   /** What the activity log calls the chief-of-staff step's target. */
   static final String CHIEF_STEP = "bb", CHIEF_TARGET = "chief of staff";
 
   /**
-   * Hands the dictation as said, with pasted text as context, to the chief-of-staff thread in bb.
-   * On failure the note keeps what was said and records why, so it can offer to send it again.
+   * Hands what was said, with pasted text as context and a request ID, to the chief-of-staff
+   * thread in bb. On failure the note records why, so it can offer to send it again. Returns
+   * null, or why it failed.
    */
-  static void sendToChief(Context context, HistoryEntry entry) throws Exception {
+  static String sendNote(Context context, String id) {
+    HistoryEntry entry = load(context, id);
+    if (entry == null) return tr("This note was deleted.");
     String said = entry.json.optString("original", entry.text());
     BbBridge bb = new BbBridge(context);
-    String chief = bb.chiefId();
+    String chief = bb.chiefId(), request = ChiefText.requestId();
     long asked = SystemClock.elapsedRealtime();
-    entry.json.put("route", Router.CHIEF);
+    String why = null;
     try {
       if (chief.isEmpty() || !bb.connected())
         throw new IOException(tr("No chief of staff is set up. Set one up in Settings → bb."));
       java.util.List<String> skipped = new java.util.ArrayList<>();
       java.util.List<String[]> pasted = new Attachments(context).texts(entry.recordingId(), skipped);
-      bb.send(chief, BbBridge.message(said, pasted, skipped));
-      entry.step(CHIEF_STEP, CHIEF_TARGET, SystemClock.elapsedRealtime() - asked, null, null);
-      entry
-          .json
-          .put("chiefThread", chief)
-          .put("chiefLink", bb.threadLink(chief))
-          .put("chiefSent", System.currentTimeMillis())
-          .remove("chiefFailed");
+      bb.sendRequest(chief, BbBridge.message(said, pasted, skipped, request));
     } catch (Exception ex) {
-      String why =
+      why =
           ex.getClass() == IOException.class && ex.getMessage() != null
               ? ex.getMessage()
               : tr("bb couldn't be reached. Try again.");
-      entry.json.put("chiefFailed", why);
-      entry.step(CHIEF_STEP, CHIEF_TARGET, SystemClock.elapsedRealtime() - asked, null, why);
+    }
+    String failed = why;
+    long ms = SystemClock.elapsedRealtime() - asked;
+    try {
+      update(
+          context,
+          id,
+          e -> {
+            e.step(CHIEF_STEP, CHIEF_TARGET, ms, null, failed);
+            e.json.put("route", "chief");
+            if (failed != null) {
+              e.json.put("chiefFailed", failed);
+              return;
+            }
+            e.json
+                .put("chiefThread", chief)
+                .put("chiefLink", bb.threadLink(chief))
+                .put("chiefSent", System.currentTimeMillis())
+                .put("chiefRequest", request)
+                .remove("chiefFailed");
+          });
+    } catch (Exception ex) {
+      return failed == null ? friendly(ex) : failed;
+    }
+    return failed;
+  }
+
+  /** The note went to the chief of staff. */
+  static boolean sentToChief(HistoryEntry entry) {
+    return entry.json.has("chiefThread") && !entry.json.has("chiefFailed");
+  }
+
+  /** Keeps the chief's text back with the note that asked for it (found by its request ID). */
+  static void keepReply(Context context, String request, String text) {
+    synchronized (NOTES) {
+      try (HistoryStore h = new HistoryStore(context)) {
+        for (HistoryEntry e : h.list(200, 0))
+          if (request.equals(e.json.optString("chiefRequest"))) {
+            e.json.put("chiefReply", text).put("chiefReplyAt", System.currentTimeMillis());
+            h.save(e);
+            context
+                .getSharedPreferences("settings", MODE_PRIVATE)
+                .edit()
+                .putLong("historyRevision", System.nanoTime())
+                .apply();
+            return;
+          }
+      } catch (Exception ignored) {
+        /* The text was still shown or copied. */
+      }
     }
   }
 
-  /** The note went to the chief of staff: nothing to paste. */
-  static boolean sentToChief(HistoryEntry entry) {
-    return Router.CHIEF.equals(entry.json.optString("route"))
-        && entry.json.has("chiefThread")
-        && !entry.json.has("chiefFailed");
-  }
+  // ------------------------------------------------------------------ recording
 
   private void startRecording() throws Exception {
     if (isBusy()) return;
@@ -501,6 +931,7 @@ public final class DictationService extends Service {
       throw new IOException(tr("Allow microphone access in Talk Router first."));
     requireKey(this);
     foreground(true);
+    newSession();
     vault.remove("progress");
     prefs.edit().remove("recordingId").commit();
     prefs.edit().putString("sessionModel", new Profile(prefs).fixedModel()).commit();
@@ -640,20 +1071,16 @@ public final class DictationService extends Service {
                 int attached = attachments.of(entry.recordingId()).size();
                 if (attached > 0) entry.json.put("attached", attached);
               }
-              if (profile.processing()) {
-                main.post(
-                    () -> {
-                      if (alive) transition(UPLOADING, tr("Checking for requests…"));
-                    });
-                process(this, entry, profile);
-              }
             }
             entry.json.put("status", empty ? "no speech" : "complete");
             entry.json.put(
                 "processingMs",
                 entry.json.optLong("processingMs") + SystemClock.elapsedRealtime() - uploadStarted);
-            history.save(entry);
-            if (!empty && !entry.recordingId().equals(entry.id())) history.prefer(entry);
+            synchronized (NOTES) {
+              history.save(entry);
+            }
+            boolean redo = !entry.recordingId().equals(entry.id());
+            if (!empty && redo) history.prefer(entry);
             new AudioArchive(this).retain(entry.recordingId(), pcm);
             if (empty) {
               main.post(
@@ -673,30 +1100,18 @@ public final class DictationService extends Service {
             prefs.edit().putLong("historyRevision", System.nanoTime()).apply();
             vault.put("transcript", entry.text());
             String transcript = entry.text();
-            String failed = entry.json.optString("processingFailed", "");
-            String notSent = entry.json.optString("chiefFailed", "");
-            boolean sent = sentToChief(entry);
             main.post(
                 () -> {
                   if (!alive) return;
                   try {
-                    if (sent) {
-                      // Nothing to paste: the chief of staff has it, and notifies when done.
-                      clearPending();
-                      transition(SENT, tr("Sent to chief of staff"));
-                      return;
-                    }
+                    // The transcript always comes first: copied, and on the panel to insert.
                     copy(this, transcript);
                     clearPending();
-                    // A failed step is worth a toast even when the button shows "Ready".
-                    transition(
-                        COPIED,
-                        !notSent.isEmpty()
-                            ? tr("Copied what you said. Not sent to your chief of staff: %1$s", notSent)
-                            : failed.isEmpty()
-                                ? tr("Ready to paste")
-                                : tr("Copied what you said. Processing failed: %1$s", failed),
-                        !failed.isEmpty() || !notSent.isEmpty());
+                    session.noteId = sessionId;
+                    session.transcript = transcript;
+                    session.redo = redo;
+                    transition(COPIED, tr("Ready to paste"));
+                    decide();
                   } catch (Exception ex) {
                     transition(ERROR, tr("Transcript saved in history. Open Talk Router to copy it."));
                   } finally {
@@ -780,7 +1195,10 @@ public final class DictationService extends Service {
     alive = false;
     main.removeCallbacksAndMessages(null);
     if (recorder != null) recorder.stop();
+    stopListening();
     worker.shutdownNow();
+    actions.shutdownNow();
+    inserter.shutdownNow();
     if (wake.isHeld()) wake.release();
     if (bubble != null) {
       windows.removeView(bubble);

@@ -46,6 +46,18 @@ public class BbFlowTest {
     return prefs.getString("detail", "");
   }
 
+  /** The latest note once it matches, e.g. once the chief got it. */
+  HistoryEntry latestOnce(java.util.function.Predicate<HistoryEntry> ready, String what) throws Exception {
+    long deadline = SystemClock.elapsedRealtime() + 15000;
+    while (SystemClock.elapsedRealtime() < deadline) {
+      HistoryEntry e = latest();
+      if (ready.test(e)) return e;
+      Thread.sleep(150);
+    }
+    fail("The note never got " + what + ": " + latest().json);
+    return null;
+  }
+
   void dictate(String finalState) throws Exception {
     send(DictationService.RECORD);
     waitFor("recording");
@@ -141,7 +153,8 @@ public class BbFlowTest {
         .putString("model", "microsoft/mai-transcribe-2")
         .putString("bubbleMode", "recording")
         .putBoolean("onboarded", true)
-        .putBoolean("processing", true)
+        .putBoolean(Profile.AUTO_REFINE, true)
+        .putBoolean(Profile.AUTO_CHIEF, true)
         .remove(BbBridge.MODE)
         .remove(BbBridge.HANDLE)
         .remove(BbBridge.URL)
@@ -201,6 +214,8 @@ public class BbFlowTest {
       Thread.sleep(200);
     assertEquals(TestServer.CHIEF, new BbBridge(context).chiefId());
     String spawn = TestServer.bbSnippets().get(0);
+    assertTrue(spawn, spawn.contains("talkrouter-paste"));
+    assertTrue(prefs.getBoolean(BbBridge.CHIEF_KNOWS_PASTE, false));
     assertTrue(spawn, spawn.contains("\"thread\",\"spawn\",\"--project\",\"proj_personal\",\"--title\",\"Chief of staff\""));
     String topic = new Vault(context).get(BbBridge.NTFY_TOPIC);
     assertTrue(topic, topic.matches("talkrouter-[A-Za-z0-9_-]{24}"));
@@ -216,56 +231,56 @@ public class BbFlowTest {
   }
 
   @Test
-  public void aTaskForTheChiefGoesToBbWithThePastedText() throws Exception {
+  public void addressedExplicitlyTheTaskGoesToTheChiefWithThePastedText() throws Exception {
     connectFake();
     new Attachments(context).addText("Flights: TP 1234 on 3 May, FR 88 on 4 May");
     TestServer.transcripts("tell my chief of staff to find the cheapest of these flights");
-    TestServer.routes("chief");
-    InstrumentationRegistry.getInstrumentation()
-        .runOnMainSync(() -> DictationService.copy(context, "on the clipboard before"));
-    dictate("sent");
-    assertEquals("Sent to chief of staff", detail());
+    TestServer.decide(0.05, 0.97, "none");
+    dictate("copied");
+    HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    assertEquals(DictationService.DONE, DictationService.session().chief);
 
-    // The request check was offered the chief; no text model ran; nothing was copied.
-    assertTrue(
-        sent("route").get(0).getJSONArray("messages").getJSONObject(0).getString("content").contains("\"chief\""));
+    // Jev was asked about the chief; Refine didn't run; the transcript came first, copied.
+    assertTrue(sent("decide").get(0).getJSONObject("questions").has("chief"));
     assertTrue(sent("text").isEmpty());
+    assertEquals("tell my chief of staff to find the cheapest of these flights", clipboard());
 
-    // One tell to the chief, queued, with what was said and the pasted text.
+    // One tell to the chief, queued, with what was said, the pasted text and a request ID.
     List<String> snippets = TestServer.bbSnippets();
     assertEquals(1, snippets.size());
     String tell = snippets.get(0);
     assertTrue(tell, tell.contains("\"thread\",\"tell\",\"" + TestServer.CHIEF + "\",\"--mode\",\"queue\""));
     assertTrue(tell, tell.contains("tell my chief of staff to find the cheapest of these flights"));
     assertTrue(tell, tell.contains("Flights: TP 1234 on 3 May, FR 88 on 4 May"));
+    String request = e.json.optString("chiefRequest");
+    assertTrue(request, request.matches("[a-z0-9]{6}"));
+    assertTrue(tell, tell.contains("[request: " + request + "]"));
 
-    HistoryEntry e = latest();
-    assertEquals("chief", e.json.optString("route"));
     assertEquals(TestServer.CHIEF, e.json.optString("chiefThread"));
     assertEquals(CHIEF_LINK, e.json.optString("chiefLink"));
     assertFalse(e.json.has("chiefFailed"));
-    assertEquals(0, TestServer.SPEECH.add(TestServer.ROUTE).compareTo(e.cost()));
+    assertEquals(0, TestServer.SPEECH.add(TestServer.JEV).compareTo(e.cost()));
     JSONArray steps = e.json.getJSONArray("steps");
     JSONObject bb = steps.getJSONObject(steps.length() - 1);
     assertEquals("bb", bb.getString("kind"));
     assertEquals("chief of staff", bb.getString("model"));
     assertFalse(bb.has("cost"));
     assertFalse(bb.has("detail"));
-    assertEquals("chief", steps.getJSONObject(steps.length() - 2).getString("detail"));
+    assertEquals("refine 0.05 · chief 0.97", steps.getJSONObject(steps.length() - 2).getString("answer"));
 
+    // The panel's Chief button became Open chat ↗.
+    find("Open chat ↗");
     send(DictationService.HIDE);
     Thread.sleep(500);
     launch();
-    assertEquals("on the clipboard before", clipboard()); // Only the foreground app may read it.
     tap("tell my chief of staff to find the cheapest of these flights");
     find("Sent to chief of staff ↗");
     find("What you said");
-    assertNull(device.findObject(By.text("Copy")));
 
     launch();
     tap("Settings");
     tap("Activity");
-    find(By.text(Pattern.compile("Request check · DeepSeek V4\\.1 Flash · .* → Chief of staff")), "the check");
+    find(By.text(Pattern.compile("Jev · .* → refine 0\\.05 · chief 0\\.97")), "Jev's step");
     find(By.text(Pattern.compile("bb · Chief of staff · \\d+[.,]\\d s")), "the bb step");
 
     // The link opens the thread in the browser.
@@ -279,19 +294,74 @@ public class BbFlowTest {
   }
 
   @Test
+  public void aBareImperativeIsNotSentButChiefIsSuggested() throws Exception {
+    connectFake();
+    TestServer.transcripts("look into why the nightly build failed and fix it");
+    TestServer.decide(0.05, 0.62, "none");
+    dictate("copied");
+    long deadline = SystemClock.elapsedRealtime() + 8000;
+    while (!DictationService.session().decided && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
+    Thread.sleep(500);
+    assertTrue(DictationService.session().hint);
+    assertEquals(DictationService.IDLE, DictationService.session().chief);
+    assertTrue(TestServer.bbSnippets().isEmpty());
+    find(By.desc("Chief, suggested: this may be a task for your chief of staff"), "the hint");
+    // One tap sends it.
+    find("🧑‍💼 Chief").click();
+    latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    assertEquals(1, TestServer.bbSnippets().size());
+    find("Open chat ↗");
+  }
+
+  @Test
+  public void chosenWhileRecordingTheChiefGetsItOnceTheTranscriptIsReady() throws Exception {
+    connectFake();
+    TestServer.transcripts("the build is red again");
+    send(DictationService.RECORD);
+    waitFor("recording");
+    find("🧑‍💼 Chief").click();
+    find("🧑‍💼 Chief ✓");
+    assertTrue(TestServer.bbSnippets().isEmpty());
+    send(DictationService.STOP);
+    waitFor("copied");
+    latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    assertTrue(TestServer.bbSnippets().get(0).contains("the build is red again"));
+  }
+
+  @Test
+  public void aChiefFromBeforeIsToldOnceHowToSendTextBack() throws Exception {
+    connectFake();
+    prefs.edit().remove(BbBridge.CHIEF_KNOWS_PASTE).commit();
+    TestServer.transcripts("chief of staff, book a table", "chief of staff, call the plumber");
+    TestServer.decide(0, 0.98, "none");
+    TestServer.decide(0, 0.98, "none");
+    dictate("copied");
+    latestOnce(n -> n.json.has("chiefThread"), "the chief");
+    List<String> snippets = TestServer.bbSnippets();
+    assertEquals(2, snippets.size());
+    assertTrue(snippets.get(0).contains("talkrouter-paste"));
+    assertTrue(snippets.get(1).contains("book a table"));
+    send(DictationService.HIDE);
+    Thread.sleep(500);
+    dictate("copied");
+    latestOnce(n -> n.json.optString("original").contains("plumber") && n.json.has("chiefThread"), "the chief");
+    assertEquals(3, TestServer.bbSnippets().size());
+  }
+
+  @Test
   public void whenBbFailsTheNoteKeepsWhatYouSaidAndSendsAgain() throws Exception {
     connectFake();
     TestServer.bbFail("tell", "http503");
     TestServer.transcripts("ask my agent to book the table for Friday");
-    TestServer.routes("chief");
+    TestServer.decide(0, 0.95, "none");
     dictate("copied");
-    assertTrue(detail(), detail().startsWith("Copied what you said. Not sent to your chief of staff:"));
-    assertTrue(detail(), detail().contains("isn't reachable right now (HTTP 503)"));
-    HistoryEntry e = latest();
-    assertEquals("chief", e.json.optString("route"));
-    assertTrue(e.json.has("chiefFailed"));
+    HistoryEntry e = latestOnce(n -> n.json.has("chiefFailed"), "the failure");
+    assertTrue(e.json.optString("chiefFailed"), e.json.optString("chiefFailed").contains("isn't reachable right now (HTTP 503)"));
     JSONArray steps = e.json.getJSONArray("steps");
     assertTrue(steps.getJSONObject(steps.length() - 1).getString("detail").contains("HTTP 503"));
+    assertEquals(DictationService.FAILED, DictationService.session().chief);
+    find(By.textStartsWith("Not sent to your chief of staff:"), "the panel's message");
+    find("🧑‍💼 Send again");
 
     send(DictationService.HIDE);
     Thread.sleep(500);
@@ -310,14 +380,15 @@ public class BbFlowTest {
   }
 
   @Test
-  public void withoutAChiefTheCheckDoesNotOfferIt() throws Exception {
+  public void withoutAChiefJevIsNotAskedAboutIt() throws Exception {
     TestServer.transcripts("tell my chief of staff to call the plumber");
-    TestServer.routes("chief"); // Even if the model answered chief, nothing goes to bb.
+    TestServer.decide(0, 0.99, "none"); // Even if Jev answered, nothing goes to bb.
     dictate("copied");
-    assertFalse(
-        sent("route").get(0).getJSONArray("messages").getJSONObject(0).getString("content").contains("\"chief\""));
-    assertEquals("transcript", latest().json.optString("route"));
-    assertTrue(TestServer.bbRequests().length() == 0);
+    long deadline = SystemClock.elapsedRealtime() + 8000;
+    while (!DictationService.session().decided && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
+    assertFalse(sent("decide").get(0).getJSONObject("questions").has("chief"));
+    assertEquals(0, TestServer.bbRequests().length());
+    assertNull(device.findObject(By.text("🧑‍💼 Chief")));
     send(DictationService.HIDE);
     launch();
     assertEquals("tell my chief of staff to call the plumber", clipboard());

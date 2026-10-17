@@ -68,7 +68,8 @@ public class DeviceFlowTest {
         .edit()
         .putString("model", "openai/whisper-1")
         .putString("bubbleMode", "recording")
-        .putBoolean("processing", false)
+        .putBoolean(Profile.AUTO_REFINE, false)
+        .putBoolean(Profile.AUTO_CHIEF, false)
         .commit();
     TestServer.useKey(context);
   }
@@ -106,8 +107,8 @@ public class DeviceFlowTest {
     assertNotNull(stop);
     stop.click();
     waitFor("copied");
-    // The floating button says the text is ready instead of showing a card.
-    assertNotNull(device.wait(Until.findObject(By.desc("Ready to paste")), 2000));
+    // The floating panel offers Insert; the text is copied too.
+    assertNotNull(device.wait(Until.findObject(By.text("Insert")), 2000));
     assertFalse(device.hasObject(By.text("Fix")));
     assertFalse(DictationService.audio(context).exists());
     device.wait(Until.findObject(By.text("Paste")), 5000).click();

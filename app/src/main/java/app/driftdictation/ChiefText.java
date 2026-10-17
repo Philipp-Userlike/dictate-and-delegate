@@ -1,0 +1,204 @@
+package app.driftdictation;
+
+import static app.driftdictation.I18n.tr;
+
+import android.content.*;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.function.Consumer;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+/**
+ * Text the chief sends back for pasting. The chief posts it to the ntfy topic, tagged
+ * "talkrouter-paste" and "req-<request ID>" (BbBridge.pasteCommand). While the panel is open, Talk
+ * Router reads the topic's JSON stream itself (no background service) and offers Insert from
+ * chief. When it's closed, the ntfy app shows the message; its Copy button sends a broadcast with
+ * the request ID, which TalkAccessibility receives while it runs. The broadcast carries only the
+ * ID: the text is fetched from the user's own topic, so another app can't put text on the
+ * clipboard this way.
+ */
+final class ChiefText {
+  private ChiefText() {}
+
+  /** Six random lowercase letters and digits: short enough to read, unique enough per topic. */
+  static String requestId() {
+    String alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
+    SecureRandom r = new SecureRandom();
+    StringBuilder s = new StringBuilder();
+    for (int i = 0; i < 6; i++) s.append(alphabet.charAt(r.nextInt(alphabet.length())));
+    return s.toString();
+  }
+
+  /** An ntfy message (one line of the JSON stream) that holds the text for this request. */
+  static boolean matches(JSONObject message, String request) {
+    if (!"message".equals(message.optString("event", "message"))) return false;
+    JSONArray tags = message.optJSONArray("tags");
+    boolean paste = false, ours = false;
+    for (int i = 0; tags != null && i < tags.length(); i++) {
+      String t = tags.optString(i).trim();
+      paste |= t.equalsIgnoreCase(BbBridge.PASTE_TAG);
+      ours |= t.equalsIgnoreCase(BbBridge.requestTag(request));
+    }
+    return paste && ours;
+  }
+
+  /**
+   * The text of a matching message. ntfy turns messages over 4,096 bytes into a text attachment;
+   * then the text is fetched from its URL.
+   */
+  static String text(JSONObject message) throws IOException {
+    JSONObject attachment = message.optJSONObject("attachment");
+    if (attachment != null && !attachment.optString("url").isEmpty()) {
+      String type = attachment.optString("type", "text/plain");
+      if (type.startsWith("text/")) return get(attachment.optString("url"), 200_000).trim();
+    }
+    return message.optString("message").trim();
+  }
+
+  /** <server>/<topic>/json?since=…: the stream from that moment (unix seconds), or a poll. */
+  static String streamUrl(String server, String topic, long sinceSeconds, boolean poll) {
+    return server + "/" + topic + "/json?since=" + sinceSeconds + (poll ? "&poll=1" : "");
+  }
+
+  private static String get(String url, int max) throws IOException {
+    HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+    try {
+      c.setConnectTimeout(15_000);
+      c.setReadTimeout(20_000);
+      if (c.getResponseCode() >= 300) throw new IOException("HTTP " + c.getResponseCode());
+      try (InputStream in = c.getInputStream()) {
+        return new String(in.readNBytes(max), StandardCharsets.UTF_8);
+      }
+    } finally {
+      c.disconnect();
+    }
+  }
+
+  /**
+   * Reads the topic's stream until the text for the request arrives or stop() is called;
+   * reconnects after a dropped connection. found runs on this listener's thread.
+   */
+  static final class Listener extends Thread {
+    private final String server, topic, request;
+    private final long since;
+    private final Consumer<String> found;
+    private volatile boolean stopped;
+    private volatile HttpURLConnection open;
+
+    Listener(String server, String topic, String request, long sinceSeconds, Consumer<String> found) {
+      super("ntfy-" + request);
+      setDaemon(true);
+      this.server = server;
+      this.topic = topic;
+      this.request = request;
+      this.since = sinceSeconds;
+      this.found = found;
+    }
+
+    void finish() {
+      stopped = true;
+      HttpURLConnection c = open;
+      if (c != null) c.disconnect();
+      interrupt();
+    }
+
+    @Override
+    public void run() {
+      while (!stopped) {
+        try {
+          HttpURLConnection c =
+              (HttpURLConnection) new URL(streamUrl(server, topic, since, false)).openConnection();
+          open = c;
+          c.setConnectTimeout(15_000);
+          c.setReadTimeout(90_000); // ntfy sends a keepalive every 45 s.
+          try (BufferedReader in =
+              new BufferedReader(new InputStreamReader(c.getInputStream(), StandardCharsets.UTF_8))) {
+            for (String line; !stopped && (line = in.readLine()) != null; ) {
+              if (line.isBlank()) continue;
+              JSONObject m;
+              try {
+                m = new JSONObject(line);
+              } catch (Exception ex) {
+                continue;
+              }
+              if (matches(m, request)) {
+                String t = text(m);
+                if (!t.isEmpty()) {
+                  found.accept(t);
+                  return;
+                }
+              }
+            }
+          } finally {
+            c.disconnect();
+          }
+        } catch (Exception ex) {
+          /* Dropped or unreachable: try again in a moment. */
+        }
+        try {
+          Thread.sleep(3000);
+        } catch (InterruptedException ex) {
+          return;
+        }
+      }
+    }
+  }
+
+  /** The text for a request, from the messages the topic still holds (ntfy keeps them 12 h). */
+  static String fetch(Context context, String request) throws Exception {
+    BbBridge bb = new BbBridge(context);
+    long since = System.currentTimeMillis() / 1000 - 12 * 3600;
+    String all = get(streamUrl(bb.ntfyServer(), bb.ntfyTopic(), since, true), 2_000_000);
+    String text = "";
+    for (String line : all.split("\n")) {
+      try {
+        JSONObject m = new JSONObject(line);
+        if (matches(m, request)) text = text(m); // The latest one wins.
+      } catch (Exception ignored) {
+        /* Not a message. */
+      }
+    }
+    return text;
+  }
+
+  /**
+   * ntfy's Copy button on the chief's paste message (action "broadcast", intent COPY_ACTION,
+   * extras.request): copies that request's text and keeps it with the note.
+   */
+  static final class CopyReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      String request = intent.getStringExtra("request");
+      if (request == null || !request.matches("[a-z0-9]{4,12}")) return;
+      PendingResult pending = goAsync();
+      Context app = context.getApplicationContext();
+      new Thread(
+              () -> {
+                String message;
+                try {
+                  String text = fetch(app, request);
+                  if (text.isEmpty()) message = tr("Your chief's text isn't on your ntfy topic anymore.");
+                  else {
+                    DictationService.copy(app, text);
+                    DictationService.keepReply(app, request, text);
+                    message = tr("Copied your chief's text");
+                  }
+                } catch (Exception ex) {
+                  message = tr("Couldn't get your chief's text from ntfy. Try again.");
+                }
+                String shown = message;
+                new android.os.Handler(android.os.Looper.getMainLooper())
+                    .post(
+                        () -> {
+                          android.widget.Toast.makeText(app, shown, android.widget.Toast.LENGTH_SHORT).show();
+                          pending.finish();
+                        });
+              })
+          .start();
+    }
+  }
+}

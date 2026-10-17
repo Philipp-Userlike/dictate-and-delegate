@@ -65,7 +65,7 @@ public class OpenRouterTest {
   public void chatBodiesReportTheirCostAndReadPdfsAsText() throws Exception {
     JSONArray plain =
         new JSONArray().put(new JSONObject().put("role", "user").put("content", "hi"));
-    JSONObject check = OpenRouter.chatBody(Router.MODEL, plain, 200, true);
+    JSONObject check = OpenRouter.chatBody("fast/model", plain, 200, true);
     assertTrue(check.getJSONObject("usage").getBoolean("include"));
     assertEquals(200, check.getInt("max_tokens"));
     assertFalse(check.getJSONObject("reasoning").getBoolean("enabled"));

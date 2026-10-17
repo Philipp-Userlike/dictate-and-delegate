@@ -15,7 +15,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 
 /**
- * Setup, the key, processing, costs and translation as a user meets them, against the fake
+ * Setup, the key, Jev and Refine, costs and translation as a user meets them, against the fake
  * OpenRouter.
  */
 @RunWith(AndroidJUnit4.class)
@@ -56,7 +56,26 @@ public class MvpFlowTest {
     }
   }
 
-  /** The requests of one kind ("transcribe", "route", "text") the fake received, oldest first. */
+  /** The latest note once it matches, e.g. once Refine or Jev wrote to it. */
+  HistoryEntry latestOnce(java.util.function.Predicate<HistoryEntry> ready, String what) throws Exception {
+    long deadline = SystemClock.elapsedRealtime() + 15000;
+    while (SystemClock.elapsedRealtime() < deadline) {
+      HistoryEntry e = latest();
+      if (ready.test(e)) return e;
+      Thread.sleep(150);
+    }
+    fail("The note never got " + what + ": " + latest().json);
+    return null;
+  }
+
+  static boolean hasStep(HistoryEntry e, String kind) {
+    JSONArray steps = e.json.optJSONArray("steps");
+    for (int i = 0; steps != null && i < steps.length(); i++)
+      if (kind.equals(steps.optJSONObject(i).optString("kind"))) return true;
+    return false;
+  }
+
+  /** The requests of one kind ("transcribe", "decide", "text") the fake received, oldest first. */
   java.util.List<JSONObject> sent(String kind) throws Exception {
     java.util.List<JSONObject> out = new java.util.ArrayList<>();
     JSONArray all = TestServer.requests();
@@ -116,13 +135,15 @@ public class MvpFlowTest {
         .putString("model", "microsoft/mai-transcribe-2")
         .putString("bubbleMode", "recording")
         .putBoolean("onboarded", true)
-        .putBoolean("processing", true)
+        .putBoolean(Profile.AUTO_REFINE, true)
+        .putBoolean(Profile.AUTO_CHIEF, true)
         .remove("processingPrompt")
         .remove("profileWords")
         .commit();
     new Attachments(context).clearPending();
+    Templates templates = new Templates(context);
+    for (Templates.Template t : templates.all()) templates.delete(t.id());
     TestServer.transcripts("um hi Jana see you at ten");
-    TestServer.routes("text");
     TestServer.replies("Hi Jana, see you at ten.");
   }
 
@@ -164,9 +185,14 @@ public class MvpFlowTest {
     assertNotNull(device.wait(Until.findObject(By.text("Microphone and privacy")), 10000));
     assertEquals(TestServer.KEY, new Vault(context).get(OpenRouter.KEY));
     tap("Continue");
-    find("Transcript or text");
+    find("Transcript first, then you decide");
+    find("Insert");
     tap("Continue");
     find("Start from any app");
+    find("Volume down");
+    tap("Continue");
+    find("Insert where you type");
+    find("Insert · Accessibility permission");
     tap("Continue");
     find("Try it once");
     find("Start").click();
@@ -177,7 +203,7 @@ public class MvpFlowTest {
     UiObject2 box = find("Paste here");
     box.click();
     device.pressKeyCode(android.view.KeyEvent.KEYCODE_PASTE);
-    find("Hi Jana, see you at ten.");
+    find("um hi Jana see you at ten");
     tap("Continue");
     // bb is optional: "Later" ends setup, and the app works as a dictation app.
     find("Connect bb");
@@ -214,43 +240,44 @@ public class MvpFlowTest {
   }
 
   @Test
-  public void noteIsProcessedCostsWhatOpenRouterReportedAndSwitchesToWhatYouSaid()
+  public void askedForATextRefineStartsByItselfCostsWhatOpenRouterReportedAndKeepsWhatYouSaid()
       throws Exception {
     new Profile(prefs).addWord("Jana");
+    TestServer.decide(0.95, 0, "none");
     dictate();
+    // The transcript comes first; Refine follows by itself.
+    HistoryEntry e = latestOnce(n -> n.json.has("processed"), "the refined text");
     assertEquals("Hi Jana, see you at ten.", new Vault(context).get("transcript"));
 
     // Exactly what the fake reported: no fee on top.
-    BigDecimal all = TestServer.SPEECH.add(TestServer.ROUTE).add(TestServer.TEXT);
-    HistoryEntry e = latest();
+    BigDecimal all = TestServer.SPEECH.add(TestServer.JEV).add(TestServer.TEXT);
     assertEquals(0, all.compareTo(e.cost()));
     assertFalse(e.incompleteCost());
-    assertEquals("text", e.json.optString("route"));
     assertEquals(TextModel.MODEL, e.json.optString("textModel"));
-    assertEquals(0, TestServer.ROUTE.compareTo(e.routeCost()));
+    assertEquals(0, TestServer.JEV.compareTo(e.jevCost()));
     assertEquals(0, TestServer.TEXT.compareTo(e.textCost()));
     assertEquals("Hi Jana, see you at ten.", e.json.optString("processed"));
     assertEquals("um hi Jana see you at ten", e.json.optString("original"));
-    // The activity log: speech, the check's answer, then the text model.
+    // The activity log: speech, Jev's answer, then Refine.
     JSONArray steps = e.json.getJSONArray("steps");
     assertEquals(3, steps.length());
     assertEquals("speech", steps.getJSONObject(0).getString("kind"));
     assertEquals("microsoft/mai-transcribe-2", steps.getJSONObject(0).getString("model"));
     assertEquals(
         0, TestServer.SPEECH.compareTo(new BigDecimal(steps.getJSONObject(0).getString("cost"))));
-    assertEquals("check", steps.getJSONObject(1).getString("kind"));
-    assertEquals(Router.MODEL, steps.getJSONObject(1).getString("model"));
-    assertEquals("text", steps.getJSONObject(1).getString("detail"));
+    assertEquals("jev", steps.getJSONObject(1).getString("kind"));
+    assertEquals(Jev.MODEL, steps.getJSONObject(1).getString("model"));
+    assertEquals("refine 0.95", steps.getJSONObject(1).getString("answer"));
     assertEquals(
-        0, TestServer.ROUTE.compareTo(new BigDecimal(steps.getJSONObject(1).getString("cost"))));
-    assertEquals("text", steps.getJSONObject(2).getString("kind"));
+        0, TestServer.JEV.compareTo(new BigDecimal(steps.getJSONObject(1).getString("cost"))));
+    assertEquals("refine", steps.getJSONObject(2).getString("kind"));
     assertEquals(TextModel.MODEL, steps.getJSONObject(2).getString("model"));
     assertEquals(
         0, TestServer.TEXT.compareTo(new BigDecimal(steps.getJSONObject(2).getString("cost"))));
     assertFalse(steps.getJSONObject(2).has("detail"));
 
-    // What went to OpenRouter: WAV audio with the words for Azure, a quick check without
-    // thinking, then the text model; every chat call asks for its cost.
+    // What went to OpenRouter: WAV audio with the words for Azure, Jev with the dictation as
+    // state (no chief without bb, no templates), then Refine; every chat call asks for its cost.
     JSONObject speech = sent("transcribe").get(0);
     assertEquals("microsoft/mai-transcribe-2", speech.getString("model"));
     assertEquals("wav", speech.getJSONObject("input_audio").getString("format"));
@@ -263,14 +290,18 @@ public class MvpFlowTest {
             .getJSONObject("phraseList")
             .getJSONArray("phrases")
             .getString(0));
-    JSONObject check = sent("route").get(0);
-    assertFalse(check.getJSONObject("reasoning").getBoolean("enabled"));
-    assertEquals(Router.MAX_TOKENS, check.getInt("max_tokens"));
-    assertTrue(check.getJSONObject("usage").getBoolean("include"));
+    JSONObject jev = sent("decide").get(0);
+    assertEquals(Jev.MODEL, jev.getString("model"));
+    assertEquals("um hi Jana see you at ten", jev.getJSONObject("state").getString("dictation"));
+    JSONObject questions = jev.getJSONObject("questions");
+    assertEquals(1, questions.length());
+    assertEquals(Jev.REFINE, questions.getJSONObject("refine").getString("instructions"));
     JSONObject text = sent("text").get(0);
     assertEquals(TextModel.MODEL, text.getString("model"));
     assertEquals(TextModel.MAX_TOKENS, text.getInt("max_tokens"));
     assertTrue(text.getJSONObject("usage").getBoolean("include"));
+    assertTrue(
+        text.getJSONArray("messages").getJSONObject(0).getString("content").startsWith(TextModel.DEFAULT_PROMPT));
     assertEquals(
         "um hi Jana see you at ten",
         text.getJSONArray("messages").getJSONObject(1).getString("content"));
@@ -279,7 +310,7 @@ public class MvpFlowTest {
     Thread.sleep(500);
     launch();
     find("Hi Jana, see you at ten.").click();
-    find("Talk Router's version");
+    find("Refined");
     find("What you said").click();
     find("um hi Jana see you at ten");
     tap("Copy");
@@ -299,15 +330,35 @@ public class MvpFlowTest {
     find("Activity");
     assertNotNull(device.wait(Until.findObject(By.textStartsWith("Transcription · ")), 5000));
     assertNotNull(
-        device.wait(
-            Until.findObject(
-                By.text(Pattern.compile("Request check · DeepSeek V4\\.1 Flash · .* → Text"))),
-            5000));
+        device.wait(Until.findObject(By.text(Pattern.compile("Jev · .* → refine 0\\.95"))), 5000));
     assertNotNull(
         device.wait(
-            Until.findObject(By.textStartsWith("Text · " + TextModel.NAME + " · ")), 5000));
+            Until.findObject(By.textStartsWith("Refine · " + TextModel.NAME + " · ")), 5000));
     tap("Hi Jana, see you at ten.");
-    find("Talk Router's version");
+    find("Refined");
+  }
+
+  @Test
+  public void aNamedTemplateGoesToRefine() throws Exception {
+    Templates templates = new Templates(context);
+    for (Templates.Template t : templates.all()) templates.delete(t.id());
+    templates.save(null, "Weekly update", "Done: …\nNext: …");
+    try {
+      TestServer.reset();
+      TestServer.transcripts("fill in my weekly update, shipped the panel");
+      TestServer.decide(0.2, 0, "Weekly update");
+      TestServer.replies("Done: the panel\nNext: tests");
+      dictate();
+      HistoryEntry e = latestOnce(n -> n.json.has("processed"), "the refined text");
+      assertEquals("Weekly update", e.json.optString("template"));
+      JSONObject q = sent("decide").get(0).getJSONObject("questions");
+      assertTrue(q.getJSONObject("template").getJSONObject("criteria").has("Weekly update"));
+      assertTrue(
+          sent("text").get(0).getJSONArray("messages").getJSONObject(0).getString("content")
+              .contains("<template name=\"Weekly update\">"));
+    } finally {
+      for (Templates.Template t : templates.all()) templates.delete(t.id());
+    }
   }
 
   @Test
@@ -316,40 +367,66 @@ public class MvpFlowTest {
     TestServer.transcripts("Call Jana tomorrow at ten.");
     dictate();
     assertEquals("Call Jana tomorrow at ten.", new Vault(context).get("transcript"));
-    // Only the speech model and the request check ran; no text model.
-    HistoryEntry e = latest();
-    assertEquals(0, TestServer.SPEECH.add(TestServer.ROUTE).compareTo(e.cost()));
-    assertEquals("transcript", e.json.optString("route"));
+    // Only the speech model and Jev ran; no Refine.
+    HistoryEntry e = latestOnce(n -> hasStep(n, "jev"), "Jev's answer");
+    Thread.sleep(500);
+    assertEquals(0, TestServer.SPEECH.add(TestServer.JEV).compareTo(e.cost()));
     assertFalse(e.json.has("processed"));
     assertTrue(sent("text").isEmpty());
   }
 
   @Test
-  public void processingOffKeepsWhatYouSaid() throws Exception {
-    prefs.edit().putBoolean("processing", false).commit();
+  public void withBothSwitchesOffJevIsntAskedAndNothingStarts() throws Exception {
+    prefs.edit().putBoolean(Profile.AUTO_REFINE, false).putBoolean(Profile.AUTO_CHIEF, false).commit();
     dictate();
+    Thread.sleep(800);
     assertEquals("um hi Jana see you at ten", new Vault(context).get("transcript"));
     // Only the transcription ran.
     assertEquals(0, TestServer.SPEECH.compareTo(latest().cost()));
-    assertTrue(sent("route").isEmpty());
+    assertTrue(sent("decide").isEmpty());
+    assertTrue(sent("text").isEmpty());
+  }
+
+  @Test
+  public void whenJevFailsOrIsSlowNothingStartsByItself() throws Exception {
+    TestServer.reset();
+    TestServer.transcripts("make this an email", "make this an email");
+    TestServer.error("decide", "provider");
+    dictate();
+    HistoryEntry e = latestOnce(n -> hasStep(n, "jev"), "the failed Jev step");
+    Thread.sleep(500);
+    assertFalse(latest().json.has("processed"));
+    assertTrue(sent("text").isEmpty());
+    // Slower than Jev.TIMEOUT_MS counts as no answer, too.
+    send(DictationService.HIDE);
+    Thread.sleep(500);
+    TestServer.script("decide", new JSONObject().put("refine", 0.99).put("delay", 5));
+    dictate();
+    HistoryEntry slow = latestOnce(n -> hasStep(n, "jev") && !n.id().equals(e.id()), "the slow Jev step");
+    Thread.sleep(500);
+    assertFalse(latest().json.has("processed"));
+    assertTrue(sent("text").isEmpty());
+    JSONArray steps = slow.json.getJSONArray("steps");
+    assertTrue(steps.getJSONObject(steps.length() - 1).has("detail"));
   }
 
   @Test
   public void failedProcessingStillDeliversWhatYouSaid() throws Exception {
     TestServer.reset();
     TestServer.transcripts("um hi Jana see you at ten");
-    TestServer.routes("text");
+    TestServer.decide(0.95, 0, "none");
     TestServer.replies((String) null);
     dictate();
+    latestOnce(n -> n.json.has("processingFailed"), "the Refine failure");
     assertEquals("um hi Jana see you at ten", new Vault(context).get("transcript"));
-    assertTrue(latest().json.has("processingFailed"));
+    assertEquals(DictationService.FAILED, DictationService.session().refine);
   }
 
   @Test
   public void anUnknownCostIsNeverShownAsFree() throws Exception {
     TestServer.reset();
     TestServer.script("transcribe", new JSONObject().put("text", "Call Jana.").put("cost", JSONObject.NULL));
-    prefs.edit().putBoolean("processing", false).commit();
+    prefs.edit().putBoolean(Profile.AUTO_REFINE, false).putBoolean(Profile.AUTO_CHIEF, false).commit();
     dictate();
     HistoryEntry e = latest();
     assertTrue(e.incompleteCost());
@@ -378,17 +455,15 @@ public class MvpFlowTest {
     new Attachments(context).addText("Two-room flat, Hauptstraße 5, 900 euros, viewing Saturday 10:00");
     TestServer.reset();
     TestServer.transcripts("write a short application for this flat");
-    TestServer.routes("text");
+    TestServer.decide(0.97, 0, "none");
     TestServer.replies("Application for Hauptstraße 5.");
     dictate();
+    HistoryEntry e = latestOnce(n -> n.json.has("processed"), "the refined text");
     assertEquals("Application for Hauptstraße 5.", new Vault(context).get("transcript"));
-    HistoryEntry e = latest();
     assertEquals(1, e.json.optInt("attached"));
     assertTrue(new Attachments(context).pending().isEmpty());
     assertEquals(1, new Attachments(context).of(e.recordingId()).size());
-    // The check sees a summary; the text model gets the dictation and the pasted text as parts.
-    assertTrue(
-        sent("route").get(0).getJSONArray("messages").getJSONObject(0).getString("content").contains("Hauptstraße 5"));
+    // Refine gets the dictation and the pasted text as parts.
     JSONArray parts =
         sent("text").get(0).getJSONArray("messages").getJSONObject(1).getJSONArray("content");
     assertEquals("write a short application for this flat", parts.getJSONObject(0).getString("text"));

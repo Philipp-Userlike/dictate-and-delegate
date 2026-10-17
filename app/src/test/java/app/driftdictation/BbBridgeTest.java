@@ -40,10 +40,12 @@ public class BbBridgeTest {
         BbBridge.message(
             " research flights to Lisbon ",
             List.<String[]>of(new String[] {"pasted text", "Dates: 3 to 7 May"}),
-            List.of("an image (map.jpg)"));
+            List.of("an image (map.jpg)"),
+            "k3x9qa");
+    assertTrue(m.endsWith("\n\n[request: k3x9qa]"));
     assertTrue(m.startsWith("research flights to Lisbon\n\n<pasted name=\"pasted text\">\nDates: 3 to 7 May\n</pasted>"));
     assertTrue(m.contains("an image (map.jpg)"));
-    assertEquals("just this", BbBridge.message("just this", List.of(), List.of()));
+    assertEquals("just this", BbBridge.message("just this", List.of(), List.of(), ""));
   }
 
   @Test
@@ -54,6 +56,13 @@ public class BbBridgeTest {
     assertTrue(p.contains("--parent-self"));
     assertTrue(p.contains("exactly one notification"));
     assertTrue(p.contains("don't send a notification for this message"));
+    // Text to paste comes back as an ntfy message tagged with the request, with a Copy action.
+    assertTrue(p.contains("[request: k3x9qa]"));
+    assertTrue(p.contains("Tags: talkrouter-paste,req-<request ID>"));
+    assertTrue(p.contains("Actions: broadcast, Copy, intent=" + TalkAccessibility.COPY_ACTION + ", extras.request=<request ID>"));
+    String told = BbBridge.settingsMessage("https://ntfy.sh", "talkrouter-abc", "https://someone.getbb.app");
+    assertTrue(told.contains("Tags: talkrouter-paste,req-<request ID>"));
+    assertTrue(told.contains("Click: https://someone.getbb.app/threads/$BB_THREAD_ID"));
     String code = BbBridge.spawnSnippet(p);
     assertTrue(code.contains("\"--project\",\"proj_personal\",\"--title\",\"Chief of staff\""));
   }
