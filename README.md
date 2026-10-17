@@ -71,6 +71,10 @@ https://github.com/user-attachments/assets/1d1d507f-47d5-4513-99e1-ce83b8d83619
 
 ## How it works
 
+<img src="docs/images/how-it-works.svg" width="100%" alt="Your phone sends audio to a speech-to-text model; the transcript always comes back to insert. Then Jev or you decide: one text-model call that comes back in seconds to insert, or an independent agent on its own machine (bb) that comes back minutes to hours later through a notification or text to insert.">
+
+Your words always come back to you first, a few seconds after you stop talking. From there, Jev (a small decision model) or you decide whether the text goes on to a text model for a finished text, or to an independent agent on its own machine. Both come back to your phone.
+
 ### The floating panel
 
 Press a shortcut in any app and talk. A small floating panel stays next to whatever you're doing, so you can keep browsing, reading or testing while you speak. When you're done, you can use the transcript anywhere.
