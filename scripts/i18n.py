@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""UI translations for Talk Router.
+"""UI translations for Dictate & Delegate.
 
   scripts/i18n.py extract            # English strings_ui.xml from every tr("…") in the code
   scripts/i18n.py translate de fr …  # fill missing entries via OpenRouter (OPENROUTER_API_KEY),
@@ -113,9 +113,9 @@ def translate(lang, english):
     todo = {k: v for k, v in english.items() if k not in current}
     if todo:
         prompt = (
-            "Translate the UI strings of Talk Router, an Android dictation app, into %s. "
+            "Translate the UI strings of Dictate & Delegate, an Android dictation app, into %s. "
             "Return a JSON object with the same keys. Keep placeholders like %%1$s, %%2$d and %%%% exactly. "
-            "Keep the names Talk Router, OpenRouter and model names unchanged. Keep symbols like ·, →, … and line breaks. "
+            "Keep the names Dictate & Delegate, OpenRouter and model names unchanged. Keep symbols like ·, →, … and line breaks. "
             "Use the informal form of address (German: du). Short, natural app wording; button labels stay short."
         ) % LANGS[lang]
         result = chat(prompt, todo)
@@ -128,7 +128,7 @@ def translate(lang, english):
     todo = {k: f for k, f in forms.items() if any("%s_%s" % (k, c) not in current for c in CATEGORIES[lang])}
     if todo:
         prompt = (
-            "Translate these count phrases of Talk Router, an Android dictation app, into %s. "
+            "Translate these count phrases of Dictate & Delegate, an Android dictation app, into %s. "
             "Input: JSON of id -> English singular and plural. Return JSON id -> object with exactly "
             "the CLDR plural categories %s, each the full phrase for that category. Keep %%1$d exactly."
         ) % (LANGS[lang], ", ".join(CATEGORIES[lang]))

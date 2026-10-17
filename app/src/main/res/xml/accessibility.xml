@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- No accessibility events: Talk Router never watches the screen. It filters key events for the
+<!-- No accessibility events: Dictate &amp; Delegate never watches the screen. It filters key events for the
      volume-key start and looks up the focused text field only when you tap Insert. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/accessibility_description"

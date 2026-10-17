@@ -41,7 +41,7 @@ public class BbOAuthTest {
     }
     assertEquals("code", q.get("response_type"));
     assertEquals(BbOAuth.CLIENT_ID, q.get("client_id"));
-    assertEquals("https://philipp258.github.io/talk-router/oauth/callback.html", q.get("redirect_uri"));
+    assertEquals("https://philipp258.github.io/dictate-and-delegate/oauth/callback.html", q.get("redirect_uri"));
     assertEquals("bb", q.get("scope"));
     assertEquals("CHALLENGE", q.get("code_challenge"));
     assertEquals("S256", q.get("code_challenge_method"));
@@ -60,5 +60,23 @@ public class BbOAuthTest {
     assertEquals("", BbOAuth.handle(""));
     assertEquals("", BbOAuth.handle("not a handle"));
     assertEquals("", BbOAuth.handle("-dash"));
+  }
+
+  @Test
+  public void tokensAreRefreshedWithTheClientIdTheyWereIssuedTo() throws Exception {
+    // Saved before 3.1.0, when the app was Talk Router: no clientId field, so the old client ID.
+    org.json.JSONObject legacy =
+        new org.json.JSONObject().put("refresh", "r1").put("resource", "https://someone.getbb.app/mcp");
+    assertEquals("https://philipp258.github.io/talk-router/oauth/client.json", BbOAuth.clientIdOf(legacy));
+    java.util.Map<String, String> body = BbOAuth.refreshBody(legacy);
+    assertEquals("refresh_token", body.get("grant_type"));
+    assertEquals("r1", body.get("refresh_token"));
+    assertEquals(BbOAuth.LEGACY_CLIENT_ID, body.get("client_id"));
+    assertEquals("https://someone.getbb.app/mcp", body.get("resource"));
+    // Saved by a new sign-in: the new client ID.
+    org.json.JSONObject current = new org.json.JSONObject(legacy.toString()).put("clientId", BbOAuth.CLIENT_ID);
+    assertEquals("https://philipp258.github.io/dictate-and-delegate/oauth/client.json", BbOAuth.refreshBody(current).get("client_id"));
+    // The redirect sits next to the new client document.
+    assertEquals("https://philipp258.github.io/dictate-and-delegate/oauth/callback.html", BbOAuth.REDIRECT);
   }
 }

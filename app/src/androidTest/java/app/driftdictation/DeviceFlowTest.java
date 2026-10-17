@@ -90,7 +90,7 @@ public class DeviceFlowTest {
     TestServer.transcripts(
         "Implement the parser and add a regression test.",
         "Implement the parser and add a regression test.");
-    // Whatever is on the clipboard stays there: Talk Router never copies by itself.
+    // Whatever is on the clipboard stays there: Dictate & Delegate never copies by itself.
     InstrumentationRegistry.getInstrumentation()
         .runOnMainSync(
             () ->
@@ -145,7 +145,7 @@ public class DeviceFlowTest {
         context.getSystemService(android.app.NotificationManager.class).areNotificationsEnabled());
     device.openNotification();
     device.waitForIdle();
-    assertFalse(device.hasObject(By.text("Talk Router is running")));
+    assertFalse(device.hasObject(By.text("Dictate & Delegate is running")));
     assertFalse(device.hasObject(By.text("Ready to insert")));
     device.pressBack();
   }

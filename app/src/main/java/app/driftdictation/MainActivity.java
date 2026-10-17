@@ -32,7 +32,7 @@ public final class MainActivity extends Activity {
   private ModelCatalog catalog;
   private LinearLayout content;
   private String page = "", noteId = "", redoSession = "", templateId = "";
-  static final String SOURCE_URL = "https://github.com/Philipp258/talk-router";
+  static final String SOURCE_URL = "https://github.com/Philipp258/dictate-and-delegate";
   private long seenRevision = Long.MIN_VALUE;
   private boolean loading, allowScreenshots;
   private int usageMonth;
@@ -139,7 +139,7 @@ public final class MainActivity extends Activity {
     openFromIntent(intent);
   }
 
-  /** The tile or the floating button open Talk Router on a page, e.g. the key when there is none. */
+  /** The tile or the floating button open Dictate & Delegate on a page, e.g. the key when there is none. */
   private void openFromIntent(Intent intent) {
     String target = intent == null ? null : intent.getStringExtra("open");
     if ("bb".equals(target)) {
@@ -412,14 +412,14 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("Start Talk Router, then keep using any app: read, look things up, switch. When you stop, your words are written down, ready to insert where you type. Then decide: ✨ Refine makes them the text you need, and your chief of staff takes on tasks."),
+            tr("Start Dictate & Delegate, then keep using any app: read, look things up, switch. When you stop, your words are written down, ready to insert where you type. Then decide: ✨ Refine makes them the text you need, and your chief of staff takes on tasks."),
             16,
             Ui.MUTED),
         12);
     spacer();
     ui.add(content, ui.button(tr("Get started"), Ui.Kind.PRIMARY, v -> open(SETUP.get(0))), 24);
     TextView note =
-        ui.text(tr("Open source. Your own OpenRouter key, no Talk Router server in between."), 13, Ui.MUTED);
+        ui.text(tr("Open source. Your own OpenRouter key, no Dictate & Delegate server in between."), 13, Ui.MUTED);
     note.setGravity(Gravity.CENTER);
     ui.add(content, note, 12);
   }
@@ -432,12 +432,12 @@ public final class MainActivity extends Activity {
       heading(
           null,
           tr("Your OpenRouter key"),
-          tr("Talk Router calls the speech and text models through OpenRouter, with your own key. You pay OpenRouter for what you use; Talk Router has no server and takes no cut."));
+          tr("Dictate & Delegate calls the speech and text models through OpenRouter, with your own key. You pay OpenRouter for what you use; Dictate & Delegate has no server and takes no cut."));
     } else
       heading(
           tr("Settings"),
           tr("OpenRouter key"),
-          tr("Talk Router calls the speech and text models through OpenRouter with this key."));
+          tr("Dictate & Delegate calls the speech and text models through OpenRouter with this key."));
     if (saved)
       ui.add(content, ui.text(tr("✓  A key is saved on this phone, encrypted."), 14, Ui.TEAL), 16);
     EditText input = ui.input("", saved ? tr("Paste a new key to replace it") : "sk-or-v1-…", false);
@@ -483,7 +483,7 @@ public final class MainActivity extends Activity {
               v ->
                   new AlertDialog.Builder(this)
                       .setTitle(tr("Remove your OpenRouter key?"))
-                      .setMessage(tr("Talk Router can't dictate until you add a key again."))
+                      .setMessage(tr("Dictate & Delegate can't dictate until you add a key again."))
                       .setPositiveButton(
                           tr("Remove"),
                           (d, w) -> {
@@ -657,7 +657,7 @@ public final class MainActivity extends Activity {
     ui.add(
         data,
         ui.text(
-            tr("• Your notes, audio, words and templates stay on this phone.\n• To write down what you said, your recording goes straight to OpenRouter with your key, and on to the speech model's provider. The text goes the same way to Jev, a fast model that decides whether to refine it, with your template names. When it's refined, it goes to the text model, with what you told Talk Router about you, your words, the template you named and what you attached.\n• If you connect bb, a task you hand to your chief of staff goes to your bb, with the text you pasted.\n• Talk Router has no server and collects nothing. OpenRouter and the model providers handle the data under their own policies."),
+            tr("• Your notes, audio, words and templates stay on this phone.\n• To write down what you said, your recording goes straight to OpenRouter with your key, and on to the speech model's provider. The text goes the same way to Jev, a fast model that decides whether to refine it, with your template names. When it's refined, it goes to the text model, with what you told Dictate & Delegate about you, your words, the template you named and what you attached.\n• If you connect bb, a task you hand to your chief of staff goes to your bb, with the text you pasted.\n• Dictate & Delegate has no server and collects nothing. OpenRouter and the model providers handle the data under their own policies."),
             14,
             Ui.BODY),
         6);
@@ -667,7 +667,7 @@ public final class MainActivity extends Activity {
     heading(
         tr("Settings"),
         tr("About you"),
-        tr("Helps Talk Router spell names right and process each note for its purpose."));
+        tr("Helps Dictate & Delegate spell names right and process each note for its purpose."));
     ui.add(content, ui.strong(tr("What you usually dictate"), 15), 20);
     Ui.Flow topics = ui.add(content, ui.flow(), 12);
     for (String t : Profile.TOPICS) {
@@ -682,11 +682,11 @@ public final class MainActivity extends Activity {
           });
       topics.addView(chip);
     }
-    ui.add(content, ui.strong(tr("Anything else Talk Router should know?"), 15), 22);
+    ui.add(content, ui.strong(tr("Anything else Dictate & Delegate should know?"), 15), 22);
     EditText about =
         ui.input(
             profile.about(),
-            tr("For example: I build an app called Talk Router. Jana is a colleague. Write numbers as digits."),
+            tr("For example: I build an app called Dictate & Delegate. Jana is a colleague. Write numbers as digits."),
             true);
     about.setFilters(new InputFilter[] {new InputFilter.LengthFilter(2000)});
     ui.add(content, about, 10);
@@ -767,7 +767,7 @@ public final class MainActivity extends Activity {
       {tr("Insert"), tr("Puts the text at the cursor, where you're typing.")},
       {tr("✨ Refine"), tr("%1$s makes it the text you need: an email, a reply, a tidy note, your template. Then Insert refined.", TextModel.name(this))},
       {tr("🧑‍💼 Chief"), tr("Hands it to your chief of staff in bb, if you set one up. Then Open chat ↗.")},
-      {"✕", tr("Closes the panel. The note stays in Talk Router.")}
+      {"✕", tr("Closes the panel. The note stays in Dictate & Delegate.")}
     };
     for (int i = 0; i < rows.length; i++) {
       ui.add(panel, ui.strong(rows[i][0], 15), i == 0 ? 0 : 12);
@@ -797,7 +797,7 @@ public final class MainActivity extends Activity {
     heading(
         null,
         tr("Start from any app"),
-        tr("You don't need to open Talk Router. Start and stop wherever you are."));
+        tr("You don't need to open Dictate & Delegate. Start and stop wherever you are."));
     tileCard(tr("1 · Quick Settings tile"));
     volumeCard(tr("2 · Or hold a volume key"));
     overlayCard(tr("3 · Floating panel"));
@@ -810,7 +810,7 @@ public final class MainActivity extends Activity {
     heading(
         null,
         tr("Insert where you type"),
-        tr("With one permission, Insert puts your text right at the cursor, and holding a volume key starts a dictation. Without it, Talk Router copies the text and you paste it."));
+        tr("With one permission, Insert puts your text right at the cursor, and holding a volume key starts a dictation. Without it, Dictate & Delegate copies the text and you paste it."));
     accessCard();
     continueButton(tr("Continue"));
   }
@@ -840,14 +840,14 @@ public final class MainActivity extends Activity {
     ui.add(
         tile,
         ui.text(
-            tr("Swipe down from the top of the screen and tap Talk Router to start, tap it again to stop. Android adds new tiles at the end: swipe left to the last page, or tap the pencil and drag Talk Router to the front."),
+            tr("Swipe down from the top of the screen and tap Dictate & Delegate to start, tap it again to stop. Android adds new tiles at the end: swipe left to the last page, or tap the pencil and drag Dictate & Delegate to the front."),
             14,
             Ui.MUTED),
         4);
     if (prefs.getBoolean("tileAdded", false))
       ui.add(tile, ui.text(tr("✓  Added"), 14, Ui.TEAL), 8);
     else
-      ui.add(tile, ui.button(tr("Add Talk Router to Quick Settings"), Ui.Kind.PRIMARY, v -> addTile()), 10);
+      ui.add(tile, ui.button(tr("Add Dictate & Delegate to Quick Settings"), Ui.Kind.PRIMARY, v -> addTile()), 10);
   }
 
   /** Off, volume down or volume up, and how long to hold it. */
@@ -901,7 +901,7 @@ public final class MainActivity extends Activity {
     ui.add(
         card,
         ui.text(
-            tr("Talk Router uses Android's Accessibility permission for two things only: to put your text at the cursor when you tap Insert, and to notice when you hold the volume key you chose. It asks for no accessibility events and reads nothing on your screen; it looks up the text field you're typing in only when you tap Insert. Talk Router is open source, so you can check."),
+            tr("Dictate & Delegate uses Android's Accessibility permission for two things only: to put your text at the cursor when you tap Insert, and to notice when you hold the volume key you chose. It asks for no accessibility events and reads nothing on your screen; it looks up the text field you're typing in only when you tap Insert. Dictate & Delegate is open source, so you can check."),
             14,
             Ui.BODY),
         4);
@@ -916,13 +916,13 @@ public final class MainActivity extends Activity {
     ui.add(
         card,
         ui.text(
-            tr("Tap Talk Router there and switch it on. If Android says the setting is restricted, open App info → ⋮ → Allow restricted settings, then try again."),
+            tr("Tap Dictate & Delegate there and switch it on. If Android says the setting is restricted, open App info → ⋮ → Allow restricted settings, then try again."),
             12,
             Ui.MUTED),
         8);
   }
 
-  /** Android's Accessibility settings, with Talk Router highlighted where Settings supports it. */
+  /** Android's Accessibility settings, with Dictate & Delegate highlighted where Settings supports it. */
   private void openAccessibility() {
     String me = new ComponentName(this, TalkAccessibility.class).flattenToString();
     Bundle args = new Bundle();
@@ -933,7 +933,7 @@ public final class MainActivity extends Activity {
               .putExtra(":settings:fragment_args_key", me)
               .putExtra(":settings:show_fragment_args", args));
     } catch (ActivityNotFoundException ex) {
-      toast(tr("Open Android settings → Accessibility → Talk Router."));
+      toast(tr("Open Android settings → Accessibility → Dictate & Delegate."));
     }
   }
 
@@ -943,7 +943,7 @@ public final class MainActivity extends Activity {
     ui.add(
         overlay,
         ui.text(
-            tr("While you dictate, a small panel stays on top of other apps: tap ■ to stop, then Insert, Refine or Chief. To allow it, Android shows a list of apps: tap Talk Router, switch it on, and come back."),
+            tr("While you dictate, a small panel stays on top of other apps: tap ■ to stop, then Insert, Refine or Chief. To allow it, Android shows a list of apps: tap Dictate & Delegate, switch it on, and come back."),
             14,
             Ui.MUTED),
         4);
@@ -978,7 +978,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Talk Router writes it down.\n3. Tap the box below, then 📥 Insert on the floating panel. Your clipboard stays as it was."),
+            tr("1. Tap Start and say a sentence.\n2. Tap Stop. Dictate & Delegate writes it down.\n3. Tap the box below, then 📥 Insert on the floating panel. Your clipboard stays as it was."),
             15,
             Ui.BODY),
         12);
@@ -995,7 +995,7 @@ public final class MainActivity extends Activity {
         ui.add(
             content,
             ui.text(
-                tr("That's it. It works the same in any app: start, talk, stop, insert. Your notes are saved in Talk Router, where you can also copy them or switch back to exactly what you said."),
+                tr("That's it. It works the same in any app: start, talk, stop, insert. Your notes are saved in Dictate & Delegate, where you can also copy them or switch back to exactly what you said."),
                 15,
                 Ui.TEAL),
             12);
@@ -1021,7 +1021,7 @@ public final class MainActivity extends Activity {
     before.addView(ui.label(tr("You say")));
     ui.add(before, ui.text(tr("“%1$s”", exampleBefore()), 14, Ui.BODY), 6);
     LinearLayout after = ui.add(content, ui.card(Ui.TEAL_TINT, Ui.BAR), 8);
-    after.addView(ui.label(tr("Talk Router writes")));
+    after.addView(ui.label(tr("Dictate & Delegate writes")));
     ui.add(after, ui.text(exampleAfter(), 14, Ui.INK), 6);
   }
 
@@ -1142,7 +1142,7 @@ public final class MainActivity extends Activity {
     String run() throws Exception;
   }
 
-  /** "Later" on the optional bb setup pages: setup ends, and Talk Router is a dictation app. */
+  /** "Later" on the optional bb setup pages: setup ends, and Dictate & Delegate is a dictation app. */
   private void laterButton() {
     ui.add(content, ui.button(tr("Later"), Ui.Kind.QUIET, v -> finishSetup()), 4);
   }
@@ -1156,12 +1156,12 @@ public final class MainActivity extends Activity {
       heading(
           null,
           tr("Connect bb"),
-          tr("Optional. bb (getbb.app) runs coding agents on your own computer. Connected, Talk Router hands a task you speak to your chief-of-staff thread there. Without bb, Talk Router is a dictation app."));
+          tr("Optional. bb (getbb.app) runs coding agents on your own computer. Connected, Dictate & Delegate hands a task you speak to your chief-of-staff thread there. Without bb, Dictate & Delegate is a dictation app."));
     } else
       heading(
           tr("Settings"),
           tr("bb"),
-          tr("Talk Router reaches bb through bb's MCP server (plugin bb--mcp), which has to be on in bb."));
+          tr("Dictate & Delegate reaches bb through bb's MCP server (plugin bb--mcp), which has to be on in bb."));
     boolean connected = bb.connected() && bb.mode().equals(bbModeShown);
     Ui.Flow modes = ui.add(content, ui.flow(), 16);
     modes.addView(
@@ -1200,7 +1200,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("Your chief of staff follows two skills in bb, chief-of-staff and talk-router: how to work for you, and how to notify you and send text back. Talk Router installs and updates them in bb through a short thread."),
+            tr("Your chief of staff follows two skills in bb, chief-of-staff and dictate-and-delegate: how to work for you, and how to notify you and send text back. Dictate & Delegate installs and updates them in bb through a short thread."),
             13,
             Ui.MUTED),
         4);
@@ -1288,7 +1288,7 @@ public final class MainActivity extends Activity {
     ui.add(
         card,
         ui.text(
-            tr("The name in your bb address: <handle>.getbb.app. Your browser opens bb's account page; approve Talk Router there."),
+            tr("The name in your bb address: <handle>.getbb.app. Your browser opens bb's account page; approve Dictate & Delegate there."),
             14,
             Ui.MUTED),
         4);
@@ -1338,7 +1338,7 @@ public final class MainActivity extends Activity {
                                 result.setTextColor(Ui.WARN);
                                 result.setText(message);
                               } else {
-                                result.setText(tr("Approve Talk Router in your browser, then come back."));
+                                result.setText(tr("Approve Dictate & Delegate in your browser, then come back."));
                                 openUrl(address);
                               }
                             });
@@ -1550,7 +1550,7 @@ public final class MainActivity extends Activity {
     heading(
         onboarding ? null : tr("Settings"),
         tr("Notifications"),
-        tr("Your chief of staff notifies you through ntfy; tapping a notification opens its thread in bb. Talk Router itself sends none. Install the ntfy app and subscribe to your topic."));
+        tr("Your chief of staff notifies you through ntfy; tapping a notification opens its thread in bb. Dictate & Delegate itself sends none. Install the ntfy app and subscribe to your topic."));
     String topic;
     try {
       topic = bb.ntfyTopic();
@@ -1614,7 +1614,7 @@ public final class MainActivity extends Activity {
                       tr("Saving…"),
                       () -> {
                         bb.setNtfyServer(value);
-                        // The talk-router skill holds the server: it's updated in bb.
+                        // The dictate-and-delegate skill holds the server: it's updated in bb.
                         ChiefSkills.sync(this, false);
                         return tr("✓  Saved.");
                       });
@@ -1647,7 +1647,7 @@ public final class MainActivity extends Activity {
 
   private void homePage() {
     LinearLayout top = ui.horizontal();
-    top.addView(ui.title("Talk Router", 26), new LinearLayout.LayoutParams(0, -2, 1));
+    top.addView(ui.title("Dictate & Delegate", 26), new LinearLayout.LayoutParams(0, -2, 1));
     top.addView(ui.button(tr("Settings"), Ui.Kind.QUIET, v -> open("settings")));
     content.addView(top);
     if (!OpenRouter.hasKey(this)) {
@@ -1706,7 +1706,7 @@ public final class MainActivity extends Activity {
     if (!prefs.getBoolean("tileAdded", false)) {
       LinearLayout tile = ui.horizontal();
       tile.addView(
-          ui.text(tr("Start from any app: add Talk Router to Quick Settings."), 13, Ui.MUTED),
+          ui.text(tr("Start from any app: add Dictate & Delegate to Quick Settings."), 13, Ui.MUTED),
           new LinearLayout.LayoutParams(0, -2, 1));
       tile.addView(ui.button(tr("Add tile"), Ui.Kind.QUIET, v -> addTile()));
       ui.add(content, tile, 2);
@@ -2679,7 +2679,7 @@ public final class MainActivity extends Activity {
             null,
             v -> open("about")));
     bbRows();
-    ui.add(content, ui.label(tr("Using Talk Router")), 22);
+    ui.add(content, ui.label(tr("Using Dictate & Delegate")), 22);
     LinearLayout using = ui.add(content, ui.card(Ui.BG, 0), 8);
     using.setPadding(0, 0, 0, 0);
     using.addView(ui.row(tr("Start and insert"), startLabel(), null, v -> open("start")));
@@ -2699,16 +2699,16 @@ public final class MainActivity extends Activity {
             getResources().getConfiguration().getLocales().get(0).getDisplayLanguage(),
             null,
             v -> {
-              // Android keeps the per-app language; this opens its picker for Talk Router.
+              // Android keeps the per-app language; this opens its picker for Dictate & Delegate.
               try {
                 startActivity(
                     new Intent(Settings.ACTION_APP_LOCALE_SETTINGS)
                         .setData(Uri.fromParts("package", getPackageName(), null)));
               } catch (ActivityNotFoundException ex) {
-                toast(tr("Change the language in Android settings → Apps → Talk Router."));
+                toast(tr("Change the language in Android settings → Apps → Dictate & Delegate."));
               }
             }));
-    // Talk Router has no server: everything it keeps is here, on the phone.
+    // Dictate & Delegate has no server: everything it keeps is here, on the phone.
     ui.add(content, ui.label(tr("Data on this phone")), 22);
     LinearLayout data = ui.add(content, ui.card(Ui.BG, 0), 8);
     data.setPadding(0, 0, 0, 0);
@@ -2729,20 +2729,20 @@ public final class MainActivity extends Activity {
     LinearLayout about = ui.add(content, ui.card(Ui.BG, 0), 8);
     about.setPadding(0, 0, 0, 0);
     TextView facts =
-        ui.text(tr("Your voice and text go only to the providers you choose. There's no Talk Router server."), 14, Ui.MUTED);
+        ui.text(tr("Your voice and text go only to the providers you choose. There's no Dictate & Delegate server."), 14, Ui.MUTED);
     facts.setPadding(ui.dp(18), ui.dp(14), ui.dp(18), ui.dp(14));
     about.addView(facts);
     about.addView(ui.divider());
     about.addView(
         ui.row(
             tr("Source code"),
-            tr("Open source, MIT License · github.com/Philipp258/talk-router"),
+            tr("Open source, MIT License · github.com/Philipp258/dictate-and-delegate"),
             null,
             v -> openUrl(SOURCE_URL)));
     about.addView(ui.divider());
     about.addView(
         ui.row(tr("Report a problem"), tr("On GitHub"), null, v -> openUrl(SOURCE_URL + "/issues")));
-    TextView version = ui.text("Talk Router " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
+    TextView version = ui.text("Dictate & Delegate " + BuildConfig.VERSION_NAME, 12, Ui.MUTED);
     version.setGravity(Gravity.CENTER);
     ui.add(content, version, 18);
   }
@@ -2785,7 +2785,7 @@ public final class MainActivity extends Activity {
   }
 
   private void modelsPage() {
-    heading(tr("Back"), tr("Speech model"), tr("Talk Router uses this model for every note."));
+    heading(tr("Back"), tr("Speech model"), tr("Dictate & Delegate uses this model for every note."));
     Ui.Flow sorts = ui.add(content, ui.flow(), 14);
     String[][] options = {
       {"recommended", tr("Best overall")},
@@ -2859,14 +2859,14 @@ public final class MainActivity extends Activity {
               return;
             }
             prefs.edit().putString("model", m.optString("id")).apply();
-            toast(tr("Talk Router now always uses %1$s", ModelRanking.name(m)));
+            toast(tr("Dictate & Delegate now always uses %1$s", ModelRanking.name(m)));
             goBack();
           });
       ui.add(modelList, row, 8);
     }
   }
 
-  /** Everything Talk Router keeps lives on this phone; this removes all of it. */
+  /** Everything Dictate & Delegate keeps lives on this phone; this removes all of it. */
   private void deleteLocalData() {
     if (DictationService.busy()) {
       toast(tr("Finish recording or upload first"));
@@ -2875,7 +2875,7 @@ public final class MainActivity extends Activity {
     new AlertDialog.Builder(this)
         .setTitle(tr("Delete local data?"))
         .setMessage(
-            tr("Talk Router has no server, so everything it keeps is on this phone. This deletes your notes, audio, templates, words, About you, your OpenRouter and Anthropic keys, your bb sign-in and settings. It can't be undone. Your accounts at OpenRouter, Anthropic and bb stay as they are."))
+            tr("Dictate & Delegate has no server, so everything it keeps is on this phone. This deletes your notes, audio, templates, words, About you, your OpenRouter and Anthropic keys, your bb sign-in and settings. It can't be undone. Your accounts at OpenRouter, Anthropic and bb stay as they are."))
         .setPositiveButton(
             tr("Delete everything"),
             (d, w) -> {
@@ -3139,7 +3139,7 @@ public final class MainActivity extends Activity {
     ui.add(
         example,
         ui.text(
-            tr("Talk Router writes your application with these details, ready to paste."), 14, Ui.MUTED),
+            tr("Dictate & Delegate writes your application with these details, ready to paste."), 14, Ui.MUTED),
         6);
     if (!profile.autoRefine())
       ui.add(
@@ -3305,19 +3305,19 @@ public final class MainActivity extends Activity {
       getSystemService(StatusBarManager.class)
           .requestAddTileService(
               new ComponentName(this, DictationTile.class),
-              tr("Talk Router"),
+              tr("Dictate & Delegate"),
               android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_drift),
               getMainExecutor(),
               result -> {
                 if (result == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED
                     || result == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
                   prefs.edit().putBoolean("tileAdded", true).apply();
-                  toast(tr("Talk Router is in Quick Settings, at the end. Swipe down, then left to find it."));
+                  toast(tr("Dictate & Delegate is in Quick Settings, at the end. Swipe down, then left to find it."));
                   if (List.of("start1", "home", "start").contains(page)) show(page);
-                } else toast(tr("You can also add Talk Router using the Quick Settings edit button."));
+                } else toast(tr("You can also add Dictate & Delegate using the Quick Settings edit button."));
               });
     } catch (RuntimeException ex) {
-      toast(tr("Swipe down, edit Quick Settings, then add Talk Router."));
+      toast(tr("Swipe down, edit Quick Settings, then add Dictate & Delegate."));
     }
   }
 

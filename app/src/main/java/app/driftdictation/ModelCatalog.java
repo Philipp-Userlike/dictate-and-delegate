@@ -10,7 +10,7 @@ import java.util.*;
 import org.json.*;
 
 /**
- * The speech models Talk Router offers, with prices and editorial notes, bundled with the app
+ * The speech models Dictate & Delegate offers, with prices and editorial notes, bundled with the app
  * (assets/models.json): only models whose word hints work (Profile.OFFERED). No network call.
  */
 final class ModelCatalog {

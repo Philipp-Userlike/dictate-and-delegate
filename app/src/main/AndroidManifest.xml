@@ -27,7 +27,7 @@
             android:taskAffinity="app.driftdictation.attach" android:theme="@style/AttachTheme" />
         <activity android:name=".RecordActivity" android:exported="false" android:excludeFromRecents="true"
             android:taskAffinity="app.driftdictation.record" android:theme="@style/RecordTheme" />
-        <service android:name=".DictationTile" android:label="Talk Router" android:icon="@drawable/ic_drift"
+        <service android:name=".DictationTile" android:label="Dictate &amp; Delegate" android:icon="@drawable/ic_drift"
             android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
             <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="true" />

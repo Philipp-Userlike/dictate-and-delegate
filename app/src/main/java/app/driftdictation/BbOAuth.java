@@ -29,13 +29,21 @@ import org.json.JSONObject;
  */
 final class BbOAuth {
   static final String CLIENT_ID =
-      "https://philipp258.github.io/talk-router/oauth/client.json";
+      "https://philipp258.github.io/dictate-and-delegate/oauth/client.json";
+
+  /**
+   * Before the rename to Dictate & Delegate (3.1.0) the app was Talk Router, with its client
+   * document at the old address. Tokens bb issued then belong to that client ID, so they're
+   * refreshed and revoked with it; the old document stays published for that.
+   */
+  static final String LEGACY_CLIENT_ID = "https://philipp258.github.io/talk-router/oauth/client.json",
+      LEGACY_REDIRECT = "https://philipp258.github.io/talk-router/oauth/callback.html";
   /**
    * bb only accepts an https redirect next to the client ID, not an app scheme: a static page there
    * hands the code on to talkrouter://oauth/callback (BbSignInActivity). PKCE keeps the code useless
    * to anyone else.
    */
-  static final String REDIRECT = "https://philipp258.github.io/talk-router/oauth/callback.html",
+  static final String REDIRECT = "https://philipp258.github.io/dictate-and-delegate/oauth/callback.html",
       SCOPE = "bb";
 
   /** bb's authorization server, used when its metadata can't be read. */
@@ -153,6 +161,8 @@ final class BbOAuth {
                 .put("token", endpoints.token())
                 .put("revoke", endpoints.revoke())
                 .put("verifier", verifier)
+                .put("clientId", CLIENT_ID)
+                .put("redirect", REDIRECT)
                 .put("state", state)
                 .put("started", System.currentTimeMillis())
                 .toString());
@@ -206,8 +216,8 @@ final class BbOAuth {
     Map<String, String> body = new LinkedHashMap<>();
     body.put("grant_type", "authorization_code");
     body.put("code", code);
-    body.put("redirect_uri", REDIRECT);
-    body.put("client_id", CLIENT_ID);
+    body.put("redirect_uri", p.has("redirect") ? p.optString("redirect") : LEGACY_REDIRECT);
+    body.put("client_id", clientIdOf(p));
     body.put("code_verifier", p.optString("verifier"));
     body.put("resource", p.optString("resource"));
     JSONObject tokens = postForm(p.optString("token"), body);
@@ -229,6 +239,7 @@ final class BbOAuth {
             .put("issuer", endpoints.optString("issuer"))
             .put("token", endpoints.optString("token"))
             .put("revoke", endpoints.optString("revoke"))
+            .put("clientId", clientIdOf(endpoints))
             .put("access", access)
             .put("refresh", tokens.optString("refresh_token", oldRefresh == null ? "" : oldRefresh))
             .put("expires", expiresIn > 0 ? System.currentTimeMillis() + expiresIn * 1000 : 0)
@@ -253,6 +264,25 @@ final class BbOAuth {
     }
   }
 
+  /**
+   * The client ID saved tokens (or a pending sign-in) belong to: their own, or the old Talk Router
+   * one for tokens saved before the field existed.
+   */
+  static String clientIdOf(JSONObject saved) {
+    String id = saved.optString("clientId");
+    return id.isEmpty() ? LEGACY_CLIENT_ID : id;
+  }
+
+  /** The refresh request for saved tokens, with the client ID they were issued to. */
+  static Map<String, String> refreshBody(JSONObject saved) {
+    Map<String, String> body = new LinkedHashMap<>();
+    body.put("grant_type", "refresh_token");
+    body.put("refresh_token", saved.optString("refresh"));
+    body.put("client_id", clientIdOf(saved));
+    body.put("resource", saved.optString("resource"));
+    return body;
+  }
+
   /** An access token, refreshed first when it expires within a minute or when forced (after 401). */
   static synchronized String accessToken(Context context, boolean forceRefresh) throws Exception {
     Vault vault = new Vault(context);
@@ -267,11 +297,7 @@ final class BbOAuth {
       vault.remove(TOKENS);
       throw new SignedOut();
     }
-    Map<String, String> body = new LinkedHashMap<>();
-    body.put("grant_type", "refresh_token");
-    body.put("refresh_token", refresh);
-    body.put("client_id", CLIENT_ID);
-    body.put("resource", t.optString("resource"));
+    Map<String, String> body = refreshBody(t);
     JSONObject tokens;
     try {
       tokens = postForm(t.optString("token"), body);
@@ -319,7 +345,7 @@ final class BbOAuth {
         Map<String, String> body = new LinkedHashMap<>();
         body.put("token", token[0]);
         body.put("token_type_hint", token[1]);
-        body.put("client_id", CLIENT_ID);
+        body.put("client_id", clientIdOf(t));
         try {
           postForm(endpoint, body);
         } catch (Exception ignored) {

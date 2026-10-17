@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Talk Router</string>
+    <string name="app_name" translatable="false">Dictate &amp; Delegate</string>
     <string name="accessibility_summary">Insert at the cursor, start with a volume key</string>
-    <string name="accessibility_description">Talk Router uses this only to put your text at the cursor when you tap Insert, and to notice when you hold the volume key you chose to start or stop a dictation. It asks for no accessibility events and reads nothing on your screen: it looks up the text field you are typing in only when you tap Insert. Talk Router is open source.</string>
+    <string name="accessibility_description">Dictate &amp; Delegate uses this only to put your text at the cursor when you tap Insert, and to notice when you hold the volume key you chose to start or stop a dictation. It asks for no accessibility events and reads nothing on your screen: it looks up the text field you are typing in only when you tap Insert. Dictate &amp; Delegate is open source.</string>
 </resources>

@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * The 📎 of the floating button and of Home: add context to the dictation being recorded (or the
  * next one): paste what you copied, or attach a file. A small window over the app you are in, so
- * Android lets Talk Router read the clipboard; recording keeps going behind it. The clipboard is read
+ * Android lets Dictate & Delegate read the clipboard; recording keeps going behind it. The clipboard is read
  * only when you tap Paste: Android announces every read.
  */
 public final class AttachActivity extends Activity {
@@ -41,7 +41,7 @@ public final class AttachActivity extends Activity {
     ui.add(
         root,
         ui.text(
-            tr("Give Talk Router what you're talking about, like the offer you're replying to. It's used when you ask for something."),
+            tr("Give Dictate & Delegate what you're talking about, like the offer you're replying to. It's used when you ask for something."),
             14,
             Ui.MUTED),
         6);

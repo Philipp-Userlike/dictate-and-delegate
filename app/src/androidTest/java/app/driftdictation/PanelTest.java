@@ -17,7 +17,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 
 /**
- * The floating panel with Talk Router's Accessibility service on: Insert into the test pad's text
+ * The floating panel with Dictate & Delegate's Accessibility service on: Insert into the test pad's text
  * field, Insert refined replacing it in place, the copy fallback, the chief's text back, ntfy's
  * Copy broadcast, and the volume-key start. UiAutomation is told not to suppress other
  * accessibility services, so ours runs while the test drives the screen.
@@ -98,7 +98,7 @@ public class PanelTest {
     }
   }
 
-  /** Talk Router in front: Android only lets the app in focus read the clipboard. */
+  /** Dictate & Delegate in front: Android only lets the app in focus read the clipboard. */
   void front() {
     context.startActivity(
         new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));

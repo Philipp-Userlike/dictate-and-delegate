@@ -7,7 +7,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 
 /**
- * The silent channel Android requires for the foreground service. Talk Router never asks for permission
+ * The silent channel Android requires for the foreground service. Dictate & Delegate never asks for permission
  * to post notifications, so Android doesn't show it in the shade; problems show on Home instead.
  */
 final class QuietNotifications {

@@ -1,4 +1,4 @@
 <resources>
     <string name="accessibility_summary">Inserir no cursor, iniciar com uma tecla de volume</string>
-    <string name="accessibility_description">O Talk Router usa isto apenas para colocar o seu texto no cursor quando toca em Inserir e para perceber quando mantém premida a tecla de volume escolhida para iniciar ou parar um ditado. Não pede eventos de acessibilidade e não lê nada no ecrã: só procura o campo de texto onde está a escrever quando toca em Inserir. O Talk Router é open source.</string>
+    <string name="accessibility_description">O Dictate &amp; Delegate usa isto apenas para colocar o seu texto no cursor quando toca em Inserir e para perceber quando mantém premida a tecla de volume escolhida para iniciar ou parar um ditado. Não pede eventos de acessibilidade e não lê nada no ecrã: só procura o campo de texto onde está a escrever quando toca em Inserir. O Dictate &amp; Delegate é open source.</string>
 </resources>

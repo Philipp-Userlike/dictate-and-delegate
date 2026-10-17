@@ -53,7 +53,7 @@ public class BbBridgeTest {
     String big = "x".repeat(70_000);
     String m = BbBridge.message("look", List.<String[]>of(new String[] {"a", big}, new String[] {"b", "more"}), "", "r1");
     assertTrue(m.length() < BbBridge.CODE_LIMIT - 5_000);
-    assertTrue(m.contains("[… shortened by Talk Router]"));
+    assertTrue(m.contains("[… shortened by Dictate & Delegate]"));
     assertFalse(m.contains("<pasted name=\"b\">"));
   }
 
@@ -80,7 +80,7 @@ public class BbBridgeTest {
   public void aNewChiefGetsOneLine() {
     String code = BbBridge.spawnSnippet(ChiefSkills.START);
     assertTrue(code.contains("\"--project\",\"proj_personal\",\"--title\",\"Chief of staff\""));
-    assertTrue(code.contains("Use the chief-of-staff and talk-router skills."));
+    assertTrue(code.contains("Use the chief-of-staff and dictate-and-delegate skills."));
   }
 
   @Test

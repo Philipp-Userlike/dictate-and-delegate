@@ -23,7 +23,7 @@ import org.json.JSONObject;
 
 /**
  * What the user adds to a dictation while recording, with the 📎 on the floating button or in
- * Talk Router: pasted text or files (images, PDFs, text). They wait in "pending" for the dictation
+ * Dictate & Delegate: pasted text or files (images, PDFs, text). They wait in "pending" for the dictation
  * being recorded (or the next one), then move to that note's folder, so a redo or "process again"
  * has them too, and are kept as long as its audio. The request check sees a short summary; the
  * text model gets the content; a dictation that asks for nothing ignores them.

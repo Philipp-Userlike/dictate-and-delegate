@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A fake ntfy server for tests: what the chief's paste messages and Talk Router's stream need.
+"""A fake ntfy server for tests: what the chief's paste messages and Dictate & Delegate's stream need.
 
   POST|PUT /<topic>          publish: the body is the message; Title/X-Title, Tags/X-Tags/ta,
                              Actions/X-Actions and Click headers are kept

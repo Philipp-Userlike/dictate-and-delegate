@@ -20,7 +20,7 @@ import org.json.JSONObject;
  * local address http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp).
  *
  * <p>The chief of staff is one bb thread in Personal that receives every agent request. It
- * notifies the user through ntfy itself; Talk Router sends no notifications. Each request carries a
+ * notifies the user through ntfy itself; Dictate & Delegate sends no notifications. Each request carries a
  * short ID; text meant for pasting comes back as an ntfy message tagged with it (ChiefText).
  */
 final class BbBridge {
@@ -264,7 +264,7 @@ final class BbBridge {
     for (String[] p : pasted) {
       String text = p[1].trim();
       if (room <= 0) break;
-      if (text.length() > room) text = text.substring(0, room) + "\n[… shortened by Talk Router]";
+      if (text.length() > room) text = text.substring(0, room) + "\n[… shortened by Dictate & Delegate]";
       room -= text.length();
       s.append("\n\n<pasted name=\"")
           .append(p[0].replace("\"", "'"))
@@ -290,7 +290,7 @@ final class BbBridge {
 
   /**
    * Creates the chief of staff in Personal and keeps it. Its instructions are the chief-of-staff
-   * and talk-router skills, installed first; the thread itself only gets one line.
+   * and dictate-and-delegate skills, installed first; the thread itself only gets one line.
    */
   ThreadInfo createChief() throws Exception {
     ChiefSkills.ensure(context, ChiefSkills.filled(context));
@@ -309,9 +309,9 @@ final class BbBridge {
       c.setConnectTimeout(15_000);
       c.setReadTimeout(20_000);
       c.setRequestMethod("POST");
-      c.setRequestProperty("Title", "Talk Router");
+      c.setRequestProperty("Title", "Dictate & Delegate");
       byte[] body =
-          tr("Test from Talk Router. Your chief of staff's notifications arrive like this.")
+          tr("Test from Dictate & Delegate. Your chief of staff's notifications arrive like this.")
               .getBytes(java.nio.charset.StandardCharsets.UTF_8);
       c.setDoOutput(true);
       c.setFixedLengthStreamingMode(body.length);
@@ -407,7 +407,7 @@ final class BbBridge {
       note.append(note.length() == 0 ? "" : "\n\n")
           .append("(I also attached ")
           .append(String.join("; ", failed))
-          .append(". Talk Router couldn't pass that on.)");
+          .append(". Dictate & Delegate couldn't pass that on.)");
     run(tellSnippet(chiefId, message(said, pasted, note.toString(), request), refs));
     String how = sent == 0 ? "" : encoded.isEmpty() ? "upload" : sent == encoded.size() ? "base64" : "upload+base64";
     return new Sent(sent, how, refused, failed);
@@ -415,7 +415,7 @@ final class BbBridge {
 
   /** What the chief is told about files that came as base64 text parts. */
   static String base64Note(List<String> names) {
-    return "(Talk Router couldn't upload my attachments directly, so they come as base64 text in"
+    return "(Dictate & Delegate couldn't upload my attachments directly, so they come as base64 text in"
         + " parts, attached as <name>.partNNofMM.b64: for each file, join its parts in order and"
         + " decode them, e.g. `cat <name>.part*.b64 | base64 -d > <name>`, before you look at it: "
         + String.join(", ", names)

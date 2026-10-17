@@ -12,7 +12,7 @@ public final class DictationTile extends TileService {
     requestListeningState(context, new ComponentName(context, DictationTile.class));
   }
 
-  /** Talk Router only suggests adding the tile until it is there. */
+  /** Dictate & Delegate only suggests adding the tile until it is there. */
   @Override
   public void onTileAdded() {
     getSharedPreferences("settings", 0).edit().putBoolean("tileAdded", true).apply();
@@ -38,7 +38,7 @@ public final class DictationTile extends TileService {
             : getSharedPreferences("settings", 0).getString("state", "");
     boolean recording = DictationService.RECORDING.equals(state);
     boolean working = DictationService.busy() && !recording;
-    tile.setLabel(tr("Talk Router"));
+    tile.setLabel(tr("Dictate & Delegate"));
     tile.setSubtitle(
         recording
             ? tr("Tap to stop")

@@ -132,7 +132,7 @@ public class ControlsTest {
     device.openQuickSettings();
     UiObject2 tile = null;
     for (int page = 0; page < 4; page++) {
-      tile = device.wait(Until.findObject(By.pkg("com.android.systemui").text("Talk Router")), 1000);
+      tile = device.wait(Until.findObject(By.pkg("com.android.systemui").text("Dictate & Delegate")), 1000);
       if (tile != null) break;
       device.swipe(
           device.getDisplayWidth() * 8 / 10,

@@ -14,7 +14,7 @@ import org.json.JSONObject;
 
 /**
  * Text the chief sends back for pasting. The chief posts it to the ntfy topic, tagged
- * "talkrouter-paste" and "req-<request ID>" (the talk-router skill). While the panel is open, Talk
+ * "talkrouter-paste" and "req-<request ID>" (the dictate-and-delegate skill). While the panel is open, Talk
  * Router reads the topic's JSON stream itself (no background service) and offers Insert from
  * chief. When it's closed, the ntfy app shows the message; its Copy button sends a broadcast with
  * the request ID, which TalkAccessibility receives while it runs. The broadcast carries only the

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A fake OpenRouter for tests: no provider calls, no money, answers tests queue up front.
 
-Serves the OpenRouter endpoints Talk Router uses, under /api/v1 and /api/alpha like the real one:
+Serves the OpenRouter endpoints Dictate & Delegate uses, under /api/v1 and /api/alpha like the real one:
 
   GET  /api/v1/key                    the key check in setup ("bad" keys get 401)
   GET  /api/v1/models                 a small catalog (CATALOG) for the Refine model picker

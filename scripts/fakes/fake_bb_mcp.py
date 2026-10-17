@@ -11,7 +11,7 @@ Speaks MCP Streamable HTTP on POST /mcp and answers as an event stream, like bb 
                                 "thread","tell"   -> {"threadId": ..., "delivery": "sent"}
                                 "thread","show"   -> {"id": ..., "title": "Chief of staff", "status": "idle", "archived": false}
                                 "skill","list"    -> {"skills": {name: marker hash}} of the installed fake skills
-                                spawn titled "Talk Router: install skills" -> installs the files in its
+                                spawn titled "Dictate & Delegate: install skills" -> installs the files in its
                                                      prompt at once (unless /test/skills says "stall"),
                                                      {"id": "thr_fakeinstall"}
                                 "thread","archive" -> {"archived": true}
@@ -32,7 +32,7 @@ Test control (not part of bb):
                       JSON-RPC error
   POST /test/config   {"token": "secret"} requires "Authorization: Bearer secret" (401 otherwise);
                       {"token": ""} turns that off
-  POST /test/skills   {"installed": {"talk-router": "abc", ...}} sets what bb has ("" missing,
+  POST /test/skills   {"installed": {"dictate-and-delegate": "abc", ...}} sets what bb has ("" missing,
                       "old" unmarked); {"stall": true} makes the install thread never install
   GET  /test/uploads  every upload: {"name", "mimeType", "size", "sha256", "via": "rest"|"mcp", "path"}
   GET  /test/skills   what's installed: {"installed": {...}, "files": {name: content}}
@@ -258,13 +258,17 @@ class Handler(BaseHTTPRequestHandler):
             value = {"path": path}
         elif kind == "skills":
             with lock:
-                value = {"skills": {n: skills["installed"].get(n, "") for n in ("chief-of-staff", "talk-router")}}
+                value = {"skills": {n: skills["installed"].get(n, "")
+                                    for n in ("chief-of-staff", "dictate-and-delegate", "talk-router")}}
         elif kind == "archive":
             value = {"archived": True}
-        elif kind == "spawn" and "Talk Router: install skills" in code:
+        elif kind == "spawn" and "Dictate & Delegate: install skills" in code:
             prompt = json.loads(re.search(r'\{stdin: ("(?:[^"\\]|\\.)*")\}', code).group(1))
             with lock:
                 if not skills["stall"]:
+                    # The old name of the second skill goes, as the prompt asks.
+                    skills["installed"].pop("talk-router", None)
+                    skills["files"].pop("talk-router", None)
                     for m in re.finditer(r"===== ~/\.bb/skills/([a-z-]+)/SKILL\.md \(begins on the next line\) =====\n(.*?)===== end of \1 =====",
                                          prompt, re.S):
                         skills["files"][m.group(1)] = m.group(2)

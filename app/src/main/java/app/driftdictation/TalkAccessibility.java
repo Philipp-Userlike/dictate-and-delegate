@@ -9,7 +9,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 /**
- * Talk Router's Accessibility service, used for two things only: holding a volume key starts or
+ * Dictate & Delegate's Accessibility service, used for two things only: holding a volume key starts or
  * stops a dictation, and Insert puts text at the cursor of the field you're typing in. It asks for
  * no accessibility events, so it never sees what happens on screen; it looks up the focused field
  * only when you tap Insert. While it runs, it also takes the Copy button of the chief's ntfy
@@ -80,7 +80,7 @@ public final class TalkAccessibility extends AccessibilityService {
     }
   }
 
-  /** Whether Android has the service switched on for Talk Router (it may still be starting). */
+  /** Whether Android has the service switched on for Dictate & Delegate (it may still be starting). */
   static boolean enabled(Context context) {
     String on =
         android.provider.Settings.Secure.getString(

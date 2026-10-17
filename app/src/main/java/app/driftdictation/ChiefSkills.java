@@ -18,33 +18,36 @@ import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 /**
- * The chief's instructions as two bb user skills, chief-of-staff and talk-router. Their templates
- * ship in assets/skills; Talk Router fills in the user's name, the ntfy server and topic and the bb
+ * The chief's instructions as two bb user skills, chief-of-staff and dictate-and-delegate. Their templates
+ * ship in assets/skills; Dictate & Delegate fills in the user's name, the ntfy server and topic and the bb
  * link base. Each filled file ends with a marker holding a hash of its content, e.g.
- * {@code <!-- talk-router-skill: 3f2a9c1b04de -->}: a changed template (an app update) or a changed
+ * {@code <!-- dictate-and-delegate-skill: 3f2a9c1b04de -->}: a changed template (an app update) or a changed
  * placeholder (topic, server, link, name) gives another hash, so one comparison says whether bb has
  * the current version.
  *
- * <p>Talk Router reads the installed markers through bb's MCP "read" tool. When one is missing or
+ * <p>Dictate & Delegate reads the installed markers through bb's MCP "read" tool. When one is missing or
  * different, a short-lived bb thread writes both files to ~/.bb/skills (MCP snippets can't write
- * files), Talk Router waits until bb lists the new versions, then archives that thread.
+ * files), Dictate & Delegate waits until bb lists the new versions, then archives that thread.
  */
 final class ChiefSkills {
   private ChiefSkills() {}
 
-  static final String CHIEF = "chief-of-staff", ROUTER = "talk-router";
+  static final String CHIEF = "chief-of-staff", ROUTER = "dictate-and-delegate";
+
+  /** The second skill's name before the rename (3.1.0): the install removes it. */
+  static final String OLD_ROUTER = "talk-router";
   static final String[] NAMES = {CHIEF, ROUTER};
 
-  static final String INSTALL_TITLE = "Talk Router: install skills";
+  static final String INSTALL_TITLE = "Dictate & Delegate: install skills";
 
   /** The line a chief gets when it's created or adopted, and an older chief once. */
-  static final String START = "You're my chief of staff. Use the chief-of-staff and talk-router skills.";
+  static final String START = "You're my chief of staff. Use the chief-of-staff and dictate-and-delegate skills.";
 
   /** Prefs: the user's name; the hashes installed last time; the app version that checked. */
   static final String USER_NAME = "bbUserName", INSTALLED = "skillsInstalled", CHECKED_VERSION = "skillsCheckedVersion";
 
   /** Prefs: the chief was told to use the skills (new chiefs at once, older ones after install). */
-  static final String CHIEF_TOLD = "chiefToldSkills";
+  static final String CHIEF_TOLD = "chiefToldSkills2"; // 2: after the rename, chiefs hear the new names once.
 
   // ------------------------------------------------------------------ filling (unit-tested)
 
@@ -56,7 +59,12 @@ final class ChiefSkills {
     String n = name == null ? "" : name.trim();
     String t = template;
     if (n.isEmpty()) t = t.replace("{{NAME}}'s", "the user's").replace("{{NAME}}", "the user");
-    else t = t.replace("{{NAME}}", n);
+    else {
+      // In the front matter the name sits in a double-quoted YAML string: escape \ and ".
+      int end = t.startsWith("---\n") ? t.indexOf("\n---", 4) : -1;
+      String front = end < 0 ? "" : t.substring(0, end), body = end < 0 ? t : t.substring(end);
+      t = front.replace("{{NAME}}", n.replace("\\", "\\\\").replace("\"", "\\\"")) + body.replace("{{NAME}}", n);
+    }
     if (linkBase.isEmpty()) t = t.replace(" -H \"Click: {{LINK_BASE}}/threads/$BB_THREAD_ID\"", "");
     t = t.replace("{{LINK_BASE}}", linkBase).replace("{{NTFY_SERVER}}", server).replace("{{TOPIC}}", topic);
     if (!t.endsWith("\n")) t += "\n";
@@ -101,7 +109,7 @@ final class ChiefSkills {
     }
   }
 
-  /** "chief-of-staff:<hash>,talk-router:<hash>": what's installed when all is current. */
+  /** "chief-of-staff:<hash>,dictate-and-delegate:<hash>": what's installed when all is current. */
   static String summary(Map<String, String> files) {
     StringBuilder s = new StringBuilder();
     for (Map.Entry<String, String> e : files.entrySet())
@@ -115,7 +123,7 @@ final class ChiefSkills {
   static String checkSnippet() {
     return "const l = await bb.json([\"skill\",\"list\"]);\n"
         + "const out = {};\n"
-        + "for (const name of [\"" + CHIEF + "\",\"" + ROUTER + "\"]) {\n"
+        + "for (const name of [\"" + CHIEF + "\",\"" + ROUTER + "\",\"" + OLD_ROUTER + "\"]) {\n"
         + "  const s = (l.skills || []).find(x => x.name === name && x.scope === \"bb-user\");\n"
         + "  if (!s) { out[name] = \"\"; continue; }\n"
         + "  const f = await bb.json([\"skill\",\"show\",s.id]);\n"
@@ -125,17 +133,36 @@ final class ChiefSkills {
         + "return {skills: out};";
   }
 
-  /** The install thread's brief: both files verbatim, where they go, and nothing else. */
+  /**
+   * The install thread's brief, for a capable colleague: what the skills are for, where bb reads
+   * them, what done looks like, and the files; it may fix what obviously wouldn't load. The app
+   * never needs the files byte for byte: it only reads each file's marker line (checkSnippet,
+   * marker), so a file the thread fixed still counts as current, and after the thread is done the
+   * app checks bb itself (both skills listed, talk-router gone) before it says "Installed".
+   */
   static String installPrompt(Map<String, String> files) {
     StringBuilder s =
         new StringBuilder(
-            "Install two bb user skills for Talk Router. Write each file below exactly as given,"
-                + " byte for byte, creating the folders and overwriting what's there:\n\n");
-    for (Map.Entry<String, String> e : files.entrySet())
-      s.append("- `~/.bb/skills/").append(e.getKey()).append("/SKILL.md`\n");
-    s.append(
-        "\nThen check with `bb skill list` that both are listed, reply \"installed\" and end your"
-            + " turn. Change nothing else, and send no notification.\n");
+            "Please install or update two bb user skills for the user's chief of staff. They come from"
+                + " Dictate & Delegate, the voice app on the user's phone: `chief-of-staff` describes the"
+                + " chief's role, and `dictate-and-delegate` explains the messages the app sends and how"
+                + " to notify the user or send text back through ntfy.\n\n"
+                + "bb reads user skills from `~/.bb/skills/<name>/SKILL.md`. Put each file below there,"
+                + " replacing what's there now. Each file ends with a line like"
+                + " `<!-- dictate-and-delegate-skill: 3f2a9c1b04de -->`: the app reads that line to tell"
+                + " whether the installed skill is current, so keep it as it is. If something in a file"
+                + " wouldn't load (bb skips a skill whose front matter isn't valid YAML, for example), fix"
+                + " it the way the author obviously meant, and keep the meaning.\n\n"
+                + "The second skill used to be called `"
+                + OLD_ROUTER
+                + "`; remove `~/.bb/skills/"
+                + OLD_ROUTER
+                + "` if it's there.\n\n"
+                + "You're done when `bb skill list` shows `chief-of-staff` and `dictate-and-delegate` as"
+                + " user skills and no `"
+                + OLD_ROUTER
+                + "`. Then reply with one short line saying so. This is housekeeping, so no"
+                + " notification.\n");
     for (Map.Entry<String, String> e : files.entrySet())
       s.append("\n===== ~/.bb/skills/")
           .append(e.getKey())
@@ -161,11 +188,12 @@ final class ChiefSkills {
     return "await bb.json([\"thread\",\"archive\"," + BbBridge.js(id) + "]);\nreturn {archived: true};";
   }
 
-  /** Which skills differ from what bb has (missing, unmarked or another hash). */
+  /** Which skills differ from what bb has (missing, unmarked or another hash), and the old one if it's still there. */
   static List<String> outdated(Map<String, String> files, JSONObject installed) {
     List<String> out = new ArrayList<>();
     for (Map.Entry<String, String> e : files.entrySet())
       if (!marker(e.getValue()).equals(installed.optString(e.getKey()))) out.add(e.getKey());
+    if (!installed.optString(OLD_ROUTER).isEmpty()) out.add(OLD_ROUTER);
     return out;
   }
 

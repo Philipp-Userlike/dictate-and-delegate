@@ -125,13 +125,13 @@ public final class DictationService extends Service {
     QuietNotifications.initialize(this);
     if (audio(this).exists()) {
       state = ERROR;
-      detail = tr("Saved recording found. Open Talk Router to retry or discard.");
+      detail = tr("Saved recording found. Open Dictate & Delegate to retry or discard.");
       main.postDelayed(finishFeedback, 3500);
     }
     windows = getSystemService(WindowManager.class);
     wake =
         getSystemService(PowerManager.class)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Talk Router:dictation");
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Dictate & Delegate:dictation");
     wake.setReferenceCounted(false);
   }
 
@@ -206,8 +206,8 @@ public final class DictationService extends Service {
     // Android requires a foreground-service notification object even without posting permission.
     return new Notification.Builder(this, QuietNotifications.CHANNEL)
         .setSmallIcon(app.driftdictation.R.drawable.ic_mic)
-        .setContentTitle(tr("Talk Router is running"))
-        .setContentText(tr("Use the bubble or open Talk Router to control dictation."))
+        .setContentTitle(tr("Dictate & Delegate is running"))
+        .setContentText(tr("Use the bubble or open Dictate & Delegate to control dictation."))
         .setOngoing(true)
         .setOnlyAlertOnce(true)
         .build();
@@ -518,7 +518,7 @@ public final class DictationService extends Service {
       }
       default -> {
         if (!BbBridge.ready(this)) {
-          say(tr("Set up your chief of staff in Talk Router → Settings → bb."));
+          say(tr("Set up your chief of staff in Dictate & Delegate → Settings → bb."));
           return;
         }
         s.chief = QUEUED;
@@ -666,7 +666,7 @@ public final class DictationService extends Service {
             // Never on the clipboard by itself: Insert refined, or Copy on the note.
             s.message = bubble == null ? "" : tr("Refined");
             if (bubble == null && session == s)
-              Toast.makeText(this, tr("Refined. The text is in Talk Router."), Toast.LENGTH_LONG).show();
+              Toast.makeText(this, tr("Refined. The text is in Dictate & Delegate."), Toast.LENGTH_LONG).show();
           }
           if (session == s) {
             renderBubble();
@@ -827,7 +827,7 @@ public final class DictationService extends Service {
    */
   static void requireKey(Context context) throws IOException {
     if (!OpenRouter.hasKey(context))
-      throw new IOException(tr("Add your OpenRouter key in Talk Router's Settings first."));
+      throw new IOException(tr("Add your OpenRouter key in Dictate & Delegate's Settings first."));
   }
 
   /**
@@ -992,7 +992,7 @@ public final class DictationService extends Service {
       return;
     }
     if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
-      throw new IOException(tr("Allow microphone access in Talk Router first."));
+      throw new IOException(tr("Allow microphone access in Dictate & Delegate first."));
     requireKey(this);
     foreground(true);
     newSession();
@@ -1204,7 +1204,7 @@ public final class DictationService extends Service {
                     transition(COPIED, tr("Your text is ready to insert"));
                     decide();
                   } catch (Exception ex) {
-                    transition(ERROR, tr("Transcript saved in history. Open Talk Router to copy it."));
+                    transition(ERROR, tr("Transcript saved in history. Open Dictate & Delegate to copy it."));
                   } finally {
                     if (wake.isHeld()) wake.release();
                   }
@@ -1233,7 +1233,7 @@ public final class DictationService extends Service {
   }
 
   static void copy(Context context, String text) {
-    ClipData clip = ClipData.newPlainText("Talk Router transcript", text);
+    ClipData clip = ClipData.newPlainText("Dictate & Delegate transcript", text);
     PersistableBundle extras = new PersistableBundle();
     extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
     clip.getDescription().setExtras(extras);
@@ -1242,7 +1242,7 @@ public final class DictationService extends Service {
 
   private void clearPending() throws IOException {
     if (audio(this).exists() && !audio(this).delete())
-      throw new IOException(tr("Could not delete saved audio. Try again after restarting Talk Router."));
+      throw new IOException(tr("Could not delete saved audio. Try again after restarting Dictate & Delegate."));
     try (HistoryStore history = new HistoryStore(this)) {
       HistoryEntry entry = history.get(prefs.getString("sessionId", ""));
       if (entry != null
@@ -1266,14 +1266,14 @@ public final class DictationService extends Service {
   }
 
   static String friendly(Exception ex) {
-    // Talk Router's own errors are plain IOExceptions with a translated message. Subclasses come from
+    // Dictate & Delegate's own errors are plain IOExceptions with a translated message. Subclasses come from
     // the network stack (connection reset, TLS, timeouts) and carry raw English, if anything.
     if (ex.getClass() == IOException.class && ex.getMessage() != null) return ex.getMessage();
     if (ex instanceof java.io.FileNotFoundException
         || ex instanceof java.nio.file.FileSystemException
         || ex instanceof java.io.EOFException
         || (ex.getMessage() != null && ex.getMessage().contains("ENOSPC")))
-      return tr("Talk Router couldn't read or write its files. Check available storage, then retry.");
+      return tr("Dictate & Delegate couldn't read or write its files. Check available storage, then retry.");
     if (ex instanceof IOException)
       return tr("The connection to OpenRouter was lost. Check your internet connection, then retry.");
     return tr(

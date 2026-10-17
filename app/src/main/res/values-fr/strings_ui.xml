@@ -4,39 +4,36 @@
     <string name="t_00836dbd" formatted="false">Chargement des modèles d\'OpenRouter…</string>
     <string name="t_00a11af1" formatted="false">Sur GitHub</string>
     <string name="t_00f987b3" formatted="false">Le texte de ton chef n\'est plus sur ton sujet ntfy.</string>
-    <string name="t_0155a025" formatted="false">Tu peux aussi ajouter Talk Router via le bouton d\'édition des Paramètres rapides.</string>
     <string name="t_0174ec90" formatted="false">Quiconque connaît le sujet peut lire ces notifications, c\'est pourquoi il est long et aléatoire. Garde-le pour toi.</string>
     <string name="t_01e4f1a8" formatted="false">Tout supprimer</string>
     <string name="t_01f8e246" formatted="false">Tuile ou maintenir Volume haut</string>
     <string name="t_0255636d" formatted="false">Clé OpenRouter</string>
     <string name="t_02986d74" formatted="false">Par exemple : Candidature logement</string>
+    <string name="t_02eb1806" formatted="false">Ajouter Dictate &amp; Delegate aux Réglages rapides</string>
     <string name="t_04bb15b6" formatted="false">Audio sauvegardé supprimé</string>
     <string name="t_04fc2b5b" formatted="false">Image</string>
     <string name="t_05db04e6" formatted="false">Prix indisponible · voir source</string>
     <string name="t_05ff3c07" formatted="false">Rien à coller : copie d\'abord du texte.</string>
     <string name="t_064b8a10" formatted="false">Impossible de peaufiner cette note : %1$s Voici ce que tu as dit.</string>
+    <string name="t_0656ff35" formatted="false">Dictate &amp; Delegate</string>
     <string name="t_067329ed" formatted="false">cette appli n\'accepte que le collage, c\'est donc aussi dans le presse-papiers</string>
     <string name="t_068966f6" formatted="false">Affiner : crédits Anthropic ≈%1$s</string>
-    <string name="t_07290dc9" formatted="false">Talk Router utilise ce modèle pour chaque note.</string>
     <string name="t_07ee7593" formatted="false">Tu parles de quelque chose ? Ajoute-le, comme une offre à laquelle tu réponds.</string>
     <string name="t_08db7524" formatted="false">À partir de %1$s $ / min</string>
     <string name="t_08e77a0c" formatted="false">Autoriser la superposition</string>
     <string name="t_0a7ebfef" formatted="false">Ajouté</string>
     <string name="t_0ae539d0" formatted="false">Tes mots</string>
     <string name="t_0ae65fda" formatted="false">Démarrer la dictée</string>
-    <string name="t_0b47c5cb" formatted="false">Pendant que tu dictes, un petit panneau reste au-dessus des autres applis : appuie sur ■ pour arrêter, puis sur Insérer, Peaufiner ou Chef. Pour l\'autoriser, Android affiche une liste d\'applis : sélectionne Talk Router, active-le et reviens ici.</string>
     <string name="t_0b870de2" formatted="false">Données locales supprimées</string>
     <string name="t_0bf045a7" formatted="false">Supprimer ta clé Anthropic ?</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chef ✓</string>
     <string name="t_0c4ebb56" formatted="false">Prix par million de tokens en entrée / sortie, tarifs publics d\'Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Ouvrir la récupération d\'enregistrements</string>
     <string name="t_0c8b88ef" formatted="false">%1$s a répondu avec HTTP %2$d.</string>
-    <string name="t_0c998ca5" formatted="false">Configure ton chef de cabinet dans Talk Router → Paramètres → bb.</string>
     <string name="t_0cf56167" formatted="false">Le serveur de connexion de bb a renvoyé une réponse inattendue.</string>
     <string name="t_0d35d152" formatted="false">Tes modèles restent sur cet appareil. Seul celui que tu demandes est envoyé à l\'IA, avec ta dictée.</string>
     <string name="t_0dc541d5" formatted="false">Rétablir par défaut</string>
     <string name="t_0e1c0935" formatted="false">bb répond, mais ne propose pas l\'outil d\'exécution. Mets à jour bb et vérifie que le plugin MCP est activé.</string>
-    <string name="t_0f4b7ef4" formatted="false">Talk Router rédige ton message avec ces détails, prêt à être collé.</string>
     <string name="t_0f756679" formatted="false">Réessayer l\'audio enregistré</string>
     <string name="t_10aef2d8" formatted="false">Chef de cabinet</string>
     <string name="t_112a7174" formatted="false">Utilisation</string>
@@ -47,14 +44,12 @@
     <string name="t_1515cfb6" formatted="false">Aucun résultat.</string>
     <string name="t_16545ddd" formatted="false">Modèle</string>
     <string name="t_16666fb3" formatted="false">délai de réponse dépassé</string>
-    <string name="t_1680b9fc" formatted="false">Par exemple : je développe une appli nommée Talk Router. Jana est une collègue. Écrire les nombres en chiffres.</string>
-    <string name="t_16831791" formatted="false">Talk Router est en cours d\'exécution</string>
     <string name="t_174fc48a" formatted="false">non envoyé</string>
     <string name="t_176867d3" formatted="false">Obtenir l\'application ntfy</string>
     <string name="t_181bf8d8" formatted="false">Prix par million de tokens en entrée / sortie, selon OpenRouter.</string>
     <string name="t_18d0ca78" formatted="false">Adresse MCP</string>
+    <string name="t_1959e611" formatted="false">Open source, Licence MIT · github.com/Philipp258/dictate-and-delegate</string>
     <string name="t_1964b988" formatted="false">Arrêter</string>
-    <string name="t_19dbaa70" formatted="false">Talk Router communique avec bb via son serveur MCP (plugin bb--mcp), qui doit être activé dans bb.</string>
     <string name="t_1a0dd3f6" formatted="false">Vérification de requête · %1$s</string>
     <string name="t_1a2e2aa9" formatted="false">Un enregistrement en attente doit d\'abord être relancé ou supprimé.</string>
     <string name="t_1b81f4cf" formatted="false">Plus tard ›</string>
@@ -65,10 +60,8 @@
     <string name="t_1c9d89f5" formatted="false">Envoi…</string>
     <string name="t_1ca48dd6" formatted="false">Échec de la vérification, conservé tel quel</string>
     <string name="t_1cbdcf91" formatted="false">✨ Peaufiner à nouveau</string>
-    <string name="t_1d8fe8d5" formatted="false">Open source, licence MIT · github.com/Philipp258/talk-router</string>
     <string name="t_1e4ae9cd" formatted="false">Ou utiliser un fil existant</string>
     <string name="t_1e528165" formatted="false">%1$s.getbb.app a répondu avec HTTP %2$d. Réessaie dans un instant.</string>
-    <string name="t_1e84d6d1" formatted="false">Autre chose que Talk Router devrait savoir ?</string>
     <string name="t_1e8f2a1c" formatted="false">Oublier cette adresse</string>
     <string name="t_1f0e3297" formatted="false">Modèle vocal</string>
     <string name="t_1f3603cf" formatted="false">Lance depuis n\'importe quelle appli</string>
@@ -77,6 +70,7 @@
     <string name="t_200afc5b" formatted="false">Modifier le modèle</string>
     <string name="t_202538d9" formatted="false">Signaler un problème</string>
     <string name="t_215d7d37" formatted="false">Remplacé par le texte peaufiné</string>
+    <string name="t_219bf282" formatted="false">Ton chef d\'état-major te prévient via ntfy ; toucher une notification ouvre son fil dans bb. Dictate &amp; Delegate n\'en envoie aucune. Installe l\'appli ntfy et abonne-toi à ton sujet.</string>
     <string name="t_22747cc0" formatted="false">Messages</string>
     <string name="t_22a3ef54" formatted="false">Juridique</string>
     <string name="t_22d5fbd9" formatted="false">Ajouter du contexte à cette dictée</string>
@@ -86,11 +80,9 @@
     <string name="t_248af959" formatted="false">Un enregistrement a été sauvegardé mais non transcrit.</string>
     <string name="t_24c47eae" formatted="false">Aucun serveur MCP à cette adresse (HTTP 404). Vérifie l\'adresse et assure-toi que le plugin MCP de bb est activé.</string>
     <string name="t_24c7367a" formatted="false">Coller ce qui a été copié</string>
-    <string name="t_24cd899e" formatted="false">Ton chef de cabinet t\'alerte via ntfy ; appuyer sur une notification ouvre son fil dans bb. Talk Router n\'envoie aucune notification. Installe l\'application ntfy et abonne-toi à ton sujet.</string>
     <string name="t_262860bd" formatted="false">Se connecter avec bb</string>
     <string name="t_2652688c" formatted="false">Microphone</string>
     <string name="t_26643376" formatted="false">Vérification…</string>
-    <string name="t_26f01951" formatted="false">Talk Router est dans les Paramètres rapides, tout à la fin. Glisse vers le bas, puis vers la gauche pour le trouver.</string>
     <string name="t_27a92292" formatted="false">bb n\'a pas autorisé la connexion.</string>
     <string name="t_27c5b8ea" formatted="false">Supprimer la clé</string>
     <string name="t_2893e4d7" formatted="false">Vérification de requête</string>
@@ -99,12 +91,14 @@
     <string name="t_2994b473" formatted="false">‹ Plus tôt</string>
     <string name="t_29a545af" formatted="false">Cher M. Weber, euh, le robinet de la cuisine, non en fait celui de la salle de bain, goutte depuis lundi. Ah et formulez ça un peu plus poliment svp.</string>
     <string name="t_2af8adac" formatted="false">Envoyé à ton chef de cabinet</string>
+    <string name="t_2be92a36" formatted="false">Donne à Dictate &amp; Delegate le contexte dont tu parles, comme l\'offre à laquelle tu réponds. Utilisé quand tu demandes quelque chose.</string>
     <string name="t_2bf38097" formatted="false">Ta clé Anthropic n\'est pas valide. Vérifie-la dans Paramètres → Modèles et fournisseurs → Clé Anthropic.</string>
     <string name="t_2c113272" formatted="false">Ton identifiant bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Appuie pour arrêter</string>
     <string name="t_2cad992e" formatted="false">Fichier</string>
     <string name="t_2ce33943" formatted="false">Par défaut</string>
     <string name="t_2d53863e" formatted="false">Ajouter à cette dictée</string>
+    <string name="t_2dace0e0" formatted="false">Autorise d\'abord l\'accès au micro dans Dictate &amp; Delegate.</string>
     <string name="t_2dad13e3" formatted="false">Langue</string>
     <string name="t_2dc29d4d" formatted="false">Plus tard</string>
     <string name="t_2dd159ed" formatted="false">Aucun navigateur disponible</string>
@@ -120,10 +114,11 @@
     <string name="t_322dcd94" formatted="false">Tes mots d\'abord, toujours. Ensuite ✨ Peaufiner en fait le texte dont tu as besoin : il comprend à quoi il sert (un message, un e-mail, une note), suit ce que tu as demandé et remplit tes modèles.</string>
     <string name="t_324be3eb" formatted="false">Impossible de supprimer le modèle</string>
     <string name="t_32a5138e" formatted="false">brut</string>
-    <string name="t_32c62f32" formatted="false">Ta clé OpenRouter n\'est plus valide. Modifie-la dans les paramètres de Talk Router.</string>
     <string name="t_32cb8094" formatted="false">Ce n\'est pas un lien ou un identifiant de fil bb valide (commence par thr_).</string>
     <string name="t_3320a538" formatted="false">Après chaque transcription, Jev, un modèle de décision rapide, décide de la suite : si tu as demandé un texte, quel modèle tu as nommé et si tu t\'adressais à ton chef de cabinet. Cela prend environ un tiers de seconde et passe par ta clé OpenRouter.</string>
+    <string name="t_339c2181" formatted="false">Dictate &amp; Delegate rédige ta candidature avec ces détails, prête à être collée.</string>
     <string name="t_33e841f4" formatted="false">Non envoyé à ton chef de cabinet : %1$s</string>
+    <string name="t_33fdfd35" formatted="false">Aide Dictate &amp; Delegate à bien orthographier les noms et à adapter chaque note à son objectif.</string>
     <string name="t_345d171c" formatted="false">Le serveur de connexion de bb a répondu avec HTTP %1$d.</string>
     <string name="t_35c96237" formatted="false">Instructions pour Peaufiner</string>
     <string name="t_370bef97" formatted="false">Jeton (facultatif)</string>
@@ -132,32 +127,31 @@
     <string name="t_37ffa23d" formatted="false">✨ Peaufiner ✓</string>
     <string name="t_38a07146" formatted="false">Adresse web bb pour les liens</string>
     <string name="t_39ee7423" formatted="false">Peaufinage automatique désactivé : un modèle est appliqué quand tu touches ✨ Peaufiner.</string>
-    <string name="t_3b499729" formatted="false">Talk Router ne peut pas dicter tant que tu n\'ajoutes pas à nouveau une clé.</string>
+    <string name="t_3a98665a" formatted="false">Par exemple : je développe une appli appelée Dictate &amp; Delegate. Jana est une collègue. Écris les nombres en chiffres.</string>
     <string name="t_3b71f15b" formatted="false">Meilleur choix</string>
-    <string name="t_3b809382" formatted="false">Autorise d\'abord l\'accès au micro dans Talk Router.</string>
     <string name="t_3b9793b3" formatted="false">%1$s n\'a pas répondu à temps. Réessaie.</string>
     <string name="t_3b9938d1" formatted="false">Supprimer ce modèle ?</string>
     <string name="t_3c847f8f" formatted="false">Panneau flottant · facultatif</string>
+    <string name="t_3d06124e" formatted="false">Ta clé OpenRouter n\'est plus valide. Modifie-la dans les paramètres de Dictate &amp; Delegate.</string>
     <string name="t_3d38c7ad" formatted="false">Enregistrement en cours…</string>
+    <string name="t_3da1dbe7" formatted="false">Dictate &amp; Delegate est en cours d\'exécution</string>
     <string name="t_3dbbd3aa" formatted="false">Clé Anthropic</string>
     <string name="t_3dbe79b1" formatted="false">Supprimer</string>
+    <string name="t_3de28b99" formatted="false">Touche Dictate &amp; Delegate et active-le. Si Android indique que le paramètre est restreint, ouvre Infos sur l\'appli → ⋮ → Autoriser les paramètres restreints, puis réessaie.</string>
     <string name="t_3e12df1c" formatted="false">Joindre un fichier</string>
     <string name="t_3e15b1f4" formatted="false">%1$s $ entrée / %2$s $ sortie par million de tokens</string>
     <string name="t_3e458553" formatted="false">Requête à bb…</string>
     <string name="t_3e5678cd" formatted="false">Le plus rapide</string>
-    <string name="t_3e9a070d" formatted="false">Impossible de supprimer l\'audio. Réessaie après avoir redémarré Talk Router.</string>
     <string name="t_3ebb7bec" formatted="false">Peaufiner</string>
     <string name="t_3eef8148_many" formatted="false">%1$d de versions</string>
     <string name="t_3eef8148_one" formatted="false">%1$d version</string>
     <string name="t_3eef8148_other" formatted="false">%1$d versions</string>
-    <string name="t_3ef3fbe8" formatted="false">Talk Router n\'a pas de serveur : tout ce qu\'il garde est sur ce téléphone. Cela supprime tes notes, l\'audio, les modèles, les mots, À propos de toi, tes clés OpenRouter et Anthropic, ta connexion bb et les paramètres. C\'est irréversible. Tes comptes OpenRouter, Anthropic et bb restent tels quels.</string>
     <string name="t_3f77ee75" formatted="false">Enregistrement…</string>
     <string name="t_3f983199" formatted="false">%1$s Enregistrement sauvegardé.</string>
     <string name="t_400b4b63" formatted="false">Tu dis</string>
-    <string name="t_4023fa4b" formatted="false">Balaye vers le bas, modifie les Paramètres rapides et ajoute Talk Router.</string>
     <string name="t_41265b45" formatted="false">Maintenir pour</string>
     <string name="t_41c5ed6f" formatted="false">Microphone autorisé</string>
-    <string name="t_4289563d" formatted="false">Avec une seule autorisation, Insérer place ton texte au curseur, et maintenir une touche de volume lance la dictée. Sans cela, Talk Router copie le texte et tu le colles.</string>
+    <string name="t_421f0793" formatted="false">Impossible de supprimer l\'audio. Réessaie après avoir redémarré Dictate &amp; Delegate.</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Supprimer %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Affiné via OpenRouter au lieu d\'Anthropic : %1$s</string>
@@ -170,7 +164,6 @@
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
     <string name="t_47fbfb16" formatted="false">Modifier</string>
     <string name="t_481510cc" formatted="false">Ce qu\'OpenRouter a facturé pour chaque appel.</string>
-    <string name="t_4a05992c" formatted="false">Lance depuis n\'importe où : ajoute Talk Router aux Paramètres rapides.</string>
     <string name="t_4a473e6c" formatted="false">Impossible de charger les données. Tes données n\'ont pas été supprimées.</string>
     <string name="t_4a881de5" formatted="false">Termine d\'abord l\'enregistrement ou l\'envoi</string>
     <string name="t_4ae2821e" formatted="false">en cours</string>
@@ -178,7 +171,6 @@
     <string name="t_4bfe4352" formatted="false">Ouvrir la récupération</string>
     <string name="t_4c0014e2" formatted="false">Affiner repassera par OpenRouter.</string>
     <string name="t_4c2540de" formatted="false">Anthropic n\'a pas pu traiter cette requête (HTTP %1$d) : %2$s</string>
-    <string name="t_4c463ae2" formatted="false">Appuie sur Talk Router et active-le. Si Android indique que le paramètre est restreint, ouvre Infos sur l\'application → ⋮ → Autoriser les paramètres restreints, puis réessaie.</string>
     <string name="t_4c8985b5" formatted="false">Coût pour chaque mois</string>
     <string name="t_4d67a5d5" formatted="false">Connecté à %1$s.getbb.app</string>
     <string name="t_4da08f61" formatted="false">Quel modèle a fait quoi, le temps écoulé, le coût</string>
@@ -186,15 +178,16 @@
     <string name="t_4f3f4751" formatted="false">Anthropic n\'a pas pu traiter cette requête (HTTP %1$d).</string>
     <string name="t_4f723805" formatted="false">2 · Ou maintenir une touche de volume</string>
     <string name="t_4f95835a" formatted="false">L\'adresse web commence par https://</string>
+    <string name="t_4f95d631" formatted="false">Et voilà. Cela fonctionne pareil dans n\'importe quelle appli : lance, parle, arrête, insère. Tes notes sont enregistrées dans Dictate &amp; Delegate, où tu peux aussi les copier ou retrouver exactement ce que tu as dit.</string>
     <string name="t_4fcbfdd0" formatted="false">Ce fichier est trop volumineux (10 Mo max).</string>
     <string name="t_4feae27e" formatted="false">Renvoyer</string>
     <string name="t_503970b4" formatted="false">Sans titre</string>
     <string name="t_503e7474" formatted="false">audio ignoré</string>
     <string name="t_5048970e" formatted="false">Le texte partiel et les coûts restent dans tes notes.</string>
+    <string name="t_506714de" formatted="false">Dictate &amp; Delegate utilise désormais toujours %1$s</string>
     <string name="t_510e0171" formatted="false">Installation des compétences du chef dans bb…</string>
     <string name="t_51a8b5d9" formatted="false">Vérification du fil et des compétences dans bb…</string>
     <string name="t_51bac044" formatted="false">Annuler</string>
-    <string name="t_52316b96" formatted="false">Le nom dans ton adresse bb : &lt;identifiant&gt;.getbb.app. Ton navigateur ouvrira la page du compte bb ; autorise Talk Router là-bas.</string>
     <string name="t_523a6999" formatted="false">La connexion à bb a été interrompue. Réessaie.</string>
     <string name="t_525e2e9d" formatted="false">Mois précédent</string>
     <string name="t_5265d3ae" formatted="false">Le plus précis</string>
@@ -213,13 +206,15 @@
     <string name="t_5844fa43" formatted="false">Passer</string>
     <string name="t_58480c1f" formatted="false">Annulation…</string>
     <string name="t_5851ec64" formatted="false">Microphone et confidentialité</string>
+    <string name="t_5853ed37" formatted="false">Tu peux aussi ajouter Dictate &amp; Delegate avec le bouton de modification des Réglages rapides.</string>
     <string name="t_5945bfc8" formatted="false">Le micro ne prend pas en charge l\'audio 16 kHz.</string>
     <string name="t_597ec35a" formatted="false">✓  Ajouté</string>
     <string name="t_5a076fff" formatted="false">%1$s en fait le texte souhaité : un e-mail, une réponse, une note claire, ton modèle. Puis clique sur Insérer le texte peaufiné.</string>
     <string name="t_5a36973e" formatted="false">Peaufinage du texte…</string>
+    <string name="t_5afff0dd" formatted="false">Glisse vers le bas, modifie les Réglages rapides, puis ajoute Dictate &amp; Delegate.</string>
     <string name="t_5bd47891" formatted="false">Chaque note affiche son coût selon OpenRouter. La décision de Jev coûte environ 0,00002 $, une minute de voix avec le modèle par défaut environ 0,002 $.</string>
-    <string name="t_5c1c78f4" formatted="false">1. Appuie sur Démarrer et dis une phrase.\n2. Appuie sur Arrêter. Talk Router la transcrit.\n3. Appuie sur le champ ci-dessous, puis sur 📥 Insérer dans le panneau flottant. Ton presse-papiers reste intact.</string>
     <string name="t_5c53b93a" formatted="false">Le micro a été interrompu. L\'audio sauvegardé peut être réessayé.</string>
+    <string name="t_5c9445ff" formatted="false">Le nom dans ton adresse bb : &lt;identifiant&gt;.getbb.app. Ton navigateur ouvre la page du compte bb ; autorise Dictate &amp; Delegate à cet endroit.</string>
     <string name="t_5cab269d" formatted="false">Ton chef de cabinet s\'en charge dans bb et t\'alerte via ntfy quand il a fini ou s\'il a besoin de toi. Le bouton ouvre le fil.</string>
     <string name="t_5d00536d" formatted="false">Copié</string>
     <string name="t_5da707be" formatted="false">Mois suivant</string>
@@ -227,9 +222,7 @@
     <string name="t_5e317218" formatted="false">Impossible de démarrer. Ta note est en sécurité.</string>
     <string name="t_5e84bb28" formatted="false">%1$s/min</string>
     <string name="t_5eb87a8b" formatted="false">Démarrer</string>
-    <string name="t_5eff4869" formatted="false">Facultatif. bb (getbb.app) exécute des agents de code sur ton propre ordinateur. Une fois connecté, Talk Router transmet la tâche que tu énonces à ton fil de chef de cabinet là-bas. Sans bb, Talk Router est une simple application de dictée.</string>
     <string name="t_5f1cb221" formatted="false">Ce que tu dictes d\'habitude</string>
-    <string name="t_5fee964e" formatted="false">Lance Talk Router, puis continue d\'utiliser n\'importe quelle appli : lis, cherche, change d\'écran. Quand tu t\'arrêtes, tes mots sont transcrits, prêts à être insérés là où tu écris. Ensuite, décide : ✨ Peaufiner les transforme selon tes besoins, et ton chef de cabinet s\'occupe des tâches.</string>
     <string name="t_60a70b6d" formatted="false">Peaufiner automatiquement</string>
     <string name="t_61710ff3" formatted="false">Par modèle</string>
     <string name="t_62171086" formatted="false">Tu peux appuyer sur Peaufiner ou Chef tout en parlant. Si tu le demandes dans la foulée (« fais-en un e-mail », « utilise ma candidature d\'appartement »), le peaufinage démarre tout seul. Les tâches ne sont transmises au chef automatiquement que si tu t\'adresses à lui : « chef de cabinet, … ».</string>
@@ -237,12 +230,10 @@
     <string name="t_6358935d" formatted="false">Clé enregistrée</string>
     <string name="t_6361c341" formatted="false">connexion interrompue ; s\'agit-il d\'un serveur MCP (Streamable HTTP) ?</string>
     <string name="t_6418f0e2" formatted="false">Saisis ton identifiant bb Connect</string>
-    <string name="t_64d60911" formatted="false">Utiliser Talk Router</string>
     <string name="t_65211030" formatted="false">L\'adresse du serveur commence par https://</string>
     <string name="t_653174a7" formatted="false">Régénéré avec un modèle plus intelligent</string>
     <string name="t_6542df76" formatted="false">Quand tu t\'arrêtes, tes mots sont transcrits et un petit panneau flotte au-dessus de ton appli actuelle.</string>
     <string name="t_65579ecd" formatted="false">Cette note a coûté %1$s jusqu\'ici.</string>
-    <string name="t_6575c78f" formatted="false">Talk Router appelle les modèles vocaux et textuels via OpenRouter, avec ta propre clé. Tu paies OpenRouter selon ton usage ; Talk Router n\'a aucun serveur et ne prend aucune commission.</string>
     <string name="t_657ce781" formatted="false">Aucun modèle correspondant.</string>
     <string name="t_65c84835" formatted="false">Aucune parole reconnue</string>
     <string name="t_65d60c24" formatted="false">Impossible d\'installer les compétences du chef : %1$s</string>
@@ -256,6 +247,8 @@
     <string name="t_6af514f2" formatted="false">De ton chef de cabinet</string>
     <string name="t_6b228094" formatted="false">✓  Enregistré</string>
     <string name="t_6bc2e735" formatted="false">Garder</string>
+    <string name="t_6c417d31" formatted="false">Lance depuis n\'importe quelle appli : ajoute Dictate &amp; Delegate aux Réglages rapides.</string>
+    <string name="t_6c59a848" formatted="false">Dictate &amp; Delegate n\'a pas de serveur, tout est stocké sur ce téléphone. Cela supprime tes notes, fichiers audio, modèles, mots, la section À propos de toi, tes clés OpenRouter et Anthropic, ta connexion bb et tes paramètres. C\'est irréversible. Tes comptes OpenRouter, Anthropic et bb restent inchangés.</string>
     <string name="t_6cf58428" formatted="false">Uniquement pendant l\'enregistrement.</string>
     <string name="t_6d7c0d41" formatted="false">prix affiché après coup</string>
     <string name="t_6dde3895" formatted="false">Anthropic est saturé pour le moment.</string>
@@ -268,7 +261,6 @@
     <string name="t_74350de7" formatted="false">À propos</string>
     <string name="t_749dd663" formatted="false">%1$s · Anthropic, ta clé</string>
     <string name="t_75cfcf01" formatted="false">Se déconnecter</string>
-    <string name="t_76b8be2f" formatted="false">Enregistrement trouvé. Ouvre Talk Router pour réessayer ou supprimer.</string>
     <string name="t_77083f49" formatted="false">Ce qui quitte ton appareil</string>
     <string name="t_772f8ccc" formatted="false">Ton nom</string>
     <string name="t_77a2a807" formatted="false">Supprimer la note</string>
@@ -277,34 +269,32 @@
     <string name="t_78e66b38" formatted="false">Supprimer les données locales ?</string>
     <string name="t_791246e5" formatted="false">Nom de ton chef</string>
     <string name="t_7a933498" formatted="false">Impossible de supprimer tout l\'audio</string>
-    <string name="t_7b017d1c" formatted="false">Test de Talk Router. Les notifications de ton chef de cabinet s\'affichent comme ceci.</string>
+    <string name="t_7b65d791" formatted="false">Dictate &amp; Delegate appelle les modèles vocaux et textuels via OpenRouter avec cette clé.</string>
     <string name="t_7bd974ca" formatted="false">Enregistre jusqu\'à l\'arrêt. Change d\'application librement.</string>
     <string name="t_7c160dc5" formatted="false">Saisis l\'adresse MCP, commençant par https:// ou http://</string>
-    <string name="t_7c9185dc" formatted="false">Ajoute d\'abord ta clé OpenRouter dans les paramètres de Talk Router.</string>
+    <string name="t_7c3766eb" formatted="false">Dictate &amp; Delegate est dans les Réglages rapides, à la fin. Glisse vers le bas, puis vers la gauche pour le trouver.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh, ou ton propre serveur ntfy.</string>
     <string name="t_7cbef380" formatted="false">C\'est trop long pour bb (%1$d caractères, max. %2$d).</string>
     <string name="t_7d1dd2ca" formatted="false">Insérer le texte peaufiné</string>
     <string name="t_7e19ccd3" formatted="false">Dis-le pour lui envoyer une dictée : « Ada, … », « c\'est pour Ada ». Mentionner simplement le nom dans un message ne l\'envoie pas. Sans nom, appuie sur 🧑‍💼.</string>
-    <string name="t_7ea6be49" formatted="false">Utilise la bulle ou ouvre Talk Router pour contrôler la dictée.</string>
     <string name="t_7fd53415_many" formatted="false">%1$d de modèles</string>
     <string name="t_7fd53415_one" formatted="false">%1$d modèle</string>
     <string name="t_7fd53415_other" formatted="false">%1$d modèles</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Renvoyer</string>
     <string name="t_8108fc2e" formatted="false">Pas de connexion à Anthropic.</string>
     <string name="t_81e2a271" formatted="false">Transcription</string>
+    <string name="t_821e233c" formatted="false">Avec une autorisation, Insérer place ton texte directement sous le curseur, et maintenir une touche de volume lance la dictée. Sans elle, Dictate &amp; Delegate copie le texte et tu le colles.</string>
     <string name="t_8250ae9b" formatted="false">Connexion à bb…</string>
+    <string name="t_82527957" formatted="false">Transcription enregistrée dans l\'historique. Ouvre Dictate &amp; Delegate pour la copier.</string>
     <string name="t_8265f0ba" formatted="false">Jev · peaufine et envoie à ton chef tout seul</string>
     <string name="t_826621ab" formatted="false">Quand tu t\'adresses à ton chef par son nom (Paramètres → Chef de cabinet) ; sinon appuie sur 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">Le modèle de texte n\'a rien renvoyé. Réessaie.</string>
     <string name="t_82bad7d7" formatted="false">Cette connexion ne correspond pas à celle démarrée ici. Recommence.</string>
-    <string name="t_832a1910" formatted="false">Talk Router utilise désormais %1$s</string>
     <string name="t_83359c2b" formatted="false">Instructions pour Peaufiner</string>
     <string name="t_84119bba" formatted="false">Impossible d\'enregistrer les données chiffrées.</string>
     <string name="t_842cec6c" formatted="false">ID d\'enregistrement non valide</string>
-    <string name="t_84dd3016" formatted="false">Ouvre Paramètres Android → Accessibilité → Talk Router.</string>
     <string name="t_84e5353d" formatted="false">Supprimer l\'audio enregistré</string>
     <string name="t_85004d41" formatted="false">Appuie pour enregistrer</string>
-    <string name="t_853800ea" formatted="false">Pas besoin d\'ouvrir Talk Router. Démarre et arrête où que tu sois.</string>
     <string name="t_857a0fd3" formatted="false">Quand tu touches ✨ Peaufiner · %1$s</string>
     <string name="t_859034c6" formatted="false">Facultatif. Si Android bloque l\'activation, va dans Infos sur l\'appli → ⋮ → Autoriser les paramètres restreints, puis réessaie.</string>
     <string name="t_863d2a86" formatted="false">🧑‍💼 Chef</string>
@@ -314,6 +304,7 @@
     <string name="t_886029f0" formatted="false">Compétences de ton chef</string>
     <string name="t_8860ef62" formatted="false">Impossible de joindre %1$s. Vérifie l\'adresse et ta connexion.</string>
     <string name="t_88ea76d0" formatted="false">Termine ou supprime d\'abord l\'enregistrement en attente.</string>
+    <string name="t_89b3b099" formatted="false">Autorise Dictate &amp; Delegate dans ton navigateur, puis reviens ici.</string>
     <string name="t_8ab1eddb" formatted="false">✓  Connecté à %1$s.getbb.app</string>
     <string name="t_8b1b3957" formatted="false">%1$d pièces jointes au maximum par dictée.</string>
     <string name="t_8b5e3cce" formatted="false">Enregistrer le serveur</string>
@@ -322,6 +313,8 @@
     <string name="t_8bf10d56" formatted="false">Supprimer</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Ajouter</string>
     <string name="t_8edfe30e" formatted="false">action requise</string>
+    <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate écrit</string>
+    <string name="t_8f454c36" formatted="false">Configure ton chef d\'état-major dans Dictate &amp; Delegate → Paramètres → bb.</string>
     <string name="t_8fe78547" formatted="false">aucun son</string>
     <string name="t_900e8667" formatted="false">Rien ce mois-ci.</string>
     <string name="t_903c36b9" formatted="false">importé</string>
@@ -329,6 +322,8 @@
     <string name="t_918020d9" formatted="false">identifiant</string>
     <string name="t_918ca436" formatted="false">bb n\'a pas pu traiter la pièce jointe (HTTP %1$d).</string>
     <string name="t_91d100de" formatted="false">Joint</string>
+    <string name="t_93fe9d61" formatted="false">Utilise la bulle ou ouvre Dictate &amp; Delegate pour contrôler la dictée.</string>
+    <string name="t_942b3beb" formatted="false">• Tes notes, fichiers audio, mots et modèles restent sur ce téléphone.\n• Pour transcrire ce que tu as dit, ton enregistrement va directement à OpenRouter avec ta clé, puis au fournisseur du modèle vocal. Le texte suit le même chemin vers Jev, un modèle rapide qui décide s\'il faut l\'affiner, avec le nom de tes modèles. Lorsqu\'il est affiné, il part vers le modèle textuel, avec les informations que tu as données à Dictate &amp; Delegate sur toi, tes mots, le modèle choisi et tes pièces jointes.\n• Si tu connectes bb, une tâche confiée à ton chef d\'état-major est envoyée à ton bb, avec le texte collé.\n• Dictate &amp; Delegate n\'a aucun serveur et ne collecte rien. OpenRouter et les fournisseurs de modèles gèrent les données selon leurs propres règles.</string>
     <string name="t_94476a26" formatted="false">bb n\'a pas installé les compétences du chef à temps. Réessaie.</string>
     <string name="t_946ab421" formatted="false">Rechercher des modèles</string>
     <string name="t_9486247d" formatted="false">Inséré</string>
@@ -336,7 +331,6 @@
     <string name="t_9500493c" formatted="false">bb n\'a pas indiqué quel fil a été créé.</string>
     <string name="t_95bed80b" formatted="false">Définis l\'adresse web bb pour les liens dans Paramètres → bb.</string>
     <string name="t_95c3fc8c" formatted="false">Optionnel : comment ton chef t\'appelle</string>
-    <string name="t_9612d175" formatted="false">Talk Router</string>
     <string name="t_9793cae3" formatted="false">refait</string>
     <string name="t_980cb9e2" formatted="false">Anthropic a mis trop de temps à répondre.</string>
     <string name="t_9931e57c" formatted="false">Impossible de démarrer. Vérifie les autorisations et réessaie.</string>
@@ -356,7 +350,6 @@
     <string name="t_9c7b6819" formatted="false">Supprimer l\'audio</string>
     <string name="t_9c9743f1" formatted="false">Requis pour relancer une note avec un modèle plus performant</string>
     <string name="t_9cc96167" formatted="false">Notes de travail</string>
-    <string name="t_9cfcb36b" formatted="false">Glisse vers le bas depuis le haut de l\'écran et appuie sur Talk Router pour lancer, réappuie pour arrêter. Android ajoute les nouvelles tuiles à la fin : glisse vers la gauche jusqu\'à la dernière page, ou appuie sur le crayon et fais glisser Talk Router au début.</string>
     <string name="t_9dbafb52" formatted="false">Transcription en cours.</string>
     <string name="t_9e4d5639" formatted="false">Les détails te concernant, tes mots et le modèle cité sont ajoutés automatiquement.</string>
     <string name="t_9ed229fb" formatted="false">Ce qu\'OpenRouter a facturé pour chaque appel. Certains appels n\'ont rapporté aucun coût, le total réel est donc un peu plus élevé.</string>
@@ -366,6 +359,7 @@
     <string name="t_a035c0e5" formatted="false">mots %1$s  vitesse %2$s</string>
     <string name="t_a07ff1f4" formatted="false">Maintenir une touche de volume</string>
     <string name="t_a0d36cf7" formatted="false">Le serveur de connexion de bb a répondu avec HTTP %1$d : %2$s</string>
+    <string name="t_a1b47f25" formatted="false">Dictate &amp; Delegate ne peut pas dicter tant que tu n\'as pas rajouté de clé.</string>
     <string name="t_a26731c2" formatted="false">Les étapes de chaque note : quel modèle a fait quoi, le temps écoulé et le coût. Conservé sur cet appareil avec tes notes ; les durées incluent la connexion.</string>
     <string name="t_a2878767" formatted="false">Choisis d\'abord un modèle.</string>
     <string name="t_a2dc1b11" formatted="false">Supprimer l\'audio enregistré</string>
@@ -375,33 +369,34 @@
     <string name="t_a43d1375" formatted="false">Conserve les textes que tu rédiges souvent, comme une candidature pour un logement. Dicte ensuite lequel tu veux et ce qui change cette fois-ci.</string>
     <string name="t_a475c571" formatted="false">Cet enregistrement n\'a pas pu se terminer (%1$s). Réessaie depuis l\'accueil.</string>
     <string name="t_a47dbae1" formatted="false">Cette note a déjà utilisé le modèle le plus précis.</string>
-    <string name="t_a599a01d" formatted="false">Open source. Ta propre clé OpenRouter, aucun serveur Talk Router intermédiaire.</string>
     <string name="t_a5b51395" formatted="false">Anthropic a rencontré un problème (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Connecter bb</string>
-    <string name="t_a61f511e" formatted="false">Talk Router n\'a pas pu lire ou écrire ses fichiers. Vérifie l\'espace de stockage, puis réessaie.</string>
+    <string name="t_a64714a0" formatted="false">Dictate &amp; Delegate utilise ce modèle pour chaque note.</string>
+    <string name="t_a6a5d215" formatted="false">Ouvre les paramètres Android → Accessibilité → Dictate &amp; Delegate.</string>
     <string name="t_a6ab7640" formatted="false">Tu es déconnecté de bb. Reconnecte-toi dans Paramètres → bb.</string>
     <string name="t_a6ee4edb" formatted="false">Envoi à ton chef de cabinet…</string>
     <string name="t_a72f83aa" formatted="false">Nécessite l\'autorisation d\'accessibilité : voir Insérer.</string>
     <string name="t_a75a18d5" formatted="false">Impossible de joindre %1$s sur %2$s : %3$s.</string>
     <string name="t_a75b1302" formatted="false">adresse inconnue</string>
-    <string name="t_a8c97e33" formatted="false">Talk Router utilise l\'autorisation d\'accessibilité d\'Android pour deux choses uniquement : placer le texte au niveau du curseur quand tu touches Insérer, et détecter le maintien de la touche de volume choisie. L\'appli ne demande aucun événement d\'accessibilité et ne lit rien sur ton écran ; elle repère le champ de texte uniquement quand tu touches Insérer. Talk Router est open source, tu peux vérifier par toi-même.</string>
     <string name="t_aadc023e" formatted="false">Impossible de démarrer le micro.</string>
-    <string name="t_aae4a29a" formatted="false">• Tes notes, enregistrements, mots et modèles restent sur ce téléphone.\n• Pour transcrire tes propos, ton enregistrement va directement à OpenRouter avec ta clé, puis au fournisseur du modèle vocal. Le texte suit le même chemin vers Jev, un modèle rapide qui décide s\'il faut le peaufiner, avec le nom de tes modèles. Une fois peaufiné, il est transmis au modèle de texte, avec ce que tu as indiqué à Talk Router sur toi, tes mots, le modèle choisi et tes pièces jointes.\n• Si tu connectes bb, une tâche confiée à ton chef de cabinet est envoyée à ton bb, avec le texte que tu as collé.\n• Talk Router n\'a aucun serveur et ne collecte rien. OpenRouter et les fournisseurs des modèles traitent les données selon leurs propres politiques.</string>
     <string name="t_aafc2622" formatted="false">Aucune note pour l\'instant.</string>
     <string name="t_aafdfd52" formatted="false">Peaufiner utilise maintenant %1$s</string>
+    <string name="t_ab247fbe" formatted="false">Ta voix et tes textes vont uniquement aux fournisseurs que tu choisis. Il n\'y a aucun serveur Dictate &amp; Delegate.</string>
     <string name="t_ab7143b8" formatted="false">Autorisations</string>
     <string name="t_ac224344" formatted="false">Enregistrée, chiffrée · voix, décisions et Peaufiner</string>
+    <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate utilise l\'autorisation d\'accessibilité d\'Android pour deux choses seulement : placer ton texte au niveau du curseur quand tu touches Insérer, et détecter quand tu maintiens la touche de volume choisie. L\'appli ne demande aucun événement d\'accessibilité et ne lit rien sur ton écran ; elle cherche le champ de texte où tu écris uniquement quand tu touches Insérer. Dictate &amp; Delegate est open source, tu peux le vérifier.</string>
     <string name="t_ac66579e" formatted="false">bb n\'a pas pu être joint. Réessaie.</string>
     <string name="t_acdb2a77" formatted="false">Modèle pour Peaufiner</string>
     <string name="t_ad007023" formatted="false">Installe les compétences du chef dans bb si nécessaire, puis crée un fil nommé « Chief of staff » dans Personnel (aucun projet) qui les utilise.</string>
     <string name="t_ad395bc2" formatted="false">Colle une nouvelle clé pour la remplacer</string>
-    <string name="t_ad6a2fb1" formatted="false">Donne à Talk Router le contexte dont tu parles, comme l\'offre à laquelle tu réponds. Utilisé quand tu demandes quelque chose.</string>
     <string name="t_ad6a7ed6" formatted="false">✓ Enregistré</string>
     <string name="t_ae112605" formatted="false">Rechercher dans les notes</string>
+    <string name="t_ae11d238" formatted="false">Optionnel. bb (getbb.app) exécute des agents de code sur ton propre ordinateur. Une fois connecté, Dictate &amp; Delegate transmet la tâche que tu énonces à ton fil de chef d\'état-major. Sans bb, Dictate &amp; Delegate reste une appli de dictée.</string>
     <string name="t_ae292a04" formatted="false">Volume haut</string>
     <string name="t_ae368733" formatted="false">Démarrer et insérer</string>
     <string name="t_ae754c67" formatted="false">À propos de toi</string>
     <string name="t_aec69fc2" formatted="false">✓  bb répond.</string>
+    <string name="t_aec6e5df" formatted="false">Open source. Ta propre clé OpenRouter, aucun serveur Dictate &amp; Delegate intermédiaire.</string>
     <string name="t_b01f4f95" formatted="false">Terminé</string>
     <string name="t_b048967b" formatted="false">Connecte d\'abord bb.</string>
     <string name="t_b048b7e4" formatted="false">Quand tu demandes un texte, cites un modèle ou que la dictée doit être remise en ordre</string>
@@ -415,6 +410,7 @@
     <string name="t_b214280c" formatted="false">Supprimer le modèle</string>
     <string name="t_b4211199" formatted="false">Unité de prix non vérifiée · voir source</string>
     <string name="t_b48c5f39" formatted="false">Jev · rien ne démarre tout seul</string>
+    <string name="t_b4c82195" formatted="false">Dictate &amp; Delegate appelle les modèles vocaux et textuels via OpenRouter, avec ta propre clé. Tu paies OpenRouter pour ce que tu consommes ; Dictate &amp; Delegate n\'a pas de serveur et ne prend aucune commission.</string>
     <string name="t_b50cba8b" formatted="false">Insérer du chef</string>
     <string name="t_b561b378" formatted="false">1 · Tuile des Paramètres rapides</string>
     <string name="t_b5ae1bae" formatted="false">bb</string>
@@ -425,16 +421,18 @@
     <string name="t_b6cac25b_one" formatted="false">%1$d fichier</string>
     <string name="t_b6cac25b_other" formatted="false">%1$d fichiers</string>
     <string name="t_b70ef253" formatted="false">Le fournisseur du modèle a rencontré un problème (HTTP %1$d). L\'enregistrement est conservé ; réessaie.</string>
+    <string name="t_b73899b6" formatted="false">Utiliser Dictate &amp; Delegate</string>
     <string name="t_b7db5df4" formatted="false">Tester la connexion</string>
     <string name="t_b80635d0" formatted="false">Autoriser le micro</string>
     <string name="t_b80c02ec" formatted="false">Cette note a été supprimée.</string>
     <string name="t_b8663ec6" formatted="false">Médical</string>
-    <string name="t_b8bced70" formatted="false">Amélioré. Le texte est dans Talk Router.</string>
     <string name="t_b8d84684" formatted="false">Microphone non autorisé</string>
+    <string name="t_b92fed8d" formatted="false">Glisse vers le bas depuis le haut de l\'écran et touche Dictate &amp; Delegate pour démarrer, touche à nouveau pour arrêter. Android ajoute les nouvelles tuiles à la fin : glisse vers la gauche jusqu\'à la dernière page, ou touche le crayon et glisse Dictate &amp; Delegate vers l\'avant.</string>
     <string name="t_b93cda2e" formatted="false">OpenRouter · %1$s</string>
     <string name="t_b942a462" formatted="false">aucun détail</string>
     <string name="t_b99de9e8" formatted="false">Aucune clé Anthropic configurée.</string>
-    <string name="t_b9c5766f" formatted="false">Talk Router appelle les modèles vocaux et textuels via OpenRouter avec cette clé.</string>
+    <string name="t_bbb4c248" formatted="false">Autre chose que Dictate &amp; Delegate devrait savoir ?</string>
+    <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate communique avec bb via le serveur MCP de bb (plugin bb--mcp), qui doit être activé dans bb.</string>
     <string name="t_bc1b2887" formatted="false">Le serveur ntfy a répondu avec HTTP %1$d.</string>
     <string name="t_bdae2794" formatted="false">Utilisé pour orthographier correctement les noms et les termes.</string>
     <string name="t_be7f9242" formatted="false">Impossible d\'enregistrer l\'historique des transcriptions.</string>
@@ -445,7 +443,6 @@
     <string name="t_c1829c8e_many" formatted="false">%1$d de mots</string>
     <string name="t_c1829c8e_one" formatted="false">%1$d mot</string>
     <string name="t_c1829c8e_other" formatted="false">%1$d mots</string>
-    <string name="t_c1894a44" formatted="false">Change la langue dans les paramètres Android → Applications → Talk Router.</string>
     <string name="t_c21bafca" formatted="false">✨ Peaufiner passe par OpenRouter vers le modèle choisi ici. Ajoute une clé Anthropic dans Modèles et fournisseurs pour utiliser Claude avec tes crédits Anthropic.</string>
     <string name="t_c25dfbec" formatted="false">Envoyé au chef de cabinet</string>
     <string name="t_c2609bc3" formatted="false">Insérer</string>
@@ -453,10 +450,12 @@
     <string name="t_c323cecd" formatted="false">Pendant la dictée</string>
     <string name="t_c3257368" formatted="false">Refaire avec un modèle plus performant</string>
     <string name="t_c34fa500" formatted="false">Donne un nom et un texte au modèle</string>
+    <string name="t_c37118a8" formatted="false">Dictate &amp; Delegate n\'a pas pu lire ou écrire ses fichiers. Vérifie l\'espace disponible, puis réessaie.</string>
     <string name="t_c37292d9" formatted="false">environ %1$s</string>
     <string name="t_c38dbe97" formatted="false">Insertion activée</string>
     <string name="t_c3cd3265" formatted="false">(crédits Anthropic)</string>
     <string name="t_c42f4dd6" formatted="false">Aucune parole reconnue dans cet enregistrement.</string>
+    <string name="t_c4a727f5" formatted="false">Pas besoin d\'ouvrir Dictate &amp; Delegate. Lance et arrête où que tu sois.</string>
     <string name="t_c5501bfa" formatted="false">✨ Peaufiner</string>
     <string name="t_c5573507" formatted="false">Ajouter</string>
     <string name="t_c55b8799" formatted="false">L\'adresse locale de bb est http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Accède-y depuis ton téléphone via ton tailnet (Tailscale Serve, HTTPS) ou adb reverse.</string>
@@ -468,18 +467,15 @@
     <string name="t_c73cbcb8" formatted="false">Enregistrer et tester</string>
     <string name="t_c7a54a7c" formatted="false">Transcription en cours… Tu peux utiliser d\'autres applis.</string>
     <string name="t_c7ad7feb" formatted="false">Aucune connexion à OpenRouter. Vérifie ta connexion Internet, puis réessaie.</string>
-    <string name="t_c8d72e3b" formatted="false">Ajouter Talk Router aux Paramètres rapides</string>
     <string name="t_c997df74" formatted="false">bb a refusé la connexion : %1$s</string>
     <string name="t_c998a38e" formatted="false">L\'audio a expiré ou a été supprimé. Le texte reste enregistré.</string>
     <string name="t_caf67b49" formatted="false">Claude a refusé d\'affiner ce texte.</string>
     <string name="t_cba5c7dd" formatted="false">Volume bas</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy est gratuit et open source. Installe-le, puis réappuie sur Ouvrir dans ntfy.</string>
-    <string name="t_cc95b0c8" formatted="false">Autorise Talk Router dans ton navigateur, puis reviens ici.</string>
     <string name="t_cc9b594b" formatted="false">Impossible d\'enregistrer tes modifications</string>
     <string name="t_cd782109" formatted="false">Colle d\'abord ta clé</string>
     <string name="t_cd7cb0fd" formatted="false">Un unique fil bb reçoit chaque tâche transmise vocalement. Il traite les petites choses lui-même, crée des sous-fils pour les travaux plus importants et te prévient via ntfy une fois terminé ou s\'il a besoin de toi.</string>
     <string name="t_cd8737fa" formatted="false">Article</string>
-    <string name="t_cda80146" formatted="false">Transcription enregistrée. Ouvre Talk Router pour la copier.</string>
     <string name="t_cdfc6e09" formatted="false">Retour</string>
     <string name="t_ce96200c" formatted="false">bb n\'accepte plus cette connexion. Reconnecte-toi dans Paramètres → bb.</string>
     <string name="t_ced42332" formatted="false">« %1$s »</string>
@@ -487,6 +483,7 @@
     <string name="t_cf47d48c" formatted="false">Annuler : rien n\'est transcrit ni envoyé</string>
     <string name="t_cf584634" formatted="false">Dictée</string>
     <string name="t_cf684db1" formatted="false">OpenRouter n\'a pas pu traiter cette requête (HTTP %1$d) : %2$s</string>
+    <string name="t_cfd7960b" formatted="false">Test de Dictate &amp; Delegate. Les notifications de ton chef d\'état-major arrivent ainsi.</string>
     <string name="t_d024ef7f" formatted="false">Panneau flottant</string>
     <string name="t_d1101d1a" formatted="false">Recherche de ton bb…</string>
     <string name="t_d1e4a3ee" formatted="false">Accueil</string>
@@ -503,15 +500,16 @@
     <string name="t_d6d7613f" formatted="false">Ton modèle</string>
     <string name="t_d6dce050" formatted="false">Aucun chef de cabinet configuré. Configure-le dans Paramètres → bb.</string>
     <string name="t_d79a087e" formatted="false">Ce fil est archivé dans bb. Désarchive-le ou choisis-en un autre.</string>
+    <string name="t_d7e63cc4" formatted="false">Pendant que tu dictes, un petit volet reste au-dessus des autres applis : touche ■ pour arrêter, puis Insérer, Affiner ou Chef. Pour l\'autoriser, Android affiche une liste d\'applis : touche Dictate &amp; Delegate, active-le et reviens ici.</string>
     <string name="t_d8427f19" formatted="false">Ta clé OpenRouter</string>
-    <string name="t_d97e8d4f" formatted="false">Aide Talk Router à bien orthographier les noms et à adapter chaque note à son usage.</string>
+    <string name="t_d90fc528" formatted="false">Change la langue dans Paramètres Android → Applis → Dictate &amp; Delegate.</string>
     <string name="t_db5195fa" formatted="false">texte collé</string>
-    <string name="t_db5d28bc" formatted="false">Ta voix et tes textes vont uniquement aux fournisseurs que tu choisis. Il n\'y a aucun serveur Talk Router.</string>
     <string name="t_dbde124f" formatted="false">L\'audio n\'a pas été conservé, impossible de refaire.</string>
     <string name="t_dbe48d14" formatted="false">Jamais</string>
     <string name="t_dc3fc076" formatted="false">bb a refusé le téléversement (HTTP %1$d)</string>
     <string name="t_dc8ad2bb" formatted="false">Les jours sans dictée ne coûtent rien.</string>
     <string name="t_dcc7acfb" formatted="false">Ton chef de cabinet a envoyé du texte à insérer</string>
+    <string name="t_dcd686af" formatted="false">Lance Dictate &amp; Delegate, puis continue d\'utiliser n\'importe quelle appli : lis, cherche, change d\'appli. Quand tu arrêtes, tes mots sont transcrits, prêts à être insérés où tu écris. Puis choisis : ✨ Affiner transforme le texte selon tes besoins, et ton chef d\'état-major prend en charge tes tâches.</string>
     <string name="t_dcf39d20" formatted="false">Transmet la tâche à ton chef de cabinet dans bb, si configuré. Puis Ouvrir le chat ↗.</string>
     <string name="t_dd6fa894" formatted="false">Le texte et les coûts restent. Les notes ne pourront plus être refaites.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
@@ -520,9 +518,8 @@
     <string name="t_de8e5494" formatted="false">Appuie sur le micro pour enregistrer</string>
     <string name="t_def9cb9f" formatted="false">Commencer</string>
     <string name="t_df336a1d" formatted="false">Lien ou identifiant du fil (thr_…)</string>
-    <string name="t_dfb2c9e3" formatted="false">Ton chef de cabinet s\'appuie sur deux compétences dans bb, chief-of-staff et talk-router : comment travailler pour toi, et comment te notifier et renvoyer du texte. Talk Router les installe et les met à jour dans bb via un court fil de discussion.</string>
+    <string name="t_dfcb5ec6" formatted="false">1. Touche Démarrer et dis une phrase.\n2. Touche Arrêter. Dictate &amp; Delegate la transcrit.\n3. Touche la zone ci-dessous, puis 📥 Insérer sur le volet flottant. Ton presse-papiers reste intact.</string>
     <string name="t_dff4964d" formatted="false">Tes crédits OpenRouter sont épuisés. Ajoute des crédits sur openrouter.ai, puis réessaie.</string>
-    <string name="t_e0b2ab27" formatted="false">C\'est tout. Cela fonctionne pareil dans n\'importe quelle appli : démarre, parle, arrête, insère. Tes notes sont enregistrées dans Talk Router, où tu peux aussi les copier ou revenir exactement à ce que tu as dit.</string>
     <string name="t_e124f150" formatted="false">Par exemple : Ada</string>
     <string name="t_e16301de" formatted="false">Anthropic · %1$s</string>
     <string name="t_e17493b2" formatted="false">aucune réponse à cette adresse</string>
@@ -542,7 +539,6 @@
     <string name="t_e5523fab" formatted="false">Impossible de tout supprimer</string>
     <string name="t_e587893b" formatted="false">Les boutons ✨ et 🧑‍💼 fonctionnent toujours, quels que soient ces réglages.</string>
     <string name="t_e5a8e366" formatted="false">Dicté</string>
-    <string name="t_e68de5c9" formatted="false">Talk Router écrit</string>
     <string name="t_e6a56db0" formatted="false">Utiliser ce fil</string>
     <string name="t_e6b9caa8" formatted="false">Le modèle est actuellement occupé. Attends un instant, puis réessaie.</string>
     <string name="t_e6d8f947" formatted="false">Ton sujet</string>
@@ -550,7 +546,6 @@
     <string name="t_e7224453" formatted="false">Nouveau modèle</string>
     <string name="t_e75c6468" formatted="false">Ajoute ta clé OpenRouter pour commencer à dicter</string>
     <string name="t_e8683fe0" formatted="false">Études</string>
-    <string name="t_e897125e" formatted="false">Ferme le panneau. La note reste dans Talk Router.</string>
     <string name="t_e8ef0352" formatted="false">Peaufiner à nouveau</string>
     <string name="t_e939503f" formatted="false">Ajouter un mot ou un nom</string>
     <string name="t_e972981e" formatted="false">Fais un essai</string>
@@ -573,9 +568,11 @@
     <string name="t_f032e365" formatted="false">Obtenir une clé sur console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Le plus économique</string>
     <string name="t_f0d83244" formatted="false">Le modèle vocal n\'a renvoyé aucune transcription. L\'enregistrement est conservé ; réessaie.</string>
+    <string name="t_f13b16c1" formatted="false">Ton chef d\'état-major suit deux compétences dans bb, chief-of-staff et dictate-and-delegate : comment travailler pour toi, t\'alerter et renvoyer du texte. Dictate &amp; Delegate les installe et les met à jour dans bb via un court fil.</string>
     <string name="t_f157fddc" formatted="false">Colle ou écris le texte tel que tu l\'enverrais.</string>
     <string name="t_f1a961a8" formatted="false">bb a renvoyé une réponse inattendue. Mets à jour bb, puis réessaie.</string>
     <string name="t_f1d71ab7" formatted="false">Les points de mots et de vitesse sont des estimations, pas des mesures réelles de ta voix. Prix par minute depuis %1$s.</string>
+    <string name="t_f23a5730" formatted="false">Ajoute d\'abord ta clé OpenRouter dans les paramètres de Dictate &amp; Delegate.</string>
     <string name="t_f2cd6d4e" formatted="false">Automatique · %1$s</string>
     <string name="t_f37b2ae0" formatted="false">bb n\'a pas pu le faire : %1$s</string>
     <string name="t_f3856474" formatted="false">bb Connect n\'a aucun serveur nommé « %1$s ». Vérifie l\'identifiant et assure-toi que bb Connect est activé dans bb.</string>
@@ -587,7 +584,9 @@
     <string name="t_f6a8c847" formatted="false">Supprimer tous les fichiers audio ?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter n\'a pas encore indiqué de coût pour cette note.</string>
     <string name="t_f7503f59" formatted="false">Patiente jusqu\'à la fin du traitement</string>
+    <string name="t_f7508945" formatted="false">Enregistrement trouvé. Ouvre Dictate &amp; Delegate pour réessayer ou le supprimer.</string>
     <string name="t_f791ca6c" formatted="false">Notes, audio, modèles, clés, connexion bb et paramètres</string>
+    <string name="t_f8964565" formatted="false">Ferme le volet. La note reste dans Dictate &amp; Delegate.</string>
     <string name="t_f8a28f83" formatted="false">Tuile des paramètres rapides</string>
     <string name="t_f927dded" formatted="false">%1$s enregistré</string>
     <string name="t_f9dd979f" formatted="false">✓  Enregistré.</string>
@@ -603,6 +602,7 @@
     <string name="t_fdbea202" formatted="false">Ouvrir le chat ↗</string>
     <string name="t_fe0bc00f" formatted="false">Données sur ce téléphone</string>
     <string name="t_fe11d138" formatted="false">Nom</string>
+    <string name="t_feccbddf" formatted="false">Affiné. Le texte se trouve dans Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Non requis : enregistrement de l\'écran, notifications, contacts, position.</string>
     <string name="t_ff38152f" formatted="false">Espace de stockage presque plein. Enregistrement arrêté ; réessai possible.</string>
     <string name="t_ff770e18" formatted="false">Coûts et activité</string>

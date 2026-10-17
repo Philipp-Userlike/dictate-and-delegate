@@ -4,7 +4,7 @@ import android.content.SharedPreferences;
 import java.util.*;
 import org.json.*;
 
-/** What the user told Talk Router about themselves, and how Talk Router handles their dictations. */
+/** What the user told Dictate & Delegate about themselves, and how Dictate & Delegate handles their dictations. */
 final class Profile {
   static final String[] TOPICS = {
     "Messages",

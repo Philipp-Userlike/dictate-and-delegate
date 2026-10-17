@@ -272,8 +272,8 @@ public class MvpFlowTest {
       // No legal-style pages: one plain line in About.
       assertNull(device.findObject(By.text("Privacy")));
       new UiScrollable(new UiSelector().scrollable(true))
-          .scrollTextIntoView("Your voice and text go only to the providers you choose. There's no Talk Router server.");
-      find("Your voice and text go only to the providers you choose. There's no Talk Router server.");
+          .scrollTextIntoView("Your voice and text go only to the providers you choose. There's no Dictate & Delegate server.");
+      find("Your voice and text go only to the providers you choose. There's no Dictate & Delegate server.");
       tap("Source code");
       device.pressBack();
       launch();
@@ -564,6 +564,10 @@ public class MvpFlowTest {
     TestServer.replies("Application for Hauptstraße 5.");
     dictate();
     HistoryEntry e = latestOnce(n -> n.json.has("processed"), "the refined text");
+    // The note is saved a moment before the last-transcript shortcut.
+    long deadline = SystemClock.elapsedRealtime() + 5000;
+    while (!"Application for Hauptstraße 5.".equals(new Vault(context).get("transcript"))
+        && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
     assertEquals("Application for Hauptstraße 5.", new Vault(context).get("transcript"));
     assertEquals(1, e.json.optInt("attached"));
     assertTrue(new Attachments(context).pending().isEmpty());

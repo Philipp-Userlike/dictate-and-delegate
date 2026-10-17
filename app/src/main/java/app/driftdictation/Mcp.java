@@ -25,7 +25,7 @@ final class Mcp {
   record Tool(String name, String description, JSONObject schema) {}
 
   /**
-   * Talk Router's own message about a server; anything else from the network gets one. status is the
+   * Dictate & Delegate's own message about a server; anything else from the network gets one. status is the
    * HTTP status when the server answered with an error, otherwise 0.
    */
   static final class McpException extends IOException {
@@ -59,7 +59,7 @@ final class Mcp {
               .put("capabilities", new JSONObject())
               .put(
                   "clientInfo",
-                  new JSONObject().put("name", "Talk Router").put("version", BuildConfig.VERSION_NAME)));
+                  new JSONObject().put("name", "Dictate & Delegate").put("version", BuildConfig.VERSION_NAME)));
       notify("notifications/initialized");
     }
 

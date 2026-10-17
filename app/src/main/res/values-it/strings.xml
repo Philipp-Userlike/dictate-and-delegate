@@ -1,4 +1,4 @@
 <resources>
     <string name="accessibility_summary">Inserisci al cursore, avvia con un tasto del volume</string>
-    <string name="accessibility_description">Talk Router lo usa solo per inserire il tuo testo al cursore quando tocchi Inserisci e per accorgersi quando tieni premuto il tasto del volume scelto per avviare o fermare una dettatura. Non richiede eventi di accessibilità e non legge nulla sullo schermo: cerca il campo di testo in cui scrivi solo quando tocchi Inserisci. Talk Router è open source.</string>
+    <string name="accessibility_description">Dictate &amp; Delegate lo usa solo per inserire il tuo testo al cursore quando tocchi Inserisci e per accorgersi quando tieni premuto il tasto del volume scelto per avviare o fermare una dettatura. Non richiede eventi di accessibilità e non legge nulla sullo schermo: cerca il campo di testo in cui scrivi solo quando tocchi Inserisci. Dictate &amp; Delegate è open source.</string>
 </resources>

@@ -8,7 +8,7 @@ import android.text.InputType;
 import android.view.*;
 import android.widget.*;
 
-/** The small view kit behind every screen: colours, type and controls from the Talk Router design. */
+/** The small view kit behind every screen: colours, type and controls from the Dictate & Delegate design. */
 final class Ui {
   static final int BG = 0xffffffff,
       SOFT_BG = 0xfff6f8f7,

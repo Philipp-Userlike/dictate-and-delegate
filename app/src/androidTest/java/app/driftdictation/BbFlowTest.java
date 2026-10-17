@@ -234,7 +234,7 @@ public class BbFlowTest {
     String topic = new Vault(context).get(BbBridge.NTFY_TOPIC);
     assertTrue(topic, topic.matches("talkrouter-[A-Za-z0-9_-]{24}"));
     JSONObject skills = TestServer.bbSkills();
-    String router = skills.getJSONObject("files").getString("talk-router");
+    String router = skills.getJSONObject("files").getString("dictate-and-delegate");
     assertTrue(router, router.contains("https://ntfy.sh/" + topic));
     assertTrue(router, router.contains(LINKS + "/threads/$BB_THREAD_ID"));
     assertTrue(skills.getJSONObject("files").getString("chief-of-staff").contains("the user's chief of staff"));
@@ -264,7 +264,8 @@ public class BbFlowTest {
     TestServer.replies("Should not be refined.");
     dictate("copied");
     HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
-    assertEquals(DictationService.DONE, DictationService.session().chief);
+    // The note is saved a moment before the panel's state flips.
+    until(() -> DictationService.DONE.equals(DictationService.session().chief), "the chief sent");
     assertTrue(sent("text").isEmpty());
     assertEquals(DictationService.IDLE, DictationService.session().refine);
     // Jev was asked about Henry by name.
@@ -460,7 +461,7 @@ public class BbFlowTest {
     assertFalse(e.json.has("chiefFailed"));
     String tell = TestServer.bbSnippets().get(TestServer.bbSnippets().size() - 1);
     assertTrue(tell, tell.contains("Henry, check the contract"));
-    assertTrue(tell, tell.contains("(I also attached contract.pdf: it's too big to pass on this way. Talk Router couldn't pass that on.)"));
+    assertTrue(tell, tell.contains("(I also attached contract.pdf: it's too big to pass on this way. Dictate & Delegate couldn't pass that on.)"));
     assertFalse(tell, tell.contains("--file"));
     JSONObject step = e.json.getJSONArray("steps").getJSONObject(e.json.getJSONArray("steps").length() - 1);
     assertTrue(step.getString("filesFailed").startsWith("contract.pdf"));
@@ -502,7 +503,8 @@ public class BbFlowTest {
     TestServer.decide(0.05, 0.97, "none");
     dictate("copied");
     HistoryEntry e = latestOnce(n -> n.json.has("chiefThread"), "the chief");
-    assertEquals(DictationService.DONE, DictationService.session().chief);
+    // The note is saved a moment before the panel's state flips.
+    until(() -> DictationService.DONE.equals(DictationService.session().chief), "the chief sent");
 
     // Jev was asked about the chief; Refine didn't run. The transcript is copied (checked below).
     assertTrue(sent("decide").get(0).getJSONObject("questions").has("chief"));
@@ -610,7 +612,7 @@ public class BbFlowTest {
     JSONObject installed = TestServer.bbSkills().getJSONObject("installed");
     java.util.Map<String, String> files = ChiefSkills.filled(context);
     assertEquals(ChiefSkills.marker(files.get("chief-of-staff")), installed.getString("chief-of-staff"));
-    assertEquals(ChiefSkills.marker(files.get("talk-router")), installed.getString("talk-router"));
+    assertEquals(ChiefSkills.marker(files.get("dictate-and-delegate")), installed.getString("dictate-and-delegate"));
     assertTrue(TestServer.bbSkills().getJSONObject("files").getString("chief-of-staff").contains("You're Alex's chief of staff."));
     // The install thread was archived, and the older chief got the one line, once.
     List<String> snippets = TestServer.bbSnippets();
@@ -633,28 +635,41 @@ public class BbFlowTest {
     connectFake();
     ChiefSkills.pollMs = 300;
     java.util.Map<String, String> files = ChiefSkills.filled(context);
+    // The update to 3.1.0: the skill's old name talk-router is still in bb next to current ones,
+    // so the install runs once and removes it.
     TestServer.bbSetSkills(
         new JSONObject()
             .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
-            .put("talk-router", ChiefSkills.marker(files.get("talk-router"))),
+            .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate")))
+            .put("talk-router", "0ld0ld0ld0ld"),
+        false);
+    prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
+    launch();
+    until(() -> TestServer.bbSkillsOr("talk-router").isEmpty(), "the old talk-router skill removed");
+    until(() -> prefs.getInt(ChiefSkills.CHECKED_VERSION, 0) == BuildConfig.VERSION_CODE, "checked");
+    TestServer.bbReset();
+    TestServer.bbSetSkills(
+        new JSONObject()
+            .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
+            .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate"))),
         false);
     // An app update with current skills in bb: checked, nothing installed.
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
     launch();
     until(() -> prefs.getInt(ChiefSkills.CHECKED_VERSION, 0) == BuildConfig.VERSION_CODE, "checked after the update");
     assertTrue(TestServer.bbSnippets().isEmpty());
-    // An old talk-router in bb, found after the next update: reinstalled.
+    // An old dictate-and-delegate in bb, found after the next update: reinstalled.
     TestServer.bbSetSkills(
-        new JSONObject().put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff"))).put("talk-router", "0ld0ld0ld0ld"),
+        new JSONObject().put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff"))).put("dictate-and-delegate", "0ld0ld0ld0ld"),
         false);
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
     launch();
-    until(() -> TestServer.bbSkillsOr("talk-router").equals(ChiefSkills.marker(files.get("talk-router"))), "reinstalled");
-    // A new ntfy server changes talk-router: reinstalled with it.
+    until(() -> TestServer.bbSkillsOr("dictate-and-delegate").equals(ChiefSkills.marker(files.get("dictate-and-delegate"))), "reinstalled");
+    // A new ntfy server changes dictate-and-delegate: reinstalled with it.
     new BbBridge(context).setNtfyServer("https://ntfy.example.org");
     launch();
-    until(() -> TestServer.bbSkillsOr("talk-router").equals(ChiefSkills.marker(ChiefSkills.filled(context).get("talk-router"))), "reinstalled with the new server");
-    assertTrue(TestServer.bbSkills().getJSONObject("files").getString("talk-router").contains("https://ntfy.example.org/"));
+    until(() -> TestServer.bbSkillsOr("dictate-and-delegate").equals(ChiefSkills.marker(ChiefSkills.filled(context).get("dictate-and-delegate"))), "reinstalled with the new server");
+    assertTrue(TestServer.bbSkills().getJSONObject("files").getString("dictate-and-delegate").contains("https://ntfy.example.org/"));
   }
 
   @Test
@@ -750,7 +765,7 @@ public class BbFlowTest {
     List<String> snippets = TestServer.bbSnippets();
     assertTrue(snippets.get(0).contains("\"thread\",\"show\",\"thr_existing7\""));
     // The skills first, then the one line.
-    assertTrue(snippets.get(1).contains("Talk Router: install skills"));
+    assertTrue(snippets.get(1).contains("Dictate & Delegate: install skills"));
     String tell = snippets.get(snippets.size() - 1);
     assertTrue(tell, tell.contains("\"thread\",\"tell\",\"thr_existing7\""));
     assertTrue(tell, tell.contains(ChiefSkills.START));

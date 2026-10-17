@@ -1,6 +1,6 @@
 ---
 name: chief-of-staff
-description: Act as {{NAME}}'s chief of staff in this thread. Use when this thread is the chief of staff, or when asked to be it.
+description: "Act as {{NAME}}'s chief of staff in this thread. Use when this thread is the chief of staff, or when asked to be it."
 ---
 
 # Chief of staff
