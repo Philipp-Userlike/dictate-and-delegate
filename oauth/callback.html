@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Back to Talk Router</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 48px 28px; color: #10201b; background: #f6f8f7; }
+  h1 { font-size: 28px; margin: 0 0 12px; }
+  p { font-size: 17px; line-height: 1.45; color: #4a5a55; }
+  a.button { display: block; margin-top: 28px; padding: 18px; border-radius: 18px; background: #0d7a5f;
+             color: #fff; text-align: center; font-size: 18px; font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>Back to Talk Router</h1>
+<p id="message">Opening Talk Router to finish signing in to bb…</p>
+<a class="button" id="open" href="#">Open Talk Router</a>
+<script>
+  // bb sends the browser here after sign-in (https is the only redirect it accepts). Hand the
+  // answer (code and state, or an error) to the app; PKCE keeps the code useless without it.
+  // Nothing is stored or sent anywhere else.
+  var query = window.location.search;
+  var app = "talkrouter://oauth/callback" + query;
+  var intent = "intent://oauth/callback" + query +
+      "#Intent;scheme=talkrouter;package=app.driftdictation;end";
+  var android = /Android/i.test(navigator.userAgent);
+  var target = android ? intent : app;
+  document.getElementById("open").href = target;
+  if (!query) {
+    document.getElementById("message").textContent = "Nothing to hand on: open Talk Router and sign in again.";
+  } else {
+    window.location.replace(target);
+  }
+</script>
+</body>
+</html>

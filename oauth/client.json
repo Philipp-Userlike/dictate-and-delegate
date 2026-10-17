@@ -2,8 +2,15 @@
   "client_id": "https://philipp258.github.io/talk-router/oauth/client.json",
   "client_name": "Talk Router",
   "client_uri": "https://github.com/Philipp258/talk-router",
-  "redirect_uris": ["talkrouter://oauth/callback"],
-  "grant_types": ["authorization_code", "refresh_token"],
-  "response_types": ["code"],
+  "redirect_uris": [
+    "https://philipp258.github.io/talk-router/oauth/callback.html"
+  ],
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
   "token_endpoint_auth_method": "none"
 }
