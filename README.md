@@ -25,23 +25,21 @@ Press a key and talk: dictation, text creation and independent agents, from one 
 
 ### Dictate anywhere
 
-Press a key in any app and talk. A small floating panel stays next to whatever you're doing, so you can keep browsing, reading or testing while you speak. When you stop, **📥 Insert** puts the text at your cursor. Talk Router never touches your clipboard on its own.
+Press a shortcut in any app and talk. A small floating panel stays next to whatever you're doing, so you can keep browsing, reading or testing while you speak. When you're done, you can use the transcript anywhere.
 
 <img src="docs/images/panel-still.png" width="240" alt="The floating panel recording over a web page, with a speech bubble of what you say">
 
 ### Refine: one model call, any instruction
 
-**✨ Refine** sends what you said through a single call to a text model: Claude Sonnet 5.5 by default, or any model you pick. In that one call, it follows:
+**✨ Refine** sends what you said through a single call to a text model. It quickly processes or generates any text you need, based on:
 
-- what you ask for in your dictation,
-- a standing prompt you set yourself,
-- your templates: predefined texts that the model fills in and adapts, or that you edit yourself.
-
-That makes it fast and flexible: any text processing you can describe, in a few seconds. It starts by itself when you ask for a text or name a template, and it replaces the raw transcript in place.
+- a default prompt (roughly "find the intention of the text and improve it towards it"),
+- predefined text templates (like a sample job application),
+- any instruction you dictate ("Write an application to startup X based on our template. Emphasize that…").
 
 ### Hand off larger tasks to agents
 
-Talk Router sends a task to an independent agent running on its own machine, your laptop or a server, through [bb](https://getbb.app), with Claude Code or Codex on your existing subscription. Say your agent's name, or tap 🧑‍💼. The agent works on its own with that machine's files and tools, splits big jobs into parallel work, and reports back with a notification or with text you can insert. It can schedule tasks too; those run while that machine is on.
+Talk Router sends your dictation to an agent running on its own machine, your laptop or a server, through [bb](https://getbb.app), with Claude Code or Codex on your existing subscription. Usually you'd have a kind of "coordinator" or "chief of staff" agent there that routes and manages all larger independent work. This can include coding, research, recurring tasks and a lot of other things.
 
 ### The best models, pay per use
 
@@ -50,6 +48,10 @@ The latest speech models: MAI-Transcribe 2 by default, 60 languages, and you can
 ### Open source, private by design
 
 No Talk Router server, no account, no analytics. You use your own keys, and notes stay encrypted on the phone. It's MIT licensed, so you can read exactly what it sends. [Privacy details](docs/PRIVACY.md)
+
+## Why bb
+
+bb runs Claude Code and Codex and adds nice extra features on top. It works with common subscriptions like Claude and ChatGPT, has full remote control, and gives Talk Router a nice interface to communicate with.
 
 ## Install
 
