@@ -92,7 +92,6 @@
     <string name="t_2652688c" formatted="false">Microphone</string>
     <string name="t_26643376" formatted="false">Vérification…</string>
     <string name="t_26f01951" formatted="false">Talk Router est dans les Paramètres rapides, tout à la fin. Glisse vers le bas, puis vers la gauche pour le trouver.</string>
-    <string name="t_2776d94f" formatted="false">Ta clé Anthropic n\'est pas valide. Vérifie-la dans Paramètres → Clés → Clé Anthropic.</string>
     <string name="t_27a92292" formatted="false">bb n\'a pas autorisé la connexion.</string>
     <string name="t_27c5b8ea" formatted="false">Supprimer la clé</string>
     <string name="t_2893e4d7" formatted="false">Vérification de requête</string>
@@ -101,6 +100,7 @@
     <string name="t_2994b473" formatted="false">‹ Plus tôt</string>
     <string name="t_29a545af" formatted="false">Cher M. Weber, euh, le robinet de la cuisine, non en fait celui de la salle de bain, goutte depuis lundi. Ah et formulez ça un peu plus poliment svp.</string>
     <string name="t_2af8adac" formatted="false">Envoyé à ton chef de cabinet</string>
+    <string name="t_2bf38097" formatted="false">Ta clé Anthropic n\'est pas valide. Vérifie-la dans Paramètres → Modèles et fournisseurs → Clé Anthropic.</string>
     <string name="t_2c113272" formatted="false">Ton identifiant bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Appuie pour arrêter</string>
     <string name="t_2cad992e" formatted="false">Fichier</string>

@@ -425,7 +425,7 @@ public final class MainActivity extends Activity {
     ui.add(content, note, 12);
   }
 
-  /** The user's OpenRouter key: the first setup page, and Settings → Keys → OpenRouter key. */
+  /** The user's OpenRouter key: the first setup page, and Settings → Models & providers → OpenRouter key. */
   private void keyPage(boolean onboarding) {
     boolean saved = OpenRouter.hasKey(this);
     if (onboarding) {
@@ -540,7 +540,7 @@ public final class MainActivity extends Activity {
         });
   }
 
-  /** Settings → Keys → Anthropic key (optional): Refine goes to Anthropic directly, on its credits. */
+  /** Settings → Models & providers → Anthropic key (optional): Refine goes to Anthropic directly, on its credits. */
   private void anthropicKeyPage() {
     boolean saved = Anthropic.hasKey(this);
     heading(

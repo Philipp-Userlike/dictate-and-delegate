@@ -92,7 +92,6 @@
     <string name="t_2652688c" formatted="false">Micrófono</string>
     <string name="t_26643376" formatted="false">Comprobando…</string>
     <string name="t_26f01951" formatted="false">Talk Router está en Ajustes rápidos, al final. Desliza hacia abajo y luego a la izquierda para encontrarlo.</string>
-    <string name="t_2776d94f" formatted="false">Tu clave de Anthropic no es válida. Revísala en Ajustes → Claves → Clave de Anthropic.</string>
     <string name="t_27a92292" formatted="false">bb no permitió el inicio de sesión.</string>
     <string name="t_27c5b8ea" formatted="false">Eliminar clave</string>
     <string name="t_2893e4d7" formatted="false">Comprobación de peticiones</string>
@@ -101,6 +100,7 @@
     <string name="t_2994b473" formatted="false">‹ Anteriores</string>
     <string name="t_29a545af" formatted="false">Estimado Sr. Weber, eh, el grifo de la cocina, no, en realidad el del baño, gotea desde el lunes. Ah, y ponlo un poco más formal, por favor.</string>
     <string name="t_2af8adac" formatted="false">Enviado a tu jefe de gabinete</string>
+    <string name="t_2bf38097" formatted="false">Tu clave de Anthropic no es válida. Revísala en Ajustes → Modelos y proveedores → Clave de Anthropic.</string>
     <string name="t_2c113272" formatted="false">Tu usuario de bb Connect</string>
     <string name="t_2c467e9e" formatted="false">Toca para detener</string>
     <string name="t_2cad992e" formatted="false">Archivo</string>

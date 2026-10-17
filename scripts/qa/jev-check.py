@@ -23,7 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 URL = os.environ.get("OPENROUTER_DECISIONS", "https://openrouter.ai/api/alpha/decisions")
 JEV = os.path.join(ROOT, "app/src/main/java/app/driftdictation/Jev.java")
 TEMPLATES = ["Apartment application", "Weekly update", "Absage Termin"]
-NAME = "Henry"  # The chief's name in Settings → Refine.
+NAME = "Henry"  # The chief's name in Settings → Chief of staff.
 # Jev.mentions, roughly: the name, its possessive and its -i/-ie mishearings.
 NAMED = re.compile(r"(?<![^\W\d_])(?:henry|henri|henrie|henrey)(?:'s|’s|s)?(?![^\W\d_])", re.I)
 

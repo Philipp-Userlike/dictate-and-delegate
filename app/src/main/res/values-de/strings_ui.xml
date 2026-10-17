@@ -92,7 +92,6 @@
     <string name="t_2652688c" formatted="false">Mikrofon</string>
     <string name="t_26643376" formatted="false">Wird geprüft…</string>
     <string name="t_26f01951" formatted="false">Talk Router ist in den Schnelleinstellungen ganz hinten. Wische nach unten und dann nach links, um es zu finden.</string>
-    <string name="t_2776d94f" formatted="false">Dein Anthropic-Schlüssel ist ungültig. Prüfe ihn unter Einstellungen → Schlüssel → Anthropic-Schlüssel.</string>
     <string name="t_27a92292" formatted="false">bb hat die Anmeldung nicht erlaubt.</string>
     <string name="t_27c5b8ea" formatted="false">Schlüssel entfernen</string>
     <string name="t_2893e4d7" formatted="false">Anweisungsprüfung</string>
@@ -101,6 +100,7 @@
     <string name="t_2994b473" formatted="false">‹ Früher</string>
     <string name="t_29a545af" formatted="false">Sehr geehrter Herr Weber, äh, der Hahn in der Küche, nein eigentlich im Bad, tropft seit Montag. Ach und mach das bitte etwas förmlicher.</string>
     <string name="t_2af8adac" formatted="false">An deinen Chief of Staff gesendet</string>
+    <string name="t_2bf38097" formatted="false">Dein Anthropic-Schlüssel ist ungültig. Prüfe ihn unter Einstellungen → Modelle &amp; Anbieter → Anthropic-Schlüssel.</string>
     <string name="t_2c113272" formatted="false">Dein bb Connect-Handle</string>
     <string name="t_2c467e9e" formatted="false">Tippen zum Stoppen</string>
     <string name="t_2cad992e" formatted="false">Datei</string>

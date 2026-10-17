@@ -239,7 +239,7 @@ final class Anthropic {
   static Failure failure(int status, String message) {
     String detail = message.length() > 300 ? message.substring(0, 300) + "…" : message;
     if (status == 401 || status == 403)
-      return new Failure(Problem.KEY, tr("Your Anthropic key isn't valid. Check it in Settings → Keys → Anthropic key."), null);
+      return new Failure(Problem.KEY, tr("Your Anthropic key isn't valid. Check it in Settings → Models & providers → Anthropic key."), null);
     if (status == 400 && message.toLowerCase(java.util.Locale.ROOT).contains("credit balance"))
       return new Failure(Problem.CREDITS, tr("Your Anthropic credits are used up."), null);
     if (status == 429 || status == 529) return new Failure(Problem.BUSY, tr("Anthropic is busy right now."), null);

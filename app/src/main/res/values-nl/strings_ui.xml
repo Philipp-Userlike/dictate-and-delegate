@@ -92,7 +92,6 @@
     <string name="t_2652688c" formatted="false">Microfoon</string>
     <string name="t_26643376" formatted="false">Controleren…</string>
     <string name="t_26f01951" formatted="false">Talk Router staat in de Snelle instellingen, helemaal achteraan. Veeg omlaag en dan naar links om het te vinden.</string>
-    <string name="t_2776d94f" formatted="false">Je Anthropic-sleutel is ongeldig. Controleer hem in Instellingen → Sleutels → Anthropic-sleutel.</string>
     <string name="t_27a92292" formatted="false">bb heeft de aanmelding niet toegestaan.</string>
     <string name="t_27c5b8ea" formatted="false">Sleutel verwijderen</string>
     <string name="t_2893e4d7" formatted="false">Verzoekcontrole</string>
@@ -101,6 +100,7 @@
     <string name="t_2994b473" formatted="false">‹ Eerder</string>
     <string name="t_29a545af" formatted="false">Beste meneer Weber, eh, de kraan in de keuken, nee eigenlijk die in de badkamer, lekt sinds maandag. Oh en maak dat wat formeler alsjeblieft.</string>
     <string name="t_2af8adac" formatted="false">Verzonden naar je stafchef</string>
+    <string name="t_2bf38097" formatted="false">Je Anthropic-sleutel is ongeldig. Controleer hem in Instellingen → Modellen en aanbieders → Anthropic-sleutel.</string>
     <string name="t_2c113272" formatted="false">Je bb Connect-gebruikersnaam</string>
     <string name="t_2c467e9e" formatted="false">Tik om te stoppen</string>
     <string name="t_2cad992e" formatted="false">Bestand</string>

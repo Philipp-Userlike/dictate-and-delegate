@@ -92,7 +92,6 @@
     <string name="t_2652688c" formatted="false">Microphone</string>
     <string name="t_26643376" formatted="false">Checking…</string>
     <string name="t_26f01951" formatted="false">Talk Router is in Quick Settings, at the end. Swipe down, then left to find it.</string>
-    <string name="t_2776d94f" formatted="false">Your Anthropic key isn\'t valid. Check it in Settings → Keys → Anthropic key.</string>
     <string name="t_27a92292" formatted="false">bb didn\'t allow the sign-in.</string>
     <string name="t_27c5b8ea" formatted="false">Remove key</string>
     <string name="t_2893e4d7" formatted="false">Request check</string>
@@ -101,6 +100,7 @@
     <string name="t_2994b473" formatted="false">‹ Earlier</string>
     <string name="t_29a545af" formatted="false">Dear Mr. Weber, uh, the tap in the kitchen, no actually the one in the bathroom, has been dripping since Monday. Oh and make that a bit more formal please.</string>
     <string name="t_2af8adac" formatted="false">Sent to your chief of staff</string>
+    <string name="t_2bf38097" formatted="false">Your Anthropic key isn\'t valid. Check it in Settings → Models &amp; providers → Anthropic key.</string>
     <string name="t_2c113272" formatted="false">Your bb Connect handle</string>
     <string name="t_2c467e9e" formatted="false">Tap to stop</string>
     <string name="t_2cad992e" formatted="false">File</string>

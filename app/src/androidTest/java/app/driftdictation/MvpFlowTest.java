@@ -285,7 +285,7 @@ public class MvpFlowTest {
       tap("Delete local data");
       find("Delete local data?");
       shot("settings-3-delete-local");
-      tap("Delete everything");
+      find("DELETE EVERYTHING").click();
       find("Get started");
       assertFalse(OpenRouter.hasKey(context));
       assertFalse(Anthropic.hasKey(context));
