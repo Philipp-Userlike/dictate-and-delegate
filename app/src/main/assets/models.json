@@ -1,0 +1,152 @@
+{
+  "verified": "2026-10-03",
+  "models": [
+    {
+      "id": "assemblyai/universal-3-5-pro",
+      "name": "AssemblyAI: Universal-3.5 Pro",
+      "quality": "Accuracy / mixed languages",
+      "languages": "🌐 18 languages",
+      "languageDetails": "Native code-switching across 18 languages. The synchronous API supports clips up to 120 seconds; Drift chunks longer recordings.",
+      "unit": "second",
+      "pricing": {
+        "prompt": "0.000125",
+        "completion": "0"
+      },
+      "source": "https://openrouter.ai/assemblyai/universal-3-5-pro",
+      "languageSource": "https://www.assemblyai.com/blog/universal-3-5-pro-code-switching-contextual-prompting",
+      "supportsDe": true,
+      "supportsEn": true,
+      "accuracyTier": 5,
+      "speedTier": 0,
+      "ratingNote": "Accuracy and native mixed-language recognition are the main strengths. Comparable latency is unverified.",
+      "ratingSource": "https://openrouter.ai/assemblyai/universal-3-5-pro",
+      "codeSwitch": true
+    },
+    {
+      "id": "microsoft/mai-transcribe-2",
+      "name": "Microsoft AI: MAI-Transcribe 2",
+      "quality": "High accuracy",
+      "languages": "🌐 60 languages",
+      "languageDetails": "Automatic language identification and mixed-language speech. Provider reports a strong FLEURS benchmark result; not a Drift benchmark.",
+      "unit": "hour",
+      "pricing": {
+        "prompt": "0.1",
+        "completion": "0"
+      },
+      "source": "https://openrouter.ai/microsoft/mai-transcribe-2",
+      "languageSource": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/mai-transcribe",
+      "supportsDe": true,
+      "supportsEn": true,
+      "accuracyTier": 5,
+      "speedTier": 4,
+      "ratingNote": "High reported multilingual accuracy; faster than the previous MAI generation.",
+      "ratingSource": "https://openrouter.ai/microsoft/mai-transcribe-2",
+      "codeSwitch": true
+    },
+    {
+      "id": "openai/gpt-transcribe",
+      "name": "OpenAI: GPT Transcribe",
+      "quality": "High accuracy",
+      "languages": "🌐 Multilingual",
+      "languageDetails": "Supports multiple language hints and mixed-language speech. See model documentation for coverage.",
+      "unit": "second",
+      "pricing": {
+        "prompt": "0.000075",
+        "completion": "0"
+      },
+      "source": "https://openrouter.ai/openai/gpt-transcribe",
+      "languageSource": "https://openrouter.ai/openai/gpt-transcribe",
+      "supportsDe": true,
+      "supportsEn": true,
+      "accuracyTier": 5,
+      "speedTier": 3,
+      "ratingNote": "3.3% word error rate and 42× real-time speed on the Artificial Analysis speech-to-text benchmark (October 2026).",
+      "ratingSource": "https://artificialanalysis.ai/speech-to-text",
+      "codeSwitch": false
+    },
+    {
+      "id": "microsoft/mai-transcribe-1.5",
+      "name": "Microsoft AI: MAI-Transcribe 1.5",
+      "quality": "Accuracy focused",
+      "languages": "🌐 43 languages",
+      "languageDetails": "Automatic language identification across 43 languages; accents and noisy audio are a stated focus.",
+      "unit": "hour",
+      "pricing": {
+        "prompt": "0.36",
+        "completion": "0"
+      },
+      "source": "https://openrouter.ai/microsoft/mai-transcribe-1.5",
+      "languageSource": "https://openrouter.ai/microsoft/mai-transcribe-1.5",
+      "supportsDe": true,
+      "supportsEn": true,
+      "accuracyTier": 4,
+      "speedTier": 3,
+      "ratingNote": "Accuracy-oriented multilingual model; older MAI generation.",
+      "ratingSource": "https://openrouter.ai/microsoft/mai-transcribe-1.5",
+      "codeSwitch": false
+    },
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "OpenAI: GPT-4o Mini Transcribe",
+      "quality": "Balanced / lower cost",
+      "languages": "🌐 Multilingual",
+      "languageDetails": "Multilingual; language accuracy varies. Check provider language coverage for your language.",
+      "unit": "token",
+      "pricing": {
+        "prompt": "0.00000125",
+        "completion": "0.000005"
+      },
+      "source": "https://openrouter.ai/openai/gpt-4o-mini-transcribe",
+      "languageSource": "https://openrouter.ai/openai/gpt-4o-mini-transcribe",
+      "supportsDe": true,
+      "supportsEn": true,
+      "accuracyTier": 4,
+      "speedTier": 0,
+      "ratingNote": "Smaller transcription model with an accuracy/cost tradeoff. Comparable latency and minute cost are unverified.",
+      "ratingSource": "https://openrouter.ai/openai/gpt-4o-mini-transcribe",
+      "codeSwitch": false
+    },
+    {
+      "id": "openai/whisper-1",
+      "name": "OpenAI: Whisper 1",
+      "quality": "Established baseline",
+      "languages": "🌐 50+ languages",
+      "languageDetails": "Multilingual transcription; includes English, German, French, Spanish, Italian, Portuguese, Chinese, Japanese and many others.",
+      "unit": "second",
+      "pricing": {
+        "prompt": "0.0001",
+        "completion": "0"
+      },
+      "source": "https://openrouter.ai/openai/whisper-1",
+      "languageSource": "https://openrouter.ai/openai/whisper-1",
+      "supportsDe": true,
+      "supportsEn": true,
+      "accuracyTier": 3,
+      "speedTier": 3,
+      "ratingNote": "Established multilingual baseline; newer accuracy-focused models are available.",
+      "ratingSource": "https://openrouter.ai/openai/whisper-1",
+      "codeSwitch": false
+    },
+    {
+      "id": "openai/gpt-4o-transcribe",
+      "name": "OpenAI: GPT-4o Transcribe",
+      "quality": "High accuracy",
+      "languages": "🌐 Multilingual",
+      "languageDetails": "Multilingual; includes English, German, French, Spanish, Chinese, Japanese and other supported speech languages.",
+      "unit": "token",
+      "pricing": {
+        "prompt": "0.0000025",
+        "completion": "0.00001"
+      },
+      "source": "https://openrouter.ai/openai/gpt-4o-transcribe",
+      "languageSource": "https://openrouter.ai/openai/gpt-4o-transcribe",
+      "supportsDe": true,
+      "supportsEn": true,
+      "accuracyTier": 5,
+      "speedTier": 0,
+      "ratingNote": "Provider reports improved recognition over Whisper. Comparable OpenRouter latency and minute cost are unverified.",
+      "ratingSource": "https://openrouter.ai/openai/gpt-4o-transcribe",
+      "codeSwitch": false
+    }
+  ]
+}

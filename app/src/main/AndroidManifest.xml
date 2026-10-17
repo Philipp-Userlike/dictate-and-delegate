@@ -1,0 +1,29 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-feature android:name="android.hardware.microphone" android:required="true" />
+    <application android:label="@string/app_name" android:theme="@style/AppTheme" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true" android:localeConfig="@xml/locales_config"
+        android:dataExtractionRules="@xml/data_extraction_rules" android:allowBackup="false" android:fullBackupContent="false" android:usesCleartextTraffic="false" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+        </activity>
+        <activity android:name=".AttachActivity" android:exported="false" android:excludeFromRecents="true"
+            android:taskAffinity="app.driftdictation.attach" android:theme="@style/AttachTheme" />
+        <activity android:name=".RecordActivity" android:exported="false" android:excludeFromRecents="true"
+            android:taskAffinity="app.driftdictation.record" android:theme="@style/RecordTheme" />
+        <service android:name=".DictationTile" android:label="Drift" android:icon="@drawable/ic_drift"
+            android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+            <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="true" />
+        </service>
+        <service android:name=".DictationService" android:exported="false" android:foregroundServiceType="specialUse|microphone">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-started dictation: keeps the floating stop control and the upload of the recording alive after the user taps stop; microphone type only while recording" />
+        </service>
+    </application>
+</manifest>

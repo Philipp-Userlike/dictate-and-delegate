@@ -1,0 +1,23 @@
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#0B7A5E</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+    </style>
+    <style name="RecordTheme" parent="AppTheme">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimAmount">0.0</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+    <style name="AttachTheme" parent="android:style/Theme.Material.Light.Dialog.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#0B7A5E</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+    </style>
+</resources>

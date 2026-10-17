@@ -1,0 +1,36 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'app.driftdictation'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'app.driftdictation'
+        minSdk 34
+        targetSdk 36
+        versionCode((project.findProperty('versionCode') ?: '19') as int)
+        versionName project.findProperty('versionName') ?: '2.0.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        // OpenRouter's API. Tests point debug builds at a local fake: -PopenrouterUrl=http://127.0.0.1:8797/api/v1
+        buildConfigField 'String', 'OPENROUTER_URL', "\"${project.findProperty('openrouterUrl') ?: 'https://openrouter.ai/api/v1'}\""
+    }
+    signingConfigs {
+        release {
+            storeFile rootProject.file('.signing/release.jks')
+            storePassword System.getenv('DRIFT_STORE_PASSWORD') ?: ''
+            keyAlias 'drift'
+            keyPassword System.getenv('DRIFT_STORE_PASSWORD') ?: ''
+        }
+    }
+    buildTypes {
+        release { signingConfig signingConfigs.release; minifyEnabled false }
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    lint { abortOnError true }
+}
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20250517'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
+}

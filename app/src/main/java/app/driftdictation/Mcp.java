@@ -1,0 +1,207 @@
+package app.driftdictation;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+/**
+ * A small client for MCP servers over Streamable HTTP: initialize, list tools, call a tool. An
+ * optional token is sent as a bearer header. Not used at the moment: in-app agents were removed,
+ * and the bridge to bb will build on it.
+ */
+final class Mcp {
+  static final String PROTOCOL = "2025-06-18";
+
+  /** A server the user runs: a name for messages, its address and an optional token. */
+  record Server(String name, String url, String token) {}
+
+  record Tool(String name, String description, JSONObject schema) {}
+
+  /** Drift's own message about a server; anything else from the network gets one. */
+  static final class McpException extends IOException {
+    McpException(String message) {
+      super(message);
+    }
+  }
+
+  /** One session with one server. */
+  static final class Connection {
+    final Server server;
+    private String session;
+    private int nextId = 1;
+
+    Connection(Server server) {
+      this.server = server;
+    }
+
+    void open() throws Exception {
+      request(
+          "initialize",
+          new JSONObject()
+              .put("protocolVersion", PROTOCOL)
+              .put("capabilities", new JSONObject())
+              .put(
+                  "clientInfo",
+                  new JSONObject().put("name", "Drift").put("version", BuildConfig.VERSION_NAME)));
+      notify("notifications/initialized");
+    }
+
+    List<Tool> tools() throws Exception {
+      List<Tool> out = new ArrayList<>();
+      String cursor = null;
+      for (int page = 0; page < 5; page++) {
+        JSONObject params = new JSONObject();
+        if (cursor != null) params.put("cursor", cursor);
+        JSONObject result = request("tools/list", params);
+        JSONArray tools = result.optJSONArray("tools");
+        for (int i = 0; tools != null && i < tools.length(); i++) {
+          JSONObject t = tools.getJSONObject(i);
+          JSONObject schema = t.optJSONObject("inputSchema");
+          out.add(
+              new Tool(
+                  t.getString("name"),
+                  t.optString("description"),
+                  schema == null ? new JSONObject().put("type", "object") : schema));
+        }
+        cursor = result.optString("nextCursor", null);
+        if (cursor == null || cursor.isEmpty()) break;
+      }
+      return out;
+    }
+
+    /** The tool's text result; errors come back as text too, so the model can react to them. */
+    String call(String tool, JSONObject arguments) throws Exception {
+      JSONObject result =
+          request("tools/call", new JSONObject().put("name", tool).put("arguments", arguments));
+      StringBuilder s = new StringBuilder();
+      JSONArray content = result.optJSONArray("content");
+      for (int i = 0; content != null && i < content.length(); i++) {
+        JSONObject part = content.getJSONObject(i);
+        if (s.length() > 0) s.append("\n");
+        switch (part.optString("type")) {
+          case "text" -> s.append(part.optString("text"));
+          case "resource" -> {
+            JSONObject r = part.optJSONObject("resource");
+            s.append(r == null ? "" : r.optString("text", r.optString("uri")));
+          }
+          default -> s.append("[").append(part.optString("type")).append("]");
+        }
+      }
+      if (s.length() == 0 && result.has("structuredContent"))
+        s.append(result.get("structuredContent").toString());
+      return (result.optBoolean("isError") ? "Error: " : "") + s;
+    }
+
+    private void notify(String method) throws Exception {
+      post(new JSONObject().put("jsonrpc", "2.0").put("method", method));
+    }
+
+    private JSONObject request(String method, JSONObject params) throws Exception {
+      int id = nextId++;
+      JSONObject reply =
+          post(
+              new JSONObject()
+                  .put("jsonrpc", "2.0")
+                  .put("id", id)
+                  .put("method", method)
+                  .put("params", params));
+      if (reply == null) throw new McpException(tr("%1$s didn't answer.", server.name()));
+      JSONObject error = reply.optJSONObject("error");
+      if (error != null)
+        throw new McpException(server.name() + ": " + error.optString("message", "error"));
+      return reply.optJSONObject("result") == null ? new JSONObject() : reply.getJSONObject("result");
+    }
+
+    /** One JSON-RPC message; the answer comes as JSON or as an event stream. */
+    private JSONObject post(JSONObject message) throws Exception {
+      try {
+        return send(message);
+      } catch (McpException ex) {
+        throw ex;
+      } catch (IOException ex) {
+        String why =
+            ex instanceof java.net.ConnectException
+                ? tr("nothing answers at this address")
+                : ex instanceof java.net.SocketTimeoutException
+                    ? tr("no answer in time")
+                    : ex instanceof java.net.UnknownHostException
+                        ? tr("unknown address")
+                        : tr("the connection broke off; is it an MCP server (Streamable HTTP)?");
+        throw new McpException(tr("Could not reach %1$s at %2$s: %3$s.", server.name(), server.url(), why));
+      }
+    }
+
+    private JSONObject send(JSONObject message) throws Exception {
+      HttpURLConnection c = (HttpURLConnection) new URL(server.url()).openConnection();
+      try {
+        c.setConnectTimeout(10_000);
+        c.setReadTimeout(90_000);
+        c.setRequestMethod("POST");
+        c.setRequestProperty("Content-Type", "application/json");
+        c.setRequestProperty("Accept", "application/json, text/event-stream");
+        c.setRequestProperty("MCP-Protocol-Version", PROTOCOL);
+        if (session != null) c.setRequestProperty("Mcp-Session-Id", session);
+        if (!server.token().isBlank())
+          c.setRequestProperty("Authorization", "Bearer " + server.token().trim());
+        byte[] payload = message.toString().getBytes(StandardCharsets.UTF_8);
+        c.setDoOutput(true);
+        c.setFixedLengthStreamingMode(payload.length);
+        try (OutputStream out = c.getOutputStream()) {
+          out.write(payload);
+        }
+        int status = c.getResponseCode();
+        String id = c.getHeaderField("Mcp-Session-Id");
+        if (id != null && !id.isBlank()) session = id;
+        if (status == 202 || status == 204) return null;
+        if (status >= 400)
+          throw new McpException(tr("%1$s answered with HTTP %2$d.", server.name(), status));
+        String type = String.valueOf(c.getContentType());
+        String body = read(c.getInputStream());
+        if (type.contains("text/event-stream")) return fromStream(body, message.opt("id"));
+        return body.isBlank() ? null : new JSONObject(body);
+      } finally {
+        c.disconnect();
+      }
+    }
+
+    /** The event that answers this request; servers may send notifications before it. */
+    private static JSONObject fromStream(String stream, Object id) throws Exception {
+      JSONObject last = null;
+      StringBuilder data = new StringBuilder();
+      for (String line : (stream + "\n\n").split("\n")) {
+        if (line.startsWith("data:")) data.append(line.substring(5).trim());
+        else if (line.isBlank() && data.length() > 0) {
+          JSONObject event = new JSONObject(data.toString());
+          data.setLength(0);
+          if (id != null && String.valueOf(id).equals(String.valueOf(event.opt("id")))) return event;
+          if (event.has("result") || event.has("error")) last = event;
+        }
+      }
+      return last;
+    }
+
+    private static String read(InputStream in) throws IOException {
+      try (in) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        for (int n; (n = in.read(buffer)) > 0; ) {
+          out.write(buffer, 0, n);
+          if (out.size() > 4_000_000) throw new IOException("The MCP answer is too large.");
+        }
+        return out.toString(StandardCharsets.UTF_8);
+      }
+    }
+
+    private static String tr(String english, Object... args) {
+      return I18n.tr(english, args);
+    }
+  }
+}

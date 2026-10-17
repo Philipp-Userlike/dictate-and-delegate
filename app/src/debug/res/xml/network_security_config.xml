@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds: plain HTTP to the fake OpenRouter on 127.0.0.1 (adb reverse). Release builds
+     talk to OpenRouter over HTTPS only. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

@@ -1,0 +1,35 @@
+.gradle/
+.tools/
+**/build/
+local.properties
+.signing/
+*.jks
+*.keystore
+.DS_Store
+
+# Private configuration, credentials and local artifacts
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+*.log
+*.wav
+*.pcm
+*.m4a
+*.mp3
+
+# APKs are distributed through GitHub Releases
+/dist/
+
+# Local reports can include machine paths and device identifiers
+/docs/test-results/
+/docs/screenshots/
+/docs/TESTING.md
+/docs/TESTING-1.1.md
+/docs/TESTING-1.1.1.md
+
+
+# QA agent runs (scripts/qa)
+/qa-out/

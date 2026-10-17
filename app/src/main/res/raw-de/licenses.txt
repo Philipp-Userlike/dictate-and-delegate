@@ -1,0 +1,4 @@
+Open-Source-Hinweise
+Drift nutzt in der App keine Bibliotheken von Drittanbietern. Die App baut auf der Android-Plattform auf (Android Open Source Project, Apache License 2.0).
+
+Sprach- und Textmodelle stellen Drittanbieter über OpenRouter nach ihren eigenen Bedingungen bereit.

@@ -1,0 +1,13 @@
+Impressum
+[FIRMENNAME]
+[RECHTSFORM, VERTRETEN DURCH]
+[STRASSE]
+[PLZ ORT]
+[LAND]
+
+E-Mail: [E-MAIL]
+Telefon: [TELEFON]
+USt-IdNr.: [UST-IDNR.]
+[HANDELSREGISTER UND NUMMER, FALLS VORHANDEN]
+
+Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: [NAME, ANSCHRIFT]

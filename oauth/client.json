@@ -1,0 +1,9 @@
+{
+  "client_id": "https://raw.githubusercontent.com/Philipp258/talk-router/main/oauth/client.json",
+  "client_name": "Talk Router",
+  "client_uri": "https://github.com/Philipp258/talk-router",
+  "redirect_uris": ["talkrouter://oauth/callback"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none"
+}
