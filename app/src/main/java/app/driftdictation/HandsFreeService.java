@@ -40,6 +40,9 @@ public final class HandsFreeService extends Service {
 
   /** START extra: a PCM file with what was said before (a dictation switched to hands-free). */
   static final String SEED = "seed";
+
+  /** Extras of START: where the dictation panel was, so the call panel takes its place. */
+  static final String AT_X = "atX", AT_Y = "atY";
   static final String CHANNEL = "hands_free";
 
   static volatile HandsFreeService instance;
@@ -66,6 +69,13 @@ public final class HandsFreeService extends Service {
   static HandsFreeSession session() {
     HandsFreeService s = instance;
     return s == null ? null : s.session;
+  }
+
+  /** Where the call panel is (x, y), or null without one (for the device tests). */
+  static int[] panelPosition() {
+    HandsFreeService s = instance;
+    HandsFreePanel p = s == null ? null : s.panel;
+    return p == null ? null : p.position();
   }
 
   static void send(Context context, String action) {
@@ -96,7 +106,11 @@ public final class HandsFreeService extends Service {
   public int onStartCommand(Intent intent, int flags, int startId) {
     String action = intent == null ? START : String.valueOf(intent.getAction());
     switch (action) {
-      case START -> start(intent == null ? null : intent.getStringExtra(SEED));
+      case START ->
+          start(
+              intent == null ? null : intent.getStringExtra(SEED),
+              intent == null ? -1 : intent.getIntExtra(AT_X, -1),
+              intent == null ? -1 : intent.getIntExtra(AT_Y, -1));
       case SEND -> {
         if (session != null) session.sendNow();
       }
@@ -106,7 +120,7 @@ public final class HandsFreeService extends Service {
     return START_NOT_STICKY;
   }
 
-  private void start(String seed) {
+  private void start(String seed, int atX, int atY) {
     startForeground(
         4,
         notification(),
@@ -144,22 +158,29 @@ public final class HandsFreeService extends Service {
               return request;
             },
             new HandsFreeSession.Speaker() {
-              public void speak(String request, String text, Runnable done) {
+              public Object prepare(String request, String text) {
                 Voice.Choice c = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id()));
-                new Thread(
-                        () -> {
-                          try {
-                            long asked = android.os.SystemClock.elapsedRealtime();
-                            String generation = voice.speak(c, text, done::run);
-                            long ms = android.os.SystemClock.elapsedRealtime() - asked;
-                            if (!c.model().isEmpty()) chargeVoice(request, c, text, generation, ms);
-                          } catch (Throwable t) {
-                            event("voice failed: " + t);
-                            done.run(); // Never stuck reading.
-                          }
-                        },
-                        "voice")
-                    .start();
+                long asked = android.os.SystemClock.elapsedRealtime();
+                Voice.Prepared p = voice.prepare(c, text);
+                long ms = android.os.SystemClock.elapsedRealtime() - asked;
+                if (p.mp3() != null) chargeVoice(request, c, text, p.generation(), ms);
+                else if (!c.model().isEmpty()) event("voice " + c.model() + " failed: Android's voice reads " + request);
+                return p;
+              }
+
+              public void play(String request, String text, Object prepared, HandsFreeSession.Playback playback) {
+                voice.play(
+                    prepared instanceof Voice.Prepared p ? p : new Voice.Prepared(null, ""),
+                    text,
+                    new Voice.Playback() {
+                      public void started(long durationMs) {
+                        playback.started(durationMs);
+                      }
+
+                      public void ended(boolean played) {
+                        playback.ended(played);
+                      }
+                    });
               }
 
               public void stop() {
@@ -169,6 +190,7 @@ public final class HandsFreeService extends Service {
             () -> main.post(this::changed));
     session.onEvent(this::event);
     callCost = BigDecimal.ZERO;
+    callId = UUID.randomUUID().toString();
     event(
         String.format(
             java.util.Locale.ROOT,
@@ -231,7 +253,9 @@ public final class HandsFreeService extends Service {
                 public void end() {
                   finish();
                 }
-              });
+              },
+              atX,
+              atY);
       try {
         panel.show();
       } catch (RuntimeException ex) {
@@ -372,8 +396,10 @@ public final class HandsFreeService extends Service {
         .start();
   }
 
-  /** Tells the chief a call started or ended, so it knows whether spoken messages are heard. */
-  /** Tells the chief in the background; returns the thread doing it, or null without a chief. */
+  /**
+   * Tells the chief a call started or ended, so it knows whether spoken messages are heard. In the
+   * background; returns the thread doing it, or null without a chief.
+   */
   private Thread signal(BbBridge bb, String line) {
     String chief = bb.chiefId();
     if (chief.isEmpty()) return null;
@@ -409,6 +435,9 @@ public final class HandsFreeService extends Service {
 
   private final java.util.List<String> sinceLastNote = new java.util.ArrayList<>();
 
+  /** This call's ID: its messages' notes carry it, so the notes list shows the call as one entry. */
+  private String callId = "";
+
   synchronized void event(String e) {
     String line =
         new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ROOT).format(new java.util.Date()) + " " + e;
@@ -435,6 +464,7 @@ public final class HandsFreeService extends Service {
         .put("status", "complete")
         .put("requests", 1)
         .put("handsFree", true)
+        .put("call", callId)
         .put("route", "chief")
         .put("chiefThread", bb.chiefId())
         .put("chiefLink", bb.threadLink(bb.chiefId()))
@@ -471,7 +501,8 @@ public final class HandsFreeService extends Service {
   static String phaseLabel(HandsFreeSession.Phase p) {
     return switch (p) {
       case READING -> tr("Reading reply");
-      case WORKING -> tr("Chief is working");
+      // You can talk while the chief works: it says listening first.
+      case WORKING -> tr("Listening · Chief is working…");
       default -> tr("Listening");
     };
   }
@@ -506,7 +537,7 @@ public final class HandsFreeService extends Service {
             .setContentIntent(open);
     // Only what fits now: while listening, Send now; a reply is stopped by saying "stop" or the
     // headset button.
-    if (s != null && s.phase() == HandsFreeSession.Phase.LISTENING)
+    if (s != null && s.phase() != HandsFreeSession.Phase.READING)
       b.addAction(new Notification.Action.Builder(null, tr("Send now"), action(SEND, 1)).build());
     b.addAction(new Notification.Action.Builder(null, tr("End"), action(END, 3)).build());
     return b.build();

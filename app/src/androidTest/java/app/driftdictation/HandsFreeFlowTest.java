@@ -133,6 +133,8 @@ public class HandsFreeFlowTest {
           return false;
         },
         "the reply sent to the voice model");
+    // Its audio is fetched first (the floor stays open meanwhile), then it's read.
+    until(() -> HandsFreeService.session().state() == HandsFreeSession.State.READING, "reading the reply");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after reading");
     // Reading it cost $0.0001 (the fake's generation); the note of that message has it, on top of
     // the transcriptions ($0.001 each), and the call total counts both.
@@ -151,6 +153,7 @@ public class HandsFreeFlowTest {
       JSONArray steps = e.json.getJSONArray("steps");
       assertEquals("voice", steps.getJSONObject(steps.length() - 1).getString("kind"));
       assertTrue(e.json.getJSONArray("handsFreeLog").length() > 0);
+      assertFalse(e.json.optString("call").isEmpty());
     }
     assertEquals(0, new java.math.BigDecimal("0.0021").compareTo(HandsFreeService.callCost));
     int speech = 0;
@@ -250,13 +253,21 @@ public class HandsFreeFlowTest {
   public void theDictationPanelsCallButtonSwitchesToHandsFreeKeepingWhatWasSaid() throws Exception {
     TestServer.transcripts("I was dictating about the trip");
     device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
-    prefs.edit().putString("bubbleMode", "recording").commit();
+    // The dictation panel somewhere else than the call panel's own place.
+    prefs.edit()
+        .putString("bubbleMode", "recording")
+        .putInt("bubbleX", 140)
+        .putInt("bubbleY", 900)
+        .putInt(HandsFreePanel.X, 16)
+        .putInt(HandsFreePanel.Y, 300)
+        .commit();
     DictationService.send(context, DictationService.RECORD);
     long deadline = SystemClock.elapsedRealtime() + 10_000;
     while (!"recording".equals(prefs.getString("state", "")) && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
     Thread.sleep(1200);
     UiObject2 call = device.wait(Until.findObject(By.desc("Hands-free call with your chief")), 8000);
     assertNotNull("the 📞 on the dictation panel", call);
+    int[] dictationPanel = DictationService.panelPosition();
     call.click();
     until(() -> HandsFreeService.session() != null, "hands-free started from the dictation");
     until(() -> "I was dictating about the trip".equals(HandsFreeService.session().pending()), "the dictation became the first turn");
@@ -265,5 +276,53 @@ public class HandsFreeFlowTest {
     // The call floats: its panel shows the state and End.
     assertNotNull(device.wait(Until.findObject(By.textContains("Listening")), 5000));
     assertNotNull(device.wait(Until.findObject(By.desc("End hands-free")), 5000));
+    // Exactly where the dictation panel was, and its own place stays as it was.
+    assertArrayEquals(dictationPanel, HandsFreeService.panelPosition());
+    assertEquals(300, prefs.getInt(HandsFreePanel.Y, 0));
+  }
+
+  @Test
+  public void startedFromHomeTheCallPanelIsWhereItWasLastDragged() throws Exception {
+    device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
+    prefs.edit().putInt(HandsFreePanel.X, 60).putInt(HandsFreePanel.Y, 500).commit();
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.panelPosition() != null, "the call panel");
+    assertArrayEquals(new int[] {60, 500}, HandsFreeService.panelPosition());
+  }
+
+  @Test
+  public void aCallIsOneEntryInAllNotesWithItsMessagesAndCost() throws Exception {
+    long now = System.currentTimeMillis();
+    try (HistoryStore h = new HistoryStore(context)) {
+      for (HistoryEntry old : h.all()) h.delete(old.id()); // Only this call on the list.
+      String[] said = {"First message of the call.", "Second message of the call."};
+      for (int i = 0; i < 2; i++) {
+        HistoryEntry e = HistoryEntry.create(java.util.UUID.randomUUID().toString(), "m", 3);
+        e.json
+            .put("created", now - 60_000 + i * 20_000)
+            .put("text", said[i])
+            .put("status", "complete")
+            .put("requests", 1)
+            .put("handsFree", true)
+            .put("route", "chief")
+            .put("call", "call-test")
+            .put("knownCost", "0.0011");
+        h.save(e);
+      }
+    }
+    prefs.edit().putLong("historyRevision", System.nanoTime()).commit();
+    context.startActivity(
+        new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    UiObject2 all = device.wait(Until.findObject(By.text("All notes")), 8000);
+    assertNotNull(all);
+    all.click();
+    UiObject2 call = device.wait(Until.findObject(By.text("▸ 📞 Call with your chief · 2 messages")), 8000);
+    assertNotNull("the call as one entry", call);
+    // Its cost: both messages (transcription and voice).
+    assertNotNull(device.wait(Until.findObject(By.textContains("$0.0022")), 3000));
+    assertNull(device.findObject(By.text("Second message of the call.")));
+    call.click();
+    assertNotNull("opened, its messages follow", device.wait(Until.findObject(By.text("Second message of the call.")), 3000));
+    assertNotNull(device.findObject(By.text("▾ 📞 Call with your chief · 2 messages")));
   }
 }

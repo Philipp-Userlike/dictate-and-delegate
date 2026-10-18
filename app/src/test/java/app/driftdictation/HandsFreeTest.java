@@ -93,7 +93,13 @@ public class HandsFreeTest {
   static final class Fake {
     final List<String> transcripts = new CopyOnWriteArrayList<>(), sent = new CopyOnWriteArrayList<>(),
         spoken = new CopyOnWriteArrayList<>(), log = new CopyOnWriteArrayList<>();
-    Runnable done;
+    /** Ends the reply being read, played to the end. */
+    volatile Runnable done, fail;
+    /** The voice: its audio starts at once (as long as this is true), or never. */
+    volatile boolean audioStarts = true;
+    /** What preparing a reply does (fetching its audio); by default nothing. */
+    volatile java.util.function.Function<String, Object> prepare = text -> text;
+    final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
     final HandsFreeSession session;
 
     Fake(String... texts) {
@@ -113,19 +119,30 @@ public class HandsFreeTest {
                 return "r" + sent.size();
               },
               new HandsFreeSession.Speaker() {
-                public void speak(String request, String text, Runnable d) {
+                volatile HandsFreeSession.Playback playback;
+
+                public Object prepare(String request, String text) {
+                  return prepare.apply(text);
+                }
+
+                public void play(String request, String text, Object prepared, HandsFreeSession.Playback p) {
+                  playback = p;
+                  done = () -> p.ended(true);
+                  fail = () -> p.ended(false);
                   spoken.add(text);
-                  done = d;
+                  if (audioStarts) p.started(2000);
                 }
 
                 public void stop() {
-                  Runnable d = done;
+                  HandsFreeSession.Playback p = playback;
+                  playback = null;
                   done = null;
-                  if (d != null) d.run();
+                  if (p != null) p.ended(false);
                 }
               },
               () -> {});
       session.onEvent(log::add);
+      session.clock = now::get;
     }
 
     /** Quiet room for a second, so the background is measured. */
@@ -180,12 +197,13 @@ public class HandsFreeTest {
     f.quiet(1000);
     f.session.reply("r1", "First answer from what I know.");
     f.session.reply("r1", "The final answer.");
-    assertEquals(HandsFreeSession.Floor.CHIEF, f.session.floor());
+    until(() -> f.session.floor() == HandsFreeSession.Floor.CHIEF);
     assertEquals(List.of("First answer from what I know."), f.spoken);
     // The voice coming back through the microphone while reading: nothing is captured.
     f.talk();
     assertEquals(1, f.transcripts.size());
     f.done.run(); // The first finished; the floor opens and the second, held, is read.
+    until(() -> f.spoken.size() == 2);
     assertEquals(List.of("First answer from what I know.", "The final answer."), f.spoken);
     f.done.run();
     assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
@@ -193,7 +211,7 @@ public class HandsFreeTest {
     f.talk();
     assertEquals(1, f.transcripts.size());
     // After the tail, you're heard again, and nothing of the reply is in your turn.
-    Thread.sleep(HandsFreeSession.TAIL_MS);
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
     f.talk();
     until(() -> f.sent.size() == 1);
     assertEquals("Next question.", f.sent.get(0));
@@ -249,6 +267,7 @@ public class HandsFreeTest {
     assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
     // So a chief message is read right away.
     f.session.reply("r0", "An answer.");
+    until(() -> f.spoken.size() == 1);
     assertEquals(List.of("An answer."), f.spoken);
     assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("noise ignored"));
   }
@@ -282,10 +301,12 @@ public class HandsFreeTest {
     until(() -> f.sent.size() == 1);
     until(() -> f.session.phase() == HandsFreeSession.Phase.WORKING);
     f.session.reply("r1", "On it, first thoughts.");
+    until(() -> f.spoken.size() == 1);
     assertEquals(HandsFreeSession.Phase.READING, f.session.phase());
     f.done.run();
     assertEquals(HandsFreeSession.Phase.WORKING, f.session.phase());
     f.session.reply("r1", "The hotel is booked.");
+    until(() -> f.spoken.size() == 2);
     f.done.run();
     assertEquals(HandsFreeSession.Phase.LISTENING, f.session.phase());
     assertEquals("", f.session.error());
@@ -342,5 +363,94 @@ public class HandsFreeTest {
     assertEquals("mp3", b.getString("response_format"));
     assertEquals(Voice.KOKORO, Voice.choice("nonsense"));
     assertEquals(Voice.ELEVEN, Voice.choice("eleven"));
+  }
+
+  // ------------------------------------------------------------------ the voice never leaves you stuck
+
+  @Test
+  public void whileAReplysAudioIsFetchedTheFloorStaysOpenAndYouCanTalk() throws Exception {
+    Fake f = new Fake("Wait, one more thing. Over.");
+    java.util.concurrent.CountDownLatch fetched = new java.util.concurrent.CountDownLatch(1);
+    f.prepare =
+        text -> {
+          try {
+            fetched.await();
+          } catch (InterruptedException ignored) {
+            /* Go on. */
+          }
+          return text;
+        };
+    f.quiet(1000);
+    f.session.reply("r0", "Here's the answer.");
+    Thread.sleep(100);
+    // Not read yet: the microphone is on and the floor open.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
+    f.speak(); // You take it meanwhile.
+    fetched.countDown();
+    Thread.sleep(100);
+    assertTrue(f.spoken.isEmpty()); // Held: the floor is yours.
+    f.quiet(1200);
+    until(() -> f.sent.size() == 1);
+    assertEquals("Wait, one more thing.\n\n[didn't hear your reply: \"Here's the answer.\"]", f.sent.get(0));
+  }
+
+  @Test
+  public void audioThatNeverStartsIsGivenUpSoonAndNotedAsNotHeard() throws Exception {
+    Fake f = new Fake("What did you say? Over.");
+    f.audioStarts = false;
+    f.quiet(1000);
+    f.session.reply("r0", "The meeting moved to three.");
+    until(() -> f.spoken.size() == 1);
+    assertEquals(HandsFreeSession.State.READING, f.session.state());
+    f.session.tick();
+    assertEquals(HandsFreeSession.State.READING, f.session.state()); // Not yet.
+    f.now.addAndGet(HandsFreeSession.START_MS + 1);
+    f.session.tick();
+    // Listening again, and the reply counts as not heard.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    assertEquals(1, f.session.unheard());
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("What did you say?\n\n[didn't hear your reply: \"The meeting moved to three.\"]", f.sent.get(0));
+    assertEquals(0, f.session.unheard());
+  }
+
+  @Test
+  public void audioThatPlaysFarTooLongIsLetGo() throws Exception {
+    Fake f = new Fake();
+    f.quiet(1000);
+    f.session.reply("r0", "A reply of two seconds.");
+    until(() -> f.spoken.size() == 1);
+    f.now.addAndGet(2000 + HandsFreeSession.OVERRUN_MS - 100);
+    f.session.tick();
+    assertEquals(HandsFreeSession.State.READING, f.session.state()); // Still within its length.
+    f.now.addAndGet(200);
+    f.session.tick();
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("played too long"));
+  }
+
+  @Test
+  public void aVoiceThatFailsReturnsToListeningAtOnce() throws Exception {
+    Fake f = new Fake();
+    f.quiet(1000);
+    f.session.reply("r0", "Can't be played.");
+    until(() -> f.spoken.size() == 1);
+    f.fail.run(); // The player reports an error before any audio.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    assertEquals(1, f.session.unheard());
+  }
+
+  @Test
+  public void aTranscriptionThatFailsGivesTheFloorBack() throws Exception {
+    Fake f = new Fake(); // No transcripts queued: the speech model fails.
+    f.quiet(1000);
+    f.talk();
+    until(() -> !f.session.error().isEmpty());
+    until(() -> f.session.floor() == HandsFreeSession.Floor.OPEN);
+    f.session.reply("r0", "Read now.");
+    until(() -> f.spoken.size() == 1);
   }
 }

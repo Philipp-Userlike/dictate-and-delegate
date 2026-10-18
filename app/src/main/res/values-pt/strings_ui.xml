@@ -37,6 +37,7 @@
     <string name="t_0cf56167" formatted="false">O servidor de início de sessão do bb enviou algo inesperado.</string>
     <string name="t_0d35d152" formatted="false">Os teus modelos ficam neste dispositivo. Apenas o que pedires é enviado para a IA, juntamente com o teu ditado.</string>
     <string name="t_0dc541d5" formatted="false">Repor predefinição</string>
+    <string name="t_0de44d68" formatted="false">1 mensagem</string>
     <string name="t_0e1c0935" formatted="false">O bb responde, mas não disponibiliza a ferramenta run. Atualiza o bb e verifica se o plugin MCP está ativo.</string>
     <string name="t_0f756679" formatted="false">Tentar de novo gravação guardada</string>
     <string name="t_10aef2d8" formatted="false">Chefe de gabinete</string>
@@ -93,6 +94,7 @@
     <string name="t_27a92292" formatted="false">O bb não permitiu o início de sessão.</string>
     <string name="t_27c5b8ea" formatted="false">Remover chave</string>
     <string name="t_2893e4d7" formatted="false">Verificação de pedidos</string>
+    <string name="t_2897e301" formatted="false">A ouvir · O Chief está a trabalhar…</string>
     <string name="t_296a5e55" formatted="false">Opcional · Refinar com teus créditos Anthropic</string>
     <string name="t_296a6921" formatted="false">O modelo demorou muito tempo. A gravação foi guardada; tenta novamente.</string>
     <string name="t_2994b473" formatted="false">‹ Anteriores</string>
@@ -314,6 +316,7 @@
     <string name="t_83359c2b" formatted="false">Instruções para Refinar</string>
     <string name="t_84119bba" formatted="false">Não foi possível guardar dados encriptados.</string>
     <string name="t_842cec6c" formatted="false">ID de gravação inválido</string>
+    <string name="t_84737d17" formatted="false">Chamada com o teu Chief</string>
     <string name="t_84e5353d" formatted="false">Descartar áudio guardado</string>
     <string name="t_85004d41" formatted="false">Toca para gravar</string>
     <string name="t_857a0fd3" formatted="false">Quando tocas em ✨ Refinar · %1$s</string>
@@ -539,7 +542,6 @@
     <string name="t_d893f184" formatted="false">Lendo resposta</string>
     <string name="t_d90fc528" formatted="false">Altera o idioma em Definições do Android → Apps → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Palavras de fim (envia o que veio antes e sai do viva-voz)</string>
-    <string name="t_db42bf24" formatted="false">O chefe está trabalhando</string>
     <string name="t_db5195fa" formatted="false">texto colado</string>
     <string name="t_dbde124f" formatted="false">O áudio desta nota não foi guardado, não pode ser refeita.</string>
     <string name="t_dbe48d14" formatted="false">Nunca</string>
@@ -640,6 +642,7 @@
     <string name="t_fac75a8c" formatted="false">Créditos e utilização em openrouter.ai</string>
     <string name="t_fb6e7c77" formatted="false">3 · Painel flutuante</string>
     <string name="t_fc1cb01e" formatted="false">Iniciar gravação</string>
+    <string name="t_fc31df0c" formatted="false">%1$d mensagens</string>
     <string name="t_fc4b6317" formatted="false">✓  Permitido</string>
     <string name="t_fcaa7d5e" formatted="false">A transcrever</string>
     <string name="t_fd25c726" formatted="false">Modelo guardado</string>

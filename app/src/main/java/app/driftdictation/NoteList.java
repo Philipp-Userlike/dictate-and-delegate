@@ -31,6 +31,59 @@ final class NoteList {
     }
   }
 
+  /** A hands-free call as one entry: its messages' notes, newest first. */
+  record Call(String id, List<Note> turns) {
+    /** When it started: its first message. */
+    long created() {
+      return turns.stream().mapToLong(Note::created).min().orElse(0);
+    }
+
+    /** Its newest message, where it sits in the list. */
+    long latest() {
+      return turns.get(0).created();
+    }
+
+    /** Transcription and voice, all its messages. */
+    BigDecimal cost() {
+      BigDecimal total = BigDecimal.ZERO;
+      for (Note n : turns) total = total.add(n.cost());
+      return total;
+    }
+
+    boolean incompleteCost() {
+      return turns.stream().anyMatch(Note::incompleteCost);
+    }
+
+    /** Seconds you spoke. */
+    double duration() {
+      return turns.stream().mapToDouble(n -> n.shown().duration()).sum();
+    }
+  }
+
+  /**
+   * Notes and calls, newest first: the notes of one hands-free call (same "call") become one
+   * Call, where its newest message is.
+   */
+  static List<Object> withCalls(List<Note> notes) {
+    Map<String, Call> calls = new HashMap<>();
+    List<Object> out = new ArrayList<>();
+    for (Note n : notes) {
+      String id = n.shown().json.optString("call");
+      if (id.isEmpty()) {
+        out.add(n);
+        continue;
+      }
+      Call call = calls.get(id);
+      if (call == null) {
+        call = new Call(id, new ArrayList<>());
+        calls.put(id, call);
+        out.add(call);
+      }
+      call.turns().add(n);
+    }
+    return out;
+  }
+
   static List<Note> group(List<HistoryEntry> entries) {
     Map<String, List<HistoryEntry>> byRecording = new LinkedHashMap<>();
     for (HistoryEntry e : entries)

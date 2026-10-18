@@ -466,6 +466,12 @@ public final class DictationService extends Service {
     return instance != null && instance.bubble != null;
   }
 
+  /** Where the floating panel is (x, y), or null without one (for the device tests). */
+  static int[] panelPosition() {
+    DictationService s = instance;
+    return s == null || s.bubble == null ? null : new int[] {s.layout.x, s.layout.y};
+  }
+
   /** Whether the panel shows every button whole and on screen (for the device tests). */
   static boolean panelFits() {
     DictationService s = instance;
@@ -1079,6 +1085,8 @@ public final class DictationService extends Service {
     if (!RECORDING.equals(state)) return;
     transition(STOPPING, tr("Starting the call…"));
     main.removeCallbacks(ticker);
+    // The call panel takes the dictation panel's place.
+    int atX = bubble != null ? layout.x : -1, atY = bubble != null ? layout.y : -1;
     PcmRecorder current = recorder;
     recorder = null;
     worker.execute(
@@ -1104,6 +1112,8 @@ public final class DictationService extends Service {
                 startActivity(
                     new Intent(this, RecordActivity.class)
                         .putExtra(RecordActivity.HANDS_FREE_SEED, seed.exists() ? seed.getPath() : "")
+                        .putExtra(HandsFreeService.AT_X, atX)
+                        .putExtra(HandsFreeService.AT_Y, atY)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
                 transition(READY, tr("Tap the bubble to record"));
               });

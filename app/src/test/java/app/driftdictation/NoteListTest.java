@@ -40,4 +40,24 @@ public class NoteListTest {
     assertEquals(List.of("c", "a"), all.stream().map(NoteList.Note::id).toList());
     assertEquals(2, all.get(1).versions().size());
   }
+
+  @Test
+  public void aCallsMessagesAreOneEntryWithTheirTotalCost() throws Exception {
+    HistoryEntry before = version("a", "a", 100, "a dictation");
+    HistoryEntry t1 = version("b", "b", 200, "first message");
+    HistoryEntry t2 = version("c", "c", 300, "second message");
+    HistoryEntry after = version("d", "d", 400, "another dictation");
+    t1.json.put("call", "call1");
+    t2.json.put("call", "call1").put("knownCost", "0.0021"); // Transcription and voice.
+    List<Object> items = NoteList.withCalls(NoteList.group(List.of(after, t2, t1, before)));
+    assertEquals(3, items.size());
+    assertEquals("d", ((NoteList.Note) items.get(0)).id());
+    NoteList.Call call = (NoteList.Call) items.get(1);
+    assertEquals(List.of("c", "b"), call.turns().stream().map(NoteList.Note::id).toList());
+    assertEquals(0, call.cost().compareTo(new java.math.BigDecimal("0.0031")));
+    assertEquals(200, call.created());
+    assertEquals(300, call.latest());
+    assertEquals(10, call.duration(), 0.001);
+    assertEquals("a", ((NoteList.Note) items.get(2)).id());
+  }
 }

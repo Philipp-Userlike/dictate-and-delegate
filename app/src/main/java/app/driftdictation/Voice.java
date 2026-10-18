@@ -46,25 +46,32 @@ final class Voice {
     return KOKORO;
   }
 
-  interface Done {
-    /** Reading ended, finished or stopped. */
-    void done();
+  /** How a reading goes: audio started (and how long it will take), then it ended. */
+  interface Playback {
+    void started(long durationMs);
+
+    /** Ended: played to the end, or failed or stopped (played false). */
+    void ended(boolean played);
   }
 
+  /** A reply ready to play: its audio (null: Android's voice reads the text) and OpenRouter's generation ID. */
+  record Prepared(File mp3, String generation) {}
+
   private final Context context;
+  private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
   private MediaPlayer player;
   private TextToSpeech tts;
-  private volatile boolean stopped;
-  private Done current;
+  private Playback current;
+  private int replies;
 
-  /** Runs the pending done once, on the main thread. */
-  private void finished() {
-    Done d;
+  /** Ends the current reading once, on the main thread. */
+  private void finished(boolean played) {
+    Playback p;
     synchronized (this) {
-      d = current;
+      p = current;
       current = null;
     }
-    if (d != null) new android.os.Handler(android.os.Looper.getMainLooper()).post(d::done);
+    if (p != null) main.post(() -> p.ended(played));
   }
 
   Voice(Context context) {
@@ -77,33 +84,41 @@ final class Voice {
   }
 
   /**
-   * Reads text aloud; done runs on the main thread once it ends. Returns OpenRouter's generation ID
-   * for the cost ("" for Android's voice or a failure). Network: not on the main thread.
+   * Gets a reply ready: fetches its audio from OpenRouter (network: not on the main thread). Never
+   * throws: without audio (Android's voice chosen, or OpenRouter failed) Android's voice reads it.
    */
-  String speak(Choice choice, String text, Done done) {
-    stopped = false;
-    synchronized (this) {
-      current = done;
-    }
-    if (choice.model().isEmpty()) {
-      speakAndroid(text);
-      return "";
-    }
+  Prepared prepare(Choice choice, String text) {
+    if (choice.model().isEmpty()) return new Prepared(null, "");
     try {
-      File mp3 = fetch(choice, text);
-      if (stopped) {
-        finished();
-        return generation;
-      }
-      play(mp3);
-      return generation;
+      String[] generation = {""};
+      File mp3 = fetch(choice, text, generation);
+      return new Prepared(mp3, generation[0]);
     } catch (Exception ex) {
-      speakAndroid(text); // OpenRouter failed: Android's voice instead.
-      return "";
+      android.util.Log.w("Voice", "OpenRouter's voice failed, Android's reads instead", ex);
+      return new Prepared(null, "");
     }
   }
 
-  private volatile String generation = "";
+  /** Plays a prepared reply; the playback hears when audio starts and when it ends. */
+  void play(Prepared prepared, String text, Playback playback) {
+    synchronized (this) {
+      current = playback;
+    }
+    if (prepared.mp3() == null) {
+      speakAndroid(text, playback);
+      return;
+    }
+    main.post(
+        () -> {
+          try {
+            play(prepared.mp3(), playback);
+          } catch (Exception ex) {
+            release();
+            prepared.mp3().delete();
+            speakAndroid(text, playback); // The audio doesn't play: Android's voice instead.
+          }
+        });
+  }
 
   /** What OpenRouter charged for a generation (GET /generation), or null if it can't say yet. */
   static java.math.BigDecimal cost(Context context, String generation) {
@@ -133,13 +148,13 @@ final class Voice {
     return null;
   }
 
-  private File fetch(Choice choice, String text) throws Exception {
+  private File fetch(Choice choice, String text, String[] generation) throws Exception {
     String key = new Vault(context).get(OpenRouter.KEY);
     HttpURLConnection c = (HttpURLConnection) new URL(OpenRouter.base() + "/audio/speech").openConnection();
     try {
       byte[] payload = body(choice, text).toString().getBytes(StandardCharsets.UTF_8);
-      c.setConnectTimeout(15_000);
-      c.setReadTimeout(60_000);
+      c.setConnectTimeout(10_000);
+      c.setReadTimeout(30_000);
       c.setRequestMethod("POST");
       c.setDoOutput(true);
       c.setRequestProperty("Authorization", "Bearer " + key);
@@ -151,18 +166,24 @@ final class Voice {
       }
       if (c.getResponseCode() >= 300) throw new IOException(tr("The voice model answered with HTTP %1$d.", c.getResponseCode()));
       String id = c.getHeaderField("X-Generation-Id");
-      generation = id == null ? "" : id;
-      File f = new File(context.getCacheDir(), "reply.mp3");
+      generation[0] = id == null ? "" : id;
+      // Each reply its own file: several may be ready while one plays.
+      File f;
+      synchronized (this) {
+        f = new File(context.getCacheDir(), "reply-" + (++replies % 8) + ".mp3");
+      }
       try (InputStream in = c.getInputStream(); FileOutputStream out = new FileOutputStream(f)) {
         in.transferTo(out);
       }
+      if (f.length() == 0) throw new IOException("The voice model sent no audio.");
       return f;
     } finally {
       c.disconnect();
     }
   }
 
-  private void play(File mp3) throws IOException {
+  /** On the main thread. */
+  private void play(File mp3, Playback playback) throws IOException {
     MediaPlayer p = new MediaPlayer();
     p.setAudioAttributes(
         new AudioAttributes.Builder()
@@ -173,12 +194,14 @@ final class Voice {
     p.setOnCompletionListener(
         mp -> {
           release();
-          finished();
+          mp3.delete();
+          finished(true);
         });
     p.setOnErrorListener(
         (mp, what, extra) -> {
           release();
-          finished();
+          mp3.delete();
+          finished(false);
           return true;
         });
     p.prepare();
@@ -186,10 +209,11 @@ final class Voice {
       player = p;
     }
     p.start();
+    playback.started(Math.max(0, p.getDuration()));
   }
 
-  private void speakAndroid(String text) {
-    android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
+  /** Android's voice; about 15 characters a second for how long it takes. */
+  private void speakAndroid(String text, Playback playback) {
     main.post(
         () -> {
           if (tts != null) tts.shutdown();
@@ -197,35 +221,36 @@ final class Voice {
               new TextToSpeech(
                   context,
                   status -> {
-                    if (status != TextToSpeech.SUCCESS || stopped) {
-                      finished();
+                    if (status != TextToSpeech.SUCCESS) {
+                      finished(false);
                       return;
                     }
                     tts.setLanguage(Locale.getDefault());
                     tts.setOnUtteranceProgressListener(
                         new UtteranceProgressListener() {
-                          public void onStart(String id) {}
+                          public void onStart(String id) {
+                            main.post(() -> playback.started(text.length() * 1000L / 15));
+                          }
 
                           public void onDone(String id) {
-                            finished();
+                            finished(true);
                           }
 
                           public void onError(String id) {
-                            finished();
+                            finished(false);
                           }
 
                           public void onStop(String id, boolean interrupted) {
-                            finished();
+                            finished(false);
                           }
                         });
-                    tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "reply");
+                    if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "reply") != TextToSpeech.SUCCESS) finished(false);
                   });
         });
   }
 
-  /** Stops reading at once; done still runs. */
+  /** Stops reading at once; the playback still hears it ended. */
   void stop() {
-    stopped = true;
     MediaPlayer p;
     synchronized (this) {
       p = player;
@@ -239,7 +264,7 @@ final class Voice {
       release();
     }
     if (tts != null) tts.stop();
-    finished();
+    finished(false);
   }
 
   private synchronized void release() {

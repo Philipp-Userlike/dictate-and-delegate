@@ -13,8 +13,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * The hands-free call over other apps: its state (Listening, Chief is working, Reading reply),
- * Send now while listening, and End. Never takes focus; drag it anywhere, tap the state to open
+ * The hands-free call over other apps: its state (Listening, also while the chief works, or
+ * Reading reply), Send now while you can talk, and End. Never takes focus; drag it anywhere, tap the state to open
  * the full screen.
  */
 final class HandsFreePanel extends LinearLayout {
@@ -34,8 +34,18 @@ final class HandsFreePanel extends LinearLayout {
   private int fromX, fromY;
   private boolean dragging;
 
-  HandsFreePanel(Context context, Actions actions) {
+  /** Prefs: where the call panel was last dragged to. */
+  static final String X = "hfPanelX", Y = "hfPanelY";
+
+  private final android.content.SharedPreferences prefs;
+
+  /**
+   * At x, y (from the dictation panel the call came from), or where it was last dragged to when
+   * x is negative.
+   */
+  HandsFreePanel(Context context, Actions actions, int x, int y) {
     super(context);
+    prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
     density = getResources().getDisplayMetrics().density;
     setOrientation(HORIZONTAL);
     setGravity(Gravity.CENTER_VERTICAL);
@@ -57,8 +67,8 @@ final class HandsFreePanel extends LinearLayout {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT);
     layout.gravity = Gravity.TOP | Gravity.LEFT;
-    layout.x = dp(16);
-    layout.y = dp(120);
+    layout.x = x >= 0 ? x : prefs.getInt(X, dp(16));
+    layout.y = x >= 0 ? y : prefs.getInt(Y, dp(120));
   }
 
   private int dp(float n) {
@@ -86,6 +96,11 @@ final class HandsFreePanel extends LinearLayout {
     return t;
   }
 
+  /** Where it is on screen: x, y. */
+  int[] position() {
+    return new int[] {layout.x, layout.y};
+  }
+
   void show() {
     if (getParent() == null) windows.addView(this, layout);
   }
@@ -99,7 +114,6 @@ final class HandsFreePanel extends LinearLayout {
     state.setText(
         switch (phase) {
               case READING -> "🔊  ";
-              case WORKING -> "⏳  ";
               default -> "🎙  ";
             }
             + HandsFreeService.phaseLabel(phase));
@@ -107,12 +121,11 @@ final class HandsFreePanel extends LinearLayout {
     d.setColor(
         switch (phase) {
           case READING -> 0xff6b4fa8;
-          case WORKING -> 0xffa8742a;
           default -> 0xff1d8a6e;
         });
     d.setCornerRadius(dp(20));
     state.setBackground(d);
-    send.setVisibility(phase == HandsFreeSession.Phase.LISTENING ? VISIBLE : GONE);
+    send.setVisibility(phase != HandsFreeSession.Phase.READING ? VISIBLE : GONE);
   }
 
   // Dragging: a move past the touch slop anywhere on the panel moves it; taps still reach buttons.
@@ -148,6 +161,7 @@ final class HandsFreePanel extends LinearLayout {
         windows.updateViewLayout(this, layout);
       }
     } else if (e.getActionMasked() == MotionEvent.ACTION_UP || e.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+      if (dragging) prefs.edit().putInt(X, layout.x).putInt(Y, layout.y).apply();
       dragging = false;
     }
     return true;

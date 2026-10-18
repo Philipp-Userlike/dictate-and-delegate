@@ -37,6 +37,7 @@
     <string name="t_0cf56167" formatted="false">bb\'s sign-in server sent something unexpected.</string>
     <string name="t_0d35d152" formatted="false">Your templates stay on this device. Only the one you ask for is sent to the AI, together with your dictation.</string>
     <string name="t_0dc541d5" formatted="false">Reset to default</string>
+    <string name="t_0de44d68" formatted="false">1 message</string>
     <string name="t_0e1c0935" formatted="false">bb answers, but it doesn\'t offer the run tool. Update bb and check that the MCP plugin is on.</string>
     <string name="t_0f756679" formatted="false">Retry saved recording</string>
     <string name="t_10aef2d8" formatted="false">Chief of staff</string>
@@ -93,6 +94,7 @@
     <string name="t_27a92292" formatted="false">bb didn\'t allow the sign-in.</string>
     <string name="t_27c5b8ea" formatted="false">Remove key</string>
     <string name="t_2893e4d7" formatted="false">Request check</string>
+    <string name="t_2897e301" formatted="false">Listening · Chief is working…</string>
     <string name="t_296a5e55" formatted="false">Optional · Refine on your Anthropic credits</string>
     <string name="t_296a6921" formatted="false">The model took too long. The recording is kept; try again.</string>
     <string name="t_2994b473" formatted="false">‹ Earlier</string>
@@ -316,6 +318,7 @@
     <string name="t_83359c2b" formatted="false">Instructions for Refine</string>
     <string name="t_84119bba" formatted="false">Could not save encrypted data.</string>
     <string name="t_842cec6c" formatted="false">Invalid recording ID</string>
+    <string name="t_84737d17" formatted="false">Call with your chief</string>
     <string name="t_84e5353d" formatted="false">Discard saved audio</string>
     <string name="t_85004d41" formatted="false">Tap to record</string>
     <string name="t_857a0fd3" formatted="false">When you tap ✨ Refine · %1$s</string>
@@ -544,7 +547,6 @@
     <string name="t_d893f184" formatted="false">Reading reply</string>
     <string name="t_d90fc528" formatted="false">Change the language in Android settings → Apps → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">End words (send what came before, then end hands-free)</string>
-    <string name="t_db42bf24" formatted="false">Chief is working</string>
     <string name="t_db5195fa" formatted="false">pasted text</string>
     <string name="t_dbde124f" formatted="false">Audio for this note wasn\'t kept, so it can\'t be redone.</string>
     <string name="t_dbe48d14" formatted="false">Never</string>
@@ -645,6 +647,7 @@
     <string name="t_fac75a8c" formatted="false">Credits and usage on openrouter.ai</string>
     <string name="t_fb6e7c77" formatted="false">3 · Floating panel</string>
     <string name="t_fc1cb01e" formatted="false">Start recording</string>
+    <string name="t_fc31df0c" formatted="false">%1$d messages</string>
     <string name="t_fc4b6317" formatted="false">✓  Allowed</string>
     <string name="t_fcaa7d5e" formatted="false">Transcribing</string>
     <string name="t_fd25c726" formatted="false">Template saved</string>

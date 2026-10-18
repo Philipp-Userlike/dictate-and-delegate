@@ -37,6 +37,8 @@ public final class MainActivity extends Activity {
   private boolean loading, reloadNotes, allowScreenshots;
   private int usageMonth;
   private List<NoteList.Note> notes = new ArrayList<>();
+  /** Hands-free calls opened in All notes to show their messages. */
+  private final Set<String> openCalls = new HashSet<>();
   // Live views of the current page.
   private Button record;
   private TextView status, noteStatus;
@@ -1836,7 +1838,36 @@ public final class MainActivity extends Activity {
     recentBox.removeAllViews();
     if (grouped.isEmpty())
       ui.add(recentBox, ui.text(tr("Your first note will appear here."), 15, Ui.MUTED), 10);
-    for (int i = 0; i < Math.min(3, grouped.size()); i++) recentRow(grouped.get(i));
+    List<Object> items = NoteList.withCalls(grouped);
+    for (int i = 0; i < Math.min(3, items.size()); i++) {
+      if (items.get(i) instanceof NoteList.Call c) recentCallRow(c);
+      else recentRow((NoteList.Note) items.get(i));
+    }
+  }
+
+  /** A call on Home: opens All notes with its messages shown. */
+  private void recentCallRow(NoteList.Call c) {
+    LinearLayout row = ui.horizontal();
+    row.setPadding(0, ui.dp(12), 0, ui.dp(12));
+    TextView t = ui.text(callTitle(c), 15, Ui.INK);
+    t.setSingleLine(true);
+    t.setEllipsize(TextUtils.TruncateAt.END);
+    row.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
+    TextView cost = ui.mono(cost(c.cost(), c.incompleteCost()), 13, Ui.MUTED);
+    cost.setPadding(ui.dp(12), 0, 0, 0);
+    row.addView(cost);
+    row.setOnClickListener(
+        v -> {
+          openCalls.add(c.id());
+          open("notes");
+        });
+    recentBox.addView(row);
+    recentBox.addView(ui.divider());
+  }
+
+  private static String callTitle(NoteList.Call c) {
+    int n = c.turns().size();
+    return "📞 " + tr("Call with your chief") + " · " + (n == 1 ? tr("1 message") : tr("%1$d messages", n));
   }
 
   private void showNotes(List<NoteList.Note> grouped) {
@@ -1921,13 +1952,17 @@ public final class MainActivity extends Activity {
     List<Object> items = new ArrayList<>();
     if (shown.isEmpty()) items.add(query.isBlank() ? tr("No notes yet.") : tr("Nothing matches."));
     long dayFrom = Long.MAX_VALUE;
-    for (NoteList.Note n : shown) {
-      // Notes come newest first, so a day's label only needs working out when the day changes.
-      if (n.created() < dayFrom) {
-        dayFrom = dayStart(n.created());
-        items.add(new DayLabel(dayLabel(n.created())));
+    // A hands-free call is one entry; opened, its messages follow it, first to last.
+    for (Object item : NoteList.withCalls(shown)) {
+      long at = item instanceof NoteList.Call c ? c.latest() : ((NoteList.Note) item).created();
+      // Newest first, so a day's label only needs working out when the day changes.
+      if (at < dayFrom) {
+        dayFrom = dayStart(at);
+        items.add(new DayLabel(dayLabel(at)));
       }
-      items.add(n);
+      items.add(item);
+      if (item instanceof NoteList.Call c && openCalls.contains(c.id()))
+        for (int i = c.turns().size() - 1; i >= 0; i--) items.add(new Turn(c.turns().get(i)));
     }
     noteItems = items;
     ((BaseAdapter) ((HeaderViewListAdapter) notesList.getAdapter()).getWrappedAdapter())
@@ -1935,6 +1970,9 @@ public final class MainActivity extends Activity {
   }
 
   private record DayLabel(String text) {}
+
+  /** A message of an opened call, listed under it. */
+  private record Turn(NoteList.Note note) {}
 
   private ListView notesList() {
     noteTime = DateFormat.getTimeInstance(DateFormat.SHORT);
@@ -1961,12 +1999,13 @@ public final class MainActivity extends Activity {
           }
 
           public int getViewTypeCount() {
-            return 3;
+            return 4;
           }
 
           public int getItemViewType(int i) {
             Object item = noteItems.get(i);
-            return item instanceof NoteList.Note ? 0 : item instanceof DayLabel ? 1 : 2;
+            if (item instanceof NoteList.Note || item instanceof Turn) return 0;
+            return item instanceof DayLabel ? 1 : item instanceof NoteList.Call ? 3 : 2;
           }
 
           public boolean isEnabled(int i) {
@@ -1975,7 +2014,9 @@ public final class MainActivity extends Activity {
 
           public View getView(int i, View view, ViewGroup parent) {
             Object item = noteItems.get(i);
-            if (item instanceof NoteList.Note n) return noteRow(n, view);
+            if (item instanceof NoteList.Note n) return noteRow(n, view, false);
+            if (item instanceof Turn t) return noteRow(t.note(), view, true);
+            if (item instanceof NoteList.Call c) return callRow(c, view);
             LinearLayout box = view == null ? ui.vertical() : (LinearLayout) view;
             box.removeAllViews();
             if (item instanceof DayLabel d) ui.add(box, ui.label(d.text()), 18);
@@ -1989,8 +2030,48 @@ public final class MainActivity extends Activity {
   /** Made with the list, once the app's language is set. */
   private DateFormat noteTime;
 
-  /** One note in All notes; reuses a row that scrolled away. */
-  private View noteRow(NoteList.Note n, View recycled) {
+  /** A hands-free call in All notes: tap shows or hides its messages. */
+  private View callRow(NoteList.Call c, View recycled) {
+    LinearLayout box = (LinearLayout) recycled;
+    if (box == null) {
+      box = ui.vertical();
+      LinearLayout row = ui.vertical();
+      row.setPadding(0, ui.dp(10), 0, ui.dp(12));
+      TextView title = ui.text("", 15, Ui.INK);
+      title.setTypeface(Ui.MEDIUM);
+      row.addView(title);
+      TextView first = ui.text("", 14, Ui.MUTED);
+      first.setSingleLine(true);
+      first.setEllipsize(TextUtils.TruncateAt.END);
+      ui.add(row, first, 2);
+      ui.add(row, ui.mono("", 12, Ui.MUTED), 4);
+      box.addView(row);
+      box.addView(ui.divider());
+    }
+    LinearLayout row = (LinearLayout) box.getChildAt(0);
+    boolean open = openCalls.contains(c.id());
+    ((TextView) row.getChildAt(0)).setText((open ? "▾ " : "▸ ") + callTitle(c));
+    String first = preview(c.turns().get(c.turns().size() - 1));
+    int cut = first.length() > 200 && Character.isHighSurrogate(first.charAt(199)) ? 199 : 200;
+    ((TextView) row.getChildAt(1)).setText(first.length() > 200 ? first.substring(0, cut) : first);
+    ((TextView) row.getChildAt(2))
+        .setText(
+            noteTime.format(new Date(c.created()))
+                + " · "
+                + AudioFiles.elapsed((long) (c.duration() * 1000))
+                + " · "
+                + cost(c.cost(), c.incompleteCost()));
+    row.setContentDescription(callTitle(c));
+    row.setOnClickListener(
+        v -> {
+          if (!openCalls.remove(c.id())) openCalls.add(c.id());
+          renderNotes();
+        });
+    return box;
+  }
+
+  /** One note in All notes (a call's message indented); reuses a row that scrolled away. */
+  private View noteRow(NoteList.Note n, View recycled, boolean turn) {
     LinearLayout box = (LinearLayout) recycled;
     if (box == null) {
       box = ui.vertical();
@@ -2014,6 +2095,7 @@ public final class MainActivity extends Activity {
       box.addView(ui.divider());
     }
     LinearLayout row = (LinearLayout) box.getChildAt(0);
+    row.setPadding(turn ? ui.dp(18) : 0, ui.dp(10), 0, ui.dp(12));
     LinearLayout meta = (LinearLayout) row.getChildAt(1);
     // Two lines show; laying out all of a long note would make scrolling stutter.
     String preview = preview(n);
@@ -3110,7 +3192,6 @@ public final class MainActivity extends Activity {
     hfStatus.setText(
         switch (phase) {
               case READING -> "🔊  ";
-              case WORKING -> "⏳  ";
               default -> "🎙  ";
             }
             + HandsFreeService.phaseLabel(phase));
@@ -3118,7 +3199,6 @@ public final class MainActivity extends Activity {
         ui.shape(
             switch (phase) {
               case READING -> 0xffe8e0f7;
-              case WORKING -> 0xfffdf0d5;
               default -> Ui.TEAL_SOFT;
             },
             0,
@@ -3137,7 +3217,7 @@ public final class MainActivity extends Activity {
       hfCost.setText(
           HandsFreeService.callCost.signum() == 0 ? "" : tr("This call so far: %1$s", exact(HandsFreeService.callCost)));
     // Only the control that fits: Send now while you can talk; End is always there.
-    hfSend.setVisibility(phase == HandsFreeSession.Phase.LISTENING ? View.VISIBLE : View.GONE);
+    hfSend.setVisibility(phase != HandsFreeSession.Phase.READING ? View.VISIBLE : View.GONE);
   }
 
   /** Settings → Hands-free: the words, the timing and the voice. */
@@ -3233,14 +3313,15 @@ public final class MainActivity extends Activity {
 
   private void secondsField(String label, String key, int ms) {
     ui.add(content, ui.strong(label, 15), 18);
-    EditText field = ui.input(String.valueOf(ms / 1000), "", false);
-    field.setInputType(InputType.TYPE_CLASS_NUMBER);
+    // Tenths of a second where they matter: "0.8", "30".
+    EditText field = ui.input(new java.math.BigDecimal(ms).movePointLeft(3).stripTrailingZeros().toPlainString(), "", false);
+    field.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
     ui.add(content, field, 6);
     autosave(
         field,
         t -> {
           try {
-            prefs.edit().putInt(key, Integer.parseInt(t.trim()) * 1000).apply();
+            prefs.edit().putInt(key, (int) Math.round(Double.parseDouble(t.trim().replace(',', '.')) * 1000)).apply();
           } catch (NumberFormatException ignored) {
             /* Not a number yet. */
           }

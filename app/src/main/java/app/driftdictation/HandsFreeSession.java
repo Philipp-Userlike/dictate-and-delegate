@@ -52,8 +52,12 @@ final class HandsFreeSession {
   /** After a reply is read the microphone stays off this long, so its last word isn't caught. */
   static final long TAIL_MS = 800;
 
-  /** Reading longer than this means the voice hung: listening resumes. */
-  static final long READING_MAX_MS = 3 * 60_000;
+  /**
+   * The microphone is off only while a reply plays: audio has to start this soon after the floor
+   * is taken, and end this long after its own length, or the reading is given up and listening
+   * resumes. The audio is fetched before, while the floor is still open.
+   */
+  static final long START_MS = 6000, OVERRUN_MS = 3000;
 
   /** Once you hold the floor, a stretch this short still counts ("Over." on its own). */
   static final int SHORT_MS = 200;
@@ -69,10 +73,36 @@ final class HandsFreeSession {
   }
 
   interface Speaker {
-    /** Reads a reply to request aloud; done runs once it ended. */
-    void speak(String request, String text, Runnable done);
+    /**
+     * Gets a reply ready to play, such as fetching its audio (on a background thread; may be slow).
+     * Never throws: what it returns may simply play with a fallback voice.
+     */
+    Object prepare(String request, String text);
+
+    /** Plays a prepared reply, telling the playback when audio started and when it ended. */
+    void play(String request, String text, Object prepared, Playback playback);
 
     void stop();
+  }
+
+  interface Playback {
+    /** Audio is coming out; it will take about this long. */
+    void started(long durationMs);
+
+    /** It's over: played to the end, or failed or stopped (played false). */
+    void ended(boolean played);
+  }
+
+  /** A chief message waiting to be read: being prepared until ready. */
+  private static final class Held {
+    final String request, text;
+    volatile Object prepared;
+    volatile boolean ready;
+
+    Held(String request, String text) {
+      this.request = request;
+      this.text = text;
+    }
   }
 
   interface Listener {
@@ -87,9 +117,11 @@ final class HandsFreeSession {
   private final Speaker speaker;
   private final Listener listener;
   private final HandsFree.Segmenter segmenter;
-  private final ExecutorService work = Executors.newSingleThreadExecutor();
-  /** Chief messages waiting for an open floor (or to be dropped by your message): {request, text}. */
-  private final ArrayDeque<String[]> held = new ArrayDeque<>();
+  private final ExecutorService work = Executors.newSingleThreadExecutor(), voices = Executors.newSingleThreadExecutor();
+  /** Chief messages waiting for an open floor (or to be dropped by your message). */
+  private final ArrayDeque<Held> held = new ArrayDeque<>();
+  /** Chief messages whose reading failed: your next message says you didn't hear them. */
+  private final List<String> unheard = new ArrayList<>();
   private final List<String> requests = new ArrayList<>();
   /** Request → {replies so far, sent at}: for "Chief is working". */
   private final java.util.Map<String, long[]> working = new java.util.HashMap<>();
@@ -101,7 +133,11 @@ final class HandsFreeSession {
   private volatile long mutedUntil;
   private volatile java.util.function.Consumer<String> events = e -> {};
   private int reading, sent;
-  private long readingSince;
+  private Held current;
+  private boolean playing;
+  private long readingDeadline;
+  /** The time; tests set their own. */
+  java.util.function.LongSupplier clock = System::currentTimeMillis;
 
   HandsFreeSession(
       int pauseMs,
@@ -157,6 +193,8 @@ final class HandsFreeSession {
 
               public void noise(int speechMs, double level, double background) {
                 log(String.format(java.util.Locale.ROOT, "noise ignored (%d ms, level %.0f, background %.0f)", speechMs, level, background));
+                // Send now during a sound too short to count: what was said before still goes.
+                if (sendAfterFlush) execute(() -> send(pending, "button"), null);
               }
             });
   }
@@ -193,9 +231,14 @@ final class HandsFreeSession {
     return segmenter.speaking();
   }
 
-  /** Chief messages held while you have the floor. */
+  /** Chief messages waiting to be read. */
   synchronized int held() {
     return held.size();
+  }
+
+  /** Chief messages that couldn't be read, not yet noted in a message. */
+  synchronized int unheard() {
+    return unheard.size();
   }
 
   /** Is your turn going on: speaking, being written down, unsent text, or going out? */
@@ -212,7 +255,7 @@ final class HandsFreeSession {
     if (state == State.READING) return Phase.READING;
     if (sending) return Phase.WORKING;
     if (floorIsYours()) return Phase.LISTENING;
-    long now = System.currentTimeMillis();
+    long now = clock.getAsLong();
     synchronized (this) {
       for (long[] w : working.values()) if (w[0] < 2 && now - w[1] < WORKING_MS) return Phase.WORKING;
     }
@@ -238,16 +281,23 @@ final class HandsFreeSession {
    * TAIL_MS after, frames are dropped: nothing of the voice can end up in your turn.
    */
   void frame(byte[] frame) {
-    if (state != State.LISTENING || System.currentTimeMillis() < mutedUntil) return;
+    if (state != State.LISTENING || clock.getAsLong() < mutedUntil) return;
     segmenter.frame(frame);
   }
 
   /** Once a second: a long silence sends anyway, a held reply may start, a hung voice is let go. */
   void tick() {
     if (state == State.ENDED) return;
-    if (state == State.READING && System.currentTimeMillis() - readingSince > READING_MAX_MS) {
-      log("reading took too long: listening again");
-      finishReading(reading);
+    int token;
+    boolean late;
+    synchronized (this) {
+      token = reading;
+      late = state == State.READING && clock.getAsLong() > readingDeadline;
+    }
+    if (late) {
+      log(playing ? "the reply played too long: listening again" : "the reply's audio didn't start: listening again");
+      speaker.stop();
+      finishReading(token, false);
       return;
     }
     if (state == State.LISTENING && !pending.isEmpty() && !segmenter.candidate() && transcribing.get() == 0
@@ -297,51 +347,102 @@ final class HandsFreeSession {
     speaker.stop();
     status = "ended";
     work.shutdown();
+    voices.shutdownNow();
     listener.changed();
   }
 
-  /** A spoken message from the chief: read now on an open floor, else held. */
+  /**
+   * A spoken message from the chief: its audio is fetched right away, while the floor stays open;
+   * once ready it's read on an open floor, else held.
+   */
   void reply(String request, String text) {
     if (state == State.ENDED) return;
+    Held h = new Held(request, text);
     synchronized (this) {
       long[] w = working.get(request);
       if (w != null) w[0]++;
-      held.addLast(new String[] {request, text});
+      held.addLast(h);
     }
     boolean taken = floorIsYours() || state == State.READING;
     log("chief message " + request + " (" + text.length() + " characters)" + (taken ? ": held, the floor is taken" : ""));
-    readNext();
+    try {
+      voices.execute(
+          () -> {
+            try {
+              h.prepared = speaker.prepare(request, text);
+            } catch (RuntimeException ex) {
+              log("voice not ready for " + request + ": " + ex.getMessage());
+            }
+            h.ready = true;
+            readNext();
+          });
+    } catch (java.util.concurrent.RejectedExecutionException ended) {
+      return;
+    }
     listener.changed();
   }
 
-  /** On an open floor, the chief takes it with the next held message. */
+  /** On an open floor, the chief takes it with the next held message, once its audio is ready. */
   private void readNext() {
-    String[] next;
+    Held next;
     int token;
     synchronized (this) {
-      if (state != State.LISTENING || held.isEmpty() || floorIsYours() || segmenter.candidate()) return;
+      if (state != State.LISTENING || held.isEmpty() || !held.peekFirst().ready || floorIsYours() || segmenter.candidate()) return;
       next = held.removeFirst();
       state = State.READING;
-      reply = next[1];
+      reply = next.text;
+      current = next;
+      playing = false;
       token = ++reading;
-      readingSince = System.currentTimeMillis();
+      readingDeadline = clock.getAsLong() + START_MS;
     }
     status = "reading";
-    log("floor: chief, reading " + next[0]);
+    log("floor: chief, reading " + next.request);
     listener.changed();
-    speaker.speak(next[0], next[1], () -> finishReading(token));
+    try {
+      speaker.play(
+          next.request,
+          next.text,
+          next.prepared,
+          new Playback() {
+            public void started(long durationMs) {
+              synchronized (HandsFreeSession.this) {
+                if (token != reading || state != State.READING) return;
+                playing = true;
+                readingDeadline = clock.getAsLong() + durationMs + OVERRUN_MS;
+              }
+            }
+
+            public void ended(boolean played) {
+              finishReading(token, played);
+            }
+          });
+    } catch (RuntimeException ex) {
+      log("the voice failed: " + ex.getMessage());
+      finishReading(token, false);
+    }
   }
 
-  /** Reading number token ended (finished or given up): the floor is open again. */
-  private void finishReading(int token) {
+  /**
+   * Reading number token ended (finished or given up): the floor is open again. A reply that didn't
+   * play is noted in your next message as not heard.
+   */
+  private void finishReading(int token, boolean played) {
+    Held h;
+    boolean heard;
     synchronized (this) {
       if (token != reading || state != State.READING) return;
-      mutedUntil = System.currentTimeMillis() + TAIL_MS;
+      h = current;
+      heard = played && playing;
+      if (!heard && h != null) unheard.add(h.text);
+      current = null;
+      mutedUntil = clock.getAsLong() + TAIL_MS;
       segmenter.reset();
       reply = "";
       state = State.LISTENING;
     }
     status = "listening";
+    if (!heard) log("reply " + (h == null ? "" : h.request + " ") + "not heard: noted in your next message");
     log("floor: open");
     listener.changed();
     readNext();
@@ -359,6 +460,8 @@ final class HandsFreeSession {
         status = "transcription failed: " + ex.getMessage();
         error = "Couldn't write down what you said: " + ex.getMessage();
         log(String.format(java.util.Locale.ROOT, "heard %.1f s, transcription failed: %s", seconds, ex.getMessage()));
+        // Nothing else of your turn left: the floor opens again.
+        if (pending.isEmpty() && transcribing.get() <= 1 && !segmenter.candidate()) giveUpTurn("not written down");
         listener.changed();
         return;
       }
@@ -411,10 +514,12 @@ final class HandsFreeSession {
       return;
     }
     StringBuilder said = new StringBuilder(text.trim());
-    int dropped;
+    int dropped, failed;
     synchronized (this) {
-      for (String[] h : held) said.append("\n\n").append(missed(h[1]));
+      for (String u : unheard) said.append("\n\n").append(missed(u));
+      for (Held h : held) said.append("\n\n").append(missed(h.text));
       dropped = held.size();
+      failed = unheard.size();
     }
     pending = "";
     sending = true;
@@ -423,10 +528,11 @@ final class HandsFreeSession {
       String request = sender.send(said.toString());
       synchronized (this) {
         requests.add(request);
-        working.put(request, new long[] {0, System.currentTimeMillis()});
+        working.put(request, new long[] {0, clock.getAsLong()});
       }
       synchronized (this) {
         for (int i = 0; i < dropped && !held.isEmpty(); i++) held.removeFirst();
+        for (int i = 0; i < failed && !unheard.isEmpty(); i++) unheard.remove(0);
       }
       if (dropped > 0) log("dropped " + dropped + " held chief message(s), noted in your message");
       sent++;

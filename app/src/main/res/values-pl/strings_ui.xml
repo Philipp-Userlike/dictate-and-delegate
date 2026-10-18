@@ -37,6 +37,7 @@
     <string name="t_0cf56167" formatted="false">Serwer logowania bb przesłał nieoczekiwaną odpowiedź.</string>
     <string name="t_0d35d152" formatted="false">Twoje szablony zostają na tym urządzeniu. Tylko ten, o który poprosisz, jest wysyłany do AI wraz z dyktowanym tekstem.</string>
     <string name="t_0dc541d5" formatted="false">Przywróć domyślne</string>
+    <string name="t_0de44d68" formatted="false">1 wiadomość</string>
     <string name="t_0e1c0935" formatted="false">bb odpowiada, ale nie oferuje narzędzia run. Zaktualizuj bb i sprawdź, czy wtyczka MCP jest włączona.</string>
     <string name="t_0f756679" formatted="false">Ponów zapisane nagranie</string>
     <string name="t_10aef2d8" formatted="false">Szef sztabu</string>
@@ -93,6 +94,7 @@
     <string name="t_27a92292" formatted="false">bb nie zezwoliło na logowanie.</string>
     <string name="t_27c5b8ea" formatted="false">Usuń klucz</string>
     <string name="t_2893e4d7" formatted="false">Sprawdzanie poleceń</string>
+    <string name="t_2897e301" formatted="false">Słucham · Szef pracuje…</string>
     <string name="t_296a5e55" formatted="false">Opcjonalnie · Dopracuj z Twoich środków w Anthropic</string>
     <string name="t_296a6921" formatted="false">Model odpowiadał zbyt długo. Nagranie zostało zachowane; spróbuj ponownie.</string>
     <string name="t_2994b473" formatted="false">‹ Wcześniej</string>
@@ -316,6 +318,7 @@
     <string name="t_83359c2b" formatted="false">Instrukcje dopracowywania</string>
     <string name="t_84119bba" formatted="false">Nie udało się zapisać zaszyfrowanych danych.</string>
     <string name="t_842cec6c" formatted="false">Nieprawidłowe ID nagrania</string>
+    <string name="t_84737d17" formatted="false">Rozmowa z szefem</string>
     <string name="t_84e5353d" formatted="false">Odrzuć zapisany dźwięk</string>
     <string name="t_85004d41" formatted="false">Dotknij, aby nagrać</string>
     <string name="t_857a0fd3" formatted="false">Po stuknięciu ✨ Dopracuj · %1$s</string>
@@ -544,7 +547,6 @@
     <string name="t_d893f184" formatted="false">Odczytywanie odpowiedzi</string>
     <string name="t_d90fc528" formatted="false">Zmień język w Ustawienia Androida → Aplikacje → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Słowa kończące (wysyłają wcześniejszą treść, a potem wyłączają tryb głośnomówiący)</string>
-    <string name="t_db42bf24" formatted="false">Szef pracuje</string>
     <string name="t_db5195fa" formatted="false">wklejony tekst</string>
     <string name="t_dbde124f" formatted="false">Dźwięk dla tej notatki nie został zachowany, więc nie można jej poprawić.</string>
     <string name="t_dbe48d14" formatted="false">Nigdy</string>
@@ -645,6 +647,7 @@
     <string name="t_fac75a8c" formatted="false">Środki i zużycie na openrouter.ai</string>
     <string name="t_fb6e7c77" formatted="false">3 · Pływający panel</string>
     <string name="t_fc1cb01e" formatted="false">Rozpocznij nagrywanie</string>
+    <string name="t_fc31df0c" formatted="false">%1$d wiadomości</string>
     <string name="t_fc4b6317" formatted="false">✓  Zezwolono</string>
     <string name="t_fcaa7d5e" formatted="false">Transkrybowanie</string>
     <string name="t_fd25c726" formatted="false">Szablon zapisany</string>

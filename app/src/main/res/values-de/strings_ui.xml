@@ -37,6 +37,7 @@
     <string name="t_0cf56167" formatted="false">Der Anmeldeserver von bb hat eine unerwartete Antwort gesendet.</string>
     <string name="t_0d35d152" formatted="false">Deine Vorlagen bleiben auf diesem Gerät. Nur die angeforderte Vorlage wird zusammen mit deinem Diktat an die KI gesendet.</string>
     <string name="t_0dc541d5" formatted="false">Auf Standard zurücksetzen</string>
+    <string name="t_0de44d68" formatted="false">1 Nachricht</string>
     <string name="t_0e1c0935" formatted="false">bb antwortet, bietet aber das run-Tool nicht an. Aktualisiere bb und prüfe, ob das MCP-Plugin aktiviert ist.</string>
     <string name="t_0f756679" formatted="false">Gespeicherte Aufnahme wiederholen</string>
     <string name="t_10aef2d8" formatted="false">Chief of Staff</string>
@@ -93,6 +94,7 @@
     <string name="t_27a92292" formatted="false">bb hat die Anmeldung nicht erlaubt.</string>
     <string name="t_27c5b8ea" formatted="false">Schlüssel entfernen</string>
     <string name="t_2893e4d7" formatted="false">Anweisungsprüfung</string>
+    <string name="t_2897e301" formatted="false">Hört zu · Chief arbeitet…</string>
     <string name="t_296a5e55" formatted="false">Optional · Verfeinern über dein Anthropic-Guthaben</string>
     <string name="t_296a6921" formatted="false">Das Modell hat zu lange gebraucht. Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_2994b473" formatted="false">‹ Früher</string>
@@ -312,6 +314,7 @@
     <string name="t_83359c2b" formatted="false">Anweisungen für Verfeinern</string>
     <string name="t_84119bba" formatted="false">Verschlüsselte Daten konnten nicht gespeichert werden.</string>
     <string name="t_842cec6c" formatted="false">Ungültige Aufnahme-ID</string>
+    <string name="t_84737d17" formatted="false">Anruf mit deinem Chief</string>
     <string name="t_84e5353d" formatted="false">Gespeichertes Audio verwerfen</string>
     <string name="t_85004d41" formatted="false">Tippen zur Aufnahme</string>
     <string name="t_857a0fd3" formatted="false">Wenn du auf ✨ Verfeinern tippst · %1$s</string>
@@ -534,7 +537,6 @@
     <string name="t_d893f184" formatted="false">Antwort wird vorgelesen</string>
     <string name="t_d90fc528" formatted="false">Ändere die Sprache unter Android-Einstellungen → Apps → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Endwörter (senden, was davor kam, und beenden den Freisprechmodus)</string>
-    <string name="t_db42bf24" formatted="false">Chief arbeitet</string>
     <string name="t_db5195fa" formatted="false">eingefügter Text</string>
     <string name="t_dbde124f" formatted="false">Audio wurde nicht behalten und kann nicht neu verarbeitet werden.</string>
     <string name="t_dbe48d14" formatted="false">Nie</string>
@@ -635,6 +637,7 @@
     <string name="t_fac75a8c" formatted="false">Guthaben und Verbrauch auf openrouter.ai</string>
     <string name="t_fb6e7c77" formatted="false">3 · Schwebendes Fenster</string>
     <string name="t_fc1cb01e" formatted="false">Aufnahme starten</string>
+    <string name="t_fc31df0c" formatted="false">%1$d Nachrichten</string>
     <string name="t_fc4b6317" formatted="false">✓  Erlaubt</string>
     <string name="t_fcaa7d5e" formatted="false">Wird transkribiert</string>
     <string name="t_fd25c726" formatted="false">Vorlage gespeichert</string>

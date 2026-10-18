@@ -36,6 +36,8 @@ public final class RecordActivity extends Activity {
       String seed = getIntent().getStringExtra(HANDS_FREE_SEED);
       Intent i = new Intent(this, HandsFreeService.class).setAction(HandsFreeService.START);
       if (seed != null && !seed.isEmpty()) i.putExtra(HandsFreeService.SEED, seed);
+      i.putExtra(HandsFreeService.AT_X, getIntent().getIntExtra(HandsFreeService.AT_X, -1))
+          .putExtra(HandsFreeService.AT_Y, getIntent().getIntExtra(HandsFreeService.AT_Y, -1));
       try {
         startForegroundService(i);
       } catch (RuntimeException ex) {

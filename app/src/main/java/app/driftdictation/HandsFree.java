@@ -31,7 +31,11 @@ final class HandsFree {
 
   /** One English word per action by default; each setting may hold several, comma-separated. */
   static final String DEFAULT_SEND = "over", DEFAULT_END = "end the call";
-  static final int DEFAULT_PAUSE_MS = 3000, DEFAULT_SILENCE_SEND_MS = 30_000;
+  /**
+   * A short pause ends a part: it's written down then, and a send or end word at its end acts at
+   * once. Each part is transcribed once, so short parts cost the same as one long one.
+   */
+  static final int DEFAULT_PAUSE_MS = 800, DEFAULT_SILENCE_SEND_MS = 30_000;
 
   static List<String> words(SharedPreferences prefs, String key, String fallback) {
     return list(prefs.getString(key, fallback));
@@ -42,7 +46,7 @@ final class HandsFree {
   }
 
   static int pauseMs(SharedPreferences prefs) {
-    return Math.max(800, Math.min(15_000, prefs.getInt(PAUSE_MS, DEFAULT_PAUSE_MS)));
+    return Math.max(500, Math.min(15_000, prefs.getInt(PAUSE_MS, DEFAULT_PAUSE_MS)));
   }
 
   static int silenceSendMs(SharedPreferences prefs) {
