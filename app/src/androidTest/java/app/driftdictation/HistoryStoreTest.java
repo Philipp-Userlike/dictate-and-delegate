@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class HistoryStoreTest {
   @Test
-  public void encryptedHistorySurvivesReopeningWithoutExpiry() throws Exception {
+  public void historySurvivesReopeningWithoutExpiry() throws Exception {
     var context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     String id = UUID.randomUUID().toString();
     HistoryEntry e = HistoryEntry.create(id, "openai/whisper-1", 60);
@@ -28,7 +28,8 @@ public class HistoryStoreTest {
           h.getReadableDatabase()
               .rawQuery("SELECT payload FROM history WHERE id=?", new String[] {id})) {
         assertTrue(cursor.moveToFirst());
-        assertFalse(cursor.getString(0).contains("Private regression transcript"));
+        // Notes are kept plain in app-private storage; only secrets are encrypted.
+        assertEquals(e.text(), new org.json.JSONObject(cursor.getString(0)).getString("text"));
         assertFalse(cursor.moveToNext());
       }
     }
@@ -66,38 +67,47 @@ public class HistoryStoreTest {
   }
 
   @Test
-  public void rowsFromEarlierVersionsAreReadAndMovedToTheHistoryKey() throws Exception {
+  public void encryptedRowsFromEarlierVersionsAreRewrittenPlain() throws Exception {
     var context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     String id = UUID.randomUUID().toString(), redo = UUID.randomUUID().toString();
     HistoryEntry first = HistoryEntry.create(id, "openai/whisper-1", 30);
     first.json.put("text", "Sealed the old way");
     HistoryEntry second = HistoryEntry.create(redo, "openai/whisper-1", 30);
     second.json.put("recordingId", id).put("text", "Redone the old way");
+    HistoryEntry other = HistoryEntry.create(UUID.randomUUID().toString(), "openai/whisper-1", 30);
+    other.json.put("text", "Another old note");
     try (HistoryStore h = new HistoryStore(context)) {
-      // As versions before the history key wrote them: sealed by Keystore, no recording column.
-      for (HistoryEntry e : new HistoryEntry[] {first, second}) {
+      // As earlier versions wrote them: sealed by Keystore, no recording column.
+      for (HistoryEntry e : new HistoryEntry[] {first, second, other}) {
         var values = new android.content.ContentValues();
         values.put("id", e.id());
         values.put("created", e.created());
         values.put("payload", new Vault(context).seal(e.json.toString()));
         h.getWritableDatabase().insert("history", null, values);
       }
-      var versions = h.versions(id);
-      assertEquals(2, versions.size());
+      // Read as they are, before the rewrite.
+      assertEquals("Another old note", h.get(other.id()).text());
+      h.unseal();
       try (var cursor =
           h.getReadableDatabase()
               .rawQuery(
-                  "SELECT payload, recording FROM history WHERE id IN (?, ?)",
-                  new String[] {id, redo})) {
+                  "SELECT payload, recording FROM history WHERE id IN (?, ?, ?)",
+                  new String[] {id, redo, other.id()})) {
+        int rows = 0;
         while (cursor.moveToNext()) {
-          assertTrue(Vault.isRow(cursor.getString(0)));
-          assertFalse(cursor.getString(0).contains("old way"));
-          assertEquals(id, cursor.getString(1));
+          rows++;
+          assertTrue(cursor.getString(0).startsWith("{"));
+          assertNotNull(cursor.getString(1));
         }
+        assertEquals(3, rows);
       }
+      assertEquals(2, h.versions(id).size());
+      assertEquals("Sealed the old way", h.get(id).text());
       assertEquals("Redone the old way", h.get(redo).text());
+      assertEquals(0, h.unseal());
       h.delete(id);
       h.delete(redo);
+      h.delete(other.id());
     }
   }
 }

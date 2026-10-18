@@ -99,6 +99,19 @@ public final class MainActivity extends Activity {
       try (HistoryStore h = new HistoryStore(this)) {
         h.migrate(this);
       }
+      // Notes of earlier versions were sealed row by row; rewrite them plain once, meanwhile pages
+      // read them as they are.
+      Context app = getApplicationContext();
+      new Thread(
+              () -> {
+                try (HistoryStore h = new HistoryStore(app)) {
+                  h.unseal();
+                } catch (Exception ignored) {
+                  // Rows stay readable as they are; the next start tries again.
+                }
+              },
+              "unseal-notes")
+          .start();
     } catch (Exception ex) {
       toast(tr("Could not load saved data. Your data has not been removed."));
     }

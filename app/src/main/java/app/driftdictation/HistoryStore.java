@@ -9,8 +9,9 @@ import java.util.*;
 import org.json.JSONObject;
 
 /**
- * SQLite rows have encrypted payloads; only IDs (the row's and its recording's) and dates remain
- * indexable. No automatic expiry.
+ * Note versions as JSON in app-private storage (not in backups), by ID, recording ID and date. No
+ * automatic expiry. Earlier versions sealed each row with Keystore, which took milliseconds per
+ * row; such rows are opened once and rewritten plain (see unseal()).
  */
 final class HistoryStore extends SQLiteOpenHelper {
   private final Vault vault;
@@ -37,7 +38,12 @@ final class HistoryStore extends SQLiteOpenHelper {
     }
   }
 
-  private record Outdated(String json, String sealed, HistoryEntry entry) {}
+  private record Outdated(String json, String stored, HistoryEntry entry) {}
+
+  /** Plain rows are JSON objects; sealed ones are base64 "iv:ciphertext". */
+  private static boolean sealed(String payload) {
+    return !payload.startsWith("{");
+  }
 
   /** Rows of this query, read with COLUMNS. */
   private List<HistoryEntry> read(Cursor c) throws Exception {
@@ -45,13 +51,13 @@ final class HistoryStore extends SQLiteOpenHelper {
     List<Outdated> outdated = new ArrayList<>();
     try (c) {
       while (c.moveToNext()) {
-        String sealed = c.getString(1), json = vault.unsealRow(sealed);
+        String stored = c.getString(1), json = sealed(stored) ? vault.unseal(stored) : stored;
         HistoryEntry e = new HistoryEntry(new JSONObject(json));
         entries.add(e);
-        if (c.isNull(2) || !Vault.isRow(sealed)) outdated.add(new Outdated(json, sealed, e));
+        if (c.isNull(2) || sealed(stored)) outdated.add(new Outdated(json, stored, e));
       }
     }
-    // Rows saved by earlier versions get their recording and the history key, unless saved meanwhile.
+    // Rows saved by earlier versions are rewritten plain with their recording, unless saved meanwhile.
     if (!outdated.isEmpty()) {
       SQLiteDatabase db = getWritableDatabase();
       db.beginTransaction();
@@ -59,8 +65,8 @@ final class HistoryStore extends SQLiteOpenHelper {
         for (Outdated o : outdated) {
           ContentValues values = new ContentValues();
           values.put("recording", o.entry().recordingId());
-          values.put("payload", vault.sealRow(o.json()));
-          db.update("history", values, "id=? AND payload=?", new String[] {o.entry().id(), o.sealed()});
+          values.put("payload", o.json());
+          db.update("history", values, "id=? AND payload=?", new String[] {o.entry().id(), o.stored()});
         }
         db.setTransactionSuccessful();
       } finally {
@@ -75,7 +81,7 @@ final class HistoryStore extends SQLiteOpenHelper {
     values.put("id", entry.id());
     values.put("created", entry.created());
     values.put("recording", entry.recordingId());
-    values.put("payload", vault.sealRow(entry.json.toString()));
+    values.put("payload", entry.json.toString());
     if (getWritableDatabase()
             .insertWithOnConflict("history", null, values, SQLiteDatabase.CONFLICT_REPLACE)
         < 0) throw new java.io.IOException(tr("Could not save transcript history."));
@@ -124,6 +130,26 @@ final class HistoryStore extends SQLiteOpenHelper {
                     "created DESC, id DESC")))
       if (entry.recordingId().equals(recordingId)) result.add(entry);
     return result;
+  }
+
+  /** Rewrites rows of earlier versions plain, a page at a time; returns how many it did. */
+  int unseal() throws Exception {
+    int done = 0;
+    for (List<HistoryEntry> page; ; done += page.size()) {
+      page =
+          read(
+              getReadableDatabase()
+                  .query(
+                      "history",
+                      COLUMNS,
+                      "recording IS NULL OR payload NOT LIKE '{%'",
+                      null,
+                      null,
+                      null,
+                      "created DESC, id DESC",
+                      "100"));
+      if (page.isEmpty()) return done;
+    }
   }
 
   void prefer(HistoryEntry selected) throws Exception {
