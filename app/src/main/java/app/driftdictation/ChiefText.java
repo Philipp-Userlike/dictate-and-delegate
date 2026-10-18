@@ -150,6 +150,98 @@ final class ChiefText {
     }
   }
 
+  /** The ntfy tag on spoken replies in hands-free mode (the dictate-and-delegate skill). */
+  static final String SPEAK_TAG = "talkrouter-speak";
+
+  /** The request ID of a spoken reply ("req-<id>" next to SPEAK_TAG), or "" for any other message. */
+  static String spokenRequest(JSONObject message) {
+    if (!"message".equals(message.optString("event", "message"))) return "";
+    JSONArray tags = message.optJSONArray("tags");
+    boolean speak = false;
+    String request = "";
+    for (int i = 0; tags != null && i < tags.length(); i++) {
+      String t = tags.optString(i).trim();
+      if (t.equalsIgnoreCase(SPEAK_TAG)) speak = true;
+      else if (t.toLowerCase(java.util.Locale.ROOT).startsWith("req-")) request = t.substring(4);
+    }
+    return speak ? request : "";
+  }
+
+  /**
+   * Hands-free mode: reads the topic's stream until finish() and hands every spoken reply for one
+   * of our requests to the callback, in order and once each; reconnects after a dropped connection.
+   */
+  static final class Replies extends Thread {
+    interface Callback {
+      void reply(String request, String text);
+    }
+
+    private final String server, topic;
+    private final java.util.function.Predicate<String> ours;
+    private final Callback callback;
+    private volatile boolean stopped;
+    private volatile HttpURLConnection open;
+    private String since;
+    private final java.util.Set<String> seen = new java.util.HashSet<>();
+
+    Replies(String server, String topic, long sinceSeconds, java.util.function.Predicate<String> ours, Callback callback) {
+      super("ntfy-replies");
+      setDaemon(true);
+      this.server = server;
+      this.topic = topic;
+      this.since = String.valueOf(sinceSeconds);
+      this.ours = ours;
+      this.callback = callback;
+    }
+
+    void finish() {
+      stopped = true;
+      HttpURLConnection c = open;
+      if (c != null) c.disconnect();
+      interrupt();
+    }
+
+    @Override
+    public void run() {
+      while (!stopped) {
+        try {
+          HttpURLConnection c =
+              (HttpURLConnection) new URL(server + "/" + topic + "/json?since=" + since).openConnection();
+          open = c;
+          c.setConnectTimeout(15_000);
+          c.setReadTimeout(90_000);
+          try (BufferedReader in =
+              new BufferedReader(new InputStreamReader(c.getInputStream(), StandardCharsets.UTF_8))) {
+            for (String line; !stopped && (line = in.readLine()) != null; ) {
+              if (line.isBlank()) continue;
+              JSONObject m;
+              try {
+                m = new JSONObject(line);
+              } catch (Exception ex) {
+                continue;
+              }
+              String id = m.optString("id");
+              if (!id.isEmpty()) since = id; // Reconnect from here, not from the start.
+              String request = spokenRequest(m);
+              if (request.isEmpty() || !seen.add(id) || !ours.test(request)) continue;
+              String t = text(m, server);
+              if (!t.isEmpty()) callback.reply(request, t);
+            }
+          } finally {
+            c.disconnect();
+          }
+        } catch (Exception ex) {
+          /* Dropped or unreachable: try again in a moment. */
+        }
+        try {
+          Thread.sleep(3000);
+        } catch (InterruptedException ex) {
+          return;
+        }
+      }
+    }
+  }
+
   /** The text for a request, from the messages the topic still holds (ntfy keeps them 12 h). */
   static String fetch(Context context, String request) throws Exception {
     BbBridge bb = new BbBridge(context);

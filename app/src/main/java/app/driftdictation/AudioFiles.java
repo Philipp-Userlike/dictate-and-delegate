@@ -58,6 +58,25 @@ final class AudioFiles {
     }
   }
 
+  /** 16 kHz 16-bit mono PCM as a WAV file. */
+  static byte[] wav(byte[] pcm) {
+    ByteBuffer wav = ByteBuffer.allocate(44 + pcm.length).order(ByteOrder.LITTLE_ENDIAN);
+    wav.put(new byte[] {'R', 'I', 'F', 'F'})
+        .putInt(36 + pcm.length)
+        .put(new byte[] {'W', 'A', 'V', 'E', 'f', 'm', 't', ' '})
+        .putInt(16)
+        .putShort((short) 1)
+        .putShort((short) 1)
+        .putInt(RATE)
+        .putInt(BYTES_PER_SECOND)
+        .putShort((short) 2)
+        .putShort((short) 16)
+        .put(new byte[] {'d', 'a', 't', 'a'})
+        .putInt(pcm.length)
+        .put(pcm);
+    return wav.array();
+  }
+
   static String append(String previous, String next) {
     if (next.trim().isEmpty()) return previous;
     return previous.isEmpty() ? next.trim() : previous + "\n" + next.trim();

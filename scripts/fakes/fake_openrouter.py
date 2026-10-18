@@ -7,6 +7,7 @@ Serves the OpenRouter endpoints Dictate & Delegate uses, under /api/v1 and /api/
   GET  /api/v1/models                 a small catalog (CATALOG) for the Refine model picker
   POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."
   POST /api/v1/chat/completions       Refine: a queued reply, or the dictation echoed
+  POST /api/v1/audio/speech           hands-free replies: a short MP3 (scripts/fakes/reply.mp3); a voice is required
   POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
                                       only the questions asked are answered
 
@@ -29,6 +30,7 @@ Usage: python3 scripts/fakes/fake_openrouter.py [--port 8797]
 """
 import argparse
 import json
+import os
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -158,6 +160,18 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/alpha/decisions":
             self.log("decide", body)
             return self.decide(body, next_item("decide", {}))
+        if self.path == "/api/v1/audio/speech":
+            # Hands-free replies read aloud: a short real MP3 (Kokoro saying a sentence).
+            self.log("speech", body)
+            if not body.get("voice"):
+                return self.reply(400, {"error": {"code": 400, "message": "An explicit voice is required for this TTS provider."}})
+            data = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "reply.mp3"), "rb").read()
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/mpeg")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if self.path == "/api/v1/chat/completions":
             self.log("text", body)
             return self.answer("text", next_item("text", user_text(body)), chat=True)

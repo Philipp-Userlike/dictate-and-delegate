@@ -65,7 +65,8 @@ public final class MainActivity extends Activity {
 
   private String bbNotice = "";
   private boolean bbNoticeOk, changingChief;
-  private TextView skillsLine;
+  private TextView skillsLine, hfStatus, hfPending;
+  private Button hfSend, hfStop;
   /** The name field waits for a pause in typing before the skills are updated in bb. */
   private final Runnable skillsAfterName = () -> ChiefSkills.sync(this, false);
   private final Runnable refresh =
@@ -162,7 +163,7 @@ public final class MainActivity extends Activity {
       intent.removeExtra("open");
       stack.clear();
       stack.push("home");
-      show(target.equals("key") ? "key" : "home");
+      show(target.equals("key") ? "key" : target.equals("handsfree") ? "handsfree" : "home");
       if (message != null) toast(message);
     }
   }
@@ -270,7 +271,8 @@ public final class MainActivity extends Activity {
     record = null;
     status = null;
     noteStatus = null;
-    skillsLine = null;
+    skillsLine = hfStatus = hfPending = null;
+    hfSend = hfStop = null;
     recovery = recentBox = notesBox = monthBox = wordsBox = modelList = refineList = null;
     editor = practice = null;
     LinearLayout root = ui.vertical();
@@ -295,6 +297,8 @@ public final class MainActivity extends Activity {
       case "start1" -> startPage();
       case "insert1" -> insertPage();
       case "start" -> startSettingsPage();
+      case "handsfree" -> handsFreePage();
+      case "hfsettings" -> handsFreeSettingsPage();
       case "try1" -> tryPage();
       case "bb1" -> bbPage(true);
       case "chief1" -> chiefPage(true);
@@ -1687,6 +1691,14 @@ public final class MainActivity extends Activity {
                     .setNegativeButton(tr("Keep"), null)
                     .show()),
         0);
+    if (BbBridge.ready(this))
+      ui.add(
+          content,
+          ui.button(
+              HandsFreeService.instance != null ? tr("🎧 Hands-free is on") : tr("🎧 Hands-free with your chief"),
+              Ui.Kind.OUTLINE,
+              v -> open("handsfree")),
+          12);
     LinearLayout attach = ui.horizontal();
     int attached = new Attachments(this).pending().size();
     attach.addView(
@@ -2684,6 +2696,8 @@ public final class MainActivity extends Activity {
     using.setPadding(0, 0, 0, 0);
     using.addView(ui.row(tr("Start and insert"), startLabel(), null, v -> open("start")));
     using.addView(ui.divider());
+    using.addView(ui.row(tr("Hands-free"), tr("Send words, voice and timing"), null, v -> open("hfsettings")));
+    using.addView(ui.divider());
     using.addView(ui.row(tr("Floating panel"), bubbleLabel(), null, v -> bubbleOptions()));
     using.addView(ui.divider());
     using.addView(
@@ -2864,6 +2878,148 @@ public final class MainActivity extends Activity {
           });
       ui.add(modelList, row, 8);
     }
+  }
+
+  /**
+   * Hands-free mode: talk with the chief without touching the phone. The screen still has every
+   * control: start, send, stop reading and end.
+   */
+  private void handsFreePage() {
+    heading(
+        tr("Home"),
+        tr("Hands-free"),
+        tr("Talk with your chief of staff while you drive or cook. Pause as long as you like; nothing is sent until you say a send word or stay silent for a while. Your chief's answers are read aloud, then it listens again."));
+    if (!BbBridge.ready(this)) {
+      ui.add(content, ui.text(tr("Set up your chief of staff in Settings → bb first."), 15, Ui.WARN), 16);
+      return;
+    }
+    SharedPreferences p = prefs;
+    LinearLayout how = ui.add(content, ui.card(Ui.TEAL_TINT, Ui.BAR), 16);
+    how.addView(ui.strong(tr("How to talk"), 15));
+    ui.add(
+        how,
+        ui.text(
+            tr("Send: end with %1$s.\nStop a reply being read: %2$s.\nEnd hands-free: %3$s.\nThe headset or car button sends, or stops reading.",
+                quoteList(HandsFree.words(p, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)),
+                quoteList(HandsFree.words(p, HandsFree.STOP_WORDS, HandsFree.DEFAULT_STOP)),
+                quoteList(HandsFree.words(p, HandsFree.END_WORDS, HandsFree.DEFAULT_END))),
+            14,
+            Ui.BODY),
+        6);
+    hfStatus = ui.add(content, ui.text("", 16, Ui.INK), 18);
+    hfPending = ui.add(content, ui.text("", 15, Ui.MUTED), 8);
+    if (HandsFreeService.instance == null) {
+      Button start =
+          ui.button(
+              tr("Start hands-free"),
+              Ui.Kind.PRIMARY,
+              v -> {
+                if (!microphone()) {
+                  askMicrophone();
+                  return;
+                }
+                if (android.os.Build.VERSION.SDK_INT >= 33
+                    && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                        != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                  requestPermissions(new String[] {android.Manifest.permission.POST_NOTIFICATIONS}, 7);
+                HandsFreeService.send(this, HandsFreeService.START);
+              });
+      start.setMinHeight(ui.dp(62));
+      ui.add(content, start, 16);
+    } else {
+      hfSend = ui.add(content, ui.button(tr("Send now"), Ui.Kind.PRIMARY, v -> HandsFreeService.send(this, HandsFreeService.SEND)), 16);
+      hfSend.setMinHeight(ui.dp(62));
+      hfStop = ui.add(content, ui.button(tr("Stop reading"), Ui.Kind.OUTLINE, v -> HandsFreeService.send(this, HandsFreeService.STOP_READING)), 10);
+      Button end =
+          ui.button(
+              tr("End hands-free"),
+              Ui.Kind.QUIET,
+              v -> {
+                HandsFreeService.send(this, HandsFreeService.END);
+              });
+      end.setTextColor(Ui.WARN);
+      ui.add(content, end, 10);
+    }
+    ui.add(content, ui.button(tr("Hands-free settings"), Ui.Kind.QUIET, v -> open("hfsettings")), 18);
+    renderHandsFree();
+  }
+
+  private static String quoteList(java.util.List<String> words) {
+    StringBuilder s = new StringBuilder();
+    for (String w : words) s.append(s.length() == 0 ? "" : ", ").append('"').append(w).append('"');
+    return s.length() == 0 ? "–" : s.toString();
+  }
+
+  private void renderHandsFree() {
+    if (hfStatus == null) return;
+    // Started or ended (here, by a spoken end word or from the notification): other buttons.
+    if ((HandsFreeService.instance != null) != (hfSend != null)) {
+      show(page);
+      return;
+    }
+    HandsFreeSession s = HandsFreeService.session();
+    if (s == null) {
+      hfStatus.setText(HandsFreeService.instance == null ? tr("Hands-free is off.") : tr("Starting…"));
+      hfPending.setText("");
+      return;
+    }
+    boolean reading = s.state() == HandsFreeSession.State.READING;
+    hfStatus.setText(
+        reading
+            ? tr("🔊 Reading your chief's reply")
+            : s.speaking() ? tr("🎙 Hearing you…") : tr("👂 Listening · %1$s sent", String.valueOf(s.sent())));
+    hfPending.setText(s.pending().isEmpty() ? "" : tr("So far: %1$s", s.pending()));
+    if (hfStop != null) hfStop.setEnabled(reading);
+    if (hfSend != null) hfSend.setEnabled(!reading);
+  }
+
+  /** Settings → Hands-free: the words, the timing and the voice. */
+  private void handsFreeSettingsPage() {
+    heading(tr("Hands-free"), tr("Hands-free settings"), tr("Words count at the end of what you say, in any language, separated by commas."));
+    wordsField(tr("Send words"), HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND);
+    wordsField(tr("End words (also send what came before)"), HandsFree.END_WORDS, HandsFree.DEFAULT_END);
+    wordsField(tr("Stop words (while a reply is read)"), HandsFree.STOP_WORDS, HandsFree.DEFAULT_STOP);
+    secondsField(tr("Pause before a part is written down (seconds)"), HandsFree.PAUSE_MS, HandsFree.pauseMs(prefs));
+    secondsField(tr("Send anyway after this much silence (seconds)"), HandsFree.SILENCE_SEND_MS, HandsFree.silenceSendMs(prefs));
+    ui.add(content, ui.strong(tr("Voice for replies"), 15), 22);
+    Ui.Flow voices = ui.add(content, ui.flow(), 8);
+    String current = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id())).id();
+    for (Voice.Choice c : Voice.CHOICES)
+      voices.addView(
+          ui.chip(
+              c.label(),
+              c.id().equals(current),
+              v -> {
+                prefs.edit().putString(HandsFree.VOICE, c.id()).apply();
+                show(page);
+              }));
+    ui.add(
+        content,
+        ui.text(tr("Kokoro and ElevenLabs go through OpenRouter with your key. Android's voice works offline, and is used when OpenRouter fails."), 13, Ui.MUTED),
+        6);
+  }
+
+  private void wordsField(String label, String key, String fallback) {
+    ui.add(content, ui.strong(label, 15), 18);
+    EditText field = ui.input(prefs.getString(key, fallback), fallback, false);
+    ui.add(content, field, 6);
+    autosave(field, t -> prefs.edit().putString(key, t).apply());
+  }
+
+  private void secondsField(String label, String key, int ms) {
+    ui.add(content, ui.strong(label, 15), 18);
+    EditText field = ui.input(String.valueOf(ms / 1000), "", false);
+    field.setInputType(InputType.TYPE_CLASS_NUMBER);
+    ui.add(content, field, 6);
+    autosave(
+        field,
+        t -> {
+          try {
+            prefs.edit().putInt(key, Integer.parseInt(t.trim()) * 1000).apply();
+          } catch (NumberFormatException ignored) {
+            /* Not a number yet. */
+          }
+        });
   }
 
   /** Everything Dictate & Delegate keeps lives on this phone; this removes all of it. */
@@ -3325,6 +3481,7 @@ public final class MainActivity extends Activity {
 
   private void renderStatus() {
     renderSkills();
+    renderHandsFree();
     boolean busy = DictationService.busy(), active = DictationService.instance != null;
     String state = active ? prefs.getString("state", "") : "";
     boolean pending = !busy && DictationService.audio(this).exists();

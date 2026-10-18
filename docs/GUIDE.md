@@ -61,6 +61,17 @@ Set it up in setup or Settings → **bb**:
 
 Dictate & Delegate itself sends no notifications: the chief runs `curl` to ntfy on your computer.
 
+## Hands-free with your chief
+
+For driving or cooking: Home → **🎧 Hands-free with your chief** → **Start hands-free** (it needs a chief of staff in bb). Talk as you think, with pauses as long as you like; nothing is sent until you say it.
+
+- **Sending:** end with a send word, by default "over", "send", "senden" or "schick ab". After a long silence (30 s by default) what you said goes anyway. The **Send now** button, the notification's **Send** (also on the lock screen) and the headset or car media button send too.
+- **Replies:** your chief first answers with a quick spoken reaction, then, when the work is done, a short spoken answer; both are read aloud, then it listens again. You can keep talking while the chief works: that's simply the next message. Say "stop" (or press the headset button, **Stop reading** on screen or in the notification) to stop reading. The full answer stays in the chief's thread.
+- **Ending:** say "that's all" or "das war's" (what you said before it is sent first), or tap **End**.
+- **How it listens:** the phone notices when you speak and when you pause, without a model. Each stretch of speech is written down once, after a pause of 3 s by default, so the cost is the same as one dictation, and silence never goes to the speech model (which otherwise invents "Thank you." for it). Each message is kept as a note.
+
+Settings → **Hands-free** changes the send, end and stop words (several each, comma-separated), the pause, the silence before sending anyway, and the voice: Kokoro (English, cheapest, the default), ElevenLabs Flash v2.5 (32 languages) or Android's voice (offline; also the fallback when OpenRouter fails). Kokoro and ElevenLabs run through OpenRouter with your key.
+
 ## Attachments
 
 Talking about something, like a flat listing you're replying to? While you record, tap the 📎 on the floating panel (or **📎 Add** on Home) and **Paste what you copied** or **Attach a file** (images, PDFs, text, up to 10 MB). Attachments belong to that dictation: Refine gets them (PDFs are read as text by OpenRouter's file parser). Without Refine, they're simply kept with the note. They stay on the phone with the note for 7 days, like its audio.

@@ -190,6 +190,23 @@ final class TestServer {
   }
 
   /** Publishes as the chief would: text to paste, tagged with the request ID. */
+  /** A spoken reply from the chief in hands-free mode, as the dictate-and-delegate skill posts it. */
+  static void ntfySpeak(String topic, String request, String text) throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(ntfyRoot() + "/" + topic).openConnection();
+    try {
+      c.setRequestMethod("POST");
+      c.setDoOutput(true);
+      c.setRequestProperty("Title", "Spoken reply");
+      c.setRequestProperty("Tags", ChiefText.SPEAK_TAG + "," + BbBridge.requestTag(request));
+      try (OutputStream out = c.getOutputStream()) {
+        out.write(text.getBytes(StandardCharsets.UTF_8));
+      }
+      if (c.getResponseCode() >= 300) throw new IOException("ntfy publish → HTTP " + c.getResponseCode());
+    } finally {
+      c.disconnect();
+    }
+  }
+
   static void ntfyPaste(String topic, String request, String text) throws Exception {
     HttpURLConnection c = (HttpURLConnection) new URL(ntfyRoot() + "/" + topic).openConnection();
     try {

@@ -413,6 +413,11 @@ final class BbBridge {
     return new Sent(sent, how, refused, failed);
   }
 
+  /** A message from hands-free mode: what was said, tagged so the chief answers in speakable form. */
+  void sendHandsFree(String chiefId, String said, String request) throws Exception {
+    run(tellSnippet(chiefId, message(said, List.of(), HandsFree.TAG, request)));
+  }
+
   /** What the chief is told about files that came as base64 text parts. */
   static String base64Note(List<String> names) {
     return "(Dictate & Delegate couldn't upload my attachments directly, so they come as base64 text in"

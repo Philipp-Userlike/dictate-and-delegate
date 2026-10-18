@@ -4,6 +4,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Only asked for when you start hands-free mode: its controls on the lock screen. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
@@ -41,5 +44,7 @@
         <service android:name=".DictationService" android:exported="false" android:foregroundServiceType="specialUse|microphone">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-started dictation: keeps the floating stop control and the upload of the recording alive after the user taps stop; microphone type only while recording" />
         </service>
+        <!-- Hands-free mode: listens, sends to the chief and reads its replies aloud until you end it. -->
+        <service android:name=".HandsFreeService" android:exported="false" android:foregroundServiceType="microphone|mediaPlayback" />
     </application>
 </manifest>
