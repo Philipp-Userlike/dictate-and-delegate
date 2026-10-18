@@ -9,18 +9,28 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
 import java.security.KeyStore;
+import java.util.Set;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
-/** Secrets never leave app-private storage unencrypted; key material stays in Android Keystore. */
+/**
+ * Secrets (API keys, bb tokens, the ntfy topic) never leave app-private storage unencrypted; key
+ * material stays in Android Keystore. Values that aren't secrets (PLAIN) are kept plain in
+ * app-private storage, like notes; earlier versions sealed them too, and they move on first read.
+ */
 final class Vault {
   private static final String ALIAS = "drift.v1";
-  private final SharedPreferences prefs;
+
+  /** The templates, the last transcript and a version 1.0 dictation checkpoint. */
+  static final Set<String> PLAIN = Set.of("templates", "transcript", "progress");
+
+  private final SharedPreferences prefs, plain;
 
   Vault(Context context) {
     prefs = context.getSharedPreferences("vault", Context.MODE_PRIVATE);
+    plain = context.getSharedPreferences("data", Context.MODE_PRIVATE);
   }
 
   private static SecretKey key;
@@ -49,6 +59,12 @@ final class Vault {
   }
 
   synchronized void put(String name, String value) throws Exception {
+    if (PLAIN.contains(name)) {
+      if (!plain.edit().putString(name, value).commit())
+        throw new java.io.IOException(tr("Could not save your changes"));
+      prefs.edit().remove(name).commit();
+      return;
+    }
     String data = seal(value);
     if (!prefs.edit().putString(name, data).commit())
       throw new java.io.IOException(tr("Could not save encrypted data."));
@@ -65,9 +81,15 @@ final class Vault {
   }
 
   synchronized String get(String name) throws Exception {
+    if (PLAIN.contains(name)) {
+      String value = plain.getString(name, null);
+      if (value != null) return value;
+    }
     String data = prefs.getString(name, null);
     if (data == null) return "";
-    return unseal(data);
+    String value = unseal(data);
+    if (PLAIN.contains(name)) put(name, value);
+    return value;
   }
 
   synchronized String unseal(String data) throws Exception {
@@ -84,5 +106,6 @@ final class Vault {
 
   void remove(String name) {
     prefs.edit().remove(name).commit();
+    if (PLAIN.contains(name)) plain.edit().remove(name).commit();
   }
 }

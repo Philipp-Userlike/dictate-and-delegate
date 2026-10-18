@@ -24,7 +24,7 @@ public class TemplatesTest {
   }
 
   @Test
-  public void savedTemplatesAreEncryptedAndListedForTheTextModel() throws Exception {
+  public void savedTemplatesAreKeptPlainAndListedForTheTextModel() throws Exception {
     assertEquals("", templates.prompt(""));
     String id = templates.save(null, "Apartment application", "Dear landlord, I'd like to rent …");
     templates.save(null, "Empty", "  ");
@@ -36,15 +36,32 @@ public class TemplatesTest {
     assertTrue(prompt.contains("<template name=\"Apartment application\">\nDear landlord"));
     assertEquals("", templates.prompt("Empty"));
     assertEquals("", templates.prompt("Something else"));
-    String stored =
-        InstrumentationRegistry.getInstrumentation()
-            .getTargetContext()
-            .getSharedPreferences("vault", 0)
-            .getString("templates", "");
-    assertFalse(stored.contains("Dear landlord"));
+    var context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    // Not a secret: plain in app-private storage, nothing left in the encrypted vault.
+    assertTrue(context.getSharedPreferences("data", 0).getString("templates", "").contains("Dear landlord"));
+    assertFalse(context.getSharedPreferences("vault", 0).contains("templates"));
     templates.save(id, "Apartment", "Changed");
     assertEquals("Changed", templates.get(id).text());
     templates.delete(id);
     assertNull(templates.get(id));
+  }
+
+  @Test
+  public void templatesSealedByEarlierVersionsMovePlain() throws Exception {
+    var context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    String saved =
+        new org.json.JSONArray()
+            .put(new org.json.JSONObject().put("id", "old").put("name", "Old").put("text", "Kept"))
+            .toString();
+    context.getSharedPreferences("data", 0).edit().remove("templates").commit();
+    context
+        .getSharedPreferences("vault", 0)
+        .edit()
+        .putString("templates", new Vault(context).seal(saved))
+        .commit();
+    assertEquals("Kept", templates.get("old").text());
+    assertEquals(saved, context.getSharedPreferences("data", 0).getString("templates", ""));
+    assertFalse(context.getSharedPreferences("vault", 0).contains("templates"));
+    templates.delete("old");
   }
 }

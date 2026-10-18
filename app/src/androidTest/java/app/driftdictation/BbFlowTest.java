@@ -706,7 +706,8 @@ public class BbFlowTest {
     assertTrue(e.json.optString("chiefFailed"), e.json.optString("chiefFailed").contains("isn't reachable right now (HTTP 503)"));
     JSONArray steps = e.json.getJSONArray("steps");
     assertTrue(steps.getJSONObject(steps.length() - 1).getString("detail").contains("HTTP 503"));
-    assertEquals(DictationService.FAILED, DictationService.session().chief);
+    // The note is saved before the session hears back.
+    until(() -> DictationService.FAILED.equals(DictationService.session().chief), "the chief failed");
     find(By.textStartsWith("Not sent to your chief of staff:"), "the panel's message");
     find("🧑‍💼 Send again");
 

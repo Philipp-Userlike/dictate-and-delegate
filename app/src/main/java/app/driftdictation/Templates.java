@@ -11,7 +11,7 @@ import org.json.JSONObject;
  * Texts the user keeps for reuse, like an apartment application. A dictation can ask for one and
  * say what to change ("use my apartment application for the flat on Hauptstraße, viewing on
  * Saturday"): the request check (Router) sees only the names, and only the template asked for
- * goes to the text model. Stored encrypted.
+ * goes to the text model. Kept plain in app-private storage, like notes.
  */
 final class Templates {
   record Template(String id, String name, String text) {}
