@@ -26,4 +26,18 @@ public class NoteListTest {
     assertEquals("first take", NoteList.group(List.of(redo, first)).get(0).shown().text());
     assertEquals(1, NoteList.search(notes, "OLDER").size());
   }
+
+  @Test
+  public void aNoteIsCompleteOnceItsFirstVersionIsRead() throws Exception {
+    // Newest rows first: the redo of "a" is read before "a" itself.
+    HistoryEntry redo = version("b", "a", 300, "smarter take");
+    HistoryEntry newer = version("c", "c", 200, "newer note");
+    HistoryEntry first = version("a", "a", 100, "first take");
+    List<NoteList.Note> partial = NoteList.complete(NoteList.group(List.of(redo, newer)));
+    assertEquals(1, partial.size());
+    assertEquals("c", partial.get(0).id());
+    List<NoteList.Note> all = NoteList.complete(NoteList.group(List.of(redo, newer, first)));
+    assertEquals(List.of("c", "a"), all.stream().map(NoteList.Note::id).toList());
+    assertEquals(2, all.get(1).versions().size());
+  }
 }

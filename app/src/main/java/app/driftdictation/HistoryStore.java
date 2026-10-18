@@ -9,13 +9,14 @@ import java.util.*;
 import org.json.JSONObject;
 
 /**
- * SQLite rows have encrypted payloads; only IDs and dates remain indexable. No automatic expiry.
+ * SQLite rows have encrypted payloads; only IDs (the row's and its recording's) and dates remain
+ * indexable. No automatic expiry.
  */
 final class HistoryStore extends SQLiteOpenHelper {
   private final Vault vault;
 
   HistoryStore(Context context) {
-    super(context, "history.db", null, 1);
+    super(context, "history.db", null, 2);
     vault = new Vault(context);
   }
 
@@ -23,50 +24,85 @@ final class HistoryStore extends SQLiteOpenHelper {
   public void onCreate(SQLiteDatabase db) {
     db.execSQL(
         "CREATE TABLE history (id TEXT PRIMARY KEY, created INTEGER NOT NULL, payload TEXT NOT"
-            + " NULL)");
+            + " NULL, recording TEXT)");
+    db.execSQL("CREATE INDEX history_recording ON history (recording)");
   }
 
   @Override
-  public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {}
+  public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    if (oldVersion < 2) {
+      // Earlier rows get their recording when they are next read.
+      db.execSQL("ALTER TABLE history ADD COLUMN recording TEXT");
+      db.execSQL("CREATE INDEX history_recording ON history (recording)");
+    }
+  }
+
+  private record Outdated(String json, String sealed, HistoryEntry entry) {}
+
+  /** Rows of this query, read with COLUMNS. */
+  private List<HistoryEntry> read(Cursor c) throws Exception {
+    List<HistoryEntry> entries = new ArrayList<>();
+    List<Outdated> outdated = new ArrayList<>();
+    try (c) {
+      while (c.moveToNext()) {
+        String sealed = c.getString(1), json = vault.unsealRow(sealed);
+        HistoryEntry e = new HistoryEntry(new JSONObject(json));
+        entries.add(e);
+        if (c.isNull(2) || !Vault.isRow(sealed)) outdated.add(new Outdated(json, sealed, e));
+      }
+    }
+    // Rows saved by earlier versions get their recording and the history key, unless saved meanwhile.
+    if (!outdated.isEmpty()) {
+      SQLiteDatabase db = getWritableDatabase();
+      db.beginTransaction();
+      try {
+        for (Outdated o : outdated) {
+          ContentValues values = new ContentValues();
+          values.put("recording", o.entry().recordingId());
+          values.put("payload", vault.sealRow(o.json()));
+          db.update("history", values, "id=? AND payload=?", new String[] {o.entry().id(), o.sealed()});
+        }
+        db.setTransactionSuccessful();
+      } finally {
+        db.endTransaction();
+      }
+    }
+    return entries;
+  }
 
   void save(HistoryEntry entry) throws Exception {
     ContentValues values = new ContentValues();
     values.put("id", entry.id());
     values.put("created", entry.created());
-    values.put("payload", vault.seal(entry.json.toString()));
+    values.put("recording", entry.recordingId());
+    values.put("payload", vault.sealRow(entry.json.toString()));
     if (getWritableDatabase()
             .insertWithOnConflict("history", null, values, SQLiteDatabase.CONFLICT_REPLACE)
         < 0) throw new java.io.IOException(tr("Could not save transcript history."));
   }
 
   HistoryEntry get(String id) throws Exception {
-    try (Cursor c =
-        getReadableDatabase()
-            .query(
-                "history", new String[] {"payload"}, "id=?", new String[] {id}, null, null, null)) {
-      return c.moveToFirst()
-          ? new HistoryEntry(new JSONObject(vault.unseal(c.getString(0))))
-          : null;
-    }
+    List<HistoryEntry> found =
+        read(
+            getReadableDatabase()
+                .query("history", COLUMNS, "id=?", new String[] {id}, null, null, null));
+    return found.isEmpty() ? null : found.get(0);
   }
 
+  private static final String[] COLUMNS = {"id", "payload", "recording"};
+
   List<HistoryEntry> list(int limit, int offset) throws Exception {
-    List<HistoryEntry> entries = new ArrayList<>();
-    try (Cursor c =
+    return read(
         getReadableDatabase()
             .query(
                 "history",
-                new String[] {"payload"},
+                COLUMNS,
                 null,
                 null,
                 null,
                 null,
                 "created DESC, id DESC",
-                Math.max(0, offset) + "," + Math.max(1, limit))) {
-      while (c.moveToNext())
-        entries.add(new HistoryEntry(new JSONObject(vault.unseal(c.getString(0)))));
-    }
-    return entries;
+                Math.max(0, offset) + "," + Math.max(1, limit)));
   }
 
   List<HistoryEntry> all() throws Exception {
@@ -75,7 +111,18 @@ final class HistoryStore extends SQLiteOpenHelper {
 
   List<HistoryEntry> versions(String recordingId) throws Exception {
     List<HistoryEntry> result = new ArrayList<>();
-    for (HistoryEntry entry : all()) if (entry.recordingId().equals(recordingId)) result.add(entry);
+    for (HistoryEntry entry :
+        read(
+            getReadableDatabase()
+                .query(
+                    "history",
+                    COLUMNS,
+                    "recording=? OR recording IS NULL",
+                    new String[] {recordingId},
+                    null,
+                    null,
+                    "created DESC, id DESC")))
+      if (entry.recordingId().equals(recordingId)) result.add(entry);
     return result;
   }
 

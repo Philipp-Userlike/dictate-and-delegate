@@ -51,6 +51,17 @@ final class NoteList {
     return notes;
   }
 
+  /**
+   * The notes whose first version is among the rows read so far. Rows are read newest first and
+   * redone versions are newer than the first, so these notes have all their versions.
+   */
+  static List<Note> complete(List<Note> notes) {
+    List<Note> result = new ArrayList<>();
+    for (Note n : notes)
+      if (n.versions().stream().anyMatch(v -> v.id().equals(n.id()))) result.add(n);
+    return result;
+  }
+
   static List<Note> search(List<Note> notes, String query) {
     String q = query.trim().toLowerCase(Locale.ROOT);
     if (q.isEmpty()) return notes;

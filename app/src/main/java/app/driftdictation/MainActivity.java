@@ -34,13 +34,14 @@ public final class MainActivity extends Activity {
   private String page = "", noteId = "", redoSession = "", templateId = "";
   static final String SOURCE_URL = "https://github.com/Philipp258/dictate-and-delegate";
   private long seenRevision = Long.MIN_VALUE;
-  private boolean loading, allowScreenshots;
+  private boolean loading, reloadNotes, allowScreenshots;
   private int usageMonth;
   private List<NoteList.Note> notes = new ArrayList<>();
   // Live views of the current page.
   private Button record;
   private TextView status, noteStatus;
-  private LinearLayout recovery, recentBox, notesBox, monthBox, wordsBox, modelList;
+  private LinearLayout recovery, recentBox, monthBox, wordsBox, modelList;
+  private ListView notesList;
   private EditText editor, practice;
   private String editorBase = "", modelsSort = "recommended", modelsQuery = "";
   private boolean applying;
@@ -273,7 +274,8 @@ public final class MainActivity extends Activity {
     noteStatus = null;
     skillsLine = hfStatus = hfPending = hfCost = null;
     hfSend = null;
-    recovery = recentBox = notesBox = monthBox = wordsBox = modelList = refineList = null;
+    recovery = recentBox = monthBox = wordsBox = modelList = refineList = null;
+    notesList = null;
     editor = practice = null;
     LinearLayout root = ui.vertical();
     root.setBackgroundColor(next.equals("settings") ? Ui.SOFT_BG : Ui.BG);
@@ -283,12 +285,18 @@ public final class MainActivity extends Activity {
           v.setPadding(i.left, i.top, i.right, i.bottom);
           return insets;
         });
-    ScrollView scroll = new ScrollView(this);
-    scroll.setFillViewport(true);
-    root.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
     content = ui.vertical();
     content.setPadding(ui.dp(20), ui.dp(12), ui.dp(20), ui.dp(28));
-    scroll.addView(content, new ScrollView.LayoutParams(-1, -1));
+    if (next.equals("notes")) {
+      // All notes can be thousands: a list that only makes the rows on screen, page on top.
+      notesList = notesList();
+      root.addView(notesList, new LinearLayout.LayoutParams(-1, -1));
+    } else {
+      ScrollView scroll = new ScrollView(this);
+      scroll.setFillViewport(true);
+      root.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
+      scroll.addView(content, new ScrollView.LayoutParams(-1, -1));
+    }
     switch (next) {
       case "welcome" -> welcomePage();
       case "key1" -> keyPage(true);
@@ -1754,34 +1762,73 @@ public final class MainActivity extends Activity {
     } else if (ready()) send(DictationService.RECORD);
   }
 
+  /** Rows read per query; Recent and this month's numbers show once their rows are in. */
+  private static final int NOTES_PAGE = 100;
+
   private void loadNotes() {
-    if (loading) return;
+    if (loading) {
+      reloadNotes = true;
+      return;
+    }
     loading = true;
+    reloadNotes = false;
+    long statsFrom =
+        Math.min(
+            monthStart(0).getTimeInMillis(),
+            dayStart(System.currentTimeMillis()) - 13 * 86_400_000L);
     io.execute(
         () -> {
-          List<HistoryEntry> all;
+          List<HistoryEntry> entries = new ArrayList<>();
+          Set<String> ids = new HashSet<>();
+          boolean recentShown = false, monthShown = false;
           try (HistoryStore h = new HistoryStore(this)) {
-            all = h.all();
+            for (int offset = 0; ; offset += NOTES_PAGE) {
+              List<HistoryEntry> page = h.list(NOTES_PAGE, offset);
+              // A note saved meanwhile shifts the pages by a row.
+              for (HistoryEntry e : page) if (ids.add(e.id())) entries.add(e);
+              boolean end = page.size() < NOTES_PAGE;
+              if (end) break;
+              List<NoteList.Note> complete = NoteList.complete(NoteList.group(entries));
+              if (!recentShown && complete.size() >= 3) {
+                recentShown = true;
+                main.post(() -> showRecent(complete));
+              }
+              if (!monthShown && entries.get(entries.size() - 1).created() < statsFrom) {
+                monthShown = true;
+                List<HistoryEntry> recent = new ArrayList<>(entries);
+                main.post(
+                    () -> {
+                      if (monthBox != null) renderMonth(recent);
+                    });
+              }
+              if (offset == 0) main.post(() -> showNotes(complete));
+            }
           } catch (Exception ex) {
-            all = new ArrayList<>();
+            // Show what was read.
           }
-          List<HistoryEntry> entries = all;
           List<NoteList.Note> grouped = NoteList.group(entries);
           main.post(
               () -> {
                 loading = false;
-                notes = grouped;
                 if (monthBox != null) renderMonth(entries);
-                if (recentBox != null) {
-                  recentBox.removeAllViews();
-                  if (grouped.isEmpty())
-                    ui.add(
-                        recentBox, ui.text(tr("Your first note will appear here."), 15, Ui.MUTED), 10);
-                  for (int i = 0; i < Math.min(3, grouped.size()); i++) recentRow(grouped.get(i));
-                }
-                if (notesBox != null) renderNotes();
+                showRecent(grouped);
+                showNotes(grouped);
+                if (reloadNotes) loadNotes();
               });
         });
+  }
+
+  private void showRecent(List<NoteList.Note> grouped) {
+    if (recentBox == null) return;
+    recentBox.removeAllViews();
+    if (grouped.isEmpty())
+      ui.add(recentBox, ui.text(tr("Your first note will appear here."), 15, Ui.MUTED), 10);
+    for (int i = 0; i < Math.min(3, grouped.size()); i++) recentRow(grouped.get(i));
+  }
+
+  private void showNotes(List<NoteList.Note> grouped) {
+    notes = grouped;
+    if (notesList != null) renderNotes();
   }
 
   private void recentRow(NoteList.Note n) {
@@ -1847,59 +1894,132 @@ public final class MainActivity extends Activity {
     search.addTextChangedListener(after(s -> renderNotes()));
     search.setTag("search");
     ui.add(content, search, 14);
-    notesBox = ui.add(content, ui.vertical(), 6);
     loadNotes();
   }
 
+  /** A day's label (String) or a note, as All notes lists them. */
+  private List<Object> noteItems = new ArrayList<>();
+
   private void renderNotes() {
-    if (notesBox == null) return;
+    if (notesList == null) return;
     View search = content.findViewWithTag("search");
     String query = search instanceof EditText e ? e.getText().toString() : "";
-    notesBox.removeAllViews();
     List<NoteList.Note> shown = NoteList.search(notes, query);
-    if (shown.isEmpty())
-      ui.add(
-          notesBox,
-          ui.text(query.isBlank() ? tr("No notes yet.") : tr("Nothing matches."), 15, Ui.MUTED),
-          14);
-    String lastDay = "";
+    List<Object> items = new ArrayList<>();
+    if (shown.isEmpty()) items.add(query.isBlank() ? tr("No notes yet.") : tr("Nothing matches."));
+    long dayFrom = Long.MAX_VALUE;
     for (NoteList.Note n : shown) {
-      String day = dayLabel(n.created());
-      if (!day.equals(lastDay)) {
-        ui.add(notesBox, ui.label(day), 18);
-        lastDay = day;
+      // Notes come newest first, so a day's label only needs working out when the day changes.
+      if (n.created() < dayFrom) {
+        dayFrom = dayStart(n.created());
+        items.add(new DayLabel(dayLabel(n.created())));
       }
+      items.add(n);
+    }
+    noteItems = items;
+    ((BaseAdapter) ((HeaderViewListAdapter) notesList.getAdapter()).getWrappedAdapter())
+        .notifyDataSetChanged();
+  }
+
+  private record DayLabel(String text) {}
+
+  private ListView notesList() {
+    noteTime = DateFormat.getTimeInstance(DateFormat.SHORT);
+    ListView list = new ListView(this);
+    list.setDivider(null);
+    list.setSelector(new android.graphics.drawable.ColorDrawable(0));
+    list.setPadding(ui.dp(20), 0, ui.dp(20), ui.dp(28));
+    list.setClipToPadding(false);
+    list.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
+    content.setPadding(0, ui.dp(12), 0, ui.dp(6));
+    list.addHeaderView(content, null, false);
+    list.setAdapter(
+        new BaseAdapter() {
+          public int getCount() {
+            return noteItems.size();
+          }
+
+          public Object getItem(int i) {
+            return noteItems.get(i);
+          }
+
+          public long getItemId(int i) {
+            return i;
+          }
+
+          public int getViewTypeCount() {
+            return 3;
+          }
+
+          public int getItemViewType(int i) {
+            Object item = noteItems.get(i);
+            return item instanceof NoteList.Note ? 0 : item instanceof DayLabel ? 1 : 2;
+          }
+
+          public boolean isEnabled(int i) {
+            return false;
+          }
+
+          public View getView(int i, View view, ViewGroup parent) {
+            Object item = noteItems.get(i);
+            if (item instanceof NoteList.Note n) return noteRow(n, view);
+            LinearLayout box = view == null ? ui.vertical() : (LinearLayout) view;
+            box.removeAllViews();
+            if (item instanceof DayLabel d) ui.add(box, ui.label(d.text()), 18);
+            else ui.add(box, ui.text((String) item, 15, Ui.MUTED), 14);
+            return box;
+          }
+        });
+    return list;
+  }
+
+  /** Made with the list, once the app's language is set. */
+  private DateFormat noteTime;
+
+  /** One note in All notes; reuses a row that scrolled away. */
+  private View noteRow(NoteList.Note n, View recycled) {
+    LinearLayout box = (LinearLayout) recycled;
+    if (box == null) {
+      box = ui.vertical();
       LinearLayout row = ui.vertical();
       row.setPadding(0, ui.dp(10), 0, ui.dp(12));
-      TextView t = ui.text(preview(n), 15, Ui.INK);
+      TextView t = ui.text("", 15, Ui.INK);
       t.setMaxLines(2);
       t.setEllipsize(TextUtils.TruncateAt.END);
       row.addView(t);
       LinearLayout meta = ui.horizontal();
-      meta.addView(
-          ui.mono(
-              DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(n.created()))
-                  + " · "
-                  + AudioFiles.elapsed((long) (n.shown().duration() * 1000))
-                  + " · "
-                  + cost(n.cost(), n.incompleteCost()),
-              12,
-              Ui.MUTED));
-      String badge = badge(n);
-      if (badge != null) {
-        TextView b = ui.text(badge, 12, Ui.TEAL);
-        b.setTypeface(Ui.MEDIUM);
-        b.setBackground(ui.shape(Ui.TEAL_SOFT, 0, 6));
-        b.setPadding(ui.dp(6), ui.dp(2), ui.dp(6), ui.dp(2));
-        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-2, -2);
-        l.leftMargin = ui.dp(8);
-        meta.addView(b, l);
-      }
+      meta.addView(ui.mono("", 12, Ui.MUTED));
+      TextView b = ui.text("", 12, Ui.TEAL);
+      b.setTypeface(Ui.MEDIUM);
+      b.setBackground(ui.shape(Ui.TEAL_SOFT, 0, 6));
+      b.setPadding(ui.dp(6), ui.dp(2), ui.dp(6), ui.dp(2));
+      LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-2, -2);
+      l.leftMargin = ui.dp(8);
+      meta.addView(b, l);
       ui.add(row, meta, 4);
-      row.setOnClickListener(v -> openNote(n.id()));
-      notesBox.addView(row);
-      notesBox.addView(ui.divider());
+      box.addView(row);
+      box.addView(ui.divider());
     }
+    LinearLayout row = (LinearLayout) box.getChildAt(0);
+    LinearLayout meta = (LinearLayout) row.getChildAt(1);
+    // Two lines show; laying out all of a long note would make scrolling stutter.
+    String preview = preview(n);
+    int cut = Character.isHighSurrogate(preview.charAt(Math.min(399, preview.length() - 1))) ? 399 : 400;
+    ((TextView) row.getChildAt(0))
+        .setText(preview.length() > 400 ? preview.substring(0, cut) : preview);
+    ((TextView) meta.getChildAt(0))
+        .setText(
+            noteTime.format(new Date(n.created()))
+                + " · "
+                + AudioFiles.elapsed((long) (n.shown().duration() * 1000))
+                + " · "
+                + cost(n.cost(), n.incompleteCost()));
+    String badge = badge(n);
+    TextView b = (TextView) meta.getChildAt(1);
+    b.setText(badge);
+    b.setVisibility(badge == null ? View.GONE : View.VISIBLE);
+    row.setOnClickListener(v -> openNote(n.id()));
+    return box;
   }
 
   private String badge(NoteList.Note n) {

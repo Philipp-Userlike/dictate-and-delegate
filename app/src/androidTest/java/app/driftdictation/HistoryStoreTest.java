@@ -64,4 +64,40 @@ public class HistoryStoreTest {
       prefs.edit().putBoolean("historyMigrated", migrated).commit();
     }
   }
+
+  @Test
+  public void rowsFromEarlierVersionsAreReadAndMovedToTheHistoryKey() throws Exception {
+    var context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    String id = UUID.randomUUID().toString(), redo = UUID.randomUUID().toString();
+    HistoryEntry first = HistoryEntry.create(id, "openai/whisper-1", 30);
+    first.json.put("text", "Sealed the old way");
+    HistoryEntry second = HistoryEntry.create(redo, "openai/whisper-1", 30);
+    second.json.put("recordingId", id).put("text", "Redone the old way");
+    try (HistoryStore h = new HistoryStore(context)) {
+      // As versions before the history key wrote them: sealed by Keystore, no recording column.
+      for (HistoryEntry e : new HistoryEntry[] {first, second}) {
+        var values = new android.content.ContentValues();
+        values.put("id", e.id());
+        values.put("created", e.created());
+        values.put("payload", new Vault(context).seal(e.json.toString()));
+        h.getWritableDatabase().insert("history", null, values);
+      }
+      var versions = h.versions(id);
+      assertEquals(2, versions.size());
+      try (var cursor =
+          h.getReadableDatabase()
+              .rawQuery(
+                  "SELECT payload, recording FROM history WHERE id IN (?, ?)",
+                  new String[] {id, redo})) {
+        while (cursor.moveToNext()) {
+          assertTrue(Vault.isRow(cursor.getString(0)));
+          assertFalse(cursor.getString(0).contains("old way"));
+          assertEquals(id, cursor.getString(1));
+        }
+      }
+      assertEquals("Redone the old way", h.get(redo).text());
+      h.delete(id);
+      h.delete(redo);
+    }
+  }
 }
