@@ -10,6 +10,9 @@ import android.os.*;
 
 /** Brief user-visible launch bridge for microphone access, shared by the tile and overlay. */
 public final class RecordActivity extends Activity {
+  /** Extra: start hands-free mode instead, with this PCM file as the start of the first turn. */
+  static final String HANDS_FREE_SEED = "handsFreeSeed";
+
   private boolean sent;
 
   @Override
@@ -28,6 +31,20 @@ public final class RecordActivity extends Activity {
     super.onWindowFocusChanged(focused);
     if (!focused || sent) return;
     sent = true;
+    if (getIntent().hasExtra(HANDS_FREE_SEED)) {
+      // From the dictation panel's 📞: hands-free mode, starting with what was said so far.
+      String seed = getIntent().getStringExtra(HANDS_FREE_SEED);
+      Intent i = new Intent(this, HandsFreeService.class).setAction(HandsFreeService.START);
+      if (seed != null && !seed.isEmpty()) i.putExtra(HandsFreeService.SEED, seed);
+      try {
+        startForegroundService(i);
+      } catch (RuntimeException ex) {
+        openApp();
+        return;
+      }
+      finishAndRemoveTask();
+      return;
+    }
     String current = getSharedPreferences("settings", 0).getString("state", "");
     boolean stop = DictationService.instance != null && DictationService.RECORDING.equals(current);
     if (!stop) {

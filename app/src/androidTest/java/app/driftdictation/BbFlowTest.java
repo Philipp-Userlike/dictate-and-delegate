@@ -129,7 +129,11 @@ public class BbFlowTest {
     if (page.exists()) {
       page.scrollIntoView(new UiSelector().text(text));
       UiObject2 shown = find(text);
-      if (shown.getVisibleBounds().bottom > device.getDisplayHeight() * 0.85) page.scrollToEnd(3);
+      if (shown.getVisibleBounds().bottom > device.getDisplayHeight() * 0.85) {
+        // A short drag, not a fling: a fling can carry the row off the top of a long page.
+        int x = device.getDisplayWidth() / 2, h = device.getDisplayHeight();
+        device.swipe(x, h * 7 / 10, x, h * 4 / 10, 40);
+      }
     }
     Thread.sleep(700);
     find(text).click();

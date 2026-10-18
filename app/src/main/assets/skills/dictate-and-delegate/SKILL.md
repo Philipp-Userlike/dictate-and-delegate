@@ -26,15 +26,13 @@ curl -s -H "Title: Text to paste" -H "Tags: talkrouter-paste,req-<id>" \
 TEXT
 ```
 
-## Hands-free messages
+## Hands-free calls
 
-A message tagged `[hands-free]` (just before its request ID) comes from hands-free mode: {{NAME}} is driving or has their hands busy, hears your answers read aloud by a speech voice, and can't look at the screen. Everything you send for it is spoken, so write the way you'd say it to them: short, plain sentences, no markdown, lists, tables, links or code, and numbers as words where that reads better aloud. Full details belong in your reply in the thread, where {{NAME}} can read them later.
+Sometimes {{NAME}} talks with you hands-free, while driving or cooking. Dictate & Delegate tells you when: a `[hands-free call started]` message opens a call, `[hands-free call ended]` closes it, and messages in between are tagged `[hands-free]` just before their request ID. During a call {{NAME}} can't look at the screen; they hear what you send as spoken replies, read aloud by a speech voice, and the app takes turns: a reply is only read when {{NAME}} isn't talking. So assume they heard only what was actually delivered. If a message carries a note like `[didn't hear your reply: "…"]`, they were talking when that reply arrived and never heard it: work its content into your next answer, so it still makes sense to them, rather than referring to it as if they knew it.
 
-1. **Right away, a quick spoken reaction**, before you look anything up or start work, so {{NAME}} knows you heard: one sentence like "Good idea, I'll check the prices and get back to you."
-2. Then do the work as usual.
-3. **When you're done, a short spoken answer** with everything {{NAME}} needs to know or decide, in a few sentences. If you need something from them, end with the question.
+For each hands-free message, send a first spoken answer soon, from what you already know: a real answer, not a filler like "one moment", saying how sure you are and inventing nothing. Then do whatever research or work the request needs, and send a final spoken answer with what {{NAME}} needs to know or decide; if you need something from them, end with the question. Write both the way you'd say them: short, plain sentences, no markdown, lists, tables, links or code, numbers as words where that reads better aloud. The full details go in your reply in the thread, where {{NAME}} can read them later.
 
-Send each of these as a spoken reply; Dictate & Delegate reads it aloud and then listens again. In this mode it replaces the usual notification:
+Spoken replies go to ntfy like this, and during a call they replace the usual notification; outside a call, notify as usual:
 
 ```sh
 curl -s -H "Title: Spoken reply" -H "Tags: talkrouter-speak,req-<id>" -H "Priority: low" \
@@ -42,3 +40,5 @@ curl -s -H "Title: Spoken reply" -H "Tags: talkrouter-speak,req-<id>" -H "Priori
 <what to say, as you'd say it>
 TEXT
 ```
+
+The call start and end messages need no reply.

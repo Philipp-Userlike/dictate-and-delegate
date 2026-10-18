@@ -25,11 +25,20 @@ import org.json.JSONObject;
  */
 final class Voice {
   /** A choice in Settings → Hands-free: the OpenRouter model and voice, or Android's. */
-  record Choice(String id, String label, String model, String voice) {}
+  record Choice(String id, String name, String note, String model, String voice, String pricePerCharacter) {
+    String label() {
+      return name + " · " + note;
+    }
 
-  static final Choice KOKORO = new Choice("kokoro", "Kokoro · English · cheapest", "hexgrad/kokoro-82m", "af_heart"),
-      ELEVEN = new Choice("eleven", "ElevenLabs Flash v2.5 · 32 languages", "elevenlabs/eleven-flash-v2.5", "george"),
-      ANDROID = new Choice("android", "Android's voice · offline", "", "");
+    /** OpenRouter's list price, for when the real cost can't be looked up. */
+    java.math.BigDecimal perCharacter() {
+      return new java.math.BigDecimal(pricePerCharacter);
+    }
+  }
+
+  static final Choice KOKORO = new Choice("kokoro", "Kokoro", "cheapest", "hexgrad/kokoro-82m", "af_heart", "0.00000062"),
+      ELEVEN = new Choice("eleven", "ElevenLabs Flash v2.5", "best voice", "elevenlabs/eleven-flash-v2.5", "george", "0.00002"),
+      ANDROID = new Choice("android", "Android's voice", "offline, free", "", "", "0");
   static final Choice[] CHOICES = {KOKORO, ELEVEN, ANDROID};
 
   static Choice choice(String id) {
@@ -67,26 +76,61 @@ final class Voice {
     return new JSONObject().put("model", c.model()).put("voice", c.voice()).put("input", text).put("response_format", "mp3");
   }
 
-  /** Reads text aloud; done runs on the main thread once it ends. Network: not on the main thread. */
-  void speak(Choice choice, String text, Done done) {
+  /**
+   * Reads text aloud; done runs on the main thread once it ends. Returns OpenRouter's generation ID
+   * for the cost ("" for Android's voice or a failure). Network: not on the main thread.
+   */
+  String speak(Choice choice, String text, Done done) {
     stopped = false;
     synchronized (this) {
       current = done;
     }
     if (choice.model().isEmpty()) {
       speakAndroid(text);
-      return;
+      return "";
     }
     try {
       File mp3 = fetch(choice, text);
       if (stopped) {
         finished();
-        return;
+        return generation;
       }
       play(mp3);
+      return generation;
     } catch (Exception ex) {
       speakAndroid(text); // OpenRouter failed: Android's voice instead.
+      return "";
     }
+  }
+
+  private volatile String generation = "";
+
+  /** What OpenRouter charged for a generation (GET /generation), or null if it can't say yet. */
+  static java.math.BigDecimal cost(Context context, String generation) {
+    if (generation == null || generation.isEmpty()) return null;
+    for (int attempt = 0; attempt < 4; attempt++) {
+      try {
+        Thread.sleep(1500L * (attempt + 1)); // It shows up a moment after the call.
+        String key = new Vault(context).get(OpenRouter.KEY);
+        HttpURLConnection c =
+            (HttpURLConnection) new URL(OpenRouter.base() + "/generation?id=" + java.net.URLEncoder.encode(generation, "UTF-8")).openConnection();
+        try {
+          c.setConnectTimeout(10_000);
+          c.setReadTimeout(15_000);
+          c.setRequestProperty("Authorization", "Bearer " + key);
+          if (c.getResponseCode() >= 300) continue;
+          try (InputStream in = c.getInputStream()) {
+            JSONObject d = new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8)).optJSONObject("data");
+            if (d != null && d.has("total_cost")) return new java.math.BigDecimal(d.get("total_cost").toString());
+          }
+        } finally {
+          c.disconnect();
+        }
+      } catch (Exception ignored) {
+        /* Try again. */
+      }
+    }
+    return null;
   }
 
   private File fetch(Choice choice, String text) throws Exception {
@@ -106,6 +150,8 @@ final class Voice {
         out.write(payload);
       }
       if (c.getResponseCode() >= 300) throw new IOException(tr("The voice model answered with HTTP %1$d.", c.getResponseCode()));
+      String id = c.getHeaderField("X-Generation-Id");
+      generation = id == null ? "" : id;
       File f = new File(context.getCacheDir(), "reply.mp3");
       try (InputStream in = c.getInputStream(); FileOutputStream out = new FileOutputStream(f)) {
         in.transferTo(out);

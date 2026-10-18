@@ -46,7 +46,6 @@ public class HandsFreeFlowTest {
         .putInt(HandsFree.SILENCE_SEND_MS, 30_000)
         .remove(HandsFree.SEND_WORDS)
         .remove(HandsFree.END_WORDS)
-        .remove(HandsFree.STOP_WORDS)
         .putString(HandsFree.VOICE, Voice.KOKORO.id())
         .commit();
     BbBridge bb = new BbBridge(context);
@@ -73,23 +72,30 @@ public class HandsFreeFlowTest {
     fail("Never happened: " + what);
   }
 
-  /** Half a second of speech, then a second and a half of quiet: one part. */
+  /** 1.2 s of speech (enough to take the turn), then a second and a half of quiet: one part. */
   void talk() throws Exception {
     HandsFreeSession s = HandsFreeService.session();
     assertNotNull(s);
-    for (int i = 0; i < 25; i++) s.frame(HandsFreeTestFrames.frame(6000));
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000));
     for (int i = 0; i < 75; i++) s.frame(HandsFreeTestFrames.frame(50));
   }
 
+  /** The last message from the call (not the call's start or end signal). */
   String lastTell() throws Exception {
     List<String> snippets = TestServer.bbSnippets();
-    for (int i = snippets.size() - 1; i >= 0; i--) if (snippets.get(i).contains("\"thread\",\"tell\"")) return snippets.get(i);
+    for (int i = snippets.size() - 1; i >= 0; i--)
+      if (snippets.get(i).contains("\"thread\",\"tell\"") && snippets.get(i).contains("[request:")) return snippets.get(i);
     return "";
+  }
+
+  boolean told(String line) throws Exception {
+    for (String code : TestServer.bbSnippets()) if (code.contains("\"thread\",\"tell\"") && code.contains(line)) return true;
+    return false;
   }
 
   @Test
   public void talkSendByWordHearTheReplyThenEndByWord() throws Exception {
-    TestServer.transcripts("I've been thinking about the trip.", "Book a table for Friday. Over.", "That's all.");
+    TestServer.transcripts("I've been thinking about the trip.", "Book a table for Friday. Over.", "End the call.");
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
     talk();
@@ -128,13 +134,36 @@ public class HandsFreeFlowTest {
         },
         "the reply sent to the voice model");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after reading");
+    // Reading it cost $0.0001 (the fake's generation); the note of that message has it, on top of
+    // the transcriptions ($0.001 each), and the call total counts both.
+    until(
+        () -> {
+          try (HistoryStore h = new HistoryStore(context)) {
+            HistoryEntry e = h.list(1, 0).get(0);
+            return e.voiceCost().compareTo(new java.math.BigDecimal("0.0001")) == 0;
+          }
+        },
+        "the voice's cost on the note");
+    try (HistoryStore h = new HistoryStore(context)) {
+      HistoryEntry e = h.list(1, 0).get(0);
+      assertEquals(0, new java.math.BigDecimal("0.0021").compareTo(e.cost()));
+      assertEquals("hexgrad/kokoro-82m", e.json.optString("voiceModel"));
+      JSONArray steps = e.json.getJSONArray("steps");
+      assertEquals("voice", steps.getJSONObject(steps.length() - 1).getString("kind"));
+      assertTrue(e.json.getJSONArray("handsFreeLog").length() > 0);
+    }
+    assertEquals(0, new java.math.BigDecimal("0.0021").compareTo(HandsFreeService.callCost));
     int speech = 0;
     JSONArray all = TestServer.requests();
     for (int i = 0; i < all.length(); i++) if (all.getJSONObject(i).getString("kind").equals("speech")) speech++;
     assertEquals(1, speech);
-    // "That's all" ends hands-free.
+    // "End the call" ends hands-free (once the microphone is back after the reply's tail).
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
     talk();
     until(() -> HandsFreeService.instance == null, "hands-free ended by the end word");
+    // The chief was told when the call started and ended.
+    assertTrue(told("[hands-free call started]"));
+    until(() -> told("[hands-free call ended]"), "the call's end told");
   }
 
   @Test
@@ -154,7 +183,7 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.session() != null, "hands-free started");
     // Speech without a send word, then the screen's Send now.
     HandsFreeSession s = HandsFreeService.session();
-    for (int i = 0; i < 25; i++) s.frame(HandsFreeTestFrames.frame(6000));
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000));
     for (int i = 0; i < 75; i++) s.frame(HandsFreeTestFrames.frame(50));
     until(() -> HandsFreeService.session().pending().equals("Remind me to call Jana"), "the part");
     UiObject2 send = device.wait(Until.findObject(By.text("Send now")), 5000);
@@ -197,6 +226,7 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.session() != null, "hands-free started");
     talk();
     until(() -> HandsFreeService.session().sent() == 1, "the message sent");
+    // A first real answer; a final one only if the request needs work, so a minute more for it.
     long deadline = SystemClock.elapsedRealtime() + 5 * 60_000;
     List<String> spoken = new java.util.ArrayList<>();
     while (SystemClock.elapsedRealtime() < deadline && spoken.size() < 2) {
@@ -205,12 +235,35 @@ public class HandsFreeFlowTest {
       for (int i = 0; i < all.length(); i++)
         if (all.getJSONObject(i).getString("kind").equals("speech"))
           spoken.add(all.getJSONObject(i).getJSONObject("body").getString("input"));
+      if (spoken.size() == 1) deadline = Math.min(deadline, SystemClock.elapsedRealtime() + 60_000);
       Thread.sleep(1000);
     }
     for (String t : spoken) android.util.Log.i("TalkRouterReal", "spoken: " + t);
-    assertTrue("a quick reaction and an answer, read aloud: " + spoken, spoken.size() >= 2);
+    assertFalse("an answer, read aloud", spoken.isEmpty());
     for (String t : spoken) {
       assertFalse(t, t.contains("|") || t.contains("**") || t.contains("```") || t.contains("\n- "));
     }
+    assertFalse("a real first answer, not a filler: " + spoken.get(0), spoken.get(0).toLowerCase().contains("one moment"));
+  }
+
+  @Test
+  public void theDictationPanelsCallButtonSwitchesToHandsFreeKeepingWhatWasSaid() throws Exception {
+    TestServer.transcripts("I was dictating about the trip");
+    device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
+    prefs.edit().putString("bubbleMode", "recording").commit();
+    DictationService.send(context, DictationService.RECORD);
+    long deadline = SystemClock.elapsedRealtime() + 10_000;
+    while (!"recording".equals(prefs.getString("state", "")) && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
+    Thread.sleep(1200);
+    UiObject2 call = device.wait(Until.findObject(By.desc("Hands-free call with your chief")), 8000);
+    assertNotNull("the 📞 on the dictation panel", call);
+    call.click();
+    until(() -> HandsFreeService.session() != null, "hands-free started from the dictation");
+    until(() -> "I was dictating about the trip".equals(HandsFreeService.session().pending()), "the dictation became the first turn");
+    // The dictation itself left no note and no saved audio.
+    assertFalse(DictationService.audio(context).exists());
+    // The call floats: its panel shows the state and End.
+    assertNotNull(device.wait(Until.findObject(By.textContains("Listening")), 5000));
+    assertNotNull(device.wait(Until.findObject(By.desc("End hands-free")), 5000));
   }
 }

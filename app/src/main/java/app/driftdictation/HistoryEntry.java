@@ -78,6 +78,11 @@ final class HistoryEntry {
     return new BigDecimal(json.optString("routeCost", "0"));
   }
 
+  /** The part of cost the voice charged for reading the chief's replies (hands-free). */
+  BigDecimal voiceCost() {
+    return new BigDecimal(json.optString("voiceCost", "0"));
+  }
+
   /** The part of cost Jev charged. */
   BigDecimal jevCost() {
     return new BigDecimal(json.optString("jevCost", "0"));

@@ -333,6 +333,10 @@ public final class DictationService extends Service {
                 if (RECORDING.equals(state)) stopRecording(true);
               }
 
+              public void call() {
+                callChief();
+              }
+
               public void attach() {
                 // The 📎: add context while recording goes on.
                 startActivity(
@@ -806,6 +810,22 @@ public final class DictationService extends Service {
     }
   }
 
+  /** The same for the note that sent a request to the chief (found by its request ID). */
+  static void updateByRequest(Context context, String request, Change change) throws Exception {
+    synchronized (NOTES) {
+      try (HistoryStore h = new HistoryStore(context)) {
+        for (HistoryEntry e : h.list(200, 0))
+          if (request.equals(e.json.optString("chiefRequest"))) {
+            change.apply(e);
+            h.save(e);
+            context.getSharedPreferences("settings", MODE_PRIVATE).edit().putLong("historyRevision", System.nanoTime()).apply();
+            return;
+          }
+      }
+    }
+    throw new IOException("No note for request " + request);
+  }
+
   static HistoryEntry load(Context context, String id) {
     synchronized (NOTES) {
       try (HistoryStore h = new HistoryStore(context)) {
@@ -1046,6 +1066,46 @@ public final class DictationService extends Service {
                           ? tr("Recording interrupted. Saved audio can be retried.")
                           : friendly(failure));
                 } else upload();
+              });
+        });
+  }
+
+  /**
+   * 📞 while recording: the recording so far becomes the start of a hands-free call. The audio
+   * goes to hands-free mode (through RecordActivity, which may start the microphone service), this
+   * dictation ends without a note, and listening goes on there.
+   */
+  private void callChief() {
+    if (!RECORDING.equals(state)) return;
+    transition(STOPPING, tr("Starting the call…"));
+    main.removeCallbacks(ticker);
+    PcmRecorder current = recorder;
+    recorder = null;
+    worker.execute(
+        () -> {
+          current.stop();
+          File seed = new File(getCacheDir(), "handsfree-seed.pcm");
+          try {
+            java.nio.file.Files.copy(audio(this).toPath(), seed.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+          } catch (IOException ex) {
+            seed.delete();
+          }
+          main.post(
+              () -> {
+                if (!alive) return;
+                if (wake.isHeld()) wake.release();
+                foreground(false);
+                new Attachments(this).clearPending();
+                try {
+                  clearPending();
+                } catch (IOException ignored) {
+                  /* The seed copy is what matters now. */
+                }
+                startActivity(
+                    new Intent(this, RecordActivity.class)
+                        .putExtra(RecordActivity.HANDS_FREE_SEED, seed.exists() ? seed.getPath() : "")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+                transition(READY, tr("Tap the bubble to record"));
               });
         });
   }

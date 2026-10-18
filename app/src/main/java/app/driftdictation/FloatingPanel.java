@@ -38,6 +38,9 @@ final class FloatingPanel extends FrameLayout {
 
     void attach();
 
+    /** 📞 while recording: switch to a hands-free call with the chief, keeping what was said. */
+    void call();
+
     void insert();
 
     void refine();
@@ -61,7 +64,7 @@ final class FloatingPanel extends FrameLayout {
 
   private final OverlayIcon icon;
   private final LinearLayout bar, extra;
-  private final TextView attach, timer, close, insert, refine, chief, fromChief, status;
+  private final TextView attach, timer, close, insert, refine, chief, fromChief, status, call;
   private final Row row;
   private final Actions actions;
   private final Drag drag;
@@ -95,6 +98,8 @@ final class FloatingPanel extends FrameLayout {
     timer.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
     attach = pill(row, "📎", v -> actions.attach());
     name(attach, tr("Add context to this dictation"));
+    call = pill(row, "📞", v -> actions.call());
+    name(call, tr("Hands-free call with your chief"));
     close = pill(row, "✕", v -> actions.close());
     insert = pill(row, "📥", v -> actions.insert());
     refine = pill(row, "", v -> actions.refine());
@@ -246,10 +251,14 @@ final class FloatingPanel extends FrameLayout {
     if (!Boolean.valueOf(recording).equals(recordingOrder)) {
       recordingOrder = recording;
       row.removeAllViews();
-      for (TextView t : recording ? new TextView[] {timer, refine, chief, close, attach, insert} : new TextView[] {close, insert, refine, chief, timer, attach})
+      for (TextView t :
+          recording
+              ? new TextView[] {timer, refine, chief, call, close, attach, insert}
+              : new TextView[] {close, insert, refine, chief, timer, attach, call})
         row.addView(t, new ViewGroup.LayoutParams(-2, dp(40)));
     }
     attach.setVisibility(recording ? VISIBLE : GONE);
+    call.setVisibility(recording && m.chiefAvailable() ? VISIBLE : GONE);
     attach.setText(m.attached() > 0 ? "📎 " + m.attached() : "📎");
     timer.setVisibility(recording ? VISIBLE : GONE);
     timer.setText("● " + AudioFiles.elapsed(m.elapsed()) + "  ■");

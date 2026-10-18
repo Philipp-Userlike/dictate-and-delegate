@@ -65,8 +65,8 @@ public final class MainActivity extends Activity {
 
   private String bbNotice = "";
   private boolean bbNoticeOk, changingChief;
-  private TextView skillsLine, hfStatus, hfPending;
-  private Button hfSend, hfStop;
+  private TextView skillsLine, hfStatus, hfPending, hfCost;
+  private Button hfSend;
   /** The name field waits for a pause in typing before the skills are updated in bb. */
   private final Runnable skillsAfterName = () -> ChiefSkills.sync(this, false);
   private final Runnable refresh =
@@ -271,8 +271,8 @@ public final class MainActivity extends Activity {
     record = null;
     status = null;
     noteStatus = null;
-    skillsLine = hfStatus = hfPending = null;
-    hfSend = hfStop = null;
+    skillsLine = hfStatus = hfPending = hfCost = null;
+    hfSend = null;
     recovery = recentBox = notesBox = monthBox = wordsBox = modelList = refineList = null;
     editor = practice = null;
     LinearLayout root = ui.vertical();
@@ -299,6 +299,7 @@ public final class MainActivity extends Activity {
       case "start" -> startSettingsPage();
       case "handsfree" -> handsFreePage();
       case "hfsettings" -> handsFreeSettingsPage();
+      case "voices" -> voicesPage();
       case "try1" -> tryPage();
       case "bb1" -> bbPage(true);
       case "chief1" -> chiefPage(true);
@@ -1731,10 +1732,12 @@ public final class MainActivity extends Activity {
     models.setPadding(0, 0, 0, 0);
     models.addView(
         ui.row(
-            tr("Speech model"),
+            tr("Voice-to-text model"),
             modelName(profile.fixedModel()) + " · " + perMinute(profile.fixedModel()),
             null,
             v -> open("models")));
+    models.addView(ui.divider());
+    models.addView(ui.row(tr("Text-to-speech model"), voiceLabel(), null, v -> open("voices")));
     models.addView(ui.divider());
     models.addView(ui.row(tr("Refine"), refineLabel(), null, v -> open("refineModel")));
     LinearLayout recentHead = ui.horizontal();
@@ -2277,6 +2280,7 @@ public final class MainActivity extends Activity {
           // "text", "simple" and "smart": notes from before Refine.
           case "refine", "text", "simple", "smart" -> tr("Refine");
           case DictationService.CHIEF_STEP -> "bb";
+          case "voice" -> tr("Read aloud");
           default -> kind;
         };
     String name =
@@ -2285,6 +2289,7 @@ public final class MainActivity extends Activity {
           case "jev" -> "";
           case "check" -> LEGACY_CHECK_NAME;
           case DictationService.CHIEF_STEP -> tr("Chief of staff");
+          case "voice" -> voiceName(model);
           default -> textModelName(model);
         };
     // A step's detail is an error, except the old check's answer; Jev's answer is kept apart.
@@ -2527,7 +2532,10 @@ public final class MainActivity extends Activity {
             }
             double[] m = byModel.computeIfAbsent(e.model(), k -> new double[2]);
             m[0] += e.duration();
-            m[1] += e.cost().subtract(e.textCost()).subtract(e.routeCost()).subtract(e.jevCost()).doubleValue();
+            m[1] +=
+                e.cost().subtract(e.textCost()).subtract(e.routeCost()).subtract(e.jevCost()).subtract(e.voiceCost()).doubleValue();
+            if (e.voiceCost().signum() > 0)
+              byModel.computeIfAbsent(e.json.optString("voiceModel"), k -> new double[2])[1] += e.voiceCost().doubleValue();
             if (e.textCost().signum() > 0) {
               double[] t = byModel.computeIfAbsent(e.json.optString("textModel"), k -> new double[2]);
               t[1] += e.textCost().doubleValue();
@@ -2574,7 +2582,8 @@ public final class MainActivity extends Activity {
     for (Map.Entry<String, double[]> m : byModel.entrySet()) {
       LinearLayout row = ui.horizontal();
       row.addView(
-          ui.text(modelName(m.getKey()), 13, Ui.INK), new LinearLayout.LayoutParams(0, -2, 1));
+          ui.text(voiceName(m.getKey()).equals(m.getKey()) ? modelName(m.getKey()) : voiceName(m.getKey()), 13, Ui.INK),
+          new LinearLayout.LayoutParams(0, -2, 1));
       row.addView(
           ui.text(
               (m.getValue()[0] > 0 ? duration(m.getValue()[0]) + " · " : "")
@@ -2638,7 +2647,9 @@ public final class MainActivity extends Activity {
             v -> open("anthropic")));
     models.addView(ui.divider());
     models.addView(
-        ui.row(tr("Transcription"), modelName(profile.fixedModel()), null, v -> open("models")));
+        ui.row(tr("Voice-to-text"), modelName(profile.fixedModel()), null, v -> open("models")));
+    models.addView(ui.divider());
+    models.addView(ui.row(tr("Text-to-speech"), voiceLabel(), null, v -> open("voices")));
     models.addView(ui.divider());
     models.addView(ui.row(tr("Decisions"), decisionsLabel(), null, v -> open("decisions")));
     models.addView(ui.divider());
@@ -2696,7 +2707,7 @@ public final class MainActivity extends Activity {
     using.setPadding(0, 0, 0, 0);
     using.addView(ui.row(tr("Start and insert"), startLabel(), null, v -> open("start")));
     using.addView(ui.divider());
-    using.addView(ui.row(tr("Hands-free"), tr("Send words, voice and timing"), null, v -> open("hfsettings")));
+    using.addView(ui.row(tr("Hands-free"), tr("Send words and timing"), null, v -> open("hfsettings")));
     using.addView(ui.divider());
     using.addView(ui.row(tr("Floating panel"), bubbleLabel(), null, v -> bubbleOptions()));
     using.addView(ui.divider());
@@ -2885,30 +2896,19 @@ public final class MainActivity extends Activity {
    * control: start, send, stop reading and end.
    */
   private void handsFreePage() {
-    heading(
-        tr("Home"),
-        tr("Hands-free"),
-        tr("Talk with your chief of staff while you drive or cook. Pause as long as you like; nothing is sent until you say a send word or stay silent for a while. Your chief's answers are read aloud, then it listens again."));
+    heading(tr("Home"), tr("Hands-free"), null);
     if (!BbBridge.ready(this)) {
       ui.add(content, ui.text(tr("Set up your chief of staff in Settings → bb first."), 15, Ui.WARN), 16);
       return;
     }
-    SharedPreferences p = prefs;
-    LinearLayout how = ui.add(content, ui.card(Ui.TEAL_TINT, Ui.BAR), 16);
-    how.addView(ui.strong(tr("How to talk"), 15));
-    ui.add(
-        how,
-        ui.text(
-            tr("Send: end with %1$s.\nStop a reply being read: %2$s.\nEnd hands-free: %3$s.\nThe headset or car button sends, or stops reading.",
-                quoteList(HandsFree.words(p, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)),
-                quoteList(HandsFree.words(p, HandsFree.STOP_WORDS, HandsFree.DEFAULT_STOP)),
-                quoteList(HandsFree.words(p, HandsFree.END_WORDS, HandsFree.DEFAULT_END))),
-            14,
-            Ui.BODY),
-        6);
-    hfStatus = ui.add(content, ui.text("", 16, Ui.INK), 18);
-    hfPending = ui.add(content, ui.text("", 15, Ui.MUTED), 8);
     if (HandsFreeService.instance == null) {
+      ui.add(
+          content,
+          ui.text(
+              tr("Talk with your chief while you drive or cook. Pause as long as you like; answers are read aloud."),
+              15,
+              Ui.BODY),
+          4);
       Button start =
           ui.button(
               tr("Start hands-free"),
@@ -2925,22 +2925,33 @@ public final class MainActivity extends Activity {
                 HandsFreeService.send(this, HandsFreeService.START);
               });
       start.setMinHeight(ui.dp(62));
-      ui.add(content, start, 16);
+      ui.add(content, start, 20);
+      hfStatus = ui.add(content, ui.text("", 14, Ui.MUTED), 10);
     } else {
+      // One big state, in its own colour, so it reads at a glance.
+      hfStatus = ui.add(content, ui.text("", 26, Ui.INK), 18);
+      hfStatus.setTypeface(Ui.BOLD);
+      hfStatus.setGravity(Gravity.CENTER);
+      hfStatus.setPadding(ui.dp(16), ui.dp(28), ui.dp(16), ui.dp(28));
+      hfPending = ui.add(content, ui.text("", 15, Ui.MUTED), 10);
       hfSend = ui.add(content, ui.button(tr("Send now"), Ui.Kind.PRIMARY, v -> HandsFreeService.send(this, HandsFreeService.SEND)), 16);
       hfSend.setMinHeight(ui.dp(62));
-      hfStop = ui.add(content, ui.button(tr("Stop reading"), Ui.Kind.OUTLINE, v -> HandsFreeService.send(this, HandsFreeService.STOP_READING)), 10);
-      Button end =
-          ui.button(
-              tr("End hands-free"),
-              Ui.Kind.QUIET,
-              v -> {
-                HandsFreeService.send(this, HandsFreeService.END);
-              });
+      Button end = ui.button(tr("End hands-free"), Ui.Kind.QUIET, v -> HandsFreeService.send(this, HandsFreeService.END));
       end.setTextColor(Ui.WARN);
       ui.add(content, end, 10);
+      hfCost = ui.add(content, ui.text("", 12, Ui.MUTED), 6);
+      hfCost.setGravity(Gravity.CENTER);
     }
-    ui.add(content, ui.button(tr("Hands-free settings"), Ui.Kind.QUIET, v -> open("hfsettings")), 18);
+    ui.add(
+        content,
+        ui.text(
+            tr("Say %1$s to send, %2$s to end. The headset button sends too. While a reply is read, the microphone is off.",
+                quoteList(HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)),
+                quoteList(HandsFree.list(HandsFree.endSetting(prefs)))),
+            13,
+            Ui.MUTED),
+        18);
+    ui.add(content, ui.button(tr("Hands-free settings"), Ui.Kind.QUIET, v -> open("hfsettings")), 8);
     renderHandsFree();
   }
 
@@ -2952,51 +2963,116 @@ public final class MainActivity extends Activity {
 
   private void renderHandsFree() {
     if (hfStatus == null) return;
-    // Started or ended (here, by a spoken end word or from the notification): other buttons.
+    // Started or ended (here, by the end phrase or from the notification): other buttons.
     if ((HandsFreeService.instance != null) != (hfSend != null)) {
       show(page);
       return;
     }
     HandsFreeSession s = HandsFreeService.session();
-    if (s == null) {
-      hfStatus.setText(HandsFreeService.instance == null ? tr("Hands-free is off.") : tr("Starting…"));
-      hfPending.setText("");
+    if (hfSend == null) {
+      hfStatus.setText(HandsFreeService.instance == null ? "" : tr("Starting…"));
       return;
     }
-    boolean reading = s.state() == HandsFreeSession.State.READING;
+    HandsFreeSession.Phase phase = s == null ? HandsFreeSession.Phase.LISTENING : s.phase();
     hfStatus.setText(
-        reading
-            ? tr("🔊 Reading your chief's reply")
-            : s.speaking() ? tr("🎙 Hearing you…") : tr("👂 Listening · %1$s sent", String.valueOf(s.sent())));
-    hfPending.setText(s.pending().isEmpty() ? "" : tr("So far: %1$s", s.pending()));
-    if (hfStop != null) hfStop.setEnabled(reading);
-    if (hfSend != null) hfSend.setEnabled(!reading);
+        switch (phase) {
+              case READING -> "🔊  ";
+              case WORKING -> "⏳  ";
+              default -> "🎙  ";
+            }
+            + HandsFreeService.phaseLabel(phase));
+    hfStatus.setBackground(
+        ui.shape(
+            switch (phase) {
+              case READING -> 0xffe8e0f7;
+              case WORKING -> 0xfffdf0d5;
+              default -> Ui.TEAL_SOFT;
+            },
+            0,
+            20));
+    // Below it, always labelled: your words so far while listening, the chief's while reading, or
+    // an error; and what the call cost so far.
+    String error = s == null ? "" : s.error(), line;
+    if (!error.isEmpty()) line = error;
+    else if (s == null) line = "";
+    else if (phase == HandsFreeSession.Phase.READING) line = tr("Chief: %1$s", s.reply());
+    else if (!s.pending().isEmpty()) line = tr("You: %1$s", s.pending());
+    else line = "";
+    hfPending.setTextColor(error.isEmpty() ? Ui.BODY : Ui.WARN);
+    hfPending.setText(line);
+    if (hfCost != null)
+      hfCost.setText(
+          HandsFreeService.callCost.signum() == 0 ? "" : tr("This call so far: %1$s", exact(HandsFreeService.callCost)));
+    // Only the control that fits: Send now while you can talk; End is always there.
+    hfSend.setVisibility(phase == HandsFreeSession.Phase.LISTENING ? View.VISIBLE : View.GONE);
   }
 
   /** Settings → Hands-free: the words, the timing and the voice. */
   private void handsFreeSettingsPage() {
-    heading(tr("Hands-free"), tr("Hands-free settings"), tr("Words count at the end of what you say, in any language, separated by commas."));
+    heading(tr("Hands-free"), tr("Hands-free settings"), tr("Words count at the end of what you say; separate several with commas."));
     wordsField(tr("Send words"), HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND);
-    wordsField(tr("End words (also send what came before)"), HandsFree.END_WORDS, HandsFree.DEFAULT_END);
-    wordsField(tr("Stop words (while a reply is read)"), HandsFree.STOP_WORDS, HandsFree.DEFAULT_STOP);
+    wordsField(tr("End words (send what came before, then end hands-free)"), HandsFree.END_WORDS, HandsFree.DEFAULT_END);
     secondsField(tr("Pause before a part is written down (seconds)"), HandsFree.PAUSE_MS, HandsFree.pauseMs(prefs));
     secondsField(tr("Send anyway after this much silence (seconds)"), HandsFree.SILENCE_SEND_MS, HandsFree.silenceSendMs(prefs));
-    ui.add(content, ui.strong(tr("Voice for replies"), 15), 22);
-    Ui.Flow voices = ui.add(content, ui.flow(), 8);
+    ui.add(content, ui.strong(tr("Telling your voice from the background"), 15), 24);
+    ui.add(
+        content,
+        ui.text(tr("Raise these if noise or other people take your turn; lower them if your quieter words are missed. The recent events below show each decision with its levels."), 13, Ui.MUTED),
+        4);
+    decimalField(tr("Your voice must be this many times louder than the background"), v -> prefs.edit().putFloat(HandsFree.GATE, (float) v).apply(), HandsFree.gate(prefs));
+    decimalField(tr("Speech needed to take your turn (seconds)"), v -> prefs.edit().putInt(HandsFree.TAKE_MS, (int) Math.round(v * 1000)).apply(), HandsFree.takeMs(prefs) / 1000.0);
+    // What hands-free heard and did, newest last: to see why a turn didn't work.
+    String log = HandsFreeService.log(this).trim();
+    if (!log.isEmpty()) {
+      String[] lines = log.split("\n");
+      ui.add(content, ui.strong(tr("Recent events"), 15), 24);
+      TextView events =
+          ui.mono(String.join("\n", java.util.Arrays.copyOfRange(lines, Math.max(0, lines.length - 80), lines.length)), 11, Ui.MUTED);
+      events.setTextIsSelectable(true);
+      ui.add(content, events, 6);
+    }
+  }
+
+  private String voiceLabel() {
+    Voice.Choice c = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id()));
+    return c.name() + " · " + voiceNote(c);
+  }
+
+  private static String voiceName(String model) {
+    for (Voice.Choice c : Voice.CHOICES) if (c.model().equals(model) && !model.isEmpty()) return c.name();
+    return model;
+  }
+
+  private static String voiceNote(Voice.Choice c) {
+    return switch (c.id()) {
+      case "eleven" -> tr("best voice");
+      case "android" -> tr("offline, free");
+      default -> tr("cheapest");
+    };
+  }
+
+  /** Settings → Models & providers → Text-to-speech: the voice that reads the chief's replies. */
+  private void voicesPage() {
+    heading(tr("Back"), tr("Text-to-speech"), tr("Reads your chief's replies aloud in hands-free mode, which is English only for now."));
     String current = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id())).id();
-    for (Voice.Choice c : Voice.CHOICES)
-      voices.addView(
-          ui.chip(
-              c.label(),
-              c.id().equals(current),
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, 0), 12);
+    card.setPadding(0, 0, 0, 0);
+    for (Voice.Choice c : Voice.CHOICES) {
+      if (card.getChildCount() > 0) card.addView(ui.divider());
+      card.addView(
+          ui.row(
+              (c.id().equals(current) ? "✓  " : "") + c.name(),
+              voiceNote(c) + (c.model().isEmpty() ? "" : " · " + c.model()),
+              null,
               v -> {
                 prefs.edit().putString(HandsFree.VOICE, c.id()).apply();
                 show(page);
               }));
+    }
     ui.add(
         content,
-        ui.text(tr("Kokoro and ElevenLabs go through OpenRouter with your key. Android's voice works offline, and is used when OpenRouter fails."), 13, Ui.MUTED),
-        6);
+        ui.text(tr("Kokoro and ElevenLabs run through OpenRouter with your key; what they cost shows on each note and in Usage. Android's voice works offline, and takes over when OpenRouter fails."), 13, Ui.MUTED),
+        8);
   }
 
   private void wordsField(String label, String key, String fallback) {
@@ -3004,6 +3080,22 @@ public final class MainActivity extends Activity {
     EditText field = ui.input(prefs.getString(key, fallback), fallback, false);
     ui.add(content, field, 6);
     autosave(field, t -> prefs.edit().putString(key, t).apply());
+  }
+
+  private void decimalField(String label, java.util.function.DoubleConsumer save, double value) {
+    ui.add(content, ui.strong(label, 15), 18);
+    EditText field = ui.input(String.format(Locale.ROOT, "%.1f", value), "", false);
+    field.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+    ui.add(content, field, 6);
+    autosave(
+        field,
+        t -> {
+          try {
+            save.accept(Double.parseDouble(t.trim().replace(',', '.')));
+          } catch (NumberFormatException ignored) {
+            /* Not a number yet. */
+          }
+        });
   }
 
   private void secondsField(String label, String key, int ms) {
@@ -3043,6 +3135,7 @@ public final class MainActivity extends Activity {
                 vault.remove(Anthropic.KEY);
                 vault.remove("templates");
                 new Attachments(this).deleteAll();
+                HandsFreeService.logFile(this).delete();
                 vault.remove("transcript");
                 vault.remove("progress");
                 BbBridge.forgetAll(this);

@@ -120,7 +120,11 @@ public class MvpFlowTest {
       page.scrollIntoView(new UiSelector().text(text));
       // scrollIntoView stops as soon as the edge shows; keep it clear of the gesture bar.
       UiObject2 shown = find(text);
-      if (shown.getVisibleBounds().bottom > device.getDisplayHeight() * 0.85) page.scrollToEnd(3);
+      if (shown.getVisibleBounds().bottom > device.getDisplayHeight() * 0.85) {
+        // A short drag, not a fling: a fling can carry the row off the top of a long page.
+        int x = device.getDisplayWidth() / 2, h = device.getDisplayHeight();
+        device.swipe(x, h * 7 / 10, x, h * 4 / 10, 40);
+      }
     }
     Thread.sleep(700); // A tap during a fling only stops the fling.
     find(text).click();
@@ -229,7 +233,7 @@ public class MvpFlowTest {
     tap("Later");
     find("Start dictating");
     assertTrue(prefs.getBoolean("onboarded", false));
-    find("Speech model");
+    find("Voice-to-text model");
     if ("true".equals(InstrumentationRegistry.getArguments().getString("shots"))) {
       tap("Settings");
       tap("Start and insert");
@@ -253,7 +257,8 @@ public class MvpFlowTest {
         find("MODELS & PROVIDERS").getVisibleBounds().top,
         find("OpenRouter key").getVisibleBounds().top,
         find("Anthropic key").getVisibleBounds().top,
-        find("Transcription").getVisibleBounds().top,
+        find("Voice-to-text").getVisibleBounds().top,
+        find("Text-to-speech").getVisibleBounds().top,
         find("Decisions").getVisibleBounds().top,
         find("Refine").getVisibleBounds().top
       };
@@ -352,7 +357,10 @@ public class MvpFlowTest {
     dictate();
     // The transcript comes first; Refine follows by itself.
     HistoryEntry e = latestOnce(n -> n.json.has("processed"), "the refined text");
-    assertEquals("Hi Jana, see you at ten.", new Vault(context).get("transcript"));
+    // The note is saved first, the last transcript right after it.
+    Vault vault = new Vault(context);
+    for (int i = 0; i < 50 && !"Hi Jana, see you at ten.".equals(vault.get("transcript")); i++) Thread.sleep(100);
+    assertEquals("Hi Jana, see you at ten.", vault.get("transcript"));
 
     // Exactly what the fake reported: no fee on top.
     BigDecimal all = TestServer.SPEECH.add(TestServer.JEV).add(TestServer.TEXT);
@@ -524,6 +532,8 @@ public class MvpFlowTest {
     dictate();
     latestOnce(n -> n.json.has("processingFailed"), "the Refine failure");
     assertEquals("um hi Jana see you at ten", new Vault(context).get("transcript"));
+    // The note is saved first, the session's state right after it.
+    for (int i = 0; i < 50 && !DictationService.FAILED.equals(DictationService.session().refine); i++) Thread.sleep(100);
     assertEquals(DictationService.FAILED, DictationService.session().refine);
   }
 
@@ -584,7 +594,7 @@ public class MvpFlowTest {
     device.executeShellCommand("cmd locale set-app-locales app.driftdictation --locales de-DE");
     launch();
     find("Einstellungen").click();
-    find("Transkription");
+    find("Spracherkennung");
     tap("Lokale Daten löschen");
     assertNotNull(
         device.wait(Until.findObject(By.text(Pattern.compile("(?i)alles löschen"))), 5000));

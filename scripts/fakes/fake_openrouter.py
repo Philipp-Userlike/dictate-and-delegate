@@ -8,6 +8,7 @@ Serves the OpenRouter endpoints Dictate & Delegate uses, under /api/v1 and /api/
   POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."
   POST /api/v1/chat/completions       Refine: a queued reply, or the dictation echoed
   POST /api/v1/audio/speech           hands-free replies: a short MP3 (scripts/fakes/reply.mp3); a voice is required
+  GET  /api/v1/generation?id=…        its cost: $0.0001
   POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
                                       only the questions asked are answered
 
@@ -120,6 +121,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(200, {"data": [{"type": "model", "id": "claude-sonnet-5-5"}], "has_more": False})
         if self.path == "/api/v1/models":
             return self.reply(200, CATALOG)
+        if self.path.startswith("/api/v1/generation?"):
+            # What a voice reply cost, looked up after it: a fixed $0.0001.
+            return self.reply(200, {"data": {"id": "gen-tts-fake", "total_cost": 0.0001}})
         if self.path == "/api/v1/key":
             if self.authorized():
                 self.reply(200, {"data": {"label": "fake", "usage": 0, "limit": None}})
@@ -168,6 +172,7 @@ class Handler(BaseHTTPRequestHandler):
             data = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "reply.mp3"), "rb").read()
             self.send_response(200)
             self.send_header("Content-Type", "audio/mpeg")
+            self.send_header("X-Generation-Id", "gen-tts-fake")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
