@@ -728,4 +728,40 @@ public class PanelTest {
     until("inserted", () -> "drag me".equals(padText()));
     assertFalse(device.findObjects(By.desc("Insert")).isEmpty()); // Still there.
   }
+
+  /** The 📎 while recording: the file picker over the panel takes taps, and the file is attached. */
+  @Test
+  public void theFilePickerFromThePanelTakesTapsAndAttachesTheFile() throws Exception {
+    // A small text file in Downloads (no shell redirect here: a copy of the hosts file).
+    device.executeShellCommand("cp /system/etc/hosts /sdcard/Download/attach-me.txt");
+    device.executeShellCommand("am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Download/attach-me.txt");
+    new Attachments(context).clearPending();
+    send(DictationService.RECORD);
+    waitFor("recording");
+    find(By.desc("Add context to this dictation"), "📎").click();
+    find("Attach a file").click();
+    // Android's picker: open Downloads if it doesn't start there, then the file.
+    UiObject2 file = device.wait(Until.findObject(By.text("attach-me.txt")), 5000);
+    if (file == null) {
+      UiObject2 roots = device.wait(Until.findObject(By.desc("Show roots")), 5000);
+      if (roots != null) roots.click();
+      Thread.sleep(1000); // The drawer slides in.
+      UiObject2 downloads = device.wait(Until.findObject(By.text("Downloads")), 5000);
+      assertNotNull("Downloads in the picker", downloads);
+      downloads.click();
+      file = device.wait(Until.findObject(By.text("attach-me.txt")), 5000);
+    }
+    assertNotNull("the file in the picker", file);
+    // Nothing of Dictate & Delegate over the picker: some pickers ignore every tap under another
+    // app's window.
+    assertFalse("no panel over the picker", DictationService.bubbleVisible());
+    shot("attach-picker");
+    file.click();
+    until("the file is attached", () -> new Attachments(context).pending().size() == 1);
+    assertEquals("attach-me.txt", new Attachments(context).pending().get(0).name());
+    // Back from the picker: the panel is there again, still recording.
+    until("the panel is back", DictationService::bubbleVisible);
+    assertEquals(DictationService.RECORDING, prefs.getString("state", ""));
+    send(DictationService.DISCARD);
+  }
 }

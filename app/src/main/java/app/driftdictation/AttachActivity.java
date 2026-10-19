@@ -92,10 +92,25 @@ public final class AttachActivity extends Activity {
             .setType("*/*")
             .putExtra(Intent.EXTRA_MIME_TYPES, new String[] {"image/*", "application/pdf", "text/*"});
     try {
+      // The floating panels go while the picker is open: some pickers take no taps under them.
+      DictationService.picking(true);
       startActivityForResult(intent, PICK);
     } catch (Exception ex) {
+      DictationService.picking(false);
       Toast.makeText(this, tr("No app to pick files with."), Toast.LENGTH_LONG).show();
     }
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    if (DictationService.picking) DictationService.picking(false); // Back from the picker.
+  }
+
+  @Override
+  protected void onDestroy() {
+    if (DictationService.picking) DictationService.picking(false);
+    super.onDestroy();
   }
 
   @Override

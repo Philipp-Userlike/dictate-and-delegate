@@ -300,9 +300,25 @@ public final class DictationService extends Service {
     }
   }
 
+  /**
+   * A file picker is open (the 📎's Attach a file). Pickers such as Android's photo picker ignore
+   * every tap while another app's window lies over the screen (tapjacking protection), so the
+   * floating panels are taken off until it closes.
+   */
+  static volatile boolean picking;
+
+  static void picking(boolean open) {
+    picking = open;
+    DictationService s = instance;
+    if (s != null) s.main.post(s::syncBubble);
+    HandsFreeService.panelHidden(open);
+  }
+
   private void syncBubble() {
     boolean visible =
-        !closing && ("always".equals(mode()) || ("recording".equals(mode()) && !READY.equals(state)));
+        !closing
+            && !picking
+            && ("always".equals(mode()) || ("recording".equals(mode()) && !READY.equals(state)));
     if (visible && Settings.canDrawOverlays(this)) showBubble();
     else removeBubble();
     renderBubble();

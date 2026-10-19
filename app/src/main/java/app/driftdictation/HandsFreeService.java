@@ -71,6 +71,22 @@ public final class HandsFreeService extends Service {
     return s == null ? null : s.session;
   }
 
+  /** Takes the call panel off while a file picker is open, and back (see DictationService.picking). */
+  static void panelHidden(boolean hidden) {
+    HandsFreeService s = instance;
+    if (s == null) return;
+    s.main.post(
+        () -> {
+          if (s.panel == null) return;
+          try {
+            if (hidden) s.panel.hide();
+            else s.panel.show();
+          } catch (RuntimeException ignored) {
+            /* The overlay permission went meanwhile. */
+          }
+        });
+  }
+
   /** Where the call panel is (x, y), or null without one (for the device tests). */
   static int[] panelPosition() {
     HandsFreeService s = instance;
