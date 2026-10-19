@@ -39,6 +39,7 @@
     <string name="t_0dc541d5" formatted="false">Przywróć domyślne</string>
     <string name="t_0de44d68" formatted="false">1 wiadomość</string>
     <string name="t_0e1c0935" formatted="false">bb odpowiada, ale nie oferuje narzędzia run. Zaktualizuj bb i sprawdź, czy wtyczka MCP jest włączona.</string>
+    <string name="t_0ea7c5dd" formatted="false">Czytanie</string>
     <string name="t_0f756679" formatted="false">Ponów zapisane nagranie</string>
     <string name="t_10aef2d8" formatted="false">Szef sztabu</string>
     <string name="t_112a7174" formatted="false">Użycie</string>
@@ -236,6 +237,7 @@
     <string name="t_5cab269d" formatted="false">Twój szef sztabu zajmuje się tym w bb i powiadomi Cię przez ntfy, gdy skończy lub będzie czegoś potrzebować. Przycisk otwiera wątek.</string>
     <string name="t_5cacb072" formatted="false">Dotychczasowy przebieg rozmowy: %1$s</string>
     <string name="t_5d00536d" formatted="false">Skopiowano</string>
+    <string name="t_5d04f79c" formatted="false">Przetwarzanie…</string>
     <string name="t_5da707be" formatted="false">Następny miesiąc</string>
     <string name="t_5de4f7e7" formatted="false">Nie udało się dopracować: %1$s</string>
     <string name="t_5e317218" formatted="false">Nie udało się uruchomić. Twoja notatka jest bezpieczna.</string>
@@ -246,7 +248,6 @@
     <string name="t_61710ff3" formatted="false">Według modelu</string>
     <string name="t_61e2b45c" formatted="false">Ty: %1$s</string>
     <string name="t_62171086" formatted="false">Możesz dotknąć Dopracuj lub Szef jeszcze w trakcie mówienia. Poproś o to od razu („zrób z tego e-mail”, „użyj wniosku o mieszkanie”), a funkcja Dopracuj włączy się sama. Zadania trafiają do szefa automatycznie tylko wtedy, gdy się do niego zwrócisz: „szefie sztabu, …”.</string>
-    <string name="t_628de4b3" formatted="false">Powiedz %1$s, aby wysłać, %2$s, aby zakończyć. Przycisk na słuchawkach też wysyła. Podczas odczytywania odpowiedzi mikrofon jest wyłączony.</string>
     <string name="t_62bfeb04" formatted="false">Odpowiedź logowania z bb nie zawierała tokenu.</string>
     <string name="t_6358935d" formatted="false">Klucz zapisany</string>
     <string name="t_6361c341" formatted="false">połączenie zostało przerwane; czy to serwer MCP (Streamable HTTP)?</string>
@@ -339,6 +340,7 @@
     <string name="t_8bec24cc" formatted="false">Sprawdź i zapisz</string>
     <string name="t_8bf10d56" formatted="false">Odrzuć</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Dodaj</string>
+    <string name="t_8d3af088" formatted="false">Powiedz %1$s, aby wysłać, lub %2$s, aby zakończyć. Przycisk na słuchawkach też wysyła. Możesz przerwać odpowiedź, zaczynając mówić.</string>
     <string name="t_8d8041f9" formatted="false">Twój głos musi być tyle razy głośniejszy od tła</string>
     <string name="t_8edfe30e" formatted="false">wymaga uwagi</string>
     <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate pisze</string>

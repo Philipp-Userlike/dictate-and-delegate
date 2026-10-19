@@ -427,7 +427,11 @@ public class PanelTest {
     send(DictationService.RECORD);
     waitFor("recording");
     Thread.sleep(800);
-    find(By.desc("Cancel: nothing is transcribed or sent"), "✕").click();
+    // ✕ on the outer edge: right of every other button.
+    UiObject2 cancel = find(By.desc("Cancel: nothing is transcribed or sent"), "✕");
+    assertTrue(cancel.getVisibleBounds().left > find(By.desc("Stop recording"), "■").getVisibleBounds().right);
+    assertTrue(cancel.getVisibleBounds().left > find(By.desc("Add context to this dictation"), "📎").getVisibleBounds().right);
+    cancel.click();
     until("the panel is gone", () -> !DictationService.bubbleVisible());
     until("ready again", () -> DictationService.READY.equals(prefs.getString("state", "")) || DictationService.instance == null);
     assertEquals(0, TestServer.requests().length());
@@ -440,7 +444,9 @@ public class PanelTest {
     TestServer.transcripts("a note to keep");
     dictate();
     find("Insert");
-    find(By.desc("Close"), "✕").click();
+    UiObject2 close = find(By.desc("Close"), "✕");
+    assertTrue(close.getVisibleBounds().left > find("Insert").getVisibleBounds().right);
+    close.click();
     until("the panel is gone", () -> !DictationService.bubbleVisible());
     assertEquals("a note to keep", latest().text());
   }
@@ -717,8 +723,8 @@ public class PanelTest {
     dictate();
     UiObject2 insert = find("Insert");
     android.graphics.Rect before = insert.getVisibleBounds();
-    // Drag by the panel's edge (the status line area is part of the panel too).
-    device.drag(before.left - 30, before.centerY(), before.left - 30, before.centerY() - 400, 30);
+    // Drag by a button: a move past the touch slop drags the panel and doesn't press it.
+    device.drag(before.centerX(), before.centerY(), before.centerX(), before.centerY() - 400, 30);
     Thread.sleep(600);
     android.graphics.Rect after = find("Insert").getVisibleBounds();
     assertTrue(before + " → " + after, after.centerY() < before.centerY() - 200);

@@ -3160,7 +3160,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("Say %1$s to send, %2$s to end. The headset button sends too. While a reply is read, the microphone is off.",
+            tr("Say %1$s to send, %2$s to end. The headset button sends too. You can talk over a reply to interrupt it.",
                 quoteList(HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)),
                 quoteList(HandsFree.list(HandsFree.endSetting(prefs)))),
             13,

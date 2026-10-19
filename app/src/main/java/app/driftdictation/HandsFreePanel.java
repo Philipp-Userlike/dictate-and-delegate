@@ -9,13 +9,14 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * The hands-free call over other apps: its state (Listening, also while the chief works, or
- * Reading reply), Send now while you can talk, and End. Never takes focus; drag it anywhere, tap the state to open
- * the full screen.
+ * The hands-free call over other apps, as a call bar: a status dot and short label (Listening,
+ * Working…, Reading), send while you can talk, and hang up. Never takes focus; drag it anywhere,
+ * tap the status to open the full screen; it always stays whole on screen.
  */
 final class HandsFreePanel extends LinearLayout {
   interface Actions {
@@ -26,7 +27,9 @@ final class HandsFreePanel extends LinearLayout {
     void end();
   }
 
-  private final TextView state, send, end;
+  private final TextView state;
+  private final ImageView send, end;
+  private final GradientDrawable dot = new GradientDrawable();
   private final WindowManager windows;
   private final WindowManager.LayoutParams layout;
   private final float density;
@@ -40,8 +43,9 @@ final class HandsFreePanel extends LinearLayout {
   private final android.content.SharedPreferences prefs;
 
   /**
-   * At x, y (from the dictation panel the call came from), or where it was last dragged to when
-   * x is negative.
+   * A call bar: a status dot with a short label (tap: the full screen), send (paper plane) while
+   * you can talk, and a red hang-up. At x, y (from the dictation panel the call came from), or
+   * where it was last dragged to when x is negative.
    */
   HandsFreePanel(Context context, Actions actions, int x, int y) {
     super(context);
@@ -51,13 +55,25 @@ final class HandsFreePanel extends LinearLayout {
     setGravity(Gravity.CENTER_VERTICAL);
     setPadding(dp(6), dp(6), dp(6), dp(6));
     GradientDrawable bg = new GradientDrawable();
-    bg.setColor(0xf2182420);
-    bg.setCornerRadius(dp(24));
+    bg.setColor(0xf21b1f24);
+    bg.setCornerRadius(dp(28));
     setBackground(bg);
-    state = pill("", v -> actions.open());
-    send = pill(tr("Send now"), v -> actions.send());
-    end = pill(tr("End"), v -> actions.end());
-    end.setContentDescription(tr("End hands-free"));
+    state = new TextView(context);
+    state.setTextSize(13);
+    state.setTextColor(0xffffffff);
+    state.setTypeface(Ui.MEDIUM);
+    state.setSingleLine(true);
+    state.setGravity(Gravity.CENTER_VERTICAL);
+    dot.setShape(GradientDrawable.OVAL);
+    dot.setSize(dp(9), dp(9));
+    state.setCompoundDrawablesRelativeWithIntrinsicBounds(dot, null, null, null);
+    state.setCompoundDrawablePadding(dp(8));
+    state.setPadding(dp(12), 0, dp(12), 0);
+    state.setMinHeight(dp(40));
+    state.setOnClickListener(v -> actions.open());
+    addView(state, new LayoutParams(-2, dp(40)));
+    send = round(R.drawable.ic_send, 0x33ffffff, tr("Send now"), v -> actions.send());
+    end = round(R.drawable.ic_call_end, 0xffe5484d, tr("End hands-free"), v -> actions.end());
     windows = context.getSystemService(WindowManager.class);
     layout =
         new WindowManager.LayoutParams(
@@ -75,25 +91,23 @@ final class HandsFreePanel extends LinearLayout {
     return Math.round(n * density);
   }
 
-  private TextView pill(String text, View.OnClickListener click) {
-    TextView t = new TextView(getContext());
-    t.setText(text);
-    t.setTextSize(14);
-    t.setTextColor(0xffffffff);
-    t.setTypeface(Ui.MEDIUM);
-    t.setGravity(Gravity.CENTER);
-    t.setSingleLine(true);
-    t.setMinHeight(dp(40));
-    t.setPadding(dp(14), 0, dp(14), 0);
-    t.setOnClickListener(click);
+  /** A round icon button, 40 dp, its name for TalkBack and on a long press. */
+  private ImageView round(int icon, int color, String name, View.OnClickListener click) {
+    ImageView b = new ImageView(getContext());
+    b.setImageResource(icon);
+    b.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+    b.setPadding(dp(9), dp(9), dp(9), dp(9));
     GradientDrawable d = new GradientDrawable();
-    d.setColor(0x2effffff);
-    d.setCornerRadius(dp(20));
-    t.setBackground(d);
-    LayoutParams l = new LayoutParams(-2, dp(40));
-    if (getChildCount() > 0) l.leftMargin = dp(6);
-    addView(t, l);
-    return t;
+    d.setShape(GradientDrawable.OVAL);
+    d.setColor(color);
+    b.setBackground(d);
+    b.setContentDescription(name);
+    b.setTooltipText(name);
+    b.setOnClickListener(click);
+    LayoutParams l = new LayoutParams(dp(40), dp(40));
+    l.leftMargin = dp(6);
+    addView(b, l);
+    return b;
   }
 
   /** Where it is on screen: x, y. */
@@ -102,30 +116,62 @@ final class HandsFreePanel extends LinearLayout {
   }
 
   void show() {
-    if (getParent() == null) windows.addView(this, layout);
+    if (getParent() != null) return;
+    fit();
+    windows.addView(this, layout);
+  }
+
+  /** Every button on screen: the panel is moved in from an edge when it would stick out. */
+  private void fit() {
+    android.graphics.Rect bounds = windows.getCurrentWindowMetrics().getBounds();
+    measure(
+        MeasureSpec.makeMeasureSpec(bounds.width(), MeasureSpec.AT_MOST),
+        MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+    layout.x = Math.max(dp(8), Math.min(layout.x, bounds.width() - getMeasuredWidth() - dp(8)));
+    layout.y = Math.max(dp(32), Math.min(layout.y, bounds.height() - getMeasuredHeight() - dp(48)));
+  }
+
+  /** Whether every button shows whole on screen (for the device tests). */
+  boolean fits() {
+    android.graphics.Rect bounds = windows.getCurrentWindowMetrics().getBounds();
+    for (View t : new View[] {state, send, end}) {
+      if (t.getVisibility() != VISIBLE) continue;
+      int[] at = new int[2];
+      t.getLocationOnScreen(at);
+      if (at[0] < 0 || at[0] + t.getWidth() > bounds.width()) return false;
+    }
+    return true;
   }
 
   void hide() {
     if (getParent() != null) windows.removeView(this);
   }
 
-  /** The state in its words and colour, and only the buttons that fit it. */
+  /**
+   * The state, short (the full words for TalkBack and on a long press), its colour, and only the
+   * buttons that fit it.
+   */
   void render(HandsFreeSession.Phase phase) {
     state.setText(
         switch (phase) {
-              case READING -> "🔊  ";
-              default -> "🎙  ";
-            }
-            + HandsFreeService.phaseLabel(phase));
-    GradientDrawable d = new GradientDrawable();
-    d.setColor(
-        switch (phase) {
-          case READING -> 0xff6b4fa8;
-          default -> 0xff1d8a6e;
+          case READING -> tr("Reading");
+          case WORKING -> tr("Working…");
+          default -> tr("Listening");
         });
-    d.setCornerRadius(dp(20));
-    state.setBackground(d);
+    state.setContentDescription(HandsFreeService.phaseLabel(phase));
+    state.setTooltipText(HandsFreeService.phaseLabel(phase));
+    // Green: you can talk; amber: you can talk, the chief works; violet: a reply plays.
+    dot.setColor(
+        switch (phase) {
+          case READING -> 0xffb197fc;
+          case WORKING -> 0xfff5b84a;
+          default -> 0xff3fd6a1;
+        });
     send.setVisibility(phase != HandsFreeSession.Phase.READING ? VISIBLE : GONE);
+    if (getParent() != null) {
+      fit();
+      windows.updateViewLayout(this, layout);
+    }
   }
 
   // Dragging: a move past the touch slop anywhere on the panel moves it; taps still reach buttons.
@@ -161,7 +207,13 @@ final class HandsFreePanel extends LinearLayout {
         windows.updateViewLayout(this, layout);
       }
     } else if (e.getActionMasked() == MotionEvent.ACTION_UP || e.getActionMasked() == MotionEvent.ACTION_CANCEL) {
-      if (dragging) prefs.edit().putInt(X, layout.x).putInt(Y, layout.y).apply();
+      if (dragging) {
+        if (getParent() != null) {
+          fit();
+          windows.updateViewLayout(this, layout);
+        }
+        prefs.edit().putInt(X, layout.x).putInt(Y, layout.y).apply();
+      }
       dragging = false;
     }
     return true;

@@ -4,6 +4,10 @@ import static app.driftdictation.I18n.tr;
 
 import android.content.Context;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
@@ -62,6 +66,10 @@ final class Voice {
   private MediaPlayer player;
   private TextToSpeech tts;
   private Playback current;
+  /** The reply being read; for Android's voice, where its spoken part starts and how far it got. */
+  private volatile String text = "";
+  private volatile int ttsBase, ttsAt;
+  private volatile boolean pausing;
   private int replies;
 
   /** Ends the current reading once, on the main thread. */
@@ -71,7 +79,12 @@ final class Voice {
       p = current;
       current = null;
     }
-    if (p != null) main.post(() -> p.ended(played));
+    if (p != null)
+      main.post(
+          () -> {
+            focus(false);
+            p.ended(played);
+          });
   }
 
   Voice(Context context) {
@@ -104,20 +117,178 @@ final class Voice {
     synchronized (this) {
       current = playback;
     }
-    if (prepared.mp3() == null) {
-      speakAndroid(text, playback);
+    this.text = text;
+    ttsBase = ttsAt = 0;
+    pausing = false;
+    focus(true);
+    new Thread(
+            () -> {
+              AudioTrack warm = warmUp();
+              synchronized (this) {
+                if (current != playback) { // Stopped meanwhile.
+                  if (warm != null) warm.release();
+                  return;
+                }
+              }
+              if (prepared.mp3() == null) speakAndroid(text, playback);
+              else
+                main.post(
+                    () -> {
+                      try {
+                        play(prepared.mp3(), playback);
+                      } catch (Exception ex) {
+                        release();
+                        prepared.mp3().delete();
+                        speakAndroid(text, playback); // The audio doesn't play: Android's voice instead.
+                      }
+                    });
+              // The silence keeps the route awake until the reply has started.
+              main.postDelayed(
+                  () -> {
+                    if (warm != null) warm.release();
+                  },
+                  1500);
+            },
+            "voice-warm-up")
+        .start();
+  }
+
+  /** Silence played first, so the route is awake for the first word. */
+  static final int WARM_MS = 500;
+
+  private static AudioAttributes attributes() {
+    return new AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_ASSISTANT)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+        .build();
+  }
+
+  /**
+   * Half a second of silence on the voice's route. Right after the microphone, and over Bluetooth
+   * especially, the route wakes up with the first sound and swallows it: this way that's silence,
+   * not the reply's first words. Returns the track to release once the reply plays (or null).
+   */
+  private AudioTrack warmUp() {
+    try {
+      int rate = 24_000, bytes = rate * 2 * 2; // Two seconds of room; half a second is played first.
+      AudioTrack t =
+          new AudioTrack.Builder()
+              .setAudioAttributes(attributes())
+              .setAudioFormat(
+                  new AudioFormat.Builder()
+                      .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                      .setSampleRate(rate)
+                      .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                      .build())
+              .setTransferMode(AudioTrack.MODE_STATIC)
+              .setBufferSizeInBytes(bytes)
+              .build();
+      t.write(new byte[bytes], 0, bytes);
+      t.play();
+      Thread.sleep(WARM_MS);
+      return t;
+    } catch (Exception ex) {
+      return null; // No warm-up: the reply plays anyway.
+    }
+  }
+
+  private AudioFocusRequest focusRequest;
+
+  /** While a reply plays, other sound (music, navigation) gets quieter. */
+  private void focus(boolean on) {
+    AudioManager audio = context.getSystemService(AudioManager.class);
+    if (on && focusRequest == null) {
+      focusRequest =
+          new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+              .setAudioAttributes(attributes())
+              .build();
+      audio.requestAudioFocus(focusRequest);
+    } else if (!on && focusRequest != null) {
+      audio.abandonAudioFocusRequest(focusRequest);
+      focusRequest = null;
+    }
+  }
+
+  /** Pauses the reply (you may be talking over it). */
+  void pause() {
+    MediaPlayer p;
+    synchronized (this) {
+      p = player;
+    }
+    try {
+      if (p != null) {
+        if (p.isPlaying()) p.pause();
+        return;
+      }
+    } catch (IllegalStateException ignored) {
       return;
     }
-    main.post(
-        () -> {
-          try {
-            play(prepared.mp3(), playback);
-          } catch (Exception ex) {
-            release();
-            prepared.mp3().delete();
-            speakAndroid(text, playback); // The audio doesn't play: Android's voice instead.
-          }
-        });
+    TextToSpeech t = tts;
+    if (t != null && t.isSpeaking()) {
+      pausing = true;
+      ttsBase += ttsAt; // Android's voice can't pause: it stops, and resume speaks from here.
+      ttsAt = 0;
+      t.stop();
+    }
+  }
+
+  /** Plays on from where it paused. */
+  void resume() {
+    MediaPlayer p;
+    synchronized (this) {
+      p = player;
+    }
+    try {
+      if (p != null) {
+        p.start();
+        return;
+      }
+    } catch (IllegalStateException ignored) {
+      return;
+    }
+    TextToSpeech t = tts;
+    if (t != null && pausing) {
+      pausing = false;
+      String rest = text.substring(Math.min(ttsBase, text.length()));
+      if (rest.isBlank() || t.speak(rest, TextToSpeech.QUEUE_FLUSH, null, "rest") != TextToSpeech.SUCCESS) finished(true);
+    }
+  }
+
+  /**
+   * How many characters of the reply have been heard: by the playback position (a third of a
+   * second less, for the sound still on its way to the ear), or Android's voice's word.
+   */
+  int heardChars() {
+    MediaPlayer p;
+    synchronized (this) {
+      p = player;
+    }
+    try {
+      if (p != null) {
+        int duration = p.getDuration();
+        if (duration <= 0) return 0;
+        long at = Math.max(0, p.getCurrentPosition() - 300L);
+        return (int) Math.min(text.length(), text.length() * at / duration);
+      }
+    } catch (IllegalStateException ignored) {
+      return 0;
+    }
+    return Math.min(text.length(), ttsBase + ttsAt);
+  }
+
+  /** Is reply audio still coming out (the session's watchdog asks)? */
+  boolean playing() {
+    MediaPlayer p;
+    synchronized (this) {
+      p = player;
+    }
+    try {
+      if (p != null) return p.isPlaying();
+    } catch (IllegalStateException ignored) {
+      return false;
+    }
+    TextToSpeech t = tts;
+    return t != null && t.isSpeaking();
   }
 
   /** What OpenRouter charged for a generation (GET /generation), or null if it can't say yet. */
@@ -185,11 +356,7 @@ final class Voice {
   /** On the main thread. */
   private void play(File mp3, Playback playback) throws IOException {
     MediaPlayer p = new MediaPlayer();
-    p.setAudioAttributes(
-        new AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ASSISTANT)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-            .build());
+    p.setAudioAttributes(attributes());
     p.setDataSource(mp3.getPath());
     p.setOnCompletionListener(
         mp -> {
@@ -229,7 +396,11 @@ final class Voice {
                     tts.setOnUtteranceProgressListener(
                         new UtteranceProgressListener() {
                           public void onStart(String id) {
-                            main.post(() -> playback.started(text.length() * 1000L / 15));
+                            if ("reply".equals(id)) main.post(() -> playback.started(text.length() * 1000L / 15));
+                          }
+
+                          public void onRangeStart(String id, int start, int end, int frame) {
+                            ttsAt = start; // Words as they're spoken: how far you heard.
                           }
 
                           public void onDone(String id) {
@@ -241,7 +412,7 @@ final class Voice {
                           }
 
                           public void onStop(String id, boolean interrupted) {
-                            finished(false);
+                            if (!pausing) finished(false); // Paused: resume speaks the rest.
                           }
                         });
                     if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "reply") != TextToSpeech.SUCCESS) finished(false);
@@ -251,6 +422,7 @@ final class Voice {
 
   /** Stops reading at once; the playback still hears it ended. */
   void stop() {
+    pausing = false;
     MediaPlayer p;
     synchronized (this) {
       p = player;

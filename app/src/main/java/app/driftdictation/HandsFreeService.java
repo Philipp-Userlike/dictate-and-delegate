@@ -87,6 +87,12 @@ public final class HandsFreeService extends Service {
         });
   }
 
+  /** Whether the call panel shows every button whole on screen (for the device tests). */
+  static boolean panelFits() {
+    HandsFreeService s = instance;
+    return s != null && s.panel != null && s.panel.fits();
+  }
+
   /** Where the call panel is (x, y), or null without one (for the device tests). */
   static int[] panelPosition() {
     HandsFreeService s = instance;
@@ -197,6 +203,22 @@ public final class HandsFreeService extends Service {
                         playback.ended(played);
                       }
                     });
+              }
+
+              public boolean playing() {
+                return voice.playing();
+              }
+
+              public void pause() {
+                voice.pause();
+              }
+
+              public void resume() {
+                voice.resume();
+              }
+
+              public int heardChars() {
+                return voice.heardChars();
               }
 
               public void stop() {
@@ -385,12 +407,14 @@ public final class HandsFreeService extends Service {
    * done), else at the model's price per character: added to the note of the message it answers.
    */
   private void chargeVoice(String request, Voice.Choice c, String text, String generation, long ms) {
+    String call = callId;
     new Thread(
             () -> {
               BigDecimal price = Voice.cost(this, generation);
               boolean exact = price != null;
               if (price == null) price = c.perCharacter().multiply(BigDecimal.valueOf(text.length()));
-              callCost = callCost.add(price);
+              // Looked up a few seconds later: only this call's total, not the next one's.
+              if (call.equals(callId)) callCost = callCost.add(price);
               event(String.format(java.util.Locale.ROOT, "voice %s: %d characters, $%s%s", c.model(), text.length(), price.stripTrailingZeros().toPlainString(), exact ? "" : " (at list price)"));
               BigDecimal charged = price;
               try {
@@ -451,8 +475,11 @@ public final class HandsFreeService extends Service {
 
   private final java.util.List<String> sinceLastNote = new java.util.ArrayList<>();
 
-  /** This call's ID: its messages' notes carry it, so the notes list shows the call as one entry. */
-  private String callId = "";
+  /**
+   * This call's ID: its messages' notes carry it, so the notes list shows the call as one entry.
+   * Static like callCost: a late voice cost from an earlier call (another instance) mustn't count.
+   */
+  private static volatile String callId = "";
 
   synchronized void event(String e) {
     String line =

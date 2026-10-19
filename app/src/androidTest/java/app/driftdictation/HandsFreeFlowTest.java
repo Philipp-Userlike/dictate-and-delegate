@@ -325,4 +325,62 @@ public class HandsFreeFlowTest {
     assertNotNull("opened, its messages follow", device.wait(Until.findObject(By.text("Second message of the call.")), 3000));
     assertNotNull(device.findObject(By.text("▾ 📞 Call with your chief · 2 messages")));
   }
+
+  @Test
+  public void theCallPanelIsCompactAndFitsTheScreenInEveryState() throws Exception {
+    device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
+    // Dragged to the right edge last time: it must still show every button.
+    prefs.edit().putInt(HandsFreePanel.X, 5000).putInt(HandsFreePanel.Y, 600).commit();
+    TestServer.transcripts("Book the hotel. Over.");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.panelPosition() != null, "the call panel");
+    assertNotNull(device.wait(Until.findObject(By.text("Listening")), 5000));
+    until(HandsFreeService::panelFits, "every button on screen while listening");
+    shot("call-bar-listening");
+    talk();
+    until(() -> HandsFreeService.session().sent() == 1, "the message sent");
+    // Waiting for the chief: a short label on the bar, the full words for TalkBack; send and
+    // hang-up as icons.
+    assertNotNull(device.wait(Until.findObject(By.text("Working…")), 5000));
+    assertNotNull(device.findObject(By.desc("Listening · Chief is working…")));
+    assertNotNull(device.findObject(By.desc("Send now"))); // The paper plane.
+    assertNotNull(device.findObject(By.desc("End hands-free")));
+    until(HandsFreeService::panelFits, "every button on screen while the chief works");
+    shot("call-bar-working");
+  }
+
+  /** With -e shots true: a screenshot on the device, in the app's files/panel. */
+  void shot(String name) throws Exception {
+    if (!"true".equals(InstrumentationRegistry.getArguments().getString("shots"))) return;
+    Thread.sleep(700);
+    java.io.File dir = new java.io.File(context.getExternalFilesDir(null), "panel");
+    dir.mkdirs();
+    device.takeScreenshot(new java.io.File(dir, name + ".png"));
+  }
+
+  @Test
+  public void talkingOverAReplyInterruptsItAndYourMessageSaysWhatYouHeard() throws Exception {
+    TestServer.transcripts("Book a table for Friday. Over.", "Hold on, book the train instead", "Over.");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> HandsFreeService.session().sent() == 1, "the message sent");
+    Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(lastTell());
+    assertTrue(m.find());
+    TestServer.ntfySpeak(
+        new BbBridge(context).ntfyTopic(), m.group(1), "The flight leaves at nine in the morning from gate twelve, and the train costs about forty euros.");
+    HandsFreeSession s = HandsFreeService.session();
+    until(s::audioPlaying, "the reply playing");
+    // Its echo, then you over it: the reply pauses, and what you said starts your turn.
+    for (int i = 0; i < HandsFreeSession.ECHO_FRAMES + 5; i++) s.frame(HandsFreeTestFrames.frame(1500));
+    for (int i = 0; i < 20; i++) s.frame(HandsFreeTestFrames.frame(8000));
+    for (int i = 0; i < 75; i++) s.frame(HandsFreeTestFrames.frame(50));
+    until(() -> s.pending().equals("Hold on, book the train instead"), "your interruption, your turn");
+    assertEquals(HandsFreeSession.State.LISTENING, s.state());
+    talk();
+    until(() -> HandsFreeService.session().sent() == 2, "your message sent");
+    String tell = lastTell();
+    assertTrue(tell, tell.contains("Hold on, book the train instead"));
+    assertTrue(tell, tell.contains("[heard up to: ") || tell.contains("[didn't hear your reply: "));
+  }
 }

@@ -96,7 +96,8 @@ public class HandsFreeTest {
     /** Ends the reply being read, played to the end. */
     volatile Runnable done, fail;
     /** The voice: its audio starts at once (as long as this is true), or never. */
-    volatile boolean audioStarts = true;
+    volatile boolean audioStarts = true, audioPlaying, paused, stopped;
+    volatile int heardChars;
     /** What preparing a reply does (fetching its audio); by default nothing. */
     volatile java.util.function.Function<String, Object> prepare = text -> text;
     final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
@@ -133,7 +134,24 @@ public class HandsFreeTest {
                   if (audioStarts) p.started(2000);
                 }
 
+                public boolean playing() {
+                  return audioPlaying;
+                }
+
+                public void pause() {
+                  paused = true;
+                }
+
+                public void resume() {
+                  paused = false;
+                }
+
+                public int heardChars() {
+                  return heardChars;
+                }
+
                 public void stop() {
+                  stopped = true;
                   HandsFreeSession.Playback p = playback;
                   playback = null;
                   done = null;
@@ -452,5 +470,81 @@ public class HandsFreeTest {
     until(() -> f.session.floor() == HandsFreeSession.Floor.OPEN);
     f.session.reply("r0", "Read now.");
     until(() -> f.spoken.size() == 1);
+  }
+
+  @Test
+  public void aReplyLongerThanItsEstimateIsNeverCutWhileItsAudioPlays() throws Exception {
+    Fake f = new Fake();
+    f.quiet(1000);
+    f.session.reply("r0", "A long reply that takes longer than the voice said.");
+    until(() -> f.spoken.size() == 1);
+    f.audioPlaying = true;
+    for (int i = 0; i < 30; i++) { // A minute past its two seconds, still playing.
+      f.now.addAndGet(2000);
+      f.session.tick();
+    }
+    assertEquals(HandsFreeSession.State.READING, f.session.state());
+    f.done.run(); // Played to the end: heard.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    assertEquals(0, f.session.unheard());
+  }
+
+  // ------------------------------------------------------------------ talking over a reply
+
+  static final String LONG_REPLY =
+      "The flight leaves at nine in the morning from gate twelve, and the train to Lisbon costs about forty euros if you book today.";
+
+  /** A reply playing, its echo measured at a moderate level. */
+  static Fake playingReply(String... transcripts) throws Exception {
+    Fake f = new Fake(transcripts);
+    f.quiet(1000);
+    f.session.reply("r1", LONG_REPLY);
+    until(() -> f.spoken.size() == 1);
+    for (int i = 0; i < HandsFreeSession.ECHO_FRAMES + 20; i++) f.session.frame(frame(1500)); // Its echo.
+    assertFalse("the echo alone doesn't pause it", f.paused);
+    f.heardChars = LONG_REPLY.indexOf("from gate");
+    return f;
+  }
+
+  @Test
+  public void talkingOverAReplyPausesItAndInterruptsIt() throws Exception {
+    Fake f = playingReply("Hold on, book the train instead", "Over.");
+    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // You, clearly louder.
+    assertTrue("paused at once", f.paused);
+    f.quiet(1100); // You pause: what you said is written down.
+    until(() -> f.session.state() == HandsFreeSession.State.LISTENING);
+    assertTrue("the reply stopped", f.stopped);
+    assertEquals("Hold on, book the train instead", f.session.pending());
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals(
+        "Hold on, book the train instead\n\n[heard up to: \"The flight leaves at nine in the morning\"]", f.sent.get(0));
+    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("barge-in suspected"));
+  }
+
+  @Test
+  public void theRepliesOwnVoiceComingBackResumesIt() throws Exception {
+    Fake f = playingReply("the morning from gate twelve");
+    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // A loud stretch of its own voice.
+    assertTrue(f.paused);
+    f.quiet(1100);
+    until(() -> !f.paused);
+    assertEquals(HandsFreeSession.State.READING, f.session.state());
+    assertFalse(f.stopped);
+    assertEquals("", f.session.pending());
+    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("echo"));
+    f.done.run();
+    assertEquals(0, f.session.unheard());
+  }
+
+  @Test
+  public void theNotesSayHowMuchOfAReplyWasHeard() {
+    assertEquals("[heard up to: \"…leaves at nine in the morning from gate\"]", HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf("twelve")));
+    // A word cut in the middle isn't counted as heard.
+    assertEquals("[heard up to: \"The flight\"]", HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf("leaves") + 3));
+    // Hardly anything heard: as if not heard at all.
+    assertTrue(HandsFreeSession.heardUpTo(LONG_REPLY, 3).startsWith("[didn't hear your reply:"));
+    assertTrue(HandsFreeSession.echoOf("from gate twelve and the", LONG_REPLY, LONG_REPLY.indexOf("and the")));
+    assertFalse(HandsFreeSession.echoOf("no wait, cancel the hotel", LONG_REPLY, LONG_REPLY.indexOf("and the")));
   }
 }

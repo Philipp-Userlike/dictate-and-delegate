@@ -39,6 +39,7 @@
     <string name="t_0dc541d5" formatted="false">Auf Standard zurücksetzen</string>
     <string name="t_0de44d68" formatted="false">1 Nachricht</string>
     <string name="t_0e1c0935" formatted="false">bb antwortet, bietet aber das run-Tool nicht an. Aktualisiere bb und prüfe, ob das MCP-Plugin aktiviert ist.</string>
+    <string name="t_0ea7c5dd" formatted="false">Liest vor</string>
     <string name="t_0f756679" formatted="false">Gespeicherte Aufnahme wiederholen</string>
     <string name="t_10aef2d8" formatted="false">Chief of Staff</string>
     <string name="t_112a7174" formatted="false">Nutzung</string>
@@ -234,6 +235,7 @@
     <string name="t_5cab269d" formatted="false">Dein Chief of Staff bearbeitet es in bb und benachrichtigt dich per ntfy, wenn er fertig ist oder dich braucht. Der Button öffnet den Thread.</string>
     <string name="t_5cacb072" formatted="false">Dieser Anruf bisher: %1$s</string>
     <string name="t_5d00536d" formatted="false">Kopiert</string>
+    <string name="t_5d04f79c" formatted="false">Arbeitet…</string>
     <string name="t_5da707be" formatted="false">Nächster Monat</string>
     <string name="t_5de4f7e7" formatted="false">Konnte nicht verfeinern: %1$s</string>
     <string name="t_5e317218" formatted="false">Start fehlgeschlagen. Deine Notiz ist sicher.</string>
@@ -244,7 +246,6 @@
     <string name="t_61710ff3" formatted="false">Nach Modell</string>
     <string name="t_61e2b45c" formatted="false">Du: %1$s</string>
     <string name="t_62171086" formatted="false">Du kannst schon beim Sprechen auf Verfeinern oder Chief tippen. Sagst du es direkt dazu („mach daraus eine E-Mail“, „nutze meine Wohnungsbewerbung“), startet das Verfeinern von selbst. Aufgaben gehen nur an deinen Chief, wenn du ihn direkt ansprichst: „Chief of Staff, …“.</string>
-    <string name="t_628de4b3" formatted="false">Sag %1$s zum Senden, %2$s zum Beenden. Die Headset-Taste sendet ebenfalls. Während eine Antwort vorgelesen wird, ist das Mikrofon aus.</string>
     <string name="t_62bfeb04" formatted="false">Die Anmeldeantwort von bb enthielt keinen Token.</string>
     <string name="t_6358935d" formatted="false">Schlüssel gespeichert</string>
     <string name="t_6361c341" formatted="false">die Verbindung brach ab; ist es ein MCP-Server (Streamable HTTP)?</string>
@@ -335,6 +336,7 @@
     <string name="t_8bec24cc" formatted="false">Prüfen und speichern</string>
     <string name="t_8bf10d56" formatted="false">Verwerfen</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Hinzufügen</string>
+    <string name="t_8d3af088" formatted="false">Sag %1$s zum Senden, %2$s zum Beenden. Die Headset-Taste sendet auch. Du kannst einer Antwort ins Wort fallen, um sie zu unterbrechen.</string>
     <string name="t_8d8041f9" formatted="false">Deine Stimme muss um diesen Faktor lauter als der Hintergrund sein</string>
     <string name="t_8edfe30e" formatted="false">erfordert Aufmerksamkeit</string>
     <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate schreibt</string>

@@ -247,14 +247,15 @@ final class FloatingPanel extends FrameLayout {
       return;
     }
     setAlpha(1f);
-    // While recording: ■ ✨ 🧑‍💼 ✕ 📎; afterwards: ✕ 📥 ✨ 🧑‍💼.
+    // While recording: ■ ✨ 🧑‍💼 📞 📎 ✕; afterwards: 📥 ✨ 🧑‍💼 ✕. The ✕ is always last, on the
+    // outer edge where close and cancel usually are.
     if (!Boolean.valueOf(recording).equals(recordingOrder)) {
       recordingOrder = recording;
       row.removeAllViews();
       for (TextView t :
           recording
-              ? new TextView[] {timer, refine, chief, call, close, attach, insert}
-              : new TextView[] {close, insert, refine, chief, timer, attach, call})
+              ? new TextView[] {timer, refine, chief, call, attach, insert, close}
+              : new TextView[] {insert, refine, chief, timer, attach, call, close})
         row.addView(t, new ViewGroup.LayoutParams(-2, dp(40)));
     }
     attach.setVisibility(recording ? VISIBLE : GONE);
