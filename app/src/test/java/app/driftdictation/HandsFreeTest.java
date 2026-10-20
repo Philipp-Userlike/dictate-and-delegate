@@ -98,6 +98,8 @@ public class HandsFreeTest {
     /** The voice: its audio starts at once (as long as this is true), or never. */
     volatile boolean audioStarts = true, audioPlaying, paused, stopped;
     volatile int heardChars;
+    /** While set, the speech model waits for it (a slow transcription). */
+    volatile java.util.concurrent.CountDownLatch slow;
     /** What preparing a reply does (fetching its audio); by default nothing. */
     volatile java.util.function.Function<String, Object> prepare = text -> text;
     final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
@@ -114,7 +116,11 @@ public class HandsFreeTest {
               HandsFree.LEVEL,
               HandsFree.list(HandsFree.DEFAULT_SEND),
               HandsFree.list(HandsFree.DEFAULT_END),
-              wav -> transcripts.remove(0),
+              wav -> {
+                java.util.concurrent.CountDownLatch l = slow;
+                if (l != null) l.await();
+                return transcripts.remove(0);
+              },
               said -> {
                 sent.add(said);
                 return "r" + sent.size();
@@ -344,6 +350,35 @@ public class HandsFreeTest {
     f.session.tick();
     until(() -> f.sent.size() == 2);
     assertEquals("and buy milk", f.sent.get(1));
+  }
+
+  @Test
+  public void theButtonPressedWhileTheLastPartIsBeingWrittenDownSendsIt() throws Exception {
+    // The part ended (short pause) and the speech model is still working when the button is
+    // pressed: it must go once written down, not be dropped as an empty turn.
+    Fake f = new Fake("Book a table for four, tonight at eight");
+    f.slow = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    assertEquals("", f.session.pending());
+    f.session.sendNow();
+    f.slow.countDown();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book a table for four, tonight at eight", f.sent.get(0));
+    assertEquals("", f.session.pending());
+  }
+
+  @Test
+  public void theButtonWaitsForEveryPartStillBeingWrittenDown() throws Exception {
+    Fake f = new Fake("First part.", "Second part.");
+    f.slow = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    f.talk();
+    f.session.sendNow();
+    f.slow.countDown();
+    until(() -> f.sent.size() == 1);
+    Thread.sleep(200);
+    assertEquals(1, f.sent.size());
+    assertEquals("First part. Second part.", f.sent.get(0));
   }
 
   // ------------------------------------------------------------------ the chief's side
