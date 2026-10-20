@@ -162,6 +162,7 @@
     <string name="t_3f77ee75" formatted="false">Salvataggio…</string>
     <string name="t_3f983199" formatted="false">%1$s La registrazione è salvata.</string>
     <string name="t_400b4b63" formatted="false">Tu dici</string>
+    <string name="t_40de4e2a" formatted="false">Copiato. Incollalo dove segnali il problema.</string>
     <string name="t_41265b45" formatted="false">Tieni premuto per</string>
     <string name="t_41c5ed6f" formatted="false">Microfono consentito</string>
     <string name="t_421f0793" formatted="false">Impossibile eliminare l\'audio salvato. Riprova dopo aver riavviato Dictate &amp; Delegate.</string>
@@ -228,6 +229,7 @@
     <string name="t_597ec35a" formatted="false">✓  Aggiunto</string>
     <string name="t_5a076fff" formatted="false">%1$s lo trasforma nel testo di cui hai bisogno: un\'email, una risposta, una nota ordinata, il tuo modello. Poi tocca Inserisci perfezionato.</string>
     <string name="t_5a36973e" formatted="false">Perfezionamento del testo…</string>
+    <string name="t_5a6e8ec5" formatted="false">Nessun evento per ora. Appariranno qui dopo aver effettuato una chiamata in vivavoce.</string>
     <string name="t_5afff0dd" formatted="false">Scorri verso il basso, modifica le Impostazioni rapide e aggiungi Dictate &amp; Delegate.</string>
     <string name="t_5b08232c" formatted="false">Da voce a testo</string>
     <string name="t_5bd47891" formatted="false">Ogni nota mostra il costo effettivo riportato da OpenRouter. La decisione di Jev costa circa $0.00002, un minuto di parlato con il modello predefinito circa $0.002.</string>
@@ -264,6 +266,7 @@
     <string name="t_69b90bc7" formatted="false">Impossibile eliminare l\'audio</string>
     <string name="t_69ee1c02" formatted="false">bb non è raggiungibile al momento (HTTP %1$d). Il computer è acceso e bb è in esecuzione?</string>
     <string name="t_6a21d63f" formatted="false">Inizia a dettare</string>
+    <string name="t_6a8517e4" formatted="false">Copia eventi</string>
     <string name="t_6acf5248" formatted="false">Recenti</string>
     <string name="t_6af514f2" formatted="false">Dal tuo chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Salvato</string>

@@ -163,6 +163,7 @@
     <string name="t_3f77ee75" formatted="false">Saving…</string>
     <string name="t_3f983199" formatted="false">%1$s The recording is saved.</string>
     <string name="t_400b4b63" formatted="false">You say</string>
+    <string name="t_40de4e2a" formatted="false">Copied. Paste it where you report the problem.</string>
     <string name="t_41265b45" formatted="false">Hold for</string>
     <string name="t_41c5ed6f" formatted="false">Microphone allowed</string>
     <string name="t_421f0793" formatted="false">Could not delete saved audio. Try again after restarting Dictate &amp; Delegate.</string>
@@ -229,6 +230,7 @@
     <string name="t_597ec35a" formatted="false">✓  Added</string>
     <string name="t_5a076fff" formatted="false">%1$s makes it the text you need: an email, a reply, a tidy note, your template. Then Insert refined.</string>
     <string name="t_5a36973e" formatted="false">Refining your text…</string>
+    <string name="t_5a6e8ec5" formatted="false">No events yet. They appear here once you\'ve made a hands-free call.</string>
     <string name="t_5afff0dd" formatted="false">Swipe down, edit Quick Settings, then add Dictate &amp; Delegate.</string>
     <string name="t_5b08232c" formatted="false">Voice-to-text</string>
     <string name="t_5bd47891" formatted="false">Each note shows what it cost, as OpenRouter reports it. Jev\'s decision costs about $0.00002, a minute of speech with the default model about $0.002.</string>
@@ -265,6 +267,7 @@
     <string name="t_69b90bc7" formatted="false">Could not delete audio</string>
     <string name="t_69ee1c02" formatted="false">bb isn\'t reachable right now (HTTP %1$d). Is your computer on and bb running?</string>
     <string name="t_6a21d63f" formatted="false">Start dictating</string>
+    <string name="t_6a8517e4" formatted="false">Copy events</string>
     <string name="t_6acf5248" formatted="false">Recent</string>
     <string name="t_6af514f2" formatted="false">From your chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Saved</string>

@@ -3167,6 +3167,7 @@ public final class MainActivity extends Activity {
             Ui.MUTED),
         18);
     ui.add(content, ui.button(tr("Hands-free settings"), Ui.Kind.QUIET, v -> open("hfsettings")), 8);
+    recentEvents();
     renderHandsFree();
   }
 
@@ -3217,7 +3218,7 @@ public final class MainActivity extends Activity {
       hfCost.setText(
           HandsFreeService.callCost.signum() == 0 ? "" : tr("This call so far: %1$s", exact(HandsFreeService.callCost)));
     // Only the control that fits: Send now while you can talk; End is always there.
-    hfSend.setVisibility(phase != HandsFreeSession.Phase.READING ? View.VISIBLE : View.GONE);
+    hfSend.setVisibility(HandsFreeService.canSend(phase) ? View.VISIBLE : View.GONE);
   }
 
   /** Settings → Hands-free: the words, the timing and the voice. */
@@ -3234,16 +3235,35 @@ public final class MainActivity extends Activity {
         4);
     decimalField(tr("Your voice must be this many times louder than the background"), v -> prefs.edit().putFloat(HandsFree.GATE, (float) v).apply(), HandsFree.gate(prefs));
     decimalField(tr("Speech needed to take your turn (seconds)"), v -> prefs.edit().putInt(HandsFree.TAKE_MS, (int) Math.round(v * 1000)).apply(), HandsFree.takeMs(prefs) / 1000.0);
-    // What hands-free heard and did, newest last: to see why a turn didn't work.
+    recentEvents();
+  }
+
+  /**
+   * What hands-free heard and did, newest last, to see why a turn didn't work: always shown (also
+   * when there's nothing yet), with Copy for a bug report.
+   */
+  private void recentEvents() {
     String log = HandsFreeService.log(this).trim();
-    if (!log.isEmpty()) {
-      String[] lines = log.split("\n");
-      ui.add(content, ui.strong(tr("Recent events"), 15), 24);
-      TextView events =
-          ui.mono(String.join("\n", java.util.Arrays.copyOfRange(lines, Math.max(0, lines.length - 80), lines.length)), 11, Ui.MUTED);
-      events.setTextIsSelectable(true);
-      ui.add(content, events, 6);
+    ui.add(content, ui.strong(tr("Recent events"), 15), 24);
+    if (log.isEmpty()) {
+      ui.add(content, ui.text(tr("No events yet. They appear here once you've made a hands-free call."), 13, Ui.MUTED), 4);
+      return;
     }
+    ui.add(
+        content,
+        ui.button(
+            tr("Copy events"),
+            Ui.Kind.OUTLINE,
+            v -> {
+              DictationService.copy(this, HandsFreeService.log(this).trim());
+              toast(tr("Copied. Paste it where you report the problem."));
+            }),
+        6);
+    String[] lines = log.split("\n");
+    TextView events =
+        ui.mono(String.join("\n", java.util.Arrays.copyOfRange(lines, Math.max(0, lines.length - 80), lines.length)), 11, Ui.MUTED);
+    events.setTextIsSelectable(true);
+    ui.add(content, events, 6);
   }
 
   private String voiceLabel() {

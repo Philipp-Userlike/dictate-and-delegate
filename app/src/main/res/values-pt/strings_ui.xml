@@ -162,6 +162,7 @@
     <string name="t_3f77ee75" formatted="false">A guardar…</string>
     <string name="t_3f983199" formatted="false">%1$s A gravação está guardada.</string>
     <string name="t_400b4b63" formatted="false">Tu dizes</string>
+    <string name="t_40de4e2a" formatted="false">Copiado. Cola onde fores relatar o problema.</string>
     <string name="t_41265b45" formatted="false">Manter premido durante</string>
     <string name="t_41c5ed6f" formatted="false">Microfone permitido</string>
     <string name="t_421f0793" formatted="false">Não foi possível eliminar o áudio guardado. Tenta novamente após reiniciar o Dictate &amp; Delegate.</string>
@@ -228,6 +229,7 @@
     <string name="t_597ec35a" formatted="false">✓  Adicionado</string>
     <string name="t_5a076fff" formatted="false">%1$s transforma-o no texto de que precisas: um e-mail, uma resposta, uma nota organizada, o teu modelo. Depois toca em Inserir refinado.</string>
     <string name="t_5a36973e" formatted="false">A refinar o teu texto…</string>
+    <string name="t_5a6e8ec5" formatted="false">Ainda sem eventos. Eles vão aparecer aqui assim que fizeres uma chamada em mãos livres.</string>
     <string name="t_5afff0dd" formatted="false">Desliza para baixo, edita as Definições Rápidas e adiciona o Dictate &amp; Delegate.</string>
     <string name="t_5b08232c" formatted="false">Voz para texto</string>
     <string name="t_5bd47891" formatted="false">Cada nota mostra o custo indicado pelo OpenRouter. A decisão do Jev custa cerca de 0,00002 $, e um minuto de voz com o modelo padrão cerca de 0,002 $.</string>
@@ -264,6 +266,7 @@
     <string name="t_69b90bc7" formatted="false">Não foi possível apagar o áudio</string>
     <string name="t_69ee1c02" formatted="false">O bb não está acessível no momento (HTTP %1$d). O teu computador está ligado e o bb em execução?</string>
     <string name="t_6a21d63f" formatted="false">Começar a ditar</string>
+    <string name="t_6a8517e4" formatted="false">Copiar eventos</string>
     <string name="t_6acf5248" formatted="false">Recentes</string>
     <string name="t_6af514f2" formatted="false">Do teu chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Guardado</string>

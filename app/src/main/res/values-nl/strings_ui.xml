@@ -161,6 +161,7 @@
     <string name="t_3f77ee75" formatted="false">Opslaan…</string>
     <string name="t_3f983199" formatted="false">%1$s De opname is opgeslagen.</string>
     <string name="t_400b4b63" formatted="false">Jij zegt</string>
+    <string name="t_40de4e2a" formatted="false">Gekopieerd. Plak het waar je het probleem meldt.</string>
     <string name="t_41265b45" formatted="false">Ingedrukt houden voor</string>
     <string name="t_41c5ed6f" formatted="false">Microfoon toegestaan</string>
     <string name="t_421f0793" formatted="false">Kon opgeslagen audio niet verwijderen. Probeer het opnieuw na het herstarten van Dictate &amp; Delegate.</string>
@@ -227,6 +228,7 @@
     <string name="t_597ec35a" formatted="false">✓  Toegevoegd</string>
     <string name="t_5a076fff" formatted="false">%1$s maakt er de gewenste tekst van: een e-mail, een antwoord, een nette notitie, jouw sjabloon. Daarna Verfijnd invoegen.</string>
     <string name="t_5a36973e" formatted="false">Je tekst verfijnen…</string>
+    <string name="t_5a6e8ec5" formatted="false">Nog geen gebeurtenissen. Ze verschijnen hier zodra je handsfree hebt gebeld.</string>
     <string name="t_5afff0dd" formatted="false">Veeg omlaag, bewerk Snelle instellingen en voeg Dictate &amp; Delegate toe.</string>
     <string name="t_5b08232c" formatted="false">Spraak-naar-tekst</string>
     <string name="t_5bd47891" formatted="false">Elke notitie toont de kosten zoals gerapporteerd door OpenRouter. De beslissing van Jev kost ongeveer $0.00002, een minuut spraak met het standaardmodel ongeveer $0.002.</string>
@@ -263,6 +265,7 @@
     <string name="t_69b90bc7" formatted="false">Kon audio niet verwijderen</string>
     <string name="t_69ee1c02" formatted="false">bb is momenteel niet bereikbaar (HTTP %1$d). Staat je computer aan en draait bb?</string>
     <string name="t_6a21d63f" formatted="false">Begin met dicteren</string>
+    <string name="t_6a8517e4" formatted="false">Gebeurtenissen kopiëren</string>
     <string name="t_6acf5248" formatted="false">Recent</string>
     <string name="t_6af514f2" formatted="false">Van je stafchef</string>
     <string name="t_6b228094" formatted="false">✓  Opgeslagen</string>

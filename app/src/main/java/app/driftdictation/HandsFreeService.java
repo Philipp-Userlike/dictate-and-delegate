@@ -441,11 +441,17 @@ public final class HandsFreeService extends Service {
    * background; returns the thread doing it, or null without a chief.
    */
   private Thread signal(BbBridge bb, String line) {
+    return signal(bb, line, null);
+  }
+
+  /** As above, after the messages still on their way in that session are delivered (in order). */
+  private Thread signal(BbBridge bb, String line, HandsFreeSession after) {
     String chief = bb.chiefId();
     if (chief.isEmpty()) return null;
     Thread t =
         new Thread(
             () -> {
+              if (after != null && !after.awaitDelivered(10_000)) event("a message was still on its way when the call ended");
               try {
                 bb.send(chief, line);
                 event("told the chief: " + line);
@@ -541,9 +547,15 @@ public final class HandsFreeService extends Service {
   }
 
   /** The four things the screen and the notification say. */
+  /** Send now is offered while you can talk and nothing is on its way. */
+  static boolean canSend(HandsFreeSession.Phase p) {
+    return p == HandsFreeSession.Phase.LISTENING || p == HandsFreeSession.Phase.WORKING;
+  }
+
   static String phaseLabel(HandsFreeSession.Phase p) {
     return switch (p) {
       case READING -> tr("Reading reply");
+      case SENDING -> tr("Sending…");
       // You can talk while the chief works: it says listening first.
       case WORKING -> tr("Listening · Chief is working…");
       default -> tr("Listening");
@@ -580,7 +592,7 @@ public final class HandsFreeService extends Service {
             .setContentIntent(open);
     // Only what fits now: while listening, Send now; a reply is stopped by saying "stop" or the
     // headset button.
-    if (s != null && s.phase() != HandsFreeSession.Phase.READING)
+    if (s != null && HandsFreeService.canSend(s.phase()))
       b.addAction(new Notification.Action.Builder(null, tr("Send now"), action(SEND, 1)).build());
     b.addAction(new Notification.Action.Builder(null, tr("End"), action(END, 3)).build());
     return b.build();
@@ -601,7 +613,7 @@ public final class HandsFreeService extends Service {
       recorder = null;
     }
     event("call ended · $" + callCost.stripTrailingZeros().toPlainString() + " on OpenRouter");
-    Thread ended = s == null ? null : signal(new BbBridge(this), HandsFree.CALL_ENDED);
+    Thread ended = s == null ? null : signal(new BbBridge(this), HandsFree.CALL_ENDED, s);
     if (replies != null) replies.finish();
     if (voice != null) voice.shutdown();
     if (media != null) media.release();
@@ -617,11 +629,11 @@ public final class HandsFreeService extends Service {
       return;
     }
     // Stays a foreground service until the chief knows the call ended, so the process isn't
-    // frozen or killed with the message unsent (at most 5 s).
+    // frozen or killed with the message unsent (at most 15 s, messages still on their way first).
     new Thread(
             () -> {
               try {
-                ended.join(5000);
+                ended.join(15_000);
               } catch (InterruptedException ignored) {
                 /* Stop now. */
               }

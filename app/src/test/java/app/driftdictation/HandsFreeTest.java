@@ -100,6 +100,8 @@ public class HandsFreeTest {
     volatile int heardChars;
     /** While set, the speech model waits for it (a slow transcription). */
     volatile java.util.concurrent.CountDownLatch slow;
+    /** While set, delivering to bb waits for it (a slow bb). */
+    volatile java.util.concurrent.CountDownLatch slowBb;
     /** What preparing a reply does (fetching its audio); by default nothing. */
     volatile java.util.function.Function<String, Object> prepare = text -> text;
     final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
@@ -122,6 +124,8 @@ public class HandsFreeTest {
                 return transcripts.remove(0);
               },
               said -> {
+                java.util.concurrent.CountDownLatch l = slowBb;
+                if (l != null) l.await();
                 sent.add(said);
                 return "r" + sent.size();
               },
@@ -379,6 +383,69 @@ public class HandsFreeTest {
     Thread.sleep(200);
     assertEquals(1, f.sent.size());
     assertEquals("First part. Second part.", f.sent.get(0));
+  }
+
+  @Test
+  public void aPressShowsSendingAtOnceAndASecondPressDoesNothing() throws Exception {
+    Fake f = new Fake("Book the table");
+    f.slow = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    f.session.sendNow();
+    assertEquals(HandsFreeSession.Phase.SENDING, f.session.phase());
+    f.session.sendNow();
+    f.slow.countDown();
+    until(() -> f.sent.size() == 1);
+    Thread.sleep(200);
+    assertEquals(1, f.sent.size());
+    assertTrue(f.log.stream().anyMatch(l -> l.contains("send pressed again")));
+  }
+
+  @Test
+  public void aPressRightAfterAMessageWentDoesntSendTheNextWordsOnTheirOwn() throws Exception {
+    // Philipp's "don't see the": a second press for the same message sent the next fragment.
+    Fake f = new Fake("That was the whole thing.", "don't see the");
+    f.talk();
+    until(() -> !f.session.pending().isEmpty());
+    f.session.sendNow();
+    until(() -> f.sent.size() == 1);
+    f.talk();
+    until(() -> f.session.pending().equals("don't see the"));
+    f.session.sendNow(); // Same instant on the fake clock: a repeated press.
+    Thread.sleep(200);
+    assertEquals(1, f.sent.size());
+    assertEquals("don't see the", f.session.pending());
+    f.now.addAndGet(HandsFreeSession.REPRESS_MS + 1);
+    f.session.sendNow();
+    until(() -> f.sent.size() == 2);
+    assertEquals("don't see the", f.sent.get(1));
+  }
+
+  @Test
+  public void whatYouSayNextIsWrittenDownWhileBbIsSlow() throws Exception {
+    // Delivering a message must not hold up writing down the next turn, and messages keep their order.
+    Fake f = new Fake("First message. Over.", "Second message. Over.");
+    f.slowBb = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    until(() -> f.session.phase() == HandsFreeSession.Phase.SENDING);
+    f.talk();
+    until(() -> f.log.stream().anyMatch(l -> l.contains("Second message")));
+    assertEquals(0, f.sent.size());
+    f.slowBb.countDown();
+    until(() -> f.sent.size() == 2);
+    assertEquals("First message.", f.sent.get(0));
+    assertEquals("Second message.", f.sent.get(1));
+  }
+
+  @Test
+  public void theLastMessageStillGoesWhenTheCallEndsWithIt() throws Exception {
+    Fake f = new Fake("Order the parts, end the call");
+    f.slowBb = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    until(() -> f.session.state() == HandsFreeSession.State.ENDED);
+    f.slowBb.countDown();
+    assertTrue(f.session.awaitDelivered(2000));
+    assertEquals(1, f.sent.size());
+    assertEquals("Order the parts", f.sent.get(0));
   }
 
   // ------------------------------------------------------------------ the chief's side

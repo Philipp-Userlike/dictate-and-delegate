@@ -249,6 +249,79 @@ public class HandsFreeFlowTest {
     assertFalse("a real first answer, not a filler: " + spoken.get(0), spoken.get(0).toLowerCase().contains("one moment"));
   }
 
+  /**
+   * Opt-in, against a real bb and ntfy (the same arguments as above): a turn ending in "over" and
+   * one sent with the call bar's send button both reach a real chief, and its spoken replies play
+   * to the end. Logs the hands-free events with their timings (tag TalkRouterReal).
+   */
+  @Test
+  public void realChiefGetsTurnsByWordAndByButtonAndRepliesPlayToTheEnd() throws Exception {
+    android.os.Bundle args = InstrumentationRegistry.getArguments();
+    Assume.assumeTrue(args.getString("realMcp") != null);
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(args.getString("realMcp"), "", args.getString("realLinks"));
+    bb.setNtfyServer(args.getString("realNtfy"));
+    TestServer.skillsCurrent(context);
+    java.util.Map<String, String> files = ChiefSkills.filled(context);
+    String prompt =
+        "For this test, follow these two skills as if they were installed, then reply \"ready\".\n\n"
+            + files.get(ChiefSkills.CHIEF)
+            + "\n"
+            + files.get(ChiefSkills.ROUTER);
+    JSONObject created =
+        bb.run(BbBridge.spawnSnippet(prompt).replace(JSONObject.quote(BbBridge.CHIEF_TITLE), JSONObject.quote(args.getString("realTitle"))));
+    android.util.Log.i("TalkRouterReal", "chief " + created.getString("id"));
+    bb.setChief(new BbBridge.ThreadInfo(created.getString("id"), args.getString("realTitle"), created.optString("status")));
+    device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
+    TestServer.transcripts(
+        "Quick test call: is the Atlantic bigger than the Indian Ocean? Answer in one short sentence. Over.",
+        "And which one is deeper? One short sentence");
+    // Only this call's events count: the log goes on across calls.
+    HandsFreeService.logFile(context).delete();
+    try {
+      realTurnsByWordAndButton();
+    } finally {
+      for (String line : HandsFreeService.log(context).split("\n")) android.util.Log.i("TalkRouterReal", line);
+    }
+  }
+
+  private static int count(String log, String what) {
+    return log.split(java.util.regex.Pattern.quote(what), -1).length - 1;
+  }
+
+  private void realTurnsByWordAndButton() throws Exception {
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    // 1. A turn ending in the send word.
+    talk();
+    until(() -> HandsFreeService.session().sent() == 1, "the turn ending in over sent");
+    long deadline = SystemClock.elapsedRealtime() + 4 * 60_000;
+    while (SystemClock.elapsedRealtime() < deadline && count(HandsFreeService.log(context), "reply played to the end") == 0)
+      Thread.sleep(1000);
+    assertTrue("the first reply played to the end", count(HandsFreeService.log(context), "reply played to the end") > 0);
+    // Wait until nothing is read, so the next turn starts on an open floor.
+    deadline = SystemClock.elapsedRealtime() + 2 * 60_000;
+    while (SystemClock.elapsedRealtime() < deadline && HandsFreeService.session().phase() == HandsFreeSession.Phase.READING)
+      Thread.sleep(500);
+    // The microphone stays muted a moment after a reply (its echo), as on the phone.
+    Thread.sleep(1500);
+    // 2. A turn without a send word, sent with the call bar's send button.
+    talk();
+    UiObject2 send = device.wait(Until.findObject(By.desc("Send now")), 5000);
+    assertNotNull("the call bar's send button", send);
+    send.click();
+    until(() -> HandsFreeService.session().sent() == 2, "the turn sent with the button");
+    int played = count(HandsFreeService.log(context), "reply played to the end");
+    deadline = SystemClock.elapsedRealtime() + 4 * 60_000;
+    while (SystemClock.elapsedRealtime() < deadline && count(HandsFreeService.log(context), "reply played to the end") <= played)
+      Thread.sleep(1000);
+    String log = HandsFreeService.log(context);
+    assertTrue("the second reply played to the end", count(log, "reply played to the end") > played);
+    assertFalse("no reply cut off", log.contains("the reply played too long") || log.contains("the reply's audio didn't start"));
+    HandsFreeService.send(context, HandsFreeService.END);
+    until(() -> HandsFreeService.instance == null, "ended");
+  }
+
   @Test
   public void theDictationPanelsCallButtonSwitchesToHandsFreeKeepingWhatWasSaid() throws Exception {
     TestServer.transcripts("I was dictating about the trip");

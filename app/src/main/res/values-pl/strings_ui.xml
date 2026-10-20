@@ -163,6 +163,7 @@
     <string name="t_3f77ee75" formatted="false">Zapisywanie…</string>
     <string name="t_3f983199" formatted="false">%1$s Nagranie zostało zapisane.</string>
     <string name="t_400b4b63" formatted="false">Mówisz</string>
+    <string name="t_40de4e2a" formatted="false">Skopiowano. Wklej to w miejscu zgłaszania problemu.</string>
     <string name="t_41265b45" formatted="false">Przytrzymaj przez</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon dozwolony</string>
     <string name="t_421f0793" formatted="false">Nie udało się usunąć zapisanego dźwięku. Spróbuj ponownie po zrestartowaniu Dictate &amp; Delegate.</string>
@@ -229,6 +230,7 @@
     <string name="t_597ec35a" formatted="false">✓  Dodano</string>
     <string name="t_5a076fff" formatted="false">%1$s przekształca go w potrzebny tekst: e-mail, odpowiedź, zwięzłą notatkę, szablon. Następnie wybierz Wstaw dopracowany.</string>
     <string name="t_5a36973e" formatted="false">Dopracowywanie tekstu…</string>
+    <string name="t_5a6e8ec5" formatted="false">Brak zdarzeń. Pojawią się tutaj po wykonaniu połączenia w trybie głośnomówiącym.</string>
     <string name="t_5afff0dd" formatted="false">Przesuń w dół, edytuj Szybkie ustawienia i dodaj Dictate &amp; Delegate.</string>
     <string name="t_5b08232c" formatted="false">Mowa na tekst</string>
     <string name="t_5bd47891" formatted="false">Każda notatka pokazuje koszt zgłoszony przez OpenRouter. Decyzja modelu Jev kosztuje około 0,00002 $, minuta mowy w domyślnym modelu około 0,002 $.</string>
@@ -265,6 +267,7 @@
     <string name="t_69b90bc7" formatted="false">Nie udało się usunąć dźwięku</string>
     <string name="t_69ee1c02" formatted="false">bb jest teraz nieosiągalne (HTTP %1$d). Czy Twój komputer jest włączony, a bb działa?</string>
     <string name="t_6a21d63f" formatted="false">Zacznij dyktować</string>
+    <string name="t_6a8517e4" formatted="false">Kopiuj zdarzenia</string>
     <string name="t_6acf5248" formatted="false">Ostatnie</string>
     <string name="t_6af514f2" formatted="false">Od twojego szefa sztabu</string>
     <string name="t_6b228094" formatted="false">✓  Zapisano</string>

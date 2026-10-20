@@ -162,6 +162,7 @@
     <string name="t_3f77ee75" formatted="false">Guardando…</string>
     <string name="t_3f983199" formatted="false">%1$s La grabación se ha guardado.</string>
     <string name="t_400b4b63" formatted="false">Tú dices</string>
+    <string name="t_40de4e2a" formatted="false">Copiado. Pégalo donde informes del problema.</string>
     <string name="t_41265b45" formatted="false">Mantener durante</string>
     <string name="t_41c5ed6f" formatted="false">Micrófono permitido</string>
     <string name="t_421f0793" formatted="false">No se pudo eliminar el audio guardado. Prueba de nuevo tras reiniciar Dictate &amp; Delegate.</string>
@@ -228,6 +229,7 @@
     <string name="t_597ec35a" formatted="false">✓  Añadido</string>
     <string name="t_5a076fff" formatted="false">%1$s lo convierte en el texto que necesitas: un correo, una respuesta, una nota limpia o tu plantilla. Luego, Insertar pulido.</string>
     <string name="t_5a36973e" formatted="false">Puliendo tu texto…</string>
+    <string name="t_5a6e8ec5" formatted="false">Aún no hay eventos. Aparecerán aquí en cuanto hagas una llamada manos libres.</string>
     <string name="t_5afff0dd" formatted="false">Desliza hacia abajo, edita los Ajustes rápidos y añade Dictate &amp; Delegate.</string>
     <string name="t_5b08232c" formatted="false">Voz a texto</string>
     <string name="t_5bd47891" formatted="false">Cada nota muestra su coste según los datos de OpenRouter. La decisión de Jev cuesta unos 0,00002 $; un minuto de voz con el modelo predeterminado, unos 0,002 $.</string>
@@ -264,6 +266,7 @@
     <string name="t_69b90bc7" formatted="false">No se pudo eliminar el audio</string>
     <string name="t_69ee1c02" formatted="false">bb no está accesible ahora mismo (HTTP %1$d). ¿Está tu ordenador encendido y bb en ejecución?</string>
     <string name="t_6a21d63f" formatted="false">Empezar a dictar</string>
+    <string name="t_6a8517e4" formatted="false">Copiar eventos</string>
     <string name="t_6acf5248" formatted="false">Recientes</string>
     <string name="t_6af514f2" formatted="false">De tu jefe de gabinete</string>
     <string name="t_6b228094" formatted="false">✓  Guardado</string>

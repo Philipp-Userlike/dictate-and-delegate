@@ -32,9 +32,13 @@ final class HandsFreeSession {
     ENDED
   }
 
-  /** What the screen shows, and nothing else: you can talk, the chief has it, or a reply is read. */
+  /**
+   * What the screen shows, and nothing else: you can talk, your message is on its way, the chief
+   * has it, or a reply is read.
+   */
   enum Phase {
     LISTENING,
+    SENDING,
     WORKING,
     READING
   }
@@ -148,7 +152,17 @@ final class HandsFreeSession {
   private final Speaker speaker;
   private final Listener listener;
   private final HandsFree.Segmenter segmenter;
-  private final ExecutorService work = Executors.newSingleThreadExecutor(), voices = Executors.newSingleThreadExecutor();
+  /**
+   * Three queues, so nothing waits on what it doesn't need: work writes down what you say (in
+   * order) and checks barge-ins; outbox delivers your messages to bb (in order), so writing down
+   * your next words never waits for bb and a message never waits for transcription of words
+   * that came after it; voices fetches the chief's audio.
+   */
+  private final ExecutorService work = Executors.newSingleThreadExecutor(),
+      outbox = Executors.newSingleThreadExecutor(),
+      voices = Executors.newSingleThreadExecutor();
+  /** Messages handed to the outbox and not delivered yet. */
+  private final AtomicInteger outgoing = new AtomicInteger();
   /** Chief messages waiting for an open floor (or to be dropped by your message). */
   private final ArrayDeque<Held> held = new ArrayDeque<>();
   /**
@@ -163,7 +177,16 @@ final class HandsFreeSession {
   private final AtomicInteger transcribing = new AtomicInteger();
   private volatile State state = State.LISTENING;
   private volatile String pending = "", status = "", error = "", reply = "";
-  private volatile boolean sending, sendAfterFlush, takenByYou;
+  private volatile boolean sendAfterFlush, takenByYou;
+  /**
+   * Send was pressed and your message hasn't gone yet (what you said may still be written down):
+   * the screen says Sending… at once, and pressing again does nothing.
+   */
+  private volatile boolean sendPressed;
+  /** When your last message went: a press right after it belongs to it, not to what follows. */
+  private volatile long sentAt = Long.MIN_VALUE / 2;
+  /** A press this soon after a message went is taken as a repeated press for that message. */
+  static final long REPRESS_MS = 1500;
   private volatile long mutedUntil;
   private volatile java.util.function.Consumer<String> events = e -> {};
   private int reading, sent;
@@ -226,7 +249,8 @@ final class HandsFreeSession {
             new HandsFree.Segmenter.Listener() {
               public void segment(byte[] pcm) {
                 transcribing.incrementAndGet();
-                execute(() -> heard(pcm), () -> transcribing.decrementAndGet());
+                long at = clock.getAsLong();
+                execute(() -> heard(pcm, at), () -> transcribing.decrementAndGet());
               }
 
               public void started(double level, double background) {
@@ -294,7 +318,7 @@ final class HandsFreeSession {
 
   /** Is your turn going on: speaking, being written down, unsent text, or going out? */
   private boolean floorIsYours() {
-    return takenByYou || segmenter.speaking() || transcribing.get() > 0 || !pending.isEmpty() || sending;
+    return takenByYou || segmenter.speaking() || transcribing.get() > 0 || !pending.isEmpty() || outgoing.get() > 0;
   }
 
   Floor floor() {
@@ -304,7 +328,7 @@ final class HandsFreeSession {
 
   Phase phase() {
     if (state == State.READING) return Phase.READING;
-    if (sending) return Phase.WORKING;
+    if (outgoing.get() > 0 || sendPressed) return Phase.SENDING;
     if (floorIsYours()) return Phase.LISTENING;
     long now = clock.getAsLong();
     synchronized (this) {
@@ -530,17 +554,43 @@ final class HandsFreeSession {
     log(String.format(java.util.Locale.ROOT, "started from a dictation (%.1f s)", pcm.length / (double) AudioFiles.BYTES_PER_SECOND));
     takenByYou = true;
     transcribing.incrementAndGet();
-    execute(() -> heard(pcm), () -> transcribing.decrementAndGet());
+    long at = clock.getAsLong();
+    execute(() -> heard(pcm, at), () -> transcribing.decrementAndGet());
   }
 
-  /** Send now (the panel's, the screen's, the notification's or the headset's button). */
+  /**
+   * Send now (the panel's, the screen's, the notification's or the headset's button). It shows at
+   * once (Sending…), since your message may wait for what you said last to be written down; a
+   * second press meanwhile, or right after it went, does nothing (it would send the next words
+   * you start on their own). Every press is logged, also the ones that do nothing.
+   */
   void sendNow() {
-    if (state != State.LISTENING) return;
-    log("send pressed");
+    if (state != State.LISTENING) {
+      log("send pressed while a reply is read: nothing sent (talk over the reply to interrupt it)");
+      return;
+    }
+    if (sendPressed) {
+      log("send pressed again: already sending");
+      return;
+    }
+    if (clock.getAsLong() - sentAt < REPRESS_MS) {
+      log("send pressed right after your message went: taken as the same press");
+      return;
+    }
+    if (pending.isEmpty() && transcribing.get() == 0 && !segmenter.candidate()) {
+      log("send pressed: nothing said yet");
+      return;
+    }
+    sendPressed = true;
+    listener.changed();
     if (segmenter.candidate()) {
+      log("send pressed: ending what you're saying");
       sendAfterFlush = true;
       segmenter.flush();
-    } else execute(() -> send(pending, "button"), null);
+    } else {
+      log("send pressed" + (transcribing.get() > 0 ? ": goes once what you said is written down" : ""));
+      execute(() -> send(pending, "button"), () -> sendPressed = false);
+    }
   }
 
   /** Ends the call. What you said but didn't send yet isn't sent. */
@@ -554,6 +604,7 @@ final class HandsFreeSession {
     speaker.stop();
     status = "ended";
     work.shutdown();
+    outbox.shutdown(); // Messages on their way still go.
     voices.shutdownNow();
     listener.changed();
   }
@@ -565,18 +616,23 @@ final class HandsFreeSession {
   void reply(String request, String text) {
     if (state == State.ENDED) return;
     Held h = new Held(request, text);
+    long since;
     synchronized (this) {
       long[] w = working.get(request);
       if (w != null) w[0]++;
+      since = w == null ? -1 : clock.getAsLong() - w[1];
       held.addLast(h);
     }
     boolean taken = floorIsYours() || state == State.READING;
-    log("chief message " + request + " (" + text.length() + " characters)" + (taken ? ": held, the floor is taken" : ""));
+    log("chief message " + request + " (" + text.length() + " characters" + (since < 0 ? "" : ", " + since + " ms after your message went")
+        + ")" + (taken ? ": held, the floor is taken" : ""));
     try {
       voices.execute(
           () -> {
+            long start = clock.getAsLong();
             try {
               h.prepared = speaker.prepare(request, text);
+              log("voice ready for " + request + " in " + (clock.getAsLong() - start) + " ms");
             } catch (RuntimeException ex) {
               log("voice not ready for " + request + ": " + ex.getMessage());
             }
@@ -625,7 +681,7 @@ final class HandsFreeSession {
                 playing = true;
                 readingDeadline = clock.getAsLong() + durationMs + OVERRUN_MS;
               }
-              log(String.format(java.util.Locale.ROOT, "audio started (%.1f s)", durationMs / 1000.0));
+              log(String.format(java.util.Locale.ROOT, "audio started (%.1f s) after %d ms", durationMs / 1000.0, clock.getAsLong() - readingSince));
             }
 
             public void ended(boolean played) {
@@ -677,24 +733,29 @@ final class HandsFreeSession {
     return true;
   }
 
-  /** A stretch of your speech ended (on the work thread). */
-  private void heard(byte[] pcm) {
+  /**
+   * A stretch of your speech ended at endedAt (on the work thread). The log says how long it
+   * waited for the work queue and how long the speech model took.
+   */
+  private void heard(byte[] pcm, long endedAt) {
     try {
       if (state == State.ENDED) return;
       double seconds = pcm.length / (double) AudioFiles.BYTES_PER_SECOND;
+      long start = clock.getAsLong();
       String text;
       try {
         text = transcriber.transcribe(AudioFiles.wav(pcm)).trim();
       } catch (Exception ex) {
         status = "transcription failed: " + ex.getMessage();
         error = "Couldn't write down what you said: " + ex.getMessage();
-        log(String.format(java.util.Locale.ROOT, "heard %.1f s, transcription failed: %s", seconds, ex.getMessage()));
+        log(String.format(java.util.Locale.ROOT, "heard %.1f s, transcription failed after %d ms: %s", seconds, clock.getAsLong() - start, ex.getMessage()));
         // Nothing else of your turn left: the floor opens again.
         if (pending.isEmpty() && transcribing.get() <= 1 && !segmenter.candidate()) giveUpTurn("not written down");
         listener.changed();
         return;
       }
-      log(String.format(java.util.Locale.ROOT, "heard %.1f s: \"%s\"", seconds, text));
+      long done = clock.getAsLong();
+      log(String.format(java.util.Locale.ROOT, "heard %.1f s: \"%s\" (written down in %d ms, waited %d ms)", seconds, text, done - start, start - endedAt));
       took(text);
     } finally {
       transcribing.decrementAndGet();
@@ -735,6 +796,7 @@ final class HandsFreeSession {
     pending = "";
     takenByYou = false;
     sendAfterFlush = false;
+    sendPressed = false;
     log("your turn ended without a message (" + why + ")");
     listener.changed();
   }
@@ -745,6 +807,7 @@ final class HandsFreeSession {
    */
   private void send(String text, String why) {
     sendAfterFlush = false;
+    sendPressed = false;
     if (text.trim().isEmpty()) {
       giveUpTurn("empty");
       return;
@@ -757,34 +820,63 @@ final class HandsFreeSession {
       dropped = held.size();
       failed = unheard.size();
     }
+    // The turn is over: you can go on talking at once (a new turn) while this one is delivered.
     pending = "";
-    sending = true;
+    takenByYou = false;
+    outgoing.incrementAndGet();
+    sentAt = clock.getAsLong();
     listener.changed();
+    long queued = clock.getAsLong();
+    String message = said.toString();
+    Runnable delivery = () -> deliver(message, text, why, dropped, failed, queued);
     try {
-      String request = sender.send(said.toString());
+      outbox.execute(delivery);
+    } catch (java.util.concurrent.RejectedExecutionException ended) {
+      delivery.run(); // The call ended with this message (an end phrase): it still goes.
+    }
+  }
+
+  /**
+   * Delivers a message to the chief (on the outbox): in order, without holding up what you say
+   * next. The log says how long it waited for earlier messages and how long bb took.
+   */
+  private void deliver(String said, String text, String why, int dropped, int failed, long queued) {
+    long start = clock.getAsLong();
+    try {
+      String request = sender.send(said);
+      long done = clock.getAsLong();
       synchronized (this) {
         requests.add(request);
-        working.put(request, new long[] {0, clock.getAsLong()});
-      }
-      synchronized (this) {
+        working.put(request, new long[] {0, done});
         for (int i = 0; i < dropped && !held.isEmpty(); i++) held.removeFirst();
         for (int i = 0; i < failed && !unheard.isEmpty(); i++) unheard.remove(0);
       }
       if (dropped > 0) log("dropped " + dropped + " held chief message(s), noted in your message");
       sent++;
+      sentAt = done;
       status = "sent (" + why + ")";
       error = "";
-      log("sent " + request + " (" + why + ", " + said.length() + " characters)");
+      log(String.format(java.util.Locale.ROOT, "sent %s (%s, %d characters; bb took %d ms, waited %d ms)", request, why, said.length(), done - start, start - queued));
     } catch (Exception ex) {
-      pending = text; // Kept, so the next send word or button tries again.
+      // Kept, before whatever you said since, so the next send word or button tries again.
+      pending = pending.isEmpty() ? text : text + " " + pending;
       status = "not sent: " + ex.getMessage();
       error = "Not sent: " + ex.getMessage();
-      log("not sent (" + why + "): " + ex.getMessage());
+      log(String.format(java.util.Locale.ROOT, "not sent (%s) after %d ms: %s", why, clock.getAsLong() - start, ex.getMessage()));
+    } finally {
+      outgoing.decrementAndGet();
+      listener.changed();
+      readNext();
     }
-    sending = false;
-    takenByYou = false;
-    listener.changed();
-    readNext();
+  }
+
+  /** Waits (at most ms) until every message of the call is delivered: before telling the chief it ended. */
+  boolean awaitDelivered(long ms) {
+    try {
+      return outbox.awaitTermination(ms, java.util.concurrent.TimeUnit.MILLISECONDS);
+    } catch (InterruptedException ex) {
+      return false;
+    }
   }
 
   /** The note in your message about a chief message you didn't hear: its first words. */

@@ -162,6 +162,7 @@
     <string name="t_3f77ee75" formatted="false">Enregistrement…</string>
     <string name="t_3f983199" formatted="false">%1$s Enregistrement sauvegardé.</string>
     <string name="t_400b4b63" formatted="false">Tu dis</string>
+    <string name="t_40de4e2a" formatted="false">Copié. Colle-le là où tu signales le problème.</string>
     <string name="t_41265b45" formatted="false">Maintenir pour</string>
     <string name="t_41c5ed6f" formatted="false">Microphone autorisé</string>
     <string name="t_421f0793" formatted="false">Impossible de supprimer l\'audio. Réessaie après avoir redémarré Dictate &amp; Delegate.</string>
@@ -228,6 +229,7 @@
     <string name="t_597ec35a" formatted="false">✓  Ajouté</string>
     <string name="t_5a076fff" formatted="false">%1$s en fait le texte souhaité : un e-mail, une réponse, une note claire, ton modèle. Puis clique sur Insérer le texte peaufiné.</string>
     <string name="t_5a36973e" formatted="false">Peaufinage du texte…</string>
+    <string name="t_5a6e8ec5" formatted="false">Aucun événement pour l\'instant. Ils apparaîtront ici après un appel mains libres.</string>
     <string name="t_5afff0dd" formatted="false">Glisse vers le bas, modifie les Réglages rapides, puis ajoute Dictate &amp; Delegate.</string>
     <string name="t_5b08232c" formatted="false">Voix-vers-texte</string>
     <string name="t_5bd47891" formatted="false">Chaque note affiche son coût selon OpenRouter. La décision de Jev coûte environ 0,00002 $, une minute de voix avec le modèle par défaut environ 0,002 $.</string>
@@ -264,6 +266,7 @@
     <string name="t_69b90bc7" formatted="false">Impossible de supprimer l\'audio</string>
     <string name="t_69ee1c02" formatted="false">bb n\'est pas joignable pour le moment (HTTP %1$d). Ton ordinateur est-il allumé et bb en cours d\'exécution ?</string>
     <string name="t_6a21d63f" formatted="false">Commencer à dicter</string>
+    <string name="t_6a8517e4" formatted="false">Copier les événements</string>
     <string name="t_6acf5248" formatted="false">Récents</string>
     <string name="t_6af514f2" formatted="false">De ton chef de cabinet</string>
     <string name="t_6b228094" formatted="false">✓  Enregistré</string>

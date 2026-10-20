@@ -161,6 +161,7 @@
     <string name="t_3f77ee75" formatted="false">Wird gespeichert…</string>
     <string name="t_3f983199" formatted="false">%1$s Die Aufnahme wurde gespeichert.</string>
     <string name="t_400b4b63" formatted="false">Du sagst</string>
+    <string name="t_40de4e2a" formatted="false">Kopiert. Füge es dort ein, wo du das Problem meldest.</string>
     <string name="t_41265b45" formatted="false">Gedrückt halten für</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon erlaubt</string>
     <string name="t_421f0793" formatted="false">Gespeichertes Audio konnte nicht gelöscht werden. Starte Dictate &amp; Delegate neu und versuche es erneut.</string>
@@ -227,6 +228,7 @@
     <string name="t_597ec35a" formatted="false">✓  Hinzugefügt</string>
     <string name="t_5a076fff" formatted="false">%1$s macht daraus den gewünschten Text: eine E-Mail, eine Antwort, eine Notiz, deine Vorlage. Dann: Verfeinertes einfügen.</string>
     <string name="t_5a36973e" formatted="false">Text wird verfeinert…</string>
+    <string name="t_5a6e8ec5" formatted="false">Noch keine Ereignisse. Sie erscheinen hier nach deinem ersten Gespräch im Freisprechen.</string>
     <string name="t_5afff0dd" formatted="false">Wische nach unten, bearbeite die Schnelleinstellungen und füge Dictate &amp; Delegate hinzu.</string>
     <string name="t_5b08232c" formatted="false">Spracherkennung</string>
     <string name="t_5bd47891" formatted="false">Jede Notiz zeigt die Kosten laut OpenRouter. Jevs Entscheidung kostet ca. 0,00002 $, eine Minute Sprache mit dem Standardmodell ca. 0,002 $.</string>
@@ -263,6 +265,7 @@
     <string name="t_69b90bc7" formatted="false">Audio konnte nicht gelöscht werden</string>
     <string name="t_69ee1c02" formatted="false">bb ist gerade nicht erreichbar (HTTP %1$d). Ist dein Computer an und bb geöffnet?</string>
     <string name="t_6a21d63f" formatted="false">Diktat starten</string>
+    <string name="t_6a8517e4" formatted="false">Ereignisse kopieren</string>
     <string name="t_6acf5248" formatted="false">Zuletzt</string>
     <string name="t_6af514f2" formatted="false">Von deinem Chief of Staff</string>
     <string name="t_6b228094" formatted="false">✓  Gespeichert</string>

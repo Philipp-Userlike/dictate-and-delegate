@@ -100,7 +100,8 @@ final class HandsFreePanel extends LinearLayout {
     GradientDrawable d = new GradientDrawable();
     d.setShape(GradientDrawable.OVAL);
     d.setColor(color);
-    b.setBackground(d);
+    // Pressed state: a ripple shows at once that the press was taken.
+    b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x66ffffff), d, null));
     b.setContentDescription(name);
     b.setTooltipText(name);
     b.setOnClickListener(click);
@@ -155,6 +156,7 @@ final class HandsFreePanel extends LinearLayout {
     state.setText(
         switch (phase) {
           case READING -> tr("Reading");
+          case SENDING -> tr("Sending…");
           case WORKING -> tr("Working…");
           default -> tr("Listening");
         });
@@ -164,10 +166,10 @@ final class HandsFreePanel extends LinearLayout {
     dot.setColor(
         switch (phase) {
           case READING -> 0xffb197fc;
-          case WORKING -> 0xfff5b84a;
+          case SENDING, WORKING -> 0xfff5b84a;
           default -> 0xff3fd6a1;
         });
-    send.setVisibility(phase != HandsFreeSession.Phase.READING ? VISIBLE : GONE);
+    send.setVisibility(HandsFreeService.canSend(phase) ? VISIBLE : GONE);
     if (getParent() != null) {
       fit();
       windows.updateViewLayout(this, layout);
