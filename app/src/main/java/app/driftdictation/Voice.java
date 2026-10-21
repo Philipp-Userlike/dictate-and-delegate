@@ -66,9 +66,37 @@ final class Voice {
    * generation ID, and how it went: when the first byte came and when all of it (ms after asking,
    * -1 when it didn't), and why Android's voice reads it ("" when it doesn't).
    */
-  record Prepared(File mp3, String generation, long firstByteMs, long allMs, String fallback) {
+  /** how: which request delivered it ("", or that a second request was sent, and which won). */
+  record Prepared(File mp3, String generation, long firstByteMs, long allMs, String fallback, String how) {
     Prepared(File mp3, String generation) {
-      this(mp3, generation, -1, -1, "");
+      this(mp3, generation, -1, -1, "", "");
+    }
+  }
+
+  /**
+   * A voice request that hasn't delivered after this long gets a second one in parallel; the first
+   * to deliver plays, the other is dropped. OpenRouter picks the provider itself (routing is ignored
+   * for speech), and its slow answers are single stalls, so a second request cuts them off.
+   */
+  static final long SECOND_REQUEST_MS = 1000;
+
+  /** One request for a reply's audio, running in its own thread. */
+  private final class Attempt {
+    final long[] first = {-1};
+    final String[] generation = {""};
+    final HttpURLConnection[] open = {null};
+    final java.util.concurrent.FutureTask<File> task;
+
+    Attempt(Choice choice, String text, long asked) {
+      task = new java.util.concurrent.FutureTask<>(() -> fetch(choice, text, generation, first, open, asked));
+      new Thread(task, "voice-fetch").start();
+    }
+
+    /** Given up: not downloaded on. */
+    void drop() {
+      HttpURLConnection c = open[0];
+      if (c != null && !task.isDone()) c.disconnect();
+      task.cancel(true);
     }
   }
 
@@ -122,28 +150,53 @@ final class Voice {
   Prepared prepare(Choice choice, String text, long waitMs) {
     if (choice.model().isEmpty()) return new Prepared(null, "");
     long asked = android.os.SystemClock.elapsedRealtime();
-    long[] first = {-1};
-    String[] generation = {""};
-    HttpURLConnection[] open = {null};
-    java.util.concurrent.FutureTask<File> task = new java.util.concurrent.FutureTask<>(() -> fetch(choice, text, generation, first, open, asked));
-    Thread t = new Thread(task, "voice-fetch");
-    t.start();
+    long deadline = waitMs > 0 ? asked + waitMs : Long.MAX_VALUE;
+    Attempt a = new Attempt(choice, text, asked), b = null;
+    int sent = 1;
+    Throwable failed = null;
     try {
-      File mp3 = waitMs > 0 ? task.get(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS) : task.get();
-      return new Prepared(mp3, generation[0], first[0], android.os.SystemClock.elapsedRealtime() - asked, "");
-    } catch (java.util.concurrent.TimeoutException slow) {
-      HttpURLConnection c = open[0];
-      if (c != null) c.disconnect(); // Given up: not downloaded on.
-      task.cancel(true);
-      return new Prepared(null, "", first[0], -1, tr("%1$s took over %2$.1f s", choice.name(), waitMs / 1000.0));
-    } catch (Exception ex) {
-      HttpURLConnection c = open[0];
-      if (c != null && !task.isDone()) c.disconnect(); // Interrupted (the call ended): not downloaded on.
-      task.cancel(true);
-      Throwable cause = ex instanceof java.util.concurrent.ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
-      android.util.Log.w("Voice", "OpenRouter's voice failed, Android's reads instead", cause);
-      return new Prepared(null, "", first[0], -1, tr("%1$s failed (%2$s)", choice.name(), String.valueOf(cause.getMessage())));
+      while (true) {
+        long now = android.os.SystemClock.elapsedRealtime();
+        Attempt done = a != null && a.task.isDone() ? a : b != null && b.task.isDone() ? b : null;
+        if (done != null) {
+          Attempt other = done == a ? b : a;
+          try {
+            File mp3 = done.task.get();
+            if (other != null) other.drop();
+            String how = b == null ? "" : done == b ? "second request won (sent after " + SECOND_REQUEST_MS + " ms)" : "first request won (a second was sent after " + SECOND_REQUEST_MS + " ms)";
+            return new Prepared(mp3, done.generation[0], done.first[0], now - asked, "", how);
+          } catch (java.util.concurrent.ExecutionException ex) {
+            failed = ex.getCause() == null ? ex : ex.getCause();
+            // One request failed: the other may still deliver; if there's none yet, send one.
+            if (done == a) a = null;
+            else b = null;
+            if (a == null && b == null) {
+              if (now < deadline && sent < 3) {
+                a = new Attempt(choice, text, asked);
+                sent++;
+              } else break;
+            }
+          }
+        } else if (b == null && a != null && sent < 3 && now - asked >= SECOND_REQUEST_MS && now < deadline) {
+          b = new Attempt(choice, text, asked);
+          sent++;
+        } else if (now >= deadline) {
+          if (a != null) a.drop();
+          if (b != null) b.drop();
+          return new Prepared(null, "", a == null ? -1 : a.first[0], -1,
+              tr("%1$s took over %2$.1f s", choice.name(), waitMs / 1000.0), b == null ? "" : "two requests");
+        }
+        Thread.sleep(25);
+      }
+    } catch (InterruptedException ex) {
+      // The call ended: not downloaded on.
+      if (a != null) a.drop();
+      if (b != null) b.drop();
+      Thread.currentThread().interrupt();
+      failed = ex;
     }
+    android.util.Log.w("Voice", "OpenRouter's voice failed, Android's reads instead", failed);
+    return new Prepared(null, "", -1, -1, tr("%1$s failed (%2$s)", choice.name(), String.valueOf(failed == null ? "" : failed.getMessage())), "");
   }
 
   /**
@@ -217,7 +270,8 @@ final class Voice {
   /** Silence played first, so the route is awake for the first word. */
   static final int WARM_MS = 500;
 
-  private static AudioAttributes attributes() {
+  /** The replies' audio: also the hands-free media session's, so the volume keys change their volume. */
+  static AudioAttributes attributes() {
     return new AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ASSISTANT)
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)

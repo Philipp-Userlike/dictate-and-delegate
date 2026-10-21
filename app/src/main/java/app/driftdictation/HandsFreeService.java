@@ -196,10 +196,12 @@ public final class HandsFreeService extends Service {
                 Voice.Prepared p = voice.prepare(c, text, HandsFree.voiceWaitMs(prefs));
                 long ms = android.os.SystemClock.elapsedRealtime() - asked;
                 if (p.mp3() != null) {
-                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms", c.model(), request, p.firstByteMs(), p.allMs()));
+                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms%s", c.model(), request, p.firstByteMs(), p.allMs(),
+                      p.how().isEmpty() ? "" : " · " + p.how()));
                   chargeVoice(request, c, text, p.generation(), ms);
                 } else if (!c.model().isEmpty()) {
-                  event("voice " + c.model() + " for " + request + ": " + p.fallback() + " (first byte " + p.firstByteMs() + " ms): Android's voice reads it");
+                  event("voice " + c.model() + " for " + request + ": " + p.fallback() + (p.how().isEmpty() ? "" : " · " + p.how())
+                      + " (first byte " + p.firstByteMs() + " ms): Android's voice reads it");
                   HandsFreeSession s = session;
                   if (s != null) s.reason("Reply in Android's voice: %1$s", p.fallback());
                 }
@@ -398,6 +400,8 @@ public final class HandsFreeService extends Service {
             mediaButton();
           }
         });
+    // The volume keys change the replies' volume while a call is on (their stream, not music's).
+    media.setPlaybackToLocal(Voice.attributes());
     media.setPlaybackState(
         new PlaybackState.Builder()
             .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE)

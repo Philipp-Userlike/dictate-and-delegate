@@ -55,7 +55,7 @@ ERRORS = {"provider": (502, "Fake provider error"),
           "invalid": (400, "Fake invalid request")}
 
 lock = threading.Lock()
-queues = {"transcribe": [], "text": [], "decide": [], "anthropic": []}
+queues = {"transcribe": [], "text": [], "decide": [], "anthropic": [], "speech": []}
 ANTHROPIC_ERRORS = {"key": (401, "authentication_error", "invalid x-api-key"),
                     "credits": (400, "invalid_request_error",
                                 "Your credit balance is too low to access the Anthropic API."),
@@ -169,6 +169,10 @@ class Handler(BaseHTTPRequestHandler):
             self.log("speech", body)
             if not body.get("voice"):
                 return self.reply(400, {"error": {"code": 400, "message": "An explicit voice is required for this TTS provider."}})
+            # Queued {"delay": seconds}: a slow voice provider, for the second request and the fallback.
+            item = next_item("speech", {})
+            if item.get("delay"):
+                time.sleep(float(item["delay"]))
             data = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "reply.mp3"), "rb").read()
             self.send_response(200)
             self.send_header("Content-Type", "audio/mpeg")

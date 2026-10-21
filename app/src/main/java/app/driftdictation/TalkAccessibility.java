@@ -119,6 +119,9 @@ public final class TalkAccessibility extends AccessibilityService {
   protected boolean onKeyEvent(KeyEvent e) {
     int key = prefs == null ? 0 : startKey(prefs);
     if (key == 0 || e.getKeyCode() != key) return false;
+    // During a hands-free call the volume keys are the volume, nothing else: a call doesn't start
+    // dictations, and Android sends them to the call's media session (the replies' stream).
+    if (HandsFreeService.instance != null && !holding) return false;
     if (e.getAction() == KeyEvent.ACTION_DOWN) {
       if (e.getRepeatCount() > 0) return holding;
       if (!available()) return false;

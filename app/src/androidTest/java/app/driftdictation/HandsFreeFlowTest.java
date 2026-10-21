@@ -328,6 +328,46 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.instance == null, "ended");
   }
 
+  /** One message out ("over"), then the chief's spoken reply to it; returns the hands-free log afterwards. */
+  private String callWithOneReply(String reply, long waitForMs, String expect) throws Exception {
+    HandsFreeService.logFile(context).delete();
+    TestServer.transcripts("Is the table booked? Over.", "Is the table booked? Over.");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> lastTell().contains("[hands-free]"), "the message sent");
+    Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(lastTell());
+    assertTrue(m.find());
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), m.group(1), reply);
+    long deadline = SystemClock.elapsedRealtime() + waitForMs;
+    while (SystemClock.elapsedRealtime() < deadline && !HandsFreeService.log(context).contains(expect)) Thread.sleep(200);
+    String log = HandsFreeService.log(context);
+    HandsFreeService.send(context, HandsFreeService.END);
+    until(() -> HandsFreeService.instance == null, "ended");
+    return log;
+  }
+
+  @Test
+  public void aSlowVoiceAnswerIsBeatenByASecondRequest() throws Exception {
+    // OpenRouter's voice stalls now and then (seconds, any provider): a second request after 1 s
+    // wins, and the reply is still read in the chosen voice, not Android's.
+    TestServer.script("speech", new JSONObject().put("delay", 4));
+    String log = callWithOneReply("The table is booked for Friday at eight.", 15_000, "reply played to the end");
+    assertTrue(log, log.contains("second request won"));
+    assertFalse(log, log.contains("Android's voice reads it"));
+    assertTrue(log, log.contains("reply played to the end"));
+  }
+
+  @Test
+  public void onlyWhenEveryVoiceRequestIsSlowAndroidsVoiceReads() throws Exception {
+    TestServer.script("speech", new JSONObject().put("delay", 6));
+    TestServer.script("speech", new JSONObject().put("delay", 6));
+    TestServer.script("speech", new JSONObject().put("delay", 6));
+    String log = callWithOneReply("The table is booked for Friday at eight.", 20_000, "Android's voice reads it");
+    assertTrue(log, log.contains("took over 3.0 s"));
+    assertTrue(log, log.contains("Android's voice reads it"));
+  }
+
   @Test
   public void theDictationPanelsCallButtonSwitchesToHandsFreeKeepingWhatWasSaid() throws Exception {
     TestServer.transcripts("I was dictating about the trip");

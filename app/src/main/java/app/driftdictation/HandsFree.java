@@ -56,7 +56,8 @@ final class HandsFree {
    * A voice model slower than this to send a reply's audio is given up for Android's voice:
    * Kokoro sometimes took 13 s. ElevenLabs answers in about half a second.
    */
-  static final int DEFAULT_VOICE_WAIT_MS = 1500;
+  /** With a second request after 1 s (Voice), Android's voice is a rare last resort. */
+  static final int DEFAULT_VOICE_WAIT_MS = 3000;
 
   static int voiceWaitMs(SharedPreferences prefs) {
     return Math.max(500, Math.min(60_000, prefs.getInt(VOICE_WAIT_MS, DEFAULT_VOICE_WAIT_MS)));
