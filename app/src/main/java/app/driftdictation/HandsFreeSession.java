@@ -1068,8 +1068,8 @@ final class HandsFreeSession {
     readNext();
   }
 
-  /** How often a reply that couldn't be played is tried again before your message notes it. */
-  static final int RETRIES = 2;
+  /** A reply that couldn't be played is tried once more before your message notes it. */
+  static final int RETRIES = 1;
 
   /**
    * Ends reading number token: note (if any) goes with your next message; tail mutes the

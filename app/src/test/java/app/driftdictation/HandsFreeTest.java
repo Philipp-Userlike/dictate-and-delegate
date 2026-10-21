@@ -576,7 +576,7 @@ public class HandsFreeTest {
     assertEquals(HandsFreeSession.State.READING, f.session.state());
     f.session.tick();
     assertEquals(HandsFreeSession.State.READING, f.session.state()); // Not yet.
-    // Tried again twice (its voice fetched afresh), then it counts as not heard.
+    // Tried once more (its voice fetched afresh), then it counts as not heard.
     for (int i = 1; i <= 1 + HandsFreeSession.RETRIES; i++) {
       int tries = i;
       until(() -> f.spoken.size() == tries);
@@ -585,7 +585,7 @@ public class HandsFreeTest {
     }
     assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
     assertEquals(1, f.session.unheard());
-    assertEquals(3, f.spoken.size());
+    assertEquals(1 + HandsFreeSession.RETRIES, f.spoken.size());
     f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
     f.talk();
     until(() -> f.sent.size() == 1);
