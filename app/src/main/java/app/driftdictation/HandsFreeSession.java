@@ -200,6 +200,8 @@ final class HandsFreeSession {
     volatile boolean ready;
     /** Why it waited was shown (once per reply). */
     boolean told;
+    /** Tries to play it that failed before (its voice fetched afresh each time). */
+    int failures;
     /** When it arrived and when its voice was ready, for the timings in the log. */
     final long arrived;
     volatile long readyAt;
@@ -232,7 +234,7 @@ final class HandsFreeSession {
   private final ExecutorService work = Executors.newSingleThreadExecutor(),
       outbox = Executors.newSingleThreadExecutor(),
       voices = Executors.newSingleThreadExecutor(),
-      tails = Executors.newSingleThreadExecutor();
+      speech = Executors.newCachedThreadPool();
   /**
    * Your turn: nothing is written down while you talk. Its audio is collected part by part (a
    * part ends at a longer pause); at each such pause the whole turn so far is written down in one
@@ -249,6 +251,12 @@ final class HandsFreeSession {
   private volatile String turnPrefix = "";
   /** Writing down took this long: shown as slow. */
   static final long SLOW_WRITING_MS = 4000;
+
+  /** Writing down a turn is given up after this long and tried once more. */
+  static volatile long writeTimeoutMs = 6000;
+
+  /** What a running check is doing: "writing" (the speech model) or "asking" (Jev); "" none. */
+  private volatile String checkStep = "";
   /** A check (writing down, then Jev) started (for the live line's seconds), 0 when none runs. */
   private volatile long writingSince;
   /** Messages handed to the outbox and not delivered yet. */
@@ -856,6 +864,9 @@ final class HandsFreeSession {
 
   /** Ends the call. What you said but didn't send yet isn't sent. */
   void end() {
+    if (state == State.ENDED) return;
+    // What you're saying right now is part of your last words.
+    if (state == State.LISTENING) segmenter.flush(true);
     int at = state == State.READING ? speaker.heardChars() : 0;
     StringBuilder note = new StringBuilder();
     int waiting;
@@ -870,14 +881,14 @@ final class HandsFreeSession {
     }
     endNote = note.toString();
     if (waiting > 0) log("ended with " + waiting + " reply(ies) still waiting: the chief is told");
-    if (hasTurn()) log("ended: what you said since your last message wasn't sent (\"" + pending + "\")");
+    sendUnsent();
     log("ended");
     speaker.stop();
     status = "ended";
     work.shutdown();
     outbox.shutdown(); // Messages on their way still go.
     voices.shutdownNow();
-    tails.shutdown();
+    speech.shutdown();
     listener.changed();
   }
 
@@ -1025,20 +1036,40 @@ final class HandsFreeSession {
    */
   private void finishReading(int token, boolean played, String why) {
     boolean heard;
-    String note;
+    Held failed;
     synchronized (this) {
       if (token != reading || state != State.READING) return;
       heard = played && playing;
-      note = heard || current == null ? null : missed(current.text);
+      failed = heard ? null : current;
     }
+    String note = null;
+    Held again = null;
     if (heard) log("reply played to the end");
-    else {
+    else if (failed != null && failed.failures < RETRIES) {
+      // Never given up at once: its voice is fetched again (the voice model, else Android's).
+      again = new Held(failed.request, failed.text, clock.getAsLong());
+      again.failures = failed.failures + 1;
+      again.told = true;
+      log("reply not played (" + why + "): trying again (" + again.failures + " of " + RETRIES + ")");
+      reason("Reply couldn't be played (%1$s): trying again", why);
+    } else {
+      note = failed == null ? null : missed(failed.text);
       log("reply not heard: noted in your next message");
       cue(Cue.FAILED);
       reason("Reply couldn't be played: %1$s. Your next message tells the chief", why);
     }
-    if (endReading(token, note, true)) readNext();
+    if (!endReading(token, note, true)) return;
+    if (again != null) {
+      synchronized (this) {
+        held.addFirst(again);
+      }
+      prepare(again);
+    }
+    readNext();
   }
+
+  /** How often a reply that couldn't be played is tried again before your message notes it. */
+  static final int RETRIES = 2;
 
   /**
    * Ends reading number token: note (if any) goes with your next message; tail mutes the
@@ -1062,6 +1093,53 @@ final class HandsFreeSession {
     if (tail) reason("Mic paused %1$.1f s after the reply (echo)", TAIL_MS / 1000.0);
     listener.changed();
     return true;
+  }
+
+  /**
+   * The call ended with words of yours not sent yet: they go now (written down first, if they
+   * weren't), on the outbox, so before the chief hears the call ended.
+   */
+  private void sendUnsent() {
+    List<byte[]> audio;
+    String prefix, cached;
+    synchronized (turnAudio) {
+      if (turnAudio.isEmpty() && turnPrefix.isEmpty()) return;
+      audio = new ArrayList<>(turnAudio);
+      prefix = turnPrefix;
+      cached = checkedVersion == turnVersion ? checkedText : null;
+      turnAudio.clear();
+      turnPrefix = "";
+      turnVersion++;
+    }
+    log("ended with words not sent yet (" + audio.size() + " part(s)): they're sent before the call's end");
+    outgoing.incrementAndGet();
+    long queued = clock.getAsLong();
+    Runnable last =
+        () -> {
+          String text = cached;
+          if (text == null) {
+            text = prefix;
+            if (!audio.isEmpty())
+              try {
+                text = (prefix + " " + writeDown(joined(audio), "end")).trim();
+              } catch (Exception ex) {
+                log("your last words couldn't be written down (" + ex.getMessage() + "): not sent");
+                outgoing.decrementAndGet();
+                return;
+              }
+          }
+          if (text.isEmpty()) {
+            log("your last words had no words in them: nothing sent");
+            outgoing.decrementAndGet();
+            return;
+          }
+          deliver(text, text, "end of the call", 0, queued);
+        };
+    try {
+      outbox.execute(last);
+    } catch (java.util.concurrent.RejectedExecutionException ended) {
+      new Thread(last, "last-words").start();
+    }
   }
 
   /** Is there a turn of yours not sent yet (audio or words)? */
@@ -1088,6 +1166,39 @@ final class HandsFreeSession {
   private void check(String why) {
     transcribing.incrementAndGet();
     execute(() -> checkNow(why), () -> transcribing.decrementAndGet());
+  }
+
+  /** What a running check is doing: "writing", "asking" or "". */
+  String checkStep() {
+    return transcribing.get() == 0 ? "" : checkStep;
+  }
+
+  /**
+   * Writes down audio with the speech model, at most writeTimeoutMs a try, twice: a request that
+   * hangs is given up (and logged) rather than waited for.
+   */
+  private String writeDown(byte[] pcm, String why) throws Exception {
+    byte[] wav = AudioFiles.wav(pcm);
+    Exception last = null;
+    for (int attempt = 1; attempt <= 2; attempt++) {
+      java.util.concurrent.Future<String> f;
+      try {
+        f = speech.submit(() -> transcriber.transcribe(wav));
+      } catch (java.util.concurrent.RejectedExecutionException ended) {
+        return transcriber.transcribe(wav).trim(); // The call ended: your last words, here.
+      }
+      try {
+        return f.get(writeTimeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS).trim();
+      } catch (java.util.concurrent.TimeoutException slow) {
+        f.cancel(true);
+        log(String.format(java.util.Locale.ROOT, "writing down (%s) took over %.0f s: %s", why, writeTimeoutMs / 1000.0, attempt == 1 ? "trying once more" : "given up"));
+        if (attempt == 1) reason("Writing down took over %1$.0f s: trying once more", writeTimeoutMs / 1000.0);
+        last = new java.io.IOException(tr("the speech model took over %1$.0f s", writeTimeoutMs / 1000.0));
+      } catch (java.util.concurrent.ExecutionException ex) {
+        throw ex.getCause() instanceof Exception e ? e : ex;
+      }
+    }
+    throw last;
   }
 
   private void checkNow(String why) {
@@ -1128,7 +1239,8 @@ final class HandsFreeSession {
       if (cached != null) text = cached; // Written down already, unchanged since: no second pass.
       else if (!audio.isEmpty()) {
         try {
-          String t = transcriber.transcribe(AudioFiles.wav(joined(audio))).trim();
+          checkStep = "writing";
+          String t = writeDown(joined(audio), why);
           text = (prefix + " " + t).trim();
         } catch (Exception ex) {
           status = "transcription failed: " + ex.getMessage();
@@ -1144,6 +1256,7 @@ final class HandsFreeSession {
         }
       }
       long written = clock.getAsLong() - start;
+      if (state == State.ENDED) return; // The call's end sends it (end()).
       synchronized (turnAudio) {
         checkedText = text;
         checkedVersion = version;
@@ -1171,6 +1284,7 @@ final class HandsFreeSession {
       decide(text, audio.size(), prefix, version);
     } finally {
       writingSince = 0;
+      checkStep = "";
       transcribing.decrementAndGet();
       listener.changed();
       readNext();
@@ -1204,6 +1318,8 @@ final class HandsFreeSession {
     Verdict v = null;
     long start = clock.getAsLong();
     String failed = null;
+    checkStep = "asking";
+    listener.changed();
     if (judge != null) {
       try {
         v = judge.judge(text);
@@ -1222,6 +1338,7 @@ final class HandsFreeSession {
           v.send(),
           v.end()));
     else if (failed != null) log("Jev failed after " + ms + " ms (" + failed + "): the send and end words decide");
+    if (state == State.ENDED) return; // The call's end sent it.
     if (stale(version)) {
       log("you went on talking: checked again at your next pause");
       return;
@@ -1364,7 +1481,7 @@ final class HandsFreeSession {
       switch (why) {
         case "jev" -> reason("Sent ✓");
         case "silence" -> reason("Sent ✓ after %1$d s of silence", silenceSendMs / 1000);
-        case "end phrase" -> reason("Sent ✓ before the call ended");
+        case "end phrase", "end of the call" -> reason("Sent ✓ before the call ended");
         default -> reason("Sent ✓ by the Send button");
       }
     } catch (Exception ex) {

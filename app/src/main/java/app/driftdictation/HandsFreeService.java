@@ -152,6 +152,7 @@ public final class HandsFreeService extends Service {
     SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
     BbBridge bb = new BbBridge(this);
     voice = new Voice(this);
+    voice.androidStatus = status -> event("Android's voice: " + status);
     Voice.Choice choice = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id()));
     Profile profile = new Profile(prefs);
     String model = profile.fixedModel();
@@ -194,7 +195,9 @@ public final class HandsFreeService extends Service {
                 Voice.Choice c = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id()));
                 long asked = android.os.SystemClock.elapsedRealtime();
                 // A voice model slower than this to answer: Android's voice reads the reply instead.
-                Voice.Prepared p = voice.prepare(c, text, HandsFree.voiceWaitMs(prefs));
+                // Without Android's voice on this phone there's nothing to fall back to: the voice
+                // model is waited for (its second and third requests still race the first).
+                Voice.Prepared p = voice.prepare(c, text, voice.androidUnavailable ? 30_000 : HandsFree.voiceWaitMs(prefs));
                 long ms = android.os.SystemClock.elapsedRealtime() - asked;
                 if (p.mp3() != null) {
                   event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms%s", c.model(), request, p.firstByteMs(), p.allMs(),
@@ -495,7 +498,7 @@ public final class HandsFreeService extends Service {
     Thread t =
         new Thread(
             () -> {
-              if (after != null && !after.awaitDelivered(10_000)) event("a message was still on its way when the call ended");
+              if (after != null && !after.awaitDelivered(25_000)) event("a message was still on its way when the call ended");
               try {
                 bb.send(chief, line);
                 event("told the chief: " + line);
@@ -606,7 +609,10 @@ public final class HandsFreeService extends Service {
     HandsFreeSession.Live live = s.live();
     return switch (live) {
       case HEARING -> tr("Hearing you");
-      case WRITING -> s.writingMs() >= 3000 ? tr("Checking whether you're done… (%1$d s)", s.writingMs() / 1000) : tr("Checking whether you're done…");
+      case WRITING ->
+          s.checkStep().equals("asking")
+              ? tr("Checking whether you're done…")
+              : tr("Writing down… %1$d s", Math.max(1, (s.writingMs() + 999) / 1000));
       case WAITING_SEND -> tr("Listening · not sent yet");
       case SENDING -> tr("Sending…");
       case SENT -> tr("Sent ✓");
@@ -625,7 +631,8 @@ public final class HandsFreeService extends Service {
   static String shortLabel(HandsFreeSession s) {
     return switch (s.live()) {
       case HEARING -> tr("Hearing you");
-      case WRITING -> s.writingMs() >= 3000 ? tr("Checking… %1$d s", s.writingMs() / 1000) : tr("Checking…");
+      case WRITING ->
+          s.checkStep().equals("asking") ? tr("Checking…") : tr("Writing… %1$d s", Math.max(1, (s.writingMs() + 999) / 1000));
       case WAITING_SEND -> tr("Not sent yet");
       case SENDING -> tr("Sending…");
       case SENT -> tr("Sent ✓");
@@ -711,11 +718,11 @@ public final class HandsFreeService extends Service {
       return;
     }
     // Stays a foreground service until the chief knows the call ended, so the process isn't
-    // frozen or killed with the message unsent (at most 15 s, messages still on their way first).
+    // frozen or killed with the message unsent (at most 30 s, messages still on their way first).
     new Thread(
             () -> {
               try {
-                ended.join(15_000);
+                ended.join(30_000); // Your last words written down and sent first.
               } catch (InterruptedException ignored) {
                 /* Stop now. */
               }

@@ -33,6 +33,7 @@
     <string name="t_0b61da7d" formatted="false">Słowa wysyłania i czas</string>
     <string name="t_0b870de2" formatted="false">Usunięto dane lokalne</string>
     <string name="t_0bf045a7" formatted="false">Usunąć klucz Anthropic?</string>
+    <string name="t_0c32355a" formatted="false">Pisanie… %1$d s</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Szef ✓</string>
     <string name="t_0c4ebb56" formatted="false">Ceny za milion tokenów wejścia / wyjścia, cennik Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Otwórz odzyskiwanie nagrań</string>
@@ -170,6 +171,7 @@
     <string name="t_3e520da4" formatted="false">Kończę połączenie: pożegnałeś się</string>
     <string name="t_3e5678cd" formatted="false">Najszybszy</string>
     <string name="t_3ebb7bec" formatted="false">Dopracuj</string>
+    <string name="t_3ed47f18" formatted="false">Zapisywanie trwało ponad %1$.0f s: ponawiam próbę</string>
     <string name="t_3eef8148_few" formatted="false">%1$d wersje</string>
     <string name="t_3eef8148_many" formatted="false">%1$d wersji</string>
     <string name="t_3eef8148_one" formatted="false">%1$d wersja</string>
@@ -180,10 +182,10 @@
     <string name="t_40de4e2a" formatted="false">Skopiowano. Wklej to w miejscu zgłaszania problemu.</string>
     <string name="t_411d4bad" formatted="false">Wstrzymano</string>
     <string name="t_41265b45" formatted="false">Przytrzymaj przez</string>
-    <string name="t_414a0d9d" formatted="false">Sprawdzam… %1$d s</string>
     <string name="t_417750b1" formatted="false">Wyślij: Twoja wiadomość została już wysłana</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon dozwolony</string>
     <string name="t_421f0793" formatted="false">Nie udało się usunąć zapisanego dźwięku. Spróbuj ponownie po zrestartowaniu Dictate &amp; Delegate.</string>
+    <string name="t_42463e69" formatted="false">Nie udało się odtworzyć odpowiedzi (%1$s): ponawiam próbę</string>
     <string name="t_446b3ccc" formatted="false">%1$d godz. %2$d min</string>
     <string name="t_449d8bae" formatted="false">Usuń %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Dopracowano przez OpenRouter zamiast Anthropic: %1$s</string>
@@ -288,6 +290,7 @@
     <string name="t_65d60c24" formatted="false">Nie udało się zainstalować umiejętności asystenta: %1$s</string>
     <string name="t_66aa70b6" formatted="false">Połączenie</string>
     <string name="t_67c5a895" formatted="false">Wczoraj</string>
+    <string name="t_68138ed6" formatted="false">model mowy potrzebował ponad %1$.0f s</string>
     <string name="t_694eaa92" formatted="false">%1$s nie odpowiada.</string>
     <string name="t_69b90bc7" formatted="false">Nie udało się usunąć dźwięku</string>
     <string name="t_69d3f1cd" formatted="false">Wyślij: kończę Twoją wypowiedź i wysyłam</string>
@@ -454,7 +457,6 @@
     <string name="t_a6416f07" formatted="false">Wyłącz tryb głośnomówiący</string>
     <string name="t_a6448af5" formatted="false">Wysłano ✓ przyciskiem Wyślij</string>
     <string name="t_a64714a0" formatted="false">Dictate &amp; Delegate używa tego modelu do każdej notatki.</string>
-    <string name="t_a666e129" formatted="false">Sprawdzam, czy to już koniec… (%1$d s)</string>
     <string name="t_a6a5d215" formatted="false">Otwórz Ustawienia Androida → Ułatwienia dostępu → Dictate &amp; Delegate.</string>
     <string name="t_a6ab7640" formatted="false">Wylogowano z bb. Zaloguj się ponownie w Ustawienia → bb.</string>
     <string name="t_a6ee4edb" formatted="false">Wysyłanie do szefa sztabu…</string>
@@ -462,6 +464,7 @@
     <string name="t_a75a18d5" formatted="false">Nie udało się połączyć z %1$s pod adresem %2$s: %3$s.</string>
     <string name="t_a75b1302" formatted="false">nieznany adres</string>
     <string name="t_a9b35f5c" formatted="false">Przy każdej dłuższej pauzie Jev decyduje, czy skończyłeś; te słowa są dla niego jasną wskazówką (używane także wtedy, gdy nie można zapytać Jeva). Rozdziel kilka przecinkami.</string>
+    <string name="t_aa539260" formatted="false">Zapisywanie… %1$d s</string>
     <string name="t_aad98ab5" formatted="false">Wysłano ✓ przed zakończeniem połączenia</string>
     <string name="t_aadc023e" formatted="false">Nie udało się uruchomić mikrofonu.</string>
     <string name="t_aafc2622" formatted="false">Brak notatek.</string>

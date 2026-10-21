@@ -576,11 +576,16 @@ public class HandsFreeTest {
     assertEquals(HandsFreeSession.State.READING, f.session.state());
     f.session.tick();
     assertEquals(HandsFreeSession.State.READING, f.session.state()); // Not yet.
-    f.now.addAndGet(HandsFreeSession.START_MS + 1);
-    f.session.tick();
-    // Listening again, and the reply counts as not heard.
+    // Tried again twice (its voice fetched afresh), then it counts as not heard.
+    for (int i = 1; i <= 1 + HandsFreeSession.RETRIES; i++) {
+      int tries = i;
+      until(() -> f.spoken.size() == tries);
+      f.now.addAndGet(HandsFreeSession.START_MS + 1);
+      f.session.tick();
+    }
     assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
     assertEquals(1, f.session.unheard());
+    assertEquals(3, f.spoken.size());
     f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
     f.talk();
     until(() -> f.sent.size() == 1);
@@ -608,10 +613,69 @@ public class HandsFreeTest {
     Fake f = new Fake();
     f.quiet(1000);
     f.session.reply("r0", "Can't be played.");
-    until(() -> f.spoken.size() == 1);
-    f.fail.run(); // The player reports an error before any audio.
+    for (int i = 1; i <= 1 + HandsFreeSession.RETRIES; i++) {
+      int tries = i;
+      until(() -> f.spoken.size() == tries);
+      f.fail.run(); // The player reports an error before any audio.
+    }
     assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
     assertEquals(1, f.session.unheard());
+  }
+
+  @Test
+  public void aReplyWhoseVoiceFailsIsTriedAgainAndHeard() throws Exception {
+    Fake f = new Fake();
+    f.quiet(1000);
+    f.session.reply("r0", "The table is booked.");
+    until(() -> f.spoken.size() == 1);
+    f.fail.run(); // Android's voice couldn't play it.
+    until(() -> f.spoken.size() == 2); // Its voice fetched again, and played.
+    f.done.run();
+    assertEquals(0, f.session.unheard());
+    assertTrue(reasons(f), reasons(f).contains("Reply couldn't be played (the voice stopped): trying again"));
+  }
+
+  @Test
+  public void writingDownThatHangsIsGivenUpTriedOnceMoreAndShown() throws Exception {
+    long was = HandsFreeSession.writeTimeoutMs;
+    HandsFreeSession.writeTimeoutMs = 300;
+    try {
+      Fake f = new Fake("Book the table", "Book the table");
+      f.slow = new java.util.concurrent.CountDownLatch(1); // Both tries hang.
+      f.talk();
+      until(() -> f.session.checkStep().equals("writing"));
+      assertEquals(HandsFreeSession.Live.WRITING, f.session.live());
+      until(() -> reasons(f).contains("Writing down took over 0 s: trying once more"));
+      until(() -> reasons(f).contains("Couldn't write down"));
+      f.slow.countDown();
+      // Kept: Send writes it down and sends it.
+      f.session.sendNow();
+      until(() -> f.sent.size() == 1);
+    } finally {
+      HandsFreeSession.writeTimeoutMs = was;
+    }
+  }
+
+  @Test
+  public void wordsNotSentWhenTheCallEndsAreSentBeforeItsEnd() throws Exception {
+    Fake f = new Fake("And also look at the latency");
+    f.session.judge = said -> verdict("more", 0.1, 0);
+    f.talk();
+    until(() -> f.session.pending().equals("And also look at the latency"));
+    f.session.end();
+    assertTrue(f.session.awaitDelivered(2000));
+    assertEquals(List.of("And also look at the latency"), f.sent);
+    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("they're sent before the call's end"));
+  }
+
+  @Test
+  public void wordsNotYetWrittenDownWhenTheCallEndsAreWrittenDownAndSent() throws Exception {
+    Fake f = new Fake("Order the parts");
+    f.quiet(1000);
+    f.speak(); // Still talking when the call ends: the part ends with it.
+    f.session.end();
+    assertTrue(f.session.awaitDelivered(3000));
+    assertEquals(List.of("Order the parts"), f.sent);
   }
 
   @Test
@@ -967,8 +1031,12 @@ public class HandsFreeTest {
     f.session.reply("r1", "Done.");
     until(() -> cues.size() == 3);
     assertEquals(HandsFreeSession.Cue.REPLY, cues.get(2));
-    f.fail.run();
-    assertEquals(HandsFreeSession.Cue.FAILED, cues.get(3));
+    for (int i = 1; i <= 1 + HandsFreeSession.RETRIES; i++) { // Tried again, then given up.
+      int tries = i;
+      until(() -> f.spoken.size() == tries);
+      f.fail.run();
+    }
+    assertTrue(cues.toString(), cues.contains(HandsFreeSession.Cue.FAILED));
   }
 
   @Test

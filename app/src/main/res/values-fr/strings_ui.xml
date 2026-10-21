@@ -33,6 +33,7 @@
     <string name="t_0b61da7d" formatted="false">Mots d’envoi et minutage</string>
     <string name="t_0b870de2" formatted="false">Données locales supprimées</string>
     <string name="t_0bf045a7" formatted="false">Supprimer ta clé Anthropic ?</string>
+    <string name="t_0c32355a" formatted="false">Écriture… %1$d s</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chef ✓</string>
     <string name="t_0c4ebb56" formatted="false">Prix par million de tokens en entrée / sortie, tarifs publics d\'Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Ouvrir la récupération d\'enregistrements</string>
@@ -170,6 +171,7 @@
     <string name="t_3e520da4" formatted="false">Fin de l\'appel : tu as dit au revoir</string>
     <string name="t_3e5678cd" formatted="false">Le plus rapide</string>
     <string name="t_3ebb7bec" formatted="false">Peaufiner</string>
+    <string name="t_3ed47f18" formatted="false">La transcription a pris plus de %1$.0f s : nouvel essai</string>
     <string name="t_3eef8148_many" formatted="false">%1$d de versions</string>
     <string name="t_3eef8148_one" formatted="false">%1$d version</string>
     <string name="t_3eef8148_other" formatted="false">%1$d versions</string>
@@ -179,10 +181,10 @@
     <string name="t_40de4e2a" formatted="false">Copié. Colle-le là où tu signales le problème.</string>
     <string name="t_411d4bad" formatted="false">En pause</string>
     <string name="t_41265b45" formatted="false">Maintenir pour</string>
-    <string name="t_414a0d9d" formatted="false">Vérification… %1$d s</string>
     <string name="t_417750b1" formatted="false">Envoyer : ton message était déjà parti</string>
     <string name="t_41c5ed6f" formatted="false">Microphone autorisé</string>
     <string name="t_421f0793" formatted="false">Impossible de supprimer l\'audio. Réessaie après avoir redémarré Dictate &amp; Delegate.</string>
+    <string name="t_42463e69" formatted="false">Impossible de lire la réponse (%1$s) : nouvel essai</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Supprimer %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Affiné via OpenRouter au lieu d\'Anthropic : %1$s</string>
@@ -287,6 +289,7 @@
     <string name="t_65d60c24" formatted="false">Impossible d\'installer les compétences du chef : %1$s</string>
     <string name="t_66aa70b6" formatted="false">Connexion</string>
     <string name="t_67c5a895" formatted="false">Hier</string>
+    <string name="t_68138ed6" formatted="false">le modèle vocal a pris plus de %1$.0f s</string>
     <string name="t_694eaa92" formatted="false">%1$s n\'a pas répondu.</string>
     <string name="t_69b90bc7" formatted="false">Impossible de supprimer l\'audio</string>
     <string name="t_69d3f1cd" formatted="false">Envoi : fin de ta phrase, puis départ</string>
@@ -451,7 +454,6 @@
     <string name="t_a6416f07" formatted="false">Quitter mains libres</string>
     <string name="t_a6448af5" formatted="false">Envoyé ✓ par le bouton Envoyer</string>
     <string name="t_a64714a0" formatted="false">Dictate &amp; Delegate utilise ce modèle pour chaque note.</string>
-    <string name="t_a666e129" formatted="false">Vérification si tu as fini… (%1$d s)</string>
     <string name="t_a6a5d215" formatted="false">Ouvre les paramètres Android → Accessibilité → Dictate &amp; Delegate.</string>
     <string name="t_a6ab7640" formatted="false">Tu es déconnecté de bb. Reconnecte-toi dans Paramètres → bb.</string>
     <string name="t_a6ee4edb" formatted="false">Envoi à ton chef de cabinet…</string>
@@ -459,6 +461,7 @@
     <string name="t_a75a18d5" formatted="false">Impossible de joindre %1$s sur %2$s : %3$s.</string>
     <string name="t_a75b1302" formatted="false">adresse inconnue</string>
     <string name="t_a9b35f5c" formatted="false">À chaque pause prolongée, Jev détermine si tu as fini ; ces mots sont des indices clairs pour lui (aussi utilisés si Jev est injoignable). Sépare-les par des virgules.</string>
+    <string name="t_aa539260" formatted="false">Transcription… %1$d s</string>
     <string name="t_aad98ab5" formatted="false">Envoyé ✓ avant la fin de l\'appel</string>
     <string name="t_aadc023e" formatted="false">Impossible de démarrer le micro.</string>
     <string name="t_aafc2622" formatted="false">Aucune note pour l\'instant.</string>

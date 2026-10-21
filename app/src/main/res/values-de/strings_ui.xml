@@ -33,6 +33,7 @@
     <string name="t_0b61da7d" formatted="false">Sendewörter und Timing</string>
     <string name="t_0b870de2" formatted="false">Lokale Daten gelöscht</string>
     <string name="t_0bf045a7" formatted="false">Anthropic-Schlüssel entfernen?</string>
+    <string name="t_0c32355a" formatted="false">Wird geschrieben… %1$d s</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4ebb56" formatted="false">Preise pro Million Tokens Eingabe / Ausgabe, Listenpreise von Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Aufnahmewiederherstellung öffnen</string>
@@ -170,6 +171,7 @@
     <string name="t_3e520da4" formatted="false">Beende Anruf: du hast dich verabschiedet</string>
     <string name="t_3e5678cd" formatted="false">Am schnellsten</string>
     <string name="t_3ebb7bec" formatted="false">Verfeinern</string>
+    <string name="t_3ed47f18" formatted="false">Aufschreiben dauerte über %1$.0f s: versuche es noch einmal</string>
     <string name="t_3eef8148_one" formatted="false">%1$d Version</string>
     <string name="t_3eef8148_other" formatted="false">%1$d Versionen</string>
     <string name="t_3f77ee75" formatted="false">Wird gespeichert…</string>
@@ -178,10 +180,10 @@
     <string name="t_40de4e2a" formatted="false">Kopiert. Füge es dort ein, wo du das Problem meldest.</string>
     <string name="t_411d4bad" formatted="false">Pausiert</string>
     <string name="t_41265b45" formatted="false">Gedrückt halten für</string>
-    <string name="t_414a0d9d" formatted="false">Prüfe… %1$d s</string>
     <string name="t_417750b1" formatted="false">Senden: deine Nachricht war schon raus</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon erlaubt</string>
     <string name="t_421f0793" formatted="false">Gespeichertes Audio konnte nicht gelöscht werden. Starte Dictate &amp; Delegate neu und versuche es erneut.</string>
+    <string name="t_42463e69" formatted="false">Antwort konnte nicht abgespielt werden (%1$s): erneuter Versuch</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">%1$s entfernen</string>
     <string name="t_45a0c8fa" formatted="false">Über OpenRouter statt Anthropic verfeinert: %1$s</string>
@@ -286,6 +288,7 @@
     <string name="t_65d60c24" formatted="false">Skills des Chiefs konnten nicht installiert werden: %1$s</string>
     <string name="t_66aa70b6" formatted="false">Verbindung</string>
     <string name="t_67c5a895" formatted="false">Gestern</string>
+    <string name="t_68138ed6" formatted="false">das Sprachmodell brauchte über %1$.0f s</string>
     <string name="t_694eaa92" formatted="false">%1$s hat nicht geantwortet.</string>
     <string name="t_69b90bc7" formatted="false">Audio konnte nicht gelöscht werden</string>
     <string name="t_69d3f1cd" formatted="false">Senden: Spracheingabe wird beendet, dann gesendet</string>
@@ -448,7 +451,6 @@
     <string name="t_a6416f07" formatted="false">Freisprechen beenden</string>
     <string name="t_a6448af5" formatted="false">Gesendet ✓ über Senden-Taste</string>
     <string name="t_a64714a0" formatted="false">Dictate &amp; Delegate nutzt dieses Modell für jede Notiz.</string>
-    <string name="t_a666e129" formatted="false">Prüfe, ob du fertig bist… (%1$d s)</string>
     <string name="t_a6a5d215" formatted="false">Öffne Android-Einstellungen → Bedienungshilfen → Dictate &amp; Delegate.</string>
     <string name="t_a6ab7640" formatted="false">Du bist bei bb abgemeldet. Melde dich unter Einstellungen → bb wieder an.</string>
     <string name="t_a6ee4edb" formatted="false">Wird an deinen Chief of Staff gesendet…</string>
@@ -456,6 +458,7 @@
     <string name="t_a75a18d5" formatted="false">%1$s unter %2$s nicht erreichbar: %3$s.</string>
     <string name="t_a75b1302" formatted="false">unbekannte Adresse</string>
     <string name="t_a9b35f5c" formatted="false">Bei jeder längeren Pause entscheidet Jev, ob du fertig bist; diese Wörter sind klare Signale dafür (auch genutzt, falls Jev nicht erreichbar ist). Mehrere mit Kommas trennen.</string>
+    <string name="t_aa539260" formatted="false">Wird aufgeschrieben… %1$d s</string>
     <string name="t_aad98ab5" formatted="false">Gesendet ✓ vor Anrufende</string>
     <string name="t_aadc023e" formatted="false">Mikrofon konnte nicht gestartet werden.</string>
     <string name="t_aafc2622" formatted="false">Noch keine Notizen.</string>

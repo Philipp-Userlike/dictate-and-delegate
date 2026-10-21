@@ -103,13 +103,26 @@ final class Voice {
   private final Context context;
   private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
   private MediaPlayer player;
-  private TextToSpeech tts;
+  private volatile TextToSpeech tts;
   private Playback current;
   /** The reply being read; for Android's voice, where its spoken part starts and how far it got. */
   private volatile String text = "";
   private volatile int ttsBase, ttsAt;
   private volatile boolean pausing;
   private int replies;
+  /**
+   * Android's voice: one engine for the whole call, started at once (it takes a moment to be
+   * ready); what's spoken before then waits for it. Its callbacks only act on the utterance being
+   * read now (utterance), so a stopped or earlier one can never end the next reply.
+   */
+  private boolean ttsReady, ttsFailed;
+  private final java.util.List<Runnable> whenReady = new java.util.ArrayList<>();
+  private volatile String utterance = "";
+  private int utterances;
+  /** Hears once how Android's voice started: "" ready, else why not (some phones have none). */
+  volatile java.util.function.Consumer<String> androidStatus = s -> {};
+  /** Android's voice couldn't start on this phone (no engine, or it failed). */
+  volatile boolean androidUnavailable;
 
   /** Ends the current reading once, on the main thread. */
   private void finished(boolean played) {
@@ -128,6 +141,97 @@ final class Voice {
 
   Voice(Context context) {
     this.context = context.getApplicationContext();
+    main.post(this::startAndroid);
+  }
+
+  /** Starts Android's voice (on the main thread): English, on the replies' audio route. */
+  private void startAndroid() {
+    if (tts != null) return;
+    tts =
+        new TextToSpeech(
+            context,
+            status ->
+                main.post(
+                    () -> {
+                      TextToSpeech t = tts;
+                      if (t == null) return; // Shut down meanwhile.
+                      if (status == TextToSpeech.SUCCESS) {
+                        // The replies are English (whatever the phone's language is).
+                        int lang = t.setLanguage(Locale.US);
+                        if (lang < TextToSpeech.LANG_AVAILABLE) t.setLanguage(Locale.getDefault());
+                        t.setAudioAttributes(attributes());
+                        t.setOnUtteranceProgressListener(listener);
+                        ttsReady = true;
+                        androidUnavailable = false;
+                        androidStatus.accept(
+                            "ready: " + t.getDefaultEngine() + (lang < TextToSpeech.LANG_AVAILABLE ? ", no English voice (" + Locale.getDefault() + " instead)" : ", English"));
+                      } else {
+                        ttsFailed = true;
+                        androidUnavailable = true;
+                        String engine = t.getDefaultEngine();
+                        androidStatus.accept("not available (" + (engine == null || engine.isEmpty() ? "no text-to-speech engine on this phone" : engine + " failed to start") + ")");
+                      }
+                      java.util.List<Runnable> waiting = new java.util.ArrayList<>(whenReady);
+                      whenReady.clear();
+                      for (Runnable r : waiting) r.run();
+                    }));
+  }
+
+  /** Android's voice telling how the utterance being read now goes; others are ignored. */
+  private final UtteranceProgressListener listener =
+      new UtteranceProgressListener() {
+        public void onStart(String id) {
+          if (!id.equals(utterance) || !id.startsWith("reply")) return;
+          Playback p;
+          synchronized (Voice.this) {
+            p = current;
+          }
+          String t = text;
+          if (p != null) main.post(() -> p.started(t.length() * 1000L / 15));
+        }
+
+        public void onRangeStart(String id, int start, int end, int frame) {
+          if (id.equals(utterance)) ttsAt = start; // Words as they're spoken: how far you heard.
+        }
+
+        public void onDone(String id) {
+          if (id.equals(utterance)) finished(true);
+        }
+
+        public void onError(String id) {
+          onError(id, -1);
+        }
+
+        public void onError(String id, int code) {
+          if (!id.equals(utterance)) return;
+          androidFailed("couldn't speak (error " + code + ")");
+          finished(false);
+        }
+
+        public void onStop(String id, boolean interrupted) {
+          if (id.equals(utterance) && !pausing) finished(false); // Paused: resume speaks the rest.
+        }
+      };
+
+  /** Android's voice failed on this phone: from now on the voice model is waited for instead. */
+  private void androidFailed(String why) {
+    if (!androidUnavailable) androidStatus.accept(why + ": the voice model is waited for from now on");
+    androidUnavailable = true;
+  }
+
+  /** Runs r once Android's voice is ready or failed to start (on the main thread). */
+  private void whenAndroidReady(Runnable r) {
+    if (ttsReady) {
+      r.run();
+      return;
+    }
+    whenReady.add(r);
+    if (ttsFailed && tts != null) { // It failed to start before: once more.
+      tts.shutdown();
+      tts = null;
+      ttsFailed = false;
+    }
+    startAndroid();
   }
 
   /** The request for OpenRouter's speech endpoint. */
@@ -365,7 +469,9 @@ final class Voice {
     if (t != null && pausing) {
       pausing = false;
       String rest = text.substring(Math.min(ttsBase, text.length()));
-      if (rest.isBlank() || t.speak(rest, TextToSpeech.QUEUE_FLUSH, null, "rest") != TextToSpeech.SUCCESS) finished(true);
+      String id = "rest-" + (++utterances);
+      utterance = id;
+      if (rest.isBlank() || t.speak(rest, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) finished(true);
     }
   }
 
@@ -515,42 +621,25 @@ final class Voice {
   /** Android's voice; about 15 characters a second for how long it takes. */
   private void speakAndroid(String text, Playback playback) {
     main.post(
-        () -> {
-          if (tts != null) tts.shutdown();
-          tts =
-              new TextToSpeech(
-                  context,
-                  status -> {
-                    if (status != TextToSpeech.SUCCESS) {
-                      finished(false);
-                      return;
-                    }
-                    tts.setLanguage(Locale.getDefault());
-                    tts.setOnUtteranceProgressListener(
-                        new UtteranceProgressListener() {
-                          public void onStart(String id) {
-                            if ("reply".equals(id)) main.post(() -> playback.started(text.length() * 1000L / 15));
-                          }
-
-                          public void onRangeStart(String id, int start, int end, int frame) {
-                            ttsAt = start; // Words as they're spoken: how far you heard.
-                          }
-
-                          public void onDone(String id) {
-                            finished(true);
-                          }
-
-                          public void onError(String id) {
-                            finished(false);
-                          }
-
-                          public void onStop(String id, boolean interrupted) {
-                            if (!pausing) finished(false); // Paused: resume speaks the rest.
-                          }
-                        });
-                    if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "reply") != TextToSpeech.SUCCESS) finished(false);
-                  });
-        });
+        () ->
+            whenAndroidReady(
+                () -> {
+                  synchronized (this) {
+                    if (current != playback) return; // Stopped meanwhile.
+                  }
+                  TextToSpeech t = tts;
+                  if (!ttsReady || t == null) {
+                    android.util.Log.w("Voice", "Android's voice isn't available");
+                    finished(false);
+                    return;
+                  }
+                  String id = "reply-" + (++utterances);
+                  utterance = id;
+                  if (t.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
+                    androidFailed("refused to speak");
+                    finished(false);
+                  }
+                }));
   }
 
   /** Stops reading at once; the playback still hears it ended. */
@@ -568,7 +657,9 @@ final class Voice {
       }
       release();
     }
-    if (tts != null) tts.stop();
+    utterance = ""; // Whatever the engine says about it now no longer counts.
+    TextToSpeech t = tts;
+    if (t != null) t.stop();
     finished(false);
   }
 
@@ -581,7 +672,11 @@ final class Voice {
 
   void shutdown() {
     stop();
-    if (tts != null) tts.shutdown();
-    tts = null;
+    main.post(
+        () -> {
+          if (tts != null) tts.shutdown();
+          tts = null;
+          ttsReady = false;
+        });
   }
 }

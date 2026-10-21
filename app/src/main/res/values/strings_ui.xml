@@ -33,6 +33,7 @@
     <string name="t_0b61da7d" formatted="false">Send words and timing</string>
     <string name="t_0b870de2" formatted="false">Local data deleted</string>
     <string name="t_0bf045a7" formatted="false">Remove your Anthropic key?</string>
+    <string name="t_0c32355a" formatted="false">Writing… %1$d s</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Chief ✓</string>
     <string name="t_0c4ebb56" formatted="false">Prices per million tokens in / out, Anthropic\'s list prices.</string>
     <string name="t_0c4f3914" formatted="false">Open recording recovery</string>
@@ -170,6 +171,7 @@
     <string name="t_3e520da4" formatted="false">Ending the call: you said goodbye</string>
     <string name="t_3e5678cd" formatted="false">Fastest</string>
     <string name="t_3ebb7bec" formatted="false">Refine</string>
+    <string name="t_3ed47f18" formatted="false">Writing down took over %1$.0f s: trying once more</string>
     <string name="t_3eef8148_few" formatted="false">%1$d versions</string>
     <string name="t_3eef8148_many" formatted="false">%1$d versions</string>
     <string name="t_3eef8148_one" formatted="false">%1$d version</string>
@@ -180,10 +182,10 @@
     <string name="t_40de4e2a" formatted="false">Copied. Paste it where you report the problem.</string>
     <string name="t_411d4bad" formatted="false">Paused</string>
     <string name="t_41265b45" formatted="false">Hold for</string>
-    <string name="t_414a0d9d" formatted="false">Checking… %1$d s</string>
     <string name="t_417750b1" formatted="false">Send: your message had already gone</string>
     <string name="t_41c5ed6f" formatted="false">Microphone allowed</string>
     <string name="t_421f0793" formatted="false">Could not delete saved audio. Try again after restarting Dictate &amp; Delegate.</string>
+    <string name="t_42463e69" formatted="false">Reply couldn\'t be played (%1$s): trying again</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Remove %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Refined through OpenRouter instead of Anthropic: %1$s</string>
@@ -288,6 +290,7 @@
     <string name="t_65d60c24" formatted="false">Couldn\'t install the chief\'s skills: %1$s</string>
     <string name="t_66aa70b6" formatted="false">Connection</string>
     <string name="t_67c5a895" formatted="false">Yesterday</string>
+    <string name="t_68138ed6" formatted="false">the speech model took over %1$.0f s</string>
     <string name="t_694eaa92" formatted="false">%1$s didn\'t answer.</string>
     <string name="t_69b90bc7" formatted="false">Could not delete audio</string>
     <string name="t_69d3f1cd" formatted="false">Send: ending what you\'re saying, then it goes</string>
@@ -454,7 +457,6 @@
     <string name="t_a6416f07" formatted="false">End hands-free</string>
     <string name="t_a6448af5" formatted="false">Sent ✓ by the Send button</string>
     <string name="t_a64714a0" formatted="false">Dictate &amp; Delegate uses this model for every note.</string>
-    <string name="t_a666e129" formatted="false">Checking whether you\'re done… (%1$d s)</string>
     <string name="t_a6a5d215" formatted="false">Open Android settings → Accessibility → Dictate &amp; Delegate.</string>
     <string name="t_a6ab7640" formatted="false">You\'re signed out of bb. Sign in again in Settings → bb.</string>
     <string name="t_a6ee4edb" formatted="false">Sending to your chief of staff…</string>
@@ -462,6 +464,7 @@
     <string name="t_a75a18d5" formatted="false">Could not reach %1$s at %2$s: %3$s.</string>
     <string name="t_a75b1302" formatted="false">unknown address</string>
     <string name="t_a9b35f5c" formatted="false">At each longer pause Jev decides whether you\'re done; these words are clear cues for it (also used if Jev can\'t be asked). Separate several with commas.</string>
+    <string name="t_aa539260" formatted="false">Writing down… %1$d s</string>
     <string name="t_aad98ab5" formatted="false">Sent ✓ before the call ended</string>
     <string name="t_aadc023e" formatted="false">Could not start microphone.</string>
     <string name="t_aafc2622" formatted="false">No notes yet.</string>

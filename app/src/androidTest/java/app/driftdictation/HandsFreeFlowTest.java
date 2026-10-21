@@ -367,6 +367,76 @@ public class HandsFreeFlowTest {
   }
 
   @Test
+  public void wordsNotSentWhenTheCallEndsGoBeforeTheEndSignal() throws Exception {
+    TestServer.transcripts("And also look at the latency");
+    TestServer.turns("more"); // Not done at the pause.
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> HandsFreeService.session().pending().equals("And also look at the latency"), "the words");
+    HandsFreeService.send(context, HandsFreeService.END);
+    until(() -> told("[hands-free call ended]"), "the call's end told");
+    int words = -1, end = -1;
+    List<String> snippets = TestServer.bbSnippets();
+    for (int i = 0; i < snippets.size(); i++) {
+      if (snippets.get(i).contains("And also look at the latency")) words = i;
+      if (snippets.get(i).contains("[hands-free call ended]")) end = i;
+    }
+    assertTrue("the last words sent", words >= 0);
+    assertTrue("before the end signal", words < end);
+    assertTrue(HandsFreeService.log(context).contains("they're sent before the call's end"));
+  }
+
+  @Test
+  public void whenTheVoiceModelNeverAnswersAndroidsVoiceReadsTheWholeReply() throws Exception {
+    // 3.2.7: Kokoro never answered, and Android's voice then failed too ("the voice stopped").
+    for (int i = 0; i < 3; i++) TestServer.script("speech", new JSONObject().put("delay", 30));
+    String log = callWithOneReply("The table is booked for Friday at eight.", 40_000, "reply played to the end");
+    assertTrue(log, log.contains("Android's voice reads it"));
+    assertTrue(log, log.contains("audio started"));
+    assertTrue(log, log.contains("reply played to the end"));
+    assertFalse(log, log.contains("trying again"));
+    assertFalse(log, log.contains("reply not heard"));
+  }
+
+  @Test
+  public void onAPhoneWithoutAndroidsVoiceASlowReplyIsWaitedForNotLost() throws Exception {
+    // Some phones (GrapheneOS) have no text-to-speech engine: falling back to it lost the reply.
+    device.executeShellCommand("pm disable-user --user 0 com.google.android.tts");
+    try {
+      Thread.sleep(500);
+      TestServer.script("speech", new JSONObject().put("delay", 5));
+      String log = callWithOneReply("The table is booked for Friday at eight.", 30_000, "reply played to the end");
+      assertTrue(log, log.contains("Android's voice: not available"));
+      assertTrue(log, log.contains("reply played to the end"));
+      assertFalse(log, log.contains("Android's voice reads it") || log.contains("reply not heard"));
+    } finally {
+      device.executeShellCommand("pm enable com.google.android.tts");
+    }
+  }
+
+  @Test
+  public void androidsVoiceReadsOneReplyAfterAnother() throws Exception {
+    // The second reply read by Android's voice must not be ended by the first one's engine.
+    for (int i = 0; i < 6; i++) TestServer.script("speech", new JSONObject().put("delay", 30));
+    HandsFreeService.logFile(context).delete();
+    TestServer.transcripts("Is the table booked? Over.");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> lastTell().contains("[hands-free]"), "the message sent");
+    Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(lastTell());
+    assertTrue(m.find());
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), m.group(1), "First, the table is booked.");
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), m.group(1), "Second, it's for Friday at eight.");
+    long deadline = SystemClock.elapsedRealtime() + 40_000;
+    while (SystemClock.elapsedRealtime() < deadline && count(HandsFreeService.log(context), "reply played to the end") < 2) Thread.sleep(200);
+    String log = HandsFreeService.log(context);
+    assertEquals(log, 2, count(log, "reply played to the end"));
+    assertFalse(log, log.contains("trying again") || log.contains("reply not heard"));
+  }
+
+  @Test
   public void onlyWhenEveryVoiceRequestIsSlowAndroidsVoiceReads() throws Exception {
     TestServer.script("speech", new JSONObject().put("delay", 6));
     TestServer.script("speech", new JSONObject().put("delay", 6));
