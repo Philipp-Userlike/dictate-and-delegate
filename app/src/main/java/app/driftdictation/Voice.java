@@ -45,9 +45,12 @@ final class Voice {
       ANDROID = new Choice("android", "Android's voice", "offline, free", "", "", "0");
   static final Choice[] CHOICES = {KOKORO, ELEVEN, ANDROID};
 
+  /** The hands-free voice until another is chosen: the cheapest. */
+  static final Choice DEFAULT = KOKORO;
+
   static Choice choice(String id) {
     for (Choice c : CHOICES) if (c.id().equals(id)) return c;
-    return KOKORO;
+    return DEFAULT;
   }
 
   /** How a reading goes: audio started (and how long it will take), then it ended. */
@@ -58,8 +61,16 @@ final class Voice {
     void ended(boolean played);
   }
 
-  /** A reply ready to play: its audio (null: Android's voice reads the text) and OpenRouter's generation ID. */
-  record Prepared(File mp3, String generation) {}
+  /**
+   * A reply ready to play: its audio (null: Android's voice reads the text), OpenRouter's
+   * generation ID, and how it went: when the first byte came and when all of it (ms after asking,
+   * -1 when it didn't), and why Android's voice reads it ("" when it doesn't).
+   */
+  record Prepared(File mp3, String generation, long firstByteMs, long allMs, String fallback) {
+    Prepared(File mp3, String generation) {
+      this(mp3, generation, -1, -1, "");
+    }
+  }
 
   private final Context context;
   private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -101,15 +112,62 @@ final class Voice {
    * throws: without audio (Android's voice chosen, or OpenRouter failed) Android's voice reads it.
    */
   Prepared prepare(Choice choice, String text) {
+    return prepare(choice, text, 0);
+  }
+
+  /**
+   * As above, but when the audio isn't all there within waitMs (0: no limit) the request is given
+   * up and Android's voice reads the reply, so a slow voice model never keeps you waiting.
+   */
+  Prepared prepare(Choice choice, String text, long waitMs) {
     if (choice.model().isEmpty()) return new Prepared(null, "");
+    long asked = android.os.SystemClock.elapsedRealtime();
+    long[] first = {-1};
+    String[] generation = {""};
+    HttpURLConnection[] open = {null};
+    java.util.concurrent.FutureTask<File> task = new java.util.concurrent.FutureTask<>(() -> fetch(choice, text, generation, first, open, asked));
+    Thread t = new Thread(task, "voice-fetch");
+    t.start();
     try {
-      String[] generation = {""};
-      File mp3 = fetch(choice, text, generation);
-      return new Prepared(mp3, generation[0]);
+      File mp3 = waitMs > 0 ? task.get(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS) : task.get();
+      return new Prepared(mp3, generation[0], first[0], android.os.SystemClock.elapsedRealtime() - asked, "");
+    } catch (java.util.concurrent.TimeoutException slow) {
+      HttpURLConnection c = open[0];
+      if (c != null) c.disconnect(); // Given up: not downloaded on.
+      task.cancel(true);
+      return new Prepared(null, "", first[0], -1, tr("%1$s took over %2$.1f s", choice.name(), waitMs / 1000.0));
     } catch (Exception ex) {
-      android.util.Log.w("Voice", "OpenRouter's voice failed, Android's reads instead", ex);
-      return new Prepared(null, "");
+      HttpURLConnection c = open[0];
+      if (c != null && !task.isDone()) c.disconnect(); // Interrupted (the call ended): not downloaded on.
+      task.cancel(true);
+      Throwable cause = ex instanceof java.util.concurrent.ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
+      android.util.Log.w("Voice", "OpenRouter's voice failed, Android's reads instead", cause);
+      return new Prepared(null, "", first[0], -1, tr("%1$s failed (%2$s)", choice.name(), String.valueOf(cause.getMessage())));
     }
+  }
+
+  /**
+   * Opens the connection to OpenRouter before the first reply (in the background), so that reply
+   * doesn't wait for it; later ones reuse it (keep-alive).
+   */
+  void warm() {
+    new Thread(
+            () -> {
+              try {
+                HttpURLConnection c = (HttpURLConnection) new URL(OpenRouter.base() + "/key").openConnection();
+                c.setConnectTimeout(10_000);
+                c.setReadTimeout(10_000);
+                c.setRequestProperty("Authorization", "Bearer " + new Vault(context).get(OpenRouter.KEY));
+                c.getResponseCode();
+                try (InputStream in = c.getResponseCode() >= 300 ? c.getErrorStream() : c.getInputStream()) {
+                  if (in != null) in.readAllBytes(); // Read to the end: the connection stays open for reuse.
+                }
+              } catch (Exception ignored) {
+                /* Only a head start. */
+              }
+            },
+            "voice-warm")
+        .start();
   }
 
   /** Plays a prepared reply; the playback hears when audio starts and when it ends. */
@@ -134,6 +192,9 @@ final class Voice {
               else
                 main.post(
                     () -> {
+                      synchronized (this) {
+                        if (current != playback) return; // Stopped meanwhile.
+                      }
                       try {
                         play(prepared.mp3(), playback);
                       } catch (Exception ex) {
@@ -293,6 +354,15 @@ final class Voice {
 
   /** What OpenRouter charged for a generation (GET /generation), or null if it can't say yet. */
   static java.math.BigDecimal cost(Context context, String generation) {
+    Generation g = generation(context, generation);
+    return g == null ? null : g.cost();
+  }
+
+  /** What OpenRouter says about a generation: its cost and which provider served it. */
+  record Generation(java.math.BigDecimal cost, String provider, long latencyMs) {}
+
+  /** The generation's details (GET /generation), or null if OpenRouter can't say yet. */
+  static Generation generation(Context context, String generation) {
     if (generation == null || generation.isEmpty()) return null;
     for (int attempt = 0; attempt < 4; attempt++) {
       try {
@@ -307,7 +377,8 @@ final class Voice {
           if (c.getResponseCode() >= 300) continue;
           try (InputStream in = c.getInputStream()) {
             JSONObject d = new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8)).optJSONObject("data");
-            if (d != null && d.has("total_cost")) return new java.math.BigDecimal(d.get("total_cost").toString());
+            if (d != null && d.has("total_cost"))
+              return new Generation(new java.math.BigDecimal(d.get("total_cost").toString()), d.optString("provider_name"), d.optLong("latency", -1));
           }
         } finally {
           c.disconnect();
@@ -319,9 +390,15 @@ final class Voice {
     return null;
   }
 
-  private File fetch(Choice choice, String text, String[] generation) throws Exception {
+  /**
+   * Fetches a reply's audio; first[0] gets when its first byte came (ms after asked). The
+   * connection isn't closed after a whole answer, so the next reply reuses it (keep-alive).
+   */
+  private File fetch(Choice choice, String text, String[] generation, long[] first, HttpURLConnection[] open, long asked) throws Exception {
     String key = new Vault(context).get(OpenRouter.KEY);
     HttpURLConnection c = (HttpURLConnection) new URL(OpenRouter.base() + "/audio/speech").openConnection();
+    open[0] = c;
+    boolean whole = false;
     try {
       byte[] payload = body(choice, text).toString().getBytes(StandardCharsets.UTF_8);
       c.setConnectTimeout(10_000);
@@ -336,6 +413,7 @@ final class Voice {
         out.write(payload);
       }
       if (c.getResponseCode() >= 300) throw new IOException(tr("The voice model answered with HTTP %1$d.", c.getResponseCode()));
+      first[0] = android.os.SystemClock.elapsedRealtime() - asked;
       String id = c.getHeaderField("X-Generation-Id");
       generation[0] = id == null ? "" : id;
       // Each reply its own file: several may be ready while one plays.
@@ -347,9 +425,10 @@ final class Voice {
         in.transferTo(out);
       }
       if (f.length() == 0) throw new IOException("The voice model sent no audio.");
+      whole = true;
       return f;
     } finally {
-      c.disconnect();
+      if (!whole) c.disconnect();
     }
   }
 

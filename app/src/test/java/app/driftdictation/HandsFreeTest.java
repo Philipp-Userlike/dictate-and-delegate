@@ -102,6 +102,8 @@ public class HandsFreeTest {
     volatile java.util.concurrent.CountDownLatch slow;
     /** While set, delivering to bb waits for it (a slow bb). */
     volatile java.util.concurrent.CountDownLatch slowBb;
+    /** What the last 2 s of a long part on their own are written down as (tailCheck). */
+    volatile String tail;
     /** What preparing a reply does (fetching its audio); by default nothing. */
     volatile java.util.function.Function<String, Object> prepare = text -> text;
     final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
@@ -121,6 +123,8 @@ public class HandsFreeTest {
               wav -> {
                 java.util.concurrent.CountDownLatch l = slow;
                 if (l != null) l.await();
+                // The last 2 s of a part on their own (the tail check).
+                if (tail != null && wav.length == 44 + 2 * AudioFiles.BYTES_PER_SECOND) return tail;
                 return transcripts.remove(0);
               },
               said -> {
@@ -245,27 +249,72 @@ public class HandsFreeTest {
     assertEquals("Next question.", f.sent.get(0));
   }
 
+  /** The reasons on screen, newest first, as one text. */
+  static String reasons(Fake f) {
+    StringBuilder out = new StringBuilder();
+    for (HandsFreeSession.Reason r : f.session.reasons()) out.append(r.text()).append('\n');
+    return out.toString();
+  }
+
   @Test
-  public void youFirstTheChiefsMessageIsHeldThenDroppedAndNotedInYourMessage() throws Exception {
+  public void aReplyWaitsWhileYouTalkIsNotDroppedBySendingAndPlaysAtThePause() throws Exception {
     Fake f = new Fake("Also check the train", "to Lisbon. Over.");
     f.quiet(1000);
     f.speak(); // You take the floor.
     assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
     f.session.reply("r0", "The flight leaves at nine in the morning and costs about two hundred euros, I think.");
-    assertTrue(f.spoken.isEmpty());
-    assertEquals(1, f.session.held());
-    f.quiet(1200);
-    Thread.sleep(150);
-    f.talk();
-    until(() -> f.sent.size() == 1);
-    // Your message, then which reply you didn't hear; it's never read now.
-    assertEquals(
-        "Also check the train to Lisbon.\n\n[didn't hear your reply: \"The flight leaves at nine in the morning and costs about two…\"]",
-        f.sent.get(0));
-    assertEquals(0, f.session.held());
     Thread.sleep(100);
     assertTrue(f.spoken.isEmpty());
-    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("held, the floor is taken"));
+    assertEquals(1, f.session.held());
+    assertTrue(reasons(f), reasons(f).contains("Reply waits: you're talking"));
+    assertEquals(HandsFreeSession.Live.HEARING, f.session.live());
+    f.quiet(1200); // A pause shorter than REPLY_PAUSE_MS: it still waits.
+    Thread.sleep(150);
+    assertTrue(f.spoken.isEmpty());
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    // Your message as said: nothing about the reply, which isn't dropped.
+    assertEquals("Also check the train to Lisbon.", f.sent.get(0));
+    // Your turn is over: it plays now.
+    until(() -> f.spoken.size() == 1);
+    assertEquals("The flight leaves at nine in the morning and costs about two hundred euros, I think.", f.spoken.get(0));
+    f.done.run();
+    assertEquals(0, f.session.unheard());
+    assertEquals("", f.session.endNote());
+  }
+
+  @Test
+  public void aReplyPlaysAtYourPauseEvenWithUnsentWordsAndYourTurnGoesOnAfterIt() throws Exception {
+    Fake f = new Fake("Book the hotel", "for Friday. Over.");
+    f.quiet(1000);
+    f.speak();
+    f.session.reply("r0", "Here's what I found.");
+    f.quiet(1200);
+    until(() -> f.session.pending().equals("Book the hotel"));
+    Thread.sleep(100);
+    assertTrue(f.spoken.isEmpty());
+    assertEquals(HandsFreeSession.Live.REPLY_WAITING, f.session.live());
+    f.quiet(400); // Now quiet for REPLY_PAUSE_MS.
+    until(() -> f.spoken.size() == 1);
+    assertTrue(reasons(f), reasons(f).contains("Reply plays: you paused"));
+    assertEquals("Book the hotel", f.session.pending()); // Not sent, not lost.
+    f.done.run();
+    assertEquals(HandsFreeSession.Live.MUTED, f.session.live());
+    assertTrue(reasons(f), reasons(f).contains("Mic paused 0.8 s after the reply (echo)"));
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the hotel for Friday.", f.sent.get(0));
+  }
+
+  @Test
+  public void aCallEndingWithRepliesStillWaitingTellsTheChiefOnce() throws Exception {
+    Fake f = new Fake("Hold on");
+    f.quiet(1000);
+    f.speak();
+    f.session.reply("r0", "The meeting moved to three.");
+    f.session.end();
+    assertEquals("\n\n[didn't hear your reply: \"The meeting moved to three.\"]", f.session.endNote());
   }
 
   @Test
@@ -287,8 +336,8 @@ public class HandsFreeTest {
     f.quiet(2000);
     // Distant voices: not much louder than the background.
     for (int i = 0; i < 100; i++) f.session.frame(frame(120));
-    // A short loud sound: under the second needed to take the turn.
-    for (int i = 0; i < 20; i++) f.session.frame(frame(6000));
+    // A click-like loud sound: under the 0.1 s a loud burst needs, far under the voice to take the turn.
+    for (int i = 0; i < 4; i++) f.session.frame(frame(6000));
     f.quiet(1000);
     Thread.sleep(150);
     assertEquals(1, f.transcripts.size());
@@ -512,7 +561,9 @@ public class HandsFreeTest {
     assertTrue(f.spoken.isEmpty()); // Held: the floor is yours.
     f.quiet(1200);
     until(() -> f.sent.size() == 1);
-    assertEquals("Wait, one more thing.\n\n[didn't hear your reply: \"Here's the answer.\"]", f.sent.get(0));
+    assertEquals("Wait, one more thing.", f.sent.get(0));
+    until(() -> f.spoken.size() == 1); // Not dropped: it plays once your turn is over.
+    assertEquals("Here's the answer.", f.spoken.get(0));
   }
 
   @Test
@@ -594,7 +645,7 @@ public class HandsFreeTest {
   // ------------------------------------------------------------------ talking over a reply
 
   static final String LONG_REPLY =
-      "The flight leaves at nine in the morning from gate twelve, and the train to Lisbon costs about forty euros if you book today.";
+      "The flight leaves at nine in the morning from gate twelve. The train to Lisbon costs about forty euros if you book today.";
 
   /** A reply playing, its echo measured at a moderate level. */
   static Fake playingReply(String... transcripts) throws Exception {
@@ -609,18 +660,24 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void talkingOverAReplyPausesItAndInterruptsIt() throws Exception {
+  public void talkingOverAReplyPausesItAndInterruptsItAndItPlaysLaterFromThatSentence() throws Exception {
     Fake f = playingReply("Hold on, book the train instead", "Over.");
+    f.heardChars = LONG_REPLY.indexOf("Lisbon");
     for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // You, clearly louder.
     assertTrue("paused at once", f.paused);
+    assertEquals(HandsFreeSession.Live.CHECKING, f.session.live());
     f.quiet(1100); // You pause: what you said is written down.
     until(() -> f.session.state() == HandsFreeSession.State.LISTENING);
     assertTrue("the reply stopped", f.stopped);
-    assertEquals("Hold on, book the train instead", f.session.pending());
+    until(() -> f.session.pending().equals("Hold on, book the train instead"));
+    assertTrue(reasons(f), reasons(f).contains("Reply stopped: you talked over it. It plays again from \"The train to Lisbon costs about…\""));
+    assertEquals(1, f.session.held());
     f.talk();
     until(() -> f.sent.size() == 1);
-    assertEquals(
-        "Hold on, book the train instead\n\n[heard up to: \"The flight leaves at nine in the morning\"]", f.sent.get(0));
+    // Your message as said; the reply isn't lost: it plays after your turn, from that sentence.
+    assertEquals("Hold on, book the train instead", f.sent.get(0));
+    until(() -> f.spoken.size() == 2);
+    assertEquals("The train to Lisbon costs about forty euros if you book today.", f.spoken.get(1));
     assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("barge-in suspected"));
   }
 
@@ -646,7 +703,206 @@ public class HandsFreeTest {
     assertEquals("[heard up to: \"The flight\"]", HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf("leaves") + 3));
     // Hardly anything heard: as if not heard at all.
     assertTrue(HandsFreeSession.heardUpTo(LONG_REPLY, 3).startsWith("[didn't hear your reply:"));
-    assertTrue(HandsFreeSession.echoOf("from gate twelve and the", LONG_REPLY, LONG_REPLY.indexOf("and the")));
-    assertFalse(HandsFreeSession.echoOf("no wait, cancel the hotel", LONG_REPLY, LONG_REPLY.indexOf("and the")));
+    assertTrue(HandsFreeSession.echoOf("from gate twelve the train", LONG_REPLY, LONG_REPLY.indexOf("train")));
+    assertFalse(HandsFreeSession.echoOf("no wait, cancel the hotel", LONG_REPLY, LONG_REPLY.indexOf("train")));
+  }
+
+  @Test
+  public void aReplyTalkedOverPlaysAgainFromTheSentenceYouStoppedHearing() {
+    assertEquals(LONG_REPLY, HandsFreeSession.restFrom(LONG_REPLY, 10));
+    assertEquals("The train to Lisbon costs about forty euros if you book today.", HandsFreeSession.restFrom(LONG_REPLY, LONG_REPLY.indexOf("Lisbon")));
+    // Right at the start of the second sentence.
+    assertEquals("The train to Lisbon costs about forty euros if you book today.", HandsFreeSession.restFrom(LONG_REPLY, LONG_REPLY.indexOf("The train")));
+    assertEquals("Yes. Really?", HandsFreeSession.restFrom("Yes. Really?", 2));
+  }
+
+  // ------------------------------------------------------------------ taking the turn, and the send word
+
+  @Test
+  public void speechWithLittleGapsTakesTheTurn() throws Exception {
+    // Real dead calls: "Hi, can you hear me" in short loud bits, never a second without a gap.
+    Fake f = new Fake("Hi, can you hear me?");
+    for (int i = 0; i < 100; i++) f.session.frame(frame(212)); // A room: background about 150.
+    for (int b = 0; b < 3; b++) { // 0.2 s bits at about 5× the background, 0.2 s gaps.
+      for (int i = 0; i < 10; i++) f.session.frame(frame(1100));
+      for (int i = 0; i < 10; i++) f.session.frame(frame(212));
+    }
+    assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
+    for (int i = 0; i < 60; i++) f.session.frame(frame(212));
+    until(() -> f.session.pending().equals("Hi, can you hear me?"));
+  }
+
+  @Test
+  public void aShortClearlyLoudBurstTakesTheTurn() throws Exception {
+    Fake f = new Fake("Hello?");
+    f.quiet(1000);
+    for (int i = 0; i < 6; i++) f.session.frame(frame(6000)); // 0.12 s, far louder than the room.
+    f.quiet(1200);
+    until(() -> f.session.pending().equals("Hello?"));
+  }
+
+  @Test
+  public void theBackgroundIsLearnedFastAtTheStart() {
+    HandsFree.Segmenter s = new HandsFree.Segmenter(800, pcm -> {});
+    feed(s, 50, 600);
+    assertTrue("background " + s.background(), s.background() < 60);
+  }
+
+  @Test
+  public void sendWritesDownSoundsThatDidntCountAsSpeech() throws Exception {
+    Fake f = new Fake("Hi, can you hear me?");
+    for (int i = 0; i < 100; i++) f.session.frame(frame(212));
+    for (int b = 0; b < 2; b++) { // Two bits too short to take the turn.
+      for (int i = 0; i < 4; i++) f.session.frame(frame(1100));
+      for (int i = 0; i < 60; i++) f.session.frame(frame(212));
+    }
+    assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
+    f.session.sendNow();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Hi, can you hear me?", f.sent.get(0));
+    assertTrue(reasons(f), reasons(f).contains("Send: writing down what didn't count as speech"));
+  }
+
+  @Test
+  public void theSendWordOnItsOwnAfterSendIsntAnEmptyTurn() throws Exception {
+    // 22:37: Send pressed while the part was written down, then "over." came as a part of its own.
+    Fake f = new Fake("Maybe it's also not needed", "over.");
+    f.talk();
+    until(() -> !f.session.pending().isEmpty());
+    f.session.sendNow();
+    until(() -> f.sent.size() == 1);
+    f.talk();
+    until(() -> reasons(f).contains("Send word heard: your message had already gone"));
+    assertEquals(1, f.sent.size());
+    assertFalse(String.join("\n", f.log), String.join("\n", f.log).contains("your turn ended without a message"));
+  }
+
+  @Test
+  public void aPartThatSoundsLikeTheSendWordSends() throws Exception {
+    assertEquals("over", HandsFree.nearWord("Ova.", send));
+    assertEquals("over", HandsFree.nearWord("Oh, ver.", send));
+    assertEquals("over", HandsFree.nearWord("Ovr", send));
+    assertNull(HandsFree.nearWord("It was the best day ever", send));
+    assertNull(HandsFree.nearWord("Hello", send));
+    Fake f = new Fake("Book the hotel", "Ova.");
+    f.talk();
+    until(() -> f.session.pending().equals("Book the hotel"));
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the hotel", f.sent.get(0));
+    assertTrue(reasons(f), reasons(f).contains("\"Ova.\" taken as the send word \"over\""));
+  }
+
+  @Test
+  public void aShortPartThatIsntTheSendWordSaysSo() throws Exception {
+    Fake f = new Fake("Book the hotel", "om");
+    f.talk();
+    f.talk();
+    until(() -> reasons(f).contains("Not the send word: heard \"om\""));
+    assertEquals(0, f.sent.size());
+  }
+
+  @Test
+  public void aTurnOfSeveralPartsIsWrittenDownAgainInOnePassWhenSent() throws Exception {
+    Fake f = new Fake("Book the", "hotel for. Over.", "Book the hotel for Friday. Over.");
+    f.session.wholeTurn = true;
+    f.talk();
+    until(() -> f.session.pending().equals("Book the"));
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the hotel for Friday.", f.sent.get(0));
+    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("the whole turn (2 parts) written down again"));
+  }
+
+  @Test
+  public void aSendWordLostAtTheEndOfALongPartIsFoundInItsLast2Seconds() throws Exception {
+    Fake f = new Fake("I think we should book the hotel for Friday");
+    f.session.tailCheck = true;
+    f.tail = "Friday. Over.";
+    f.quiet(1000);
+    for (int i = 0; i < 150; i++) f.session.frame(frame(6000)); // 3 s.
+    f.quiet(1200);
+    until(() -> f.sent.size() == 1);
+    assertEquals("I think we should book the hotel for Friday", f.sent.get(0));
+    assertTrue(reasons(f), reasons(f).contains("Send word found in the last 2 s"));
+  }
+
+  // ------------------------------------------------------------------ every decision has a visible reason
+
+  @Test
+  public void everyEarlyReturnOfSendShowsItsReason() throws Exception {
+    Fake f = new Fake("Book the table", "Next words");
+    f.session.sendNow();
+    assertEquals("Send ignored: nothing heard yet", f.session.reasons().get(0).text());
+    // Already sending: the first press waits for the speech model.
+    f.slow = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    f.session.sendNow();
+    f.session.sendNow();
+    assertEquals("Send ignored: already sending", f.session.reasons().get(0).text());
+    f.slow.countDown();
+    until(() -> f.sent.size() == 1);
+    // Right after the message went: the same press.
+    f.slow = null;
+    f.talk();
+    until(() -> f.session.pending().equals("Next words"));
+    f.session.sendNow();
+    assertTrue(f.session.reasons().get(0).text(), f.session.reasons().get(0).text().startsWith("Send ignored: just sent ("));
+    assertEquals("Next words", f.session.pending());
+    // A reply playing and nothing of yours to send.
+    f.now.addAndGet(HandsFreeSession.REPRESS_MS + 1);
+    f.session.sendNow();
+    until(() -> f.sent.size() == 2);
+    f.session.reply("r2", "An answer.");
+    until(() -> f.spoken.size() == 1);
+    f.now.addAndGet(HandsFreeSession.REPRESS_MS + 1);
+    f.session.sendNow();
+    assertEquals("Send ignored: a reply is playing and you have nothing unsent", f.session.reasons().get(0).text());
+    // The same reason again counts up instead of filling the list.
+    f.session.sendNow();
+    assertEquals(2, f.session.reasons().get(0).times());
+    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("→ Send ignored: nothing heard yet"));
+  }
+
+  @Test
+  public void soundsMarkTheMomentsAndNeverStartYourSpeech() throws Exception {
+    Fake f = new Fake("Book the table. Over.");
+    List<HandsFreeSession.Cue> cues = new CopyOnWriteArrayList<>();
+    f.session.cues = cues::add; // Each plays.
+    f.quiet(1000);
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    until(() -> cues.size() == 2);
+    assertEquals(List.of(HandsFreeSession.Cue.HEARD, HandsFreeSession.Cue.SENT), cues);
+    // The sent sound coming back through the microphone: no speech.
+    for (int i = 0; i < 15; i++) f.session.frame(frame(8000));
+    assertFalse(f.session.speaking());
+    assertEquals(HandsFreeSession.Live.SENT, f.session.live());
+    f.session.reply("r1", "Done.");
+    until(() -> cues.size() == 3);
+    assertEquals(HandsFreeSession.Cue.REPLY, cues.get(2));
+    f.fail.run();
+    assertEquals(HandsFreeSession.Cue.FAILED, cues.get(3));
+  }
+
+  @Test
+  public void soundTooQuietToCountIsShownWithItsLevels() throws Exception {
+    Fake f = new Fake();
+    for (int i = 0; i < 400; i++) f.session.frame(frame(560)); // A loud room: background about 400.
+    for (int i = 0; i < 50; i++) f.session.frame(frame(1270)); // A voice not 3× louder.
+    for (int i = 0; i < 40; i++) f.session.frame(frame(560));
+    String r = reasons(f);
+    assertTrue(r, r.contains("Didn't count as speech: too quiet (level 9"));
+    assertTrue(r, r.contains(" < 3.0× background 4"));
+    assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
+  }
+
+  @Test
+  public void aTranscriptionThatFailsShowsWhy() throws Exception {
+    Fake f = new Fake();
+    f.quiet(1000);
+    f.talk();
+    until(() -> !f.session.error().isEmpty());
+    assertTrue(reasons(f), reasons(f).startsWith("Couldn't write down 1."));
   }
 }

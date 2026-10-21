@@ -173,7 +173,8 @@ final class ChiefText {
    */
   static final class Replies extends Thread {
     interface Callback {
-      void reply(String request, String text);
+      /** A spoken reply for request; published: when ntfy got it (unix ms, whole seconds), 0 if unknown. */
+      void reply(String request, String text, long published);
     }
 
     private final String server, topic;
@@ -225,7 +226,7 @@ final class ChiefText {
               String request = spokenRequest(m);
               if (request.isEmpty() || !seen.add(id) || !ours.test(request)) continue;
               String t = text(m, server);
-              if (!t.isEmpty()) callback.reply(request, t);
+              if (!t.isEmpty()) callback.reply(request, t, m.optLong("time") * 1000);
             }
           } finally {
             c.disconnect();

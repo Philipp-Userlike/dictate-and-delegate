@@ -68,7 +68,7 @@ public final class MainActivity extends Activity {
 
   private String bbNotice = "";
   private boolean bbNoticeOk, changingChief;
-  private TextView skillsLine, hfStatus, hfPending, hfCost;
+  private TextView skillsLine, hfStatus, hfPending, hfCost, hfReasons;
   private Button hfSend;
   /** The name field waits for a pause in typing before the skills are updated in bb. */
   private final Runnable skillsAfterName = () -> ChiefSkills.sync(this, false);
@@ -287,7 +287,7 @@ public final class MainActivity extends Activity {
     record = null;
     status = null;
     noteStatus = null;
-    skillsLine = hfStatus = hfPending = hfCost = null;
+    skillsLine = hfStatus = hfPending = hfCost = hfReasons = null;
     hfSend = null;
     recovery = recentBox = monthBox = wordsBox = modelList = refineList = null;
     notesList = null;
@@ -3149,6 +3149,10 @@ public final class MainActivity extends Activity {
       hfStatus.setGravity(Gravity.CENTER);
       hfStatus.setPadding(ui.dp(16), ui.dp(28), ui.dp(16), ui.dp(28));
       hfPending = ui.add(content, ui.text("", 15, Ui.MUTED), 10);
+      // What it decided lately, and why, newest first: readable at a glance.
+      ui.add(content, ui.strong(tr("What it decided, and why"), 13), 14);
+      hfReasons = ui.add(content, ui.text("", 14, Ui.BODY), 4);
+      hfReasons.setLineSpacing(ui.dp(3), 1);
       hfSend = ui.add(content, ui.button(tr("Send now"), Ui.Kind.PRIMARY, v -> HandsFreeService.send(this, HandsFreeService.SEND)), 16);
       hfSend.setMinHeight(ui.dp(62));
       Button end = ui.button(tr("End hands-free"), Ui.Kind.QUIET, v -> HandsFreeService.send(this, HandsFreeService.END));
@@ -3160,7 +3164,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("Say %1$s to send, %2$s to end. The headset button sends too. You can talk over a reply to interrupt it.",
+            tr("Say %1$s to send, %2$s to end. The headset button sends too. A reply waits while you talk and plays when you pause; talk over it to stop it, and it plays again later.",
                 quoteList(HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)),
                 quoteList(HandsFree.list(HandsFree.endSetting(prefs)))),
             13,
@@ -3189,26 +3193,46 @@ public final class MainActivity extends Activity {
       hfStatus.setText(HandsFreeService.instance == null ? "" : tr("Starting…"));
       return;
     }
-    HandsFreeSession.Phase phase = s == null ? HandsFreeSession.Phase.LISTENING : s.phase();
+    if (s == null) {
+      hfStatus.setText(tr("Starting…"));
+      return;
+    }
+    HandsFreeSession.Phase phase = s.phase();
+    HandsFreeSession.Live live = s.live();
+    // The live line: what's happening right now.
     hfStatus.setText(
-        switch (phase) {
-              case READING -> "🔊  ";
+        switch (live) {
+              case PLAYING, REPLY_COMING, CHECKING -> "🔊  ";
+              case SENDING, SENT -> "📨  ";
+              case REPLY_WAITING -> "⏸  ";
+              case MUTED -> "🔇  ";
+              case WRITING -> "✍️  ";
               default -> "🎙  ";
             }
-            + HandsFreeService.phaseLabel(phase));
+            + HandsFreeService.liveLabel(s));
     hfStatus.setBackground(
         ui.shape(
-            switch (phase) {
-              case READING -> 0xffe8e0f7;
+            switch (live) {
+              case PLAYING, REPLY_COMING, CHECKING -> 0xffe8e0f7;
+              case REPLY_WAITING, SENDING, WRITING -> 0xfffbefd5;
+              case MUTED -> 0xffeceff1;
               default -> Ui.TEAL_SOFT;
             },
             0,
             20));
+    StringBuilder why = new StringBuilder();
+    java.text.SimpleDateFormat time = new java.text.SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+    for (HandsFreeSession.Reason r : s.reasons().subList(0, Math.min(5, s.reasons().size())))
+      why.append(why.length() == 0 ? "" : "\n")
+          .append(time.format(new java.util.Date(r.at())))
+          .append("  ")
+          .append(r.text())
+          .append(r.times() > 1 ? "  ×" + r.times() : "");
+    hfReasons.setText(why.length() == 0 ? tr("Nothing yet.") : why.toString());
     // Below it, always labelled: your words so far while listening, the chief's while reading, or
     // an error; and what the call cost so far.
-    String error = s == null ? "" : s.error(), line;
+    String error = s.error(), line;
     if (!error.isEmpty()) line = error;
-    else if (s == null) line = "";
     else if (phase == HandsFreeSession.Phase.READING) line = tr("Chief: %1$s", s.reply());
     else if (!s.pending().isEmpty()) line = tr("You: %1$s", s.pending());
     else line = "";
@@ -3218,7 +3242,7 @@ public final class MainActivity extends Activity {
       hfCost.setText(
           HandsFreeService.callCost.signum() == 0 ? "" : tr("This call so far: %1$s", exact(HandsFreeService.callCost)));
     // Only the control that fits: Send now while you can talk; End is always there.
-    hfSend.setVisibility(HandsFreeService.canSend(phase) ? View.VISIBLE : View.GONE);
+    hfSend.setVisibility(HandsFreeService.canSend(s) ? View.VISIBLE : View.GONE);
   }
 
   /** Settings → Hands-free: the words, the timing and the voice. */
@@ -3234,7 +3258,12 @@ public final class MainActivity extends Activity {
         ui.text(tr("Raise these if noise or other people take your turn; lower them if your quieter words are missed. The recent events below show each decision with its levels."), 13, Ui.MUTED),
         4);
     decimalField(tr("Your voice must be this many times louder than the background"), v -> prefs.edit().putFloat(HandsFree.GATE, (float) v).apply(), HandsFree.gate(prefs));
-    decimalField(tr("Speech needed to take your turn (seconds)"), v -> prefs.edit().putInt(HandsFree.TAKE_MS, (int) Math.round(v * 1000)).apply(), HandsFree.takeMs(prefs) / 1000.0);
+    decimalField(tr("Speech needed to take your turn, within 1.5 seconds (seconds)"), v -> prefs.edit().putInt(HandsFree.TAKE_MS, (int) Math.round(v * 1000)).apply(), HandsFree.takeMs(prefs) / 1000.0);
+    ui.add(content, ui.strong(tr("Sounds and voice"), 15), 24);
+    Switch sounds = ui.toggle(prefs.getBoolean(HandsFree.SOUNDS, true));
+    sounds.setOnCheckedChangeListener((b, on) -> prefs.edit().putBoolean(HandsFree.SOUNDS, on).apply());
+    ui.add(content, ui.row(tr("Quiet sounds"), tr("Heard you, sent, reply coming, something failed"), sounds, null), 8);
+    secondsField(tr("Use Android's voice when the voice model takes longer than (seconds)"), HandsFree.VOICE_WAIT_MS, HandsFree.voiceWaitMs(prefs));
     recentEvents();
   }
 
@@ -3267,7 +3296,7 @@ public final class MainActivity extends Activity {
   }
 
   private String voiceLabel() {
-    Voice.Choice c = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id()));
+    Voice.Choice c = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id()));
     return c.name() + " · " + voiceNote(c);
   }
 
@@ -3287,7 +3316,7 @@ public final class MainActivity extends Activity {
   /** Settings → Models & providers → Text-to-speech: the voice that reads the chief's replies. */
   private void voicesPage() {
     heading(tr("Back"), tr("Text-to-speech"), tr("Reads your chief's replies aloud in hands-free mode, which is English only for now."));
-    String current = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id())).id();
+    String current = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id())).id();
     LinearLayout card = ui.add(content, ui.card(Ui.BG, 0), 12);
     card.setPadding(0, 0, 0, 0);
     for (Voice.Choice c : Voice.CHOICES) {

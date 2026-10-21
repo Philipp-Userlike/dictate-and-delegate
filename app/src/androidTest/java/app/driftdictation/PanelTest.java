@@ -279,6 +279,29 @@ public class PanelTest {
   }
 
   @Test
+  public void insertIntoAnEmptyWebEditorLeavesItsPlaceholderOut() throws Exception {
+    // A real message to the chief began with the bb editor's placeholder: Chrome reports it as
+    // the empty field's text.
+    TestServer.transcripts("I mean, I don't know");
+    TestServer.decide(0.1, 0, "none");
+    shell("am start -W -n app.driftdictation.test/app.driftdictation.WebPadActivity");
+    UiObject2 field = find(By.clazz("android.widget.EditText"), "the web editor");
+    field.click();
+    Thread.sleep(800);
+    dictate();
+    find("Insert").click();
+    until(
+        "the transcript alone is in the web editor",
+        () -> {
+          UiObject2 f = device.findObject(By.clazz("android.widget.EditText"));
+          String t = f == null ? null : f.getText();
+          return t != null && t.contains("I mean, I don't know");
+        });
+    String t = device.findObject(By.clazz("android.widget.EditText")).getText();
+    assertFalse(t, t.contains("Ask for a follow-up"));
+  }
+
+  @Test
   public void editedMeanwhileTheRefinedTextGoesAtTheCursorInstead() throws Exception {
     TestServer.transcripts("see you at ten");
     TestServer.decide(0.1, 0, "none");

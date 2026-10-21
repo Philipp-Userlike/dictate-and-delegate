@@ -95,7 +95,12 @@ public class HandsFreeFlowTest {
 
   @Test
   public void talkSendByWordHearTheReplyThenEndByWord() throws Exception {
-    TestServer.transcripts("I've been thinking about the trip.", "Book a table for Friday. Over.", "End the call.");
+    // Each part, then the whole turn again in one pass when it's sent, then the end phrase.
+    TestServer.transcripts(
+        "I've been thinking about the trip.",
+        "Book a table for Friday. Over.",
+        "I've been thinking about the trip, book a table for Friday. Over.",
+        "End the call.");
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
     talk();
@@ -104,16 +109,17 @@ public class HandsFreeFlowTest {
     talk();
     until(() -> lastTell().contains("[hands-free]"), "the message sent");
     String tell = lastTell();
-    assertTrue(tell, tell.contains("I've been thinking about the trip. Book a table for Friday."));
+    // The whole turn's text, from the second pass.
+    assertTrue(tell, tell.contains("I've been thinking about the trip, book a table for Friday."));
     assertFalse(tell, tell.contains("Over"));
     Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(tell);
     assertTrue(tell, m.find());
     String request = m.group(1);
-    // Each part transcribed once: two transcriptions so far.
+    // Each part transcribed once, and the whole turn once more: three transcriptions so far.
     JSONArray r = TestServer.requests();
     int transcriptions = 0;
     for (int i = 0; i < r.length(); i++) if (r.getJSONObject(i).getString("kind").equals("transcribe")) transcriptions++;
-    assertEquals(2, transcriptions);
+    assertEquals(3, transcriptions);
     // The note keeps it, with the chief's thread.
     try (HistoryStore h = new HistoryStore(context)) {
       HistoryEntry e = h.list(1, 0).get(0);
@@ -137,7 +143,7 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.READING, "reading the reply");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after reading");
     // Reading it cost $0.0001 (the fake's generation); the note of that message has it, on top of
-    // the transcriptions ($0.001 each), and the call total counts both.
+    // the three transcriptions ($0.001 each), and the call total counts both.
     until(
         () -> {
           try (HistoryStore h = new HistoryStore(context)) {
@@ -148,14 +154,14 @@ public class HandsFreeFlowTest {
         "the voice's cost on the note");
     try (HistoryStore h = new HistoryStore(context)) {
       HistoryEntry e = h.list(1, 0).get(0);
-      assertEquals(0, new java.math.BigDecimal("0.0021").compareTo(e.cost()));
+      assertEquals(0, new java.math.BigDecimal("0.0031").compareTo(e.cost()));
       assertEquals("hexgrad/kokoro-82m", e.json.optString("voiceModel"));
       JSONArray steps = e.json.getJSONArray("steps");
       assertEquals("voice", steps.getJSONObject(steps.length() - 1).getString("kind"));
       assertTrue(e.json.getJSONArray("handsFreeLog").length() > 0);
       assertFalse(e.json.optString("call").isEmpty());
     }
-    assertEquals(0, new java.math.BigDecimal("0.0021").compareTo(HandsFreeService.callCost));
+    assertEquals(0, new java.math.BigDecimal("0.0031").compareTo(HandsFreeService.callCost));
     int speech = 0;
     JSONArray all = TestServer.requests();
     for (int i = 0; i < all.length(); i++) if (all.getJSONObject(i).getString("kind").equals("speech")) speech++;
@@ -347,7 +353,7 @@ public class HandsFreeFlowTest {
     // The dictation itself left no note and no saved audio.
     assertFalse(DictationService.audio(context).exists());
     // The call floats: its panel shows the state and End.
-    assertNotNull(device.wait(Until.findObject(By.textContains("Listening")), 5000));
+    assertNotNull(device.wait(Until.findObject(By.text("Say \"over\"")), 5000));
     assertNotNull(device.wait(Until.findObject(By.desc("End hands-free")), 5000));
     // Exactly where the dictation panel was, and its own place stays as it was.
     assertArrayEquals(dictationPanel, HandsFreeService.panelPosition());
@@ -412,14 +418,61 @@ public class HandsFreeFlowTest {
     shot("call-bar-listening");
     talk();
     until(() -> HandsFreeService.session().sent() == 1, "the message sent");
-    // Waiting for the chief: a short label on the bar, the full words for TalkBack; send and
-    // hang-up as icons.
-    assertNotNull(device.wait(Until.findObject(By.text("Working…")), 5000));
-    assertNotNull(device.findObject(By.desc("Listening · Chief is working…")));
+    // Sent, then waiting for the chief: a short label on the bar, the full words for TalkBack;
+    // send and hang-up as icons.
+    assertNotNull(device.wait(Until.findObject(By.text("Working…")), 8000));
+    assertNotNull(device.findObject(By.desc("Waiting for the chief · you can talk")));
     assertNotNull(device.findObject(By.desc("Send now"))); // The paper plane.
     assertNotNull(device.findObject(By.desc("End hands-free")));
     until(HandsFreeService::panelFits, "every button on screen while the chief works");
     shot("call-bar-working");
+  }
+
+  /**
+   * With -e shots true only: the hands-free screen listening, with a reason, and with a reply
+   * waiting while you talk; and the call bar (for the release QA).
+   */
+  @Test
+  public void screenshotsOfTheLiveStateAndItsReasons() throws Exception {
+    Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("shots")));
+    device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
+    prefs.edit().putInt(HandsFreePanel.X, 40).putInt(HandsFreePanel.Y, 1500).commit();
+    TestServer.transcripts("Book a table for Friday. Over.", "Also check the train");
+    context.startActivity(
+        new Intent(context, MainActivity.class).putExtra("open", "handsfree").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    UiObject2 start = device.wait(Until.findObject(By.text("Start hands-free")), 8000);
+    assertNotNull(start);
+    start.click();
+    UiObject2 deny = device.wait(Until.findObject(By.textStartsWith("Don")), 3000);
+    if (deny != null) deny.click();
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    HandsFreeSession s = HandsFreeService.session();
+    for (int i = 0; i < 50; i++) s.frame(HandsFreeTestFrames.frame(50));
+    assertNotNull(device.wait(Until.findObject(By.textContains("Listening")), 5000));
+    shot("hf-1-listening");
+    // Send with nothing said: ignored, and the screen says why.
+    device.wait(Until.findObject(By.text("Send now")), 5000).click();
+    assertNotNull(device.wait(Until.findObject(By.textContains("Send ignored: nothing heard yet")), 5000));
+    shot("hf-2-reason");
+    // A message, then a reply arriving while you talk: it waits.
+    talk();
+    until(() -> s.sent() == 1, "the message sent");
+    Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(lastTell());
+    assertTrue(m.find());
+    Thread.sleep(3500); // Past Sent ✓.
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000));
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), m.group(1), "The table is booked for Friday at eight.");
+    until(() -> s.held() == 1, "the reply waiting");
+    // A pause long enough to end the part, shorter than the reply's 1.5 s: it still waits.
+    for (int i = 0; i < 55; i++) s.frame(HandsFreeTestFrames.frame(50));
+    until(() -> s.pending().equals("Also check the train"), "your words");
+    assertNotNull(device.wait(Until.findObject(By.textContains("Reply waiting")), 5000));
+    shot("hf-3-reply-waiting");
+    // The call bar over another app.
+    device.pressHome();
+    Thread.sleep(800);
+    assertNotNull(device.wait(Until.findObject(By.desc("End hands-free")), 5000));
+    shot("hf-4-call-bar");
   }
 
   /** With -e shots true: a screenshot on the device, in the app's files/panel. */
@@ -429,6 +482,9 @@ public class HandsFreeFlowTest {
     java.io.File dir = new java.io.File(context.getExternalFilesDir(null), "panel");
     dir.mkdirs();
     device.takeScreenshot(new java.io.File(dir, name + ".png"));
+    // Also where it outlives the test's uninstall: adb pull /data/local/tmp/drift-shots.
+    device.executeShellCommand("mkdir -p /data/local/tmp/drift-shots");
+    device.executeShellCommand("screencap -p /data/local/tmp/drift-shots/" + name + ".png");
   }
 
   @Test
@@ -454,6 +510,8 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.session().sent() == 2, "your message sent");
     String tell = lastTell();
     assertTrue(tell, tell.contains("Hold on, book the train instead"));
-    assertTrue(tell, tell.contains("[heard up to: ") || tell.contains("[didn't hear your reply: "));
+    // Nothing about the reply: it isn't lost, it plays again once your turn is over.
+    assertFalse(tell, tell.contains("[heard up to: ") || tell.contains("[didn't hear your reply: "));
+    until(() -> HandsFreeService.log(context).contains("floor: chief, reading " + m.group(1)) && count(HandsFreeService.log(context), "floor: chief, reading " + m.group(1)) >= 2, "the reply read again");
   }
 }

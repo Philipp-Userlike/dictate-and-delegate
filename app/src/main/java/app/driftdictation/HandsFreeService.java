@@ -31,9 +31,9 @@ import java.util.UUID;
 /**
  * Hands-free mode as a foreground service: the microphone (with the phone's echo cancelling, so a
  * reply read aloud isn't heard as you), a HandsFreeSession, the chief's spoken replies from ntfy,
- * and the voice. Send, stop reading and end work from the screen, the notification (also on the
- * lock screen) and the headset or car media button: while a reply is read it stops reading,
- * otherwise it sends.
+ * the voice and quiet sounds for the key moments. Send and end work from the screen, the
+ * notification (also on the lock screen) and the headset or car media button, which sends (a reply
+ * playing plays on).
  */
 public final class HandsFreeService extends Service {
   static final String START = "start", SEND = "send", END = "end";
@@ -59,6 +59,7 @@ public final class HandsFreeService extends Service {
   private Voice voice;
   private MediaSession media;
   private HandsFreePanel panel;
+  private Cues cues;
   private PowerManager.WakeLock wake;
   private BigDecimal cost = BigDecimal.ZERO;
   /** Everything this call cost on OpenRouter: transcription and the voice. */
@@ -151,9 +152,14 @@ public final class HandsFreeService extends Service {
     SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
     BbBridge bb = new BbBridge(this);
     voice = new Voice(this);
-    Voice.Choice choice = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id()));
+    Voice.Choice choice = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id()));
     Profile profile = new Profile(prefs);
     String model = profile.fixedModel();
+    // The send and end words are hints for the speech model, so a short "over" isn't dropped.
+    java.util.List<String> hints = new java.util.ArrayList<>(profile.hintWords());
+    for (String w : HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)) if (!hints.contains(w)) hints.add(w);
+    for (String w : HandsFree.list(HandsFree.endSetting(prefs))) if (!hints.contains(w)) hints.add(w);
+    cues = new Cues(this);
     session =
         new HandsFreeSession(
             HandsFree.pauseMs(prefs),
@@ -164,12 +170,15 @@ public final class HandsFreeService extends Service {
             HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND),
             HandsFree.list(HandsFree.endSetting(prefs)),
             wav -> {
-              OpenRouter.Result r = new OpenRouter(this).transcribe(wav, model, profile.hintWords());
-              seconds += (wav.length - 44) / (double) AudioFiles.BYTES_PER_SECOND;
-              if (r.cost() == null) unpriced = true;
-              else {
-                cost = cost.add(r.cost());
-                callCost = callCost.add(r.cost());
+              OpenRouter.Result r = new OpenRouter(this).transcribe(wav, model, hints);
+              // Parts, their last 2 s and whole turns are written down on different threads.
+              synchronized (this) {
+                seconds += (wav.length - 44) / (double) AudioFiles.BYTES_PER_SECOND;
+                if (r.cost() == null) unpriced = true;
+                else {
+                  cost = cost.add(r.cost());
+                  callCost = callCost.add(r.cost());
+                }
               }
               return r.text();
             },
@@ -181,12 +190,19 @@ public final class HandsFreeService extends Service {
             },
             new HandsFreeSession.Speaker() {
               public Object prepare(String request, String text) {
-                Voice.Choice c = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.KOKORO.id()));
+                Voice.Choice c = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id()));
                 long asked = android.os.SystemClock.elapsedRealtime();
-                Voice.Prepared p = voice.prepare(c, text);
+                // A voice model slower than this to answer: Android's voice reads the reply instead.
+                Voice.Prepared p = voice.prepare(c, text, HandsFree.voiceWaitMs(prefs));
                 long ms = android.os.SystemClock.elapsedRealtime() - asked;
-                if (p.mp3() != null) chargeVoice(request, c, text, p.generation(), ms);
-                else if (!c.model().isEmpty()) event("voice " + c.model() + " failed: Android's voice reads " + request);
+                if (p.mp3() != null) {
+                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms", c.model(), request, p.firstByteMs(), p.allMs()));
+                  chargeVoice(request, c, text, p.generation(), ms);
+                } else if (!c.model().isEmpty()) {
+                  event("voice " + c.model() + " for " + request + ": " + p.fallback() + " (first byte " + p.firstByteMs() + " ms): Android's voice reads it");
+                  HandsFreeSession s = session;
+                  if (s != null) s.reason("Reply in Android's voice: %1$s", p.fallback());
+                }
                 return p;
               }
 
@@ -227,17 +243,22 @@ public final class HandsFreeService extends Service {
             },
             () -> main.post(this::changed));
     session.onEvent(this::event);
+    session.wholeTurn = true;
+    session.tailCheck = true;
+    session.cues = c -> prefs.getBoolean(HandsFree.SOUNDS, true) && cues.play(c);
+    if (!choice.model().isEmpty()) voice.warm();
     callCost = BigDecimal.ZERO;
     callId = UUID.randomUUID().toString();
     event(
         String.format(
             java.util.Locale.ROOT,
-            "started · send %s · end %s · voice %s · pause %d ms · take %d ms · gate ×%.1f",
+            "started · send %s · end %s · voice %s · pause %d ms · take %d ms in %d ms · gate ×%.1f",
             session.sendWords,
             session.endWords,
             choice.model(),
             HandsFree.pauseMs(prefs),
             HandsFree.takeMs(prefs),
+            Math.max(HandsFree.Segmenter.WINDOW_MS, HandsFree.takeMs(prefs) * 3 / 2),
             HandsFree.gate(prefs)));
     signal(bb, HandsFree.CALL_STARTED);
     if (seed != null) {
@@ -257,9 +278,9 @@ public final class HandsFreeService extends Service {
               bb.ntfyTopic(),
               System.currentTimeMillis() / 1000 - 5,
               request -> session != null && session.ours(request),
-              (request, text) -> {
+              (request, text, published) -> {
                 HandsFreeSession s = session;
-                if (s != null) s.reply(request, text);
+                if (s != null) s.reply(request, text, published);
               });
       replies.start();
     } catch (Exception ex) {
@@ -354,7 +375,7 @@ public final class HandsFreeService extends Service {
     reader.start();
   }
 
-  /** The headset or car button: stop reading while a reply is read, otherwise send. */
+  /** The headset or car button sends. */
   private void startMedia() {
     media = new MediaSession(this, "Dictate & Delegate hands-free");
     media.setCallback(
@@ -385,10 +406,10 @@ public final class HandsFreeService extends Service {
     media.setActive(true);
   }
 
-  /** The headset or car button sends; while a reply is read it does nothing (no interrupting). */
+  /** The headset or car button sends (also while a reply plays, which plays on). */
   void mediaButton() {
     HandsFreeSession s = session;
-    if (s != null && s.state() == HandsFreeSession.State.LISTENING) s.sendNow();
+    if (s != null) s.sendNow();
   }
 
   private final Runnable ticker =
@@ -397,7 +418,7 @@ public final class HandsFreeService extends Service {
           HandsFreeSession s = session;
           if (s == null) return;
           s.tick();
-          if (panel != null) panel.render(s.phase());
+          if (panel != null) panel.render(s);
           main.postDelayed(this, 1000);
         }
       };
@@ -410,12 +431,20 @@ public final class HandsFreeService extends Service {
     String call = callId;
     new Thread(
             () -> {
-              BigDecimal price = Voice.cost(this, generation);
+              Voice.Generation g = Voice.generation(this, generation);
+              BigDecimal price = g == null ? null : g.cost();
               boolean exact = price != null;
               if (price == null) price = c.perCharacter().multiply(BigDecimal.valueOf(text.length()));
               // Looked up a few seconds later: only this call's total, not the next one's.
               if (call.equals(callId)) callCost = callCost.add(price);
-              event(String.format(java.util.Locale.ROOT, "voice %s: %d characters, $%s%s", c.model(), text.length(), price.stripTrailingZeros().toPlainString(), exact ? "" : " (at list price)"));
+              event(String.format(
+                  java.util.Locale.ROOT,
+                  "voice %s: %d characters, $%s%s%s",
+                  c.model(),
+                  text.length(),
+                  price.stripTrailingZeros().toPlainString(),
+                  exact ? "" : " (at list price)",
+                  g == null || g.provider().isEmpty() ? "" : ", served by " + g.provider() + (g.latencyMs() < 0 ? "" : " (its latency " + g.latencyMs() + " ms)")));
               BigDecimal charged = price;
               try {
                 DictationService.updateByRequest(
@@ -524,16 +553,18 @@ public final class HandsFreeService extends Service {
       e.json.put("handsFreeLog", new org.json.JSONArray(sinceLastNote));
       sinceLastNote.clear();
     }
-    e.charge(unpriced ? null : cost);
-    e.step("speech", model, 0, unpriced ? null : cost, null);
+    synchronized (this) {
+      e.charge(unpriced ? null : cost);
+      e.step("speech", model, 0, unpriced ? null : cost, null);
+      cost = BigDecimal.ZERO;
+      unpriced = false;
+      seconds = 0;
+    }
     e.step(DictationService.CHIEF_STEP, DictationService.CHIEF_TARGET, 0, null, null);
     try (HistoryStore h = new HistoryStore(this)) {
       h.save(e);
     }
     getSharedPreferences("settings", MODE_PRIVATE).edit().putLong("historyRevision", System.nanoTime()).apply();
-    cost = BigDecimal.ZERO;
-    unpriced = false;
-    seconds = 0;
   }
 
   private void changed() {
@@ -543,23 +574,61 @@ public final class HandsFreeService extends Service {
       return;
     }
     getSystemService(NotificationManager.class).notify(4, notification());
-    if (panel != null && s != null) panel.render(s.phase());
+    if (panel != null && s != null) panel.render(s);
   }
 
-  /** The four things the screen and the notification say. */
-  /** Send now is offered while you can talk and nothing is on its way. */
-  static boolean canSend(HandsFreeSession.Phase p) {
-    return p == HandsFreeSession.Phase.LISTENING || p == HandsFreeSession.Phase.WORKING;
+  /**
+   * Send now is offered while you can talk and nothing is on its way, and while a reply plays if
+   * you have unsent words.
+   */
+  static boolean canSend(HandsFreeSession s) {
+    HandsFreeSession.Phase p = s.phase();
+    return p == HandsFreeSession.Phase.LISTENING || p == HandsFreeSession.Phase.WORKING || p == HandsFreeSession.Phase.READING && !s.pending().isEmpty();
   }
 
-  static String phaseLabel(HandsFreeSession.Phase p) {
-    return switch (p) {
-      case READING -> tr("Reading reply");
+  /** What's happening right now, in full: the screen's live line, the notification, TalkBack. */
+  static String liveLabel(HandsFreeSession s) {
+    HandsFreeSession.Live live = s.live();
+    return switch (live) {
+      case HEARING -> tr("Hearing you");
+      case WRITING -> s.writingMs() >= 3000 ? tr("Writing down… (%1$d s)", s.writingMs() / 1000) : tr("Writing down…");
+      case WAITING_SEND -> tr("Waiting for %1$s or Send", quoted(s.sendWords));
       case SENDING -> tr("Sending…");
-      // You can talk while the chief works: it says listening first.
-      case WORKING -> tr("Listening · Chief is working…");
+      case SENT -> tr("Sent ✓");
+      case WAITING_CHIEF -> tr("Waiting for the chief · you can talk");
+      case REPLY_WAITING -> tr("Reply waiting · plays when you pause");
+      case REPLY_COMING -> tr("Reply coming…");
+      case PLAYING -> tr("Playing the reply");
+      case CHECKING -> tr("Reply paused · was that you?");
+      case MUTED -> tr("Mic paused after the reply");
+      case ENDED -> tr("Ended");
       default -> tr("Listening");
     };
+  }
+
+  /** The same, short, for the call bar. */
+  static String shortLabel(HandsFreeSession s) {
+    return switch (s.live()) {
+      case HEARING -> tr("Hearing you");
+      case WRITING -> s.writingMs() >= 3000 ? tr("Writing… %1$d s", s.writingMs() / 1000) : tr("Writing…");
+      case WAITING_SEND -> tr("Say %1$s", quoted(s.sendWords.isEmpty() ? java.util.List.of() : s.sendWords.subList(0, 1)));
+      case SENDING -> tr("Sending…");
+      case SENT -> tr("Sent ✓");
+      case WAITING_CHIEF -> tr("Working…");
+      case REPLY_WAITING -> tr("Reply waiting");
+      case REPLY_COMING -> tr("Reply coming");
+      case PLAYING -> tr("Reading");
+      case CHECKING -> tr("Paused");
+      case MUTED -> tr("Mic paused");
+      case ENDED -> tr("Ended");
+      default -> tr("Listening");
+    };
+  }
+
+  private static String quoted(java.util.List<String> words) {
+    StringBuilder out = new StringBuilder();
+    for (String w : words) out.append(out.length() == 0 ? "" : ", ").append('"').append(w).append('"');
+    return out.length() == 0 ? "–" : out.toString();
   }
 
   private PendingIntent action(String a, int code) {
@@ -569,11 +638,13 @@ public final class HandsFreeService extends Service {
 
   private Notification notification() {
     HandsFreeSession s = session;
-    boolean reading = s != null && s.state() == HandsFreeSession.State.READING;
+    java.util.List<HandsFreeSession.Reason> why = s == null ? java.util.List.of() : s.reasons();
     String text =
         s == null
             ? tr("Starting…")
-            : phaseLabel(s.phase()) + (s.pending().isEmpty() || reading ? "" : "\n" + s.pending());
+            : liveLabel(s)
+                + (s.pending().isEmpty() ? "" : "\n" + tr("You: %1$s", s.pending()))
+                + (why.isEmpty() ? "" : "\n" + why.get(0).text());
     PendingIntent open =
         PendingIntent.getActivity(
             this,
@@ -592,7 +663,7 @@ public final class HandsFreeService extends Service {
             .setContentIntent(open);
     // Only what fits now: while listening, Send now; a reply is stopped by saying "stop" or the
     // headset button.
-    if (s != null && HandsFreeService.canSend(s.phase()))
+    if (s != null && HandsFreeService.canSend(s))
       b.addAction(new Notification.Action.Builder(null, tr("Send now"), action(SEND, 1)).build());
     b.addAction(new Notification.Action.Builder(null, tr("End"), action(END, 3)).build());
     return b.build();
@@ -613,9 +684,11 @@ public final class HandsFreeService extends Service {
       recorder = null;
     }
     event("call ended · $" + callCost.stripTrailingZeros().toPlainString() + " on OpenRouter");
-    Thread ended = s == null ? null : signal(new BbBridge(this), HandsFree.CALL_ENDED, s);
+    // With the end, once: the replies that never reached you.
+    Thread ended = s == null ? null : signal(new BbBridge(this), HandsFree.CALL_ENDED + s.endNote(), s);
     if (replies != null) replies.finish();
     if (voice != null) voice.shutdown();
+    if (cues != null) cues.release();
     if (media != null) media.release();
     if (panel != null) {
       panel.hide();

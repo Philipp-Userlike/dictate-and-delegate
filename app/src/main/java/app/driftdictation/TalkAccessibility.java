@@ -204,9 +204,30 @@ public final class TalkAccessibility extends AccessibilityService {
 
   /** A field's text, "" while it only shows its hint. */
   static String text(AccessibilityNodeInfo n) {
-    if (n.isShowingHintText()) return "";
-    CharSequence t = n.getText();
-    return t == null ? "" : t.toString();
+    CharSequence t = n.getText(), hint = n.getHintText(), label = n.getContentDescription();
+    // The label only counts as a placeholder with the cursor at the start (an empty field's), so
+    // real text that happens to equal it is never wiped.
+    boolean atStart = n.getTextSelectionStart() <= 0;
+    return own(t == null ? "" : t.toString(), n.isShowingHintText(), hint == null ? "" : hint.toString(), label == null || !atStart ? "" : label.toString());
+  }
+
+  /**
+   * What of a field's text is really in it: "" while it shows its placeholder. Web fields (Chrome,
+   * the bb app's editor) report an empty field's placeholder as its text without saying it's the
+   * hint; the placeholder is also its hint or its label (aria-label). So a text that is one of
+   * those (spaces, invisible characters and a trailing … aside) counts as empty; otherwise the
+   * placeholder ends up in front of what's inserted ("Ask for a follow-up. @ to mention…I mean").
+   */
+  static String own(String text, boolean showingHint, String... placeholders) {
+    if (showingHint) return "";
+    String t = plain(text);
+    if (t.isEmpty()) return text.replaceAll("[\u200b\u200c\u200d\ufeff]", "");
+    for (String p : placeholders) if (t.equals(plain(p))) return "";
+    return text;
+  }
+
+  private static String plain(String s) {
+    return s.replaceAll("[\u200b\u200c\u200d\ufeff]", "").replaceAll("[\\s\u00a0]+", " ").replaceAll("[ .…]+$", "").trim();
   }
 
   /**

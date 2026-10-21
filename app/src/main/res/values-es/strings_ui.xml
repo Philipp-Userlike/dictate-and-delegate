@@ -12,8 +12,10 @@
     <string name="t_0255636d" formatted="false">Clave de OpenRouter</string>
     <string name="t_02986d74" formatted="false">Por ejemplo: Solicitud de piso</string>
     <string name="t_02eb1806" formatted="false">Añadir Dictate &amp; Delegate a Ajustes rápidos</string>
+    <string name="t_04577256" formatted="false">El modelo no oyó palabras: termina tu turno</string>
     <string name="t_04bb15b6" formatted="false">Audio guardado eliminado</string>
     <string name="t_04fc2b5b" formatted="false">Imagen</string>
+    <string name="t_0575aad4" formatted="false">Transcribiendo… (%1$d s)</string>
     <string name="t_05db04e6" formatted="false">Precio no disponible · ver origen</string>
     <string name="t_05ff3c07" formatted="false">Nada que pegar: copia algo de texto primero.</string>
     <string name="t_064b8a10" formatted="false">No se pudo pulir esta nota: %1$s Abajo está lo que dijiste.</string>
@@ -21,15 +23,18 @@
     <string name="t_067329ed" formatted="false">esta app solo admite pegar, así que también está en el portapapeles</string>
     <string name="t_068966f6" formatted="false">Mejorar: créditos de Anthropic ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">¿Hablas de algo? Añádelo, como una oferta a la que respondes.</string>
+    <string name="t_088f2ccc" formatted="false">%1$s tardó más de %2$.1f s</string>
     <string name="t_08db7524" formatted="false">Desde %1$s $/min</string>
     <string name="t_08e77a0c" formatted="false">Permitir mostrar sobre otras apps</string>
     <string name="t_092d8ce0" formatted="false">más económica</string>
+    <string name="t_09b31ec9" formatted="false">Envío ignorado: recién enviado (hace %1$.1f s)</string>
     <string name="t_0a7ebfef" formatted="false">Añadido</string>
     <string name="t_0ae539d0" formatted="false">Tus palabras</string>
     <string name="t_0ae65fda" formatted="false">Iniciar dictado</string>
     <string name="t_0b61da7d" formatted="false">Palabras de envío y tiempos</string>
     <string name="t_0b870de2" formatted="false">Datos locales eliminados</string>
     <string name="t_0bf045a7" formatted="false">¿Eliminar tu clave de Anthropic?</string>
+    <string name="t_0c32355a" formatted="false">Escribiendo… %1$d s</string>
     <string name="t_0c39377e" formatted="false">🧑‍💼 Jefe ✓</string>
     <string name="t_0c4ebb56" formatted="false">Precios por millón de tokens de entrada / salida, precios de lista de Anthropic.</string>
     <string name="t_0c4f3914" formatted="false">Abrir recuperación de grabaciones</string>
@@ -45,12 +50,14 @@
     <string name="t_112a7174" formatted="false">Uso</string>
     <string name="t_115acf0a" formatted="false">Permite el acceso al micrófono primero</string>
     <string name="t_115f8e33" formatted="false">Aún no hay palabras.</string>
+    <string name="t_1372c33a" formatted="false">Frase de fin oída: termina la llamada</string>
     <string name="t_13f11ba3" formatted="false">Desactivado</string>
     <string name="t_14f38eda" formatted="false">Instalando las habilidades y creando el hilo en bb…</string>
     <string name="t_1515cfb6" formatted="false">No hay coincidencias.</string>
     <string name="t_16545ddd" formatted="false">Modelo</string>
     <string name="t_16666fb3" formatted="false">sin respuesta a tiempo</string>
     <string name="t_174fc48a" formatted="false">no enviado</string>
+    <string name="t_1763fd97" formatted="false">sonó demasiado tiempo</string>
     <string name="t_176867d3" formatted="false">Descargar la app de ntfy</string>
     <string name="t_181bf8d8" formatted="false">Precios por millón de tokens de entrada / salida, de OpenRouter.</string>
     <string name="t_18d0ca78" formatted="false">Dirección MCP</string>
@@ -70,6 +77,7 @@
     <string name="t_1e4ae9cd" formatted="false">O usa un hilo existente</string>
     <string name="t_1e528165" formatted="false">%1$s.getbb.app respondió con HTTP %2$d. Inténtalo de nuevo en un momento.</string>
     <string name="t_1e8f2a1c" formatted="false">Olvidar esta dirección</string>
+    <string name="t_1ea4a265" formatted="false">Micrófono en pausa</string>
     <string name="t_1f0e3297" formatted="false">Modelo de voz</string>
     <string name="t_1f3603cf" formatted="false">Inicia desde cualquier app</string>
     <string name="t_1f8d5f9c" formatted="false">Opcional. Con tu propia clave de Anthropic, ✨ Mejorar va directamente a Claude y se paga con tus créditos de Anthropic. Voz y Jev se quedan en OpenRouter. Si Anthropic falla, Mejorar se hace a través de OpenRouter.</string>
@@ -81,8 +89,8 @@
     <string name="t_22747cc0" formatted="false">Mensajes</string>
     <string name="t_22a3ef54" formatted="false">Legal</string>
     <string name="t_22d5fbd9" formatted="false">Añadir contexto a este dictado</string>
+    <string name="t_233065a4" formatted="false">Llega la respuesta…</string>
     <string name="t_236a5def" formatted="false">Lo que dijiste</string>
-    <string name="t_23856e35" formatted="false">Voz necesaria para tomar tu turno (segundos)</string>
     <string name="t_2427c428" formatted="false">Todas las notas</string>
     <string name="t_244d0dc6" formatted="false">«Usa mi solicitud de piso para el apartamento de dos habitaciones en Hauptstraße 5, la visita es el sábado y menciona que teletrabajo».</string>
     <string name="t_248af959" formatted="false">Se guardó una grabación pero no se transcribió.</string>
@@ -92,14 +100,17 @@
     <string name="t_2652688c" formatted="false">Micrófono</string>
     <string name="t_26643376" formatted="false">Comprobando…</string>
     <string name="t_2792985f" formatted="false">🎧 Manos libres con tu jefe</string>
+    <string name="t_27a3f255" formatted="false">Envío: transcribiendo lo descartado, luego se envía</string>
     <string name="t_27a92292" formatted="false">bb no permitió el inicio de sesión.</string>
     <string name="t_27c5b8ea" formatted="false">Eliminar clave</string>
     <string name="t_2893e4d7" formatted="false">Comprobación de peticiones</string>
-    <string name="t_2897e301" formatted="false">Escuchando · Chief está trabajando…</string>
+    <string name="t_289e6c64" formatted="false">Micrófono en pausa tras la respuesta</string>
+    <string name="t_28b3b2a4" formatted="false">La transcripción tardó %1$.1f s (el modelo de voz fue lento)</string>
     <string name="t_296a5e55" formatted="false">Opcional · Mejorar con tus créditos de Anthropic</string>
     <string name="t_296a6921" formatted="false">El modelo tardó demasiado. La grabación se ha guardado; vuelve a intentarlo.</string>
     <string name="t_2994b473" formatted="false">‹ Anteriores</string>
     <string name="t_29a545af" formatted="false">Estimado Sr. Weber, eh, el grifo de la cocina, no, en realidad el del baño, gotea desde el lunes. Ah, y ponlo un poco más formal, por favor.</string>
+    <string name="t_2a81cec6" formatted="false">Di %1$s para enviar, %2$s para terminar. El botón de los auriculares también envía. La respuesta espera mientras hablas y suena cuando paras; habla encima para pausarla y volverá a sonar luego.</string>
     <string name="t_2af8adac" formatted="false">Enviado a tu jefe de gabinete</string>
     <string name="t_2be92a36" formatted="false">Dale a Dictate &amp; Delegate el contexto de lo que hablas, como la oferta a la que respondes. Se usa al pedir algo.</string>
     <string name="t_2bf38097" formatted="false">Tu clave de Anthropic no es válida. Revísala en Ajustes → Modelos y proveedores → Clave de Anthropic.</string>
@@ -112,6 +123,7 @@
     <string name="t_2dad13e3" formatted="false">Idioma</string>
     <string name="t_2dc29d4d" formatted="false">Más tarde</string>
     <string name="t_2dd159ed" formatted="false">No hay navegador disponible</string>
+    <string name="t_2e423333" formatted="false">Respuesta en pausa · ¿eras tú?</string>
     <string name="t_2e5c65fd" formatted="false">vía OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">Servidor ntfy</string>
     <string name="t_2f79a315" formatted="false">Estimado Sr. Weber:\n\nLe escribo para informarle de que el grifo del baño gotea desde el lunes.</string>
@@ -131,12 +143,15 @@
     <string name="t_33fdfd35" formatted="false">Ayuda a Dictate &amp; Delegate a escribir bien los nombres y procesar cada nota según su fin.</string>
     <string name="t_345d171c" formatted="false">El servidor de inicio de sesión de bb respondió con HTTP %1$d.</string>
     <string name="t_35c96237" formatted="false">Instrucciones para Pulir</string>
+    <string name="t_35dab0c1" formatted="false">No se pudo reproducir la respuesta: %1$s. Tu próximo mensaje avisará al jefe</string>
+    <string name="t_36ab8c14" formatted="false">Envío ignorado: suena una respuesta y no tienes nada pendiente</string>
     <string name="t_370bef97" formatted="false">Token (opcional)</string>
     <string name="t_373d8b92" formatted="false">Toca la burbuja para grabar</string>
     <string name="t_377c4e46" formatted="false">Mantén pulsada la tecla para iniciar; mantenla o púlsala otra vez para parar. Una pulsación corta sigue cambiando el volumen. Funciona con la pantalla encendida y desbloqueada; no durante llamadas.</string>
     <string name="t_37ffa23d" formatted="false">✨ Pulir ✓</string>
     <string name="t_38a07146" formatted="false">Dirección web de bb para enlaces</string>
     <string name="t_38b17551" formatted="false">Finalizar</string>
+    <string name="t_392604e7" formatted="false">Respuesta en espera: estás hablando</string>
     <string name="t_39ee7423" formatted="false">Pulir automáticamente está desactivado: se usa una plantilla al pulsar ✨ Pulir.</string>
     <string name="t_3a98665a" formatted="false">Por ejemplo: Desarrollo una app llamada Dictate &amp; Delegate. Jana es una compañera. Escribe los números con dígitos.</string>
     <string name="t_3b71f15b" formatted="false">El más equilibrado</string>
@@ -163,6 +178,7 @@
     <string name="t_3f983199" formatted="false">%1$s La grabación se ha guardado.</string>
     <string name="t_400b4b63" formatted="false">Tú dices</string>
     <string name="t_40de4e2a" formatted="false">Copiado. Pégalo donde informes del problema.</string>
+    <string name="t_411d4bad" formatted="false">En pausa</string>
     <string name="t_41265b45" formatted="false">Mantener durante</string>
     <string name="t_41c5ed6f" formatted="false">Micrófono permitido</string>
     <string name="t_421f0793" formatted="false">No se pudo eliminar el audio guardado. Prueba de nuevo tras reiniciar Dictate &amp; Delegate.</string>
@@ -179,6 +195,7 @@
     <string name="t_47eaeab4" formatted="false">Manos libres</string>
     <string name="t_47fbfb16" formatted="false">Cambiar</string>
     <string name="t_481510cc" formatted="false">Lo que OpenRouter cobró por cada llamada.</string>
+    <string name="t_48c59084" formatted="false">No es la palabra de envío: se oyó «%1$s»</string>
     <string name="t_4a473e6c" formatted="false">No se pudieron cargar los datos guardados. Tus datos no se han eliminado.</string>
     <string name="t_4a881de5" formatted="false">Termina la grabación o la subida primero</string>
     <string name="t_4ae2821e" formatted="false">en curso</string>
@@ -187,6 +204,7 @@
     <string name="t_4c0014e2" formatted="false">Mejorar volverá a usar OpenRouter.</string>
     <string name="t_4c2540de" formatted="false">Anthropic no pudo procesar esta solicitud (HTTP %1$d): %2$s</string>
     <string name="t_4c8985b5" formatted="false">Coste mensual</string>
+    <string name="t_4ce23855" formatted="false">Decisiones y motivos</string>
     <string name="t_4d67a5d5" formatted="false">Sesión iniciada en %1$s.getbb.app</string>
     <string name="t_4da08f61" formatted="false">Qué modelo hizo qué, cuánto tardó, cuánto costó</string>
     <string name="t_4ef77ff2" formatted="false">Grabación interrumpida. Puedes reintentar con el audio guardado.</string>
@@ -204,6 +222,7 @@
     <string name="t_510e0171" formatted="false">Instalando las habilidades del jefe en bb…</string>
     <string name="t_51a8b5d9" formatted="false">Comprobando el hilo y las habilidades en bb…</string>
     <string name="t_51bac044" formatted="false">Cancelar</string>
+    <string name="t_51eabb10" formatted="false">Esperando al jefe · puedes hablar</string>
     <string name="t_523a6999" formatted="false">Se interrumpió la conexión con bb. Inténtalo de nuevo.</string>
     <string name="t_525e2e9d" formatted="false">Mes anterior</string>
     <string name="t_5265d3ae" formatted="false">El más preciso</string>
@@ -216,6 +235,7 @@
     <string name="t_53e8d50f" formatted="false">Manos libres con tu jefe</string>
     <string name="t_55026b0c" formatted="false">Actividad</string>
     <string name="t_551d8c4b" formatted="false">No hay ninguna app para seleccionar archivos.</string>
+    <string name="t_55793fa6" formatted="false">Sonidos y voz</string>
     <string name="t_55cc6297" formatted="false">Dictado en segundo plano</string>
     <string name="t_568a8214" formatted="false">Ajustes de manos libres</string>
     <string name="t_56f7d03e" formatted="false">Jefe sugerido: esto puede ser una tarea para tu jefe de gabinete</string>
@@ -227,7 +247,9 @@
     <string name="t_5853ed37" formatted="false">También puedes añadir Dictate &amp; Delegate con el botón de editar los Ajustes rápidos.</string>
     <string name="t_5945bfc8" formatted="false">El micrófono no admite audio a 16 kHz.</string>
     <string name="t_597ec35a" formatted="false">✓  Añadido</string>
+    <string name="t_598d6fb4" formatted="false">Usar la voz de Android si el modelo de voz tarda más de (segundos)</string>
     <string name="t_5a076fff" formatted="false">%1$s lo convierte en el texto que necesitas: un correo, una respuesta, una nota limpia o tu plantilla. Luego, Insertar pulido.</string>
+    <string name="t_5a337533" formatted="false">Voz necesaria para tomar tu turno, en 1,5 segundos (segundos)</string>
     <string name="t_5a36973e" formatted="false">Puliendo tu texto…</string>
     <string name="t_5a6e8ec5" formatted="false">Aún no hay eventos. Aparecerán aquí en cuanto hagas una llamada manos libres.</string>
     <string name="t_5afff0dd" formatted="false">Desliza hacia abajo, edita los Ajustes rápidos y añade Dictate &amp; Delegate.</string>
@@ -239,6 +261,7 @@
     <string name="t_5cacb072" formatted="false">Esta llamada hasta ahora: %1$s</string>
     <string name="t_5d00536d" formatted="false">Copiado</string>
     <string name="t_5d04f79c" formatted="false">Trabajando…</string>
+    <string name="t_5d08e4c2" formatted="false">Te escuché, enviado, llega respuesta, algo falló</string>
     <string name="t_5da707be" formatted="false">Mes siguiente</string>
     <string name="t_5de4f7e7" formatted="false">No se pudo pulir: %1$s</string>
     <string name="t_5e317218" formatted="false">No se pudo iniciar. Tu nota está a salvo.</string>
@@ -250,6 +273,7 @@
     <string name="t_61e2b45c" formatted="false">Tú: %1$s</string>
     <string name="t_62171086" formatted="false">Puedes pulsar Pulir o Jefe mientras sigues hablando. Si lo pides sobre la marcha («haz de esto un correo», «usa mi solicitud de piso»), Pulir se inicia solo. Las tareas solo van solas a tu jefe si te diriges a él: «jefe de gabinete, …».</string>
     <string name="t_62bfeb04" formatted="false">La respuesta de inicio de sesión de bb no contenía ningún token.</string>
+    <string name="t_62e4540e" formatted="false">No enviado: %1$s. Se guardan tus palabras; envía de nuevo</string>
     <string name="t_6358935d" formatted="false">Clave guardada</string>
     <string name="t_6361c341" formatted="false">se interrumpió la conexión; ¿es un servidor MCP (HTTP transmisible)?</string>
     <string name="t_6418f0e2" formatted="false">Introduce tu usuario de bb Connect</string>
@@ -258,12 +282,14 @@
     <string name="t_6542df76" formatted="false">Al parar, tus palabras se transcriben y aparece un pequeño panel flotante sobre la app en la que estés.</string>
     <string name="t_65579ecd" formatted="false">Esta nota ha costado %1$s hasta ahora.</string>
     <string name="t_657ce781" formatted="false">No hay modelos que coincidan.</string>
+    <string name="t_65b57497" formatted="false">Enviado ✓ con la palabra de envío</string>
     <string name="t_65c84835" formatted="false">No se reconoció voz</string>
     <string name="t_65d60c24" formatted="false">No se pudieron instalar las habilidades del jefe: %1$s</string>
     <string name="t_66aa70b6" formatted="false">Conexión</string>
     <string name="t_67c5a895" formatted="false">Ayer</string>
     <string name="t_694eaa92" formatted="false">%1$s no respondió.</string>
     <string name="t_69b90bc7" formatted="false">No se pudo eliminar el audio</string>
+    <string name="t_69d3f1cd" formatted="false">Envío: terminando lo que dices, luego se envía</string>
     <string name="t_69ee1c02" formatted="false">bb no está accesible ahora mismo (HTTP %1$d). ¿Está tu ordenador encendido y bb en ejecución?</string>
     <string name="t_6a21d63f" formatted="false">Empezar a dictar</string>
     <string name="t_6a8517e4" formatted="false">Copiar eventos</string>
@@ -277,14 +303,17 @@
     <string name="t_6d7c0d41" formatted="false">precio mostrado después</string>
     <string name="t_6dde3895" formatted="false">Anthropic está ocupado ahora mismo.</string>
     <string name="t_6f2c1806" formatted="false">Eliminar</string>
+    <string name="t_6fd42e32" formatted="false">Envío: saldrá cuando se transcriba lo que dijiste</string>
     <string name="t_714149a6" formatted="false">Enviar al jefe si se le menciona</string>
     <string name="t_71cc04b4" formatted="false">bb no envió ningún código de inicio de sesión. Inícialo de nuevo.</string>
     <string name="t_721589c1" formatted="false">Hoy</string>
+    <string name="t_72640a34" formatted="false">Respuesta detenida: hablaste encima. Seguirá desde «%1$s» en tu próxima pausa</string>
     <string name="t_7382e59f" formatted="false">Cerrando sesión…</string>
     <string name="t_73c2d986" formatted="false">Guardada, cifrada · Mejorar usa tus créditos de Anthropic</string>
     <string name="t_74350de7" formatted="false">Acerca de</string>
     <string name="t_749dd663" formatted="false">%1$s · Anthropic, tu clave</string>
     <string name="t_75cfcf01" formatted="false">Cerrar sesión</string>
+    <string name="t_76010d0f" formatted="false">Nada aún.</string>
     <string name="t_76692d71" formatted="false">🎧 Manos libres activado</string>
     <string name="t_77083f49" formatted="false">Qué datos salen de tu teléfono</string>
     <string name="t_772f8ccc" formatted="false">Tu nombre</string>
@@ -300,7 +329,9 @@
     <string name="t_7c3766eb" formatted="false">Dictate &amp; Delegate está en Ajustes rápidos, al final. Desliza hacia abajo y luego a la izquierda para encontrarlo.</string>
     <string name="t_7ca59c81" formatted="false">ntfy.sh, o tu propio servidor ntfy.</string>
     <string name="t_7cbef380" formatted="false">Esto es demasiado largo para bb (%1$d caracteres, máximo %2$d).</string>
+    <string name="t_7cce6d8f" formatted="false">No contó como voz: muy corto (%1$d ms, faltan %2$d ms)</string>
     <string name="t_7d1dd2ca" formatted="false">Insertar pulido</string>
+    <string name="t_7d72ac62" formatted="false">Envío ignorado: aún no se ha oído nada</string>
     <string name="t_7e19ccd3" formatted="false">Dilo para enviar un dictado a tu jefe: \"Ada, …\", \"esto es para Ada\". Solo mencionar el nombre en un mensaje no lo envía. Sin nombre, toca 🧑‍💼.</string>
     <string name="t_7e88757d" formatted="false">Enviar igualmente tras este tiempo de silencio (segundos)</string>
     <string name="t_7f3bcbfd" formatted="false">Llamada manos libres con tu jefe</string>
@@ -310,6 +341,7 @@
     <string name="t_80b095f9" formatted="false">🧑‍💼 Enviar de nuevo</string>
     <string name="t_8108fc2e" formatted="false">Sin conexión con Anthropic.</string>
     <string name="t_81e2a271" formatted="false">Transcripción</string>
+    <string name="t_81f91f70" formatted="false">No se pudo revisar lo dicho sobre la respuesta (%1$s): sigue sonando</string>
     <string name="t_821e233c" formatted="false">Con un permiso, Insertar coloca el texto justo en el cursor, y mantener pulsado un botón de volumen inicia el dictado. Sin él, Dictate &amp; Delegate copia el texto y tú lo pegas.</string>
     <string name="t_8250ae9b" formatted="false">Iniciando sesión en bb…</string>
     <string name="t_82527957" formatted="false">Transcripción guardada en el historial. Abre Dictate &amp; Delegate para copiarla.</string>
@@ -317,22 +349,27 @@
     <string name="t_826621ab" formatted="false">Cuando le hables a tu jefe por su nombre (Ajustes → Jefe de gabinete); si no, toca 🧑‍💼</string>
     <string name="t_82a7b056" formatted="false">El modelo de texto no devolvió nada. Inténtalo de nuevo.</string>
     <string name="t_82bad7d7" formatted="false">Este inicio de sesión no coincide con el iniciado aquí. Inícialo de nuevo.</string>
+    <string name="t_82cf479c" formatted="false">Micrófono en pausa %1$.1f s tras la respuesta (eco)</string>
     <string name="t_83359c2b" formatted="false">Instrucciones para Pulir</string>
     <string name="t_84119bba" formatted="false">No se pudieron guardar los datos cifrados.</string>
     <string name="t_842cec6c" formatted="false">ID de grabación no válido</string>
     <string name="t_84737d17" formatted="false">Llamada con tu chief</string>
+    <string name="t_84cb8b86" formatted="false">Respuesta en espera: transcribiendo lo que dijiste</string>
     <string name="t_84e5353d" formatted="false">Descartar audio guardado</string>
     <string name="t_85004d41" formatted="false">Toca para grabar</string>
     <string name="t_857a0fd3" formatted="false">Al tocar ✨ Pulir · %1$s</string>
     <string name="t_859034c6" formatted="false">Opcional. Si Android no te deja activarlo, ve a Información de la app → ⋮ → Permitir ajustes restringidos y prueba de nuevo.</string>
     <string name="t_863d2a86" formatted="false">🧑‍💼 Jefe</string>
+    <string name="t_86657af4" formatted="false">Sonido ignorado justo tras la respuesta (micrófono en pausa)</string>
     <string name="t_86889c2c" formatted="false">✓  Se creó %1$s (%2$s).</string>
+    <string name="t_86e2c661" formatted="false">Esperando %1$s o Enviar</string>
     <string name="t_874caa6a" formatted="false">El micrófono no está disponible.</string>
     <string name="t_87747dc3" formatted="false">Inicia con el botón de ajustes rápidos o una tecla de volumen; Insertar coloca el texto donde escribes.</string>
     <string name="t_8831703d" formatted="false">Jefe: %1$s</string>
     <string name="t_886029f0" formatted="false">Habilidades de tu jefe</string>
     <string name="t_8860ef62" formatted="false">No se pudo conectar con %1$s. Comprueba la dirección y tu conexión.</string>
     <string name="t_88ea76d0" formatted="false">Termina o descarta primero la grabación pendiente.</string>
+    <string name="t_894a8c42" formatted="false">Llega respuesta</string>
     <string name="t_89b3b099" formatted="false">Autoriza a Dictate &amp; Delegate en tu navegador y vuelve.</string>
     <string name="t_8ab1eddb" formatted="false">✓  Sesión iniciada en %1$s.getbb.app</string>
     <string name="t_8b1b3957" formatted="false">Máximo %1$d archivos adjuntos por dictado.</string>
@@ -341,7 +378,6 @@
     <string name="t_8bec24cc" formatted="false">Comprobar y guardar</string>
     <string name="t_8bf10d56" formatted="false">Descartar</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Añadir</string>
-    <string name="t_8d3af088" formatted="false">Di %1$s para enviar, %2$s para terminar. El botón del auricular también envía. Puedes hablar durante una respuesta para interrumpirla.</string>
     <string name="t_8d8041f9" formatted="false">Tu voz debe ser así de potente respecto al fondo</string>
     <string name="t_8edfe30e" formatted="false">requiere atención</string>
     <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate escribe</string>
@@ -349,19 +385,23 @@
     <string name="t_8fe78547" formatted="false">sin voz</string>
     <string name="t_900e8667" formatted="false">Nada este mes.</string>
     <string name="t_903c36b9" formatted="false">importado</string>
+    <string name="t_9043f94b" formatted="false">Terminado</string>
     <string name="t_9153ca96" formatted="false">%1$s hasta ahora</string>
     <string name="t_918020d9" formatted="false">usuario</string>
     <string name="t_918ca436" formatted="false">bb no pudo aceptar el archivo adjunto (HTTP %1$d).</string>
     <string name="t_91d100de" formatted="false">Adjuntado</string>
+    <string name="t_92824f24" formatted="false">falló la voz (%1$s)</string>
     <string name="t_93fe9d61" formatted="false">Usa la burbuja o abre Dictate &amp; Delegate para controlar el dictado.</string>
     <string name="t_942b3beb" formatted="false">• Tus notas, audios, palabras y plantillas se quedan en este teléfono.\n• Para transcribir lo que dijiste, tu grabación va directa a OpenRouter con tu clave y de ahí al proveedor del modelo de voz. El texto sigue el mismo camino hacia Jev, un modelo rápido que decide si mejorarlo, junto con los nombres de tus plantillas. Al mejorarse, va al modelo de texto con lo que le contaste a Dictate &amp; Delegate sobre ti, tus palabras, la plantilla indicada y lo adjuntado.\n• Si conectas bb, la tarea que pases a tu jefe de gabinete va a tu bb con el texto pegado.\n• Dictate &amp; Delegate no tiene servidor ni recopila nada. OpenRouter y los proveedores gestionan los datos bajo sus propias políticas.</string>
     <string name="t_94476a26" formatted="false">bb no instaló las habilidades del jefe a tiempo. Inténtalo de nuevo.</string>
     <string name="t_946ab421" formatted="false">Buscar modelos</string>
+    <string name="t_946be5c8" formatted="false">Suena la respuesta: dejaste de hablar</string>
     <string name="t_9486247d" formatted="false">Insertado</string>
     <string name="t_9493d3a2" formatted="false">No se envió a tu jefe de gabinete: %1$s A continuación está lo que dijiste.</string>
     <string name="t_9500493c" formatted="false">bb no indicó qué hilo creó.</string>
     <string name="t_95bed80b" formatted="false">Define la dirección web de bb para enlaces en Ajustes → bb.</string>
     <string name="t_95c3fc8c" formatted="false">Opcional: cómo te llama tu jefe</string>
+    <string name="t_973910e0" formatted="false">Reproduciendo respuesta</string>
     <string name="t_9793cae3" formatted="false">rehecha</string>
     <string name="t_980cb9e2" formatted="false">Anthropic tardó demasiado.</string>
     <string name="t_9931e57c" formatted="false">No se pudo iniciar. Comprueba los permisos e inténtalo de nuevo.</string>
@@ -377,6 +417,7 @@
     <string name="t_9bb908f9" formatted="false">Texto</string>
     <string name="t_9bec7d3e" formatted="false">Modelos y proveedores</string>
     <string name="t_9bef8b14" formatted="false">Ideas y diario</string>
+    <string name="t_9c1df3f5" formatted="false">Respuesta en espera de tu pausa (%1$.1f s en silencio)</string>
     <string name="t_9c550f09" formatted="false">Botón o mantener bajar volumen</string>
     <string name="t_9c7b6819" formatted="false">Eliminar audio</string>
     <string name="t_9c9743f1" formatted="false">Necesario para rehacer una nota con un modelo mejor</string>
@@ -385,6 +426,7 @@
     <string name="t_9e4d5639" formatted="false">Los datos sobre ti, tus palabras y la plantilla que nombres se añaden automáticamente.</string>
     <string name="t_9ed229fb" formatted="false">Lo que OpenRouter cobró por cada llamada. Algunas no registraron coste, por lo que el total real es algo mayor.</string>
     <string name="t_9f58abd6" formatted="false">bb no está conectado. Conéctalo en Ajustes → bb.</string>
+    <string name="t_9f6d464d" formatted="false">Envío: tu mensaje ya se había ido (palabra de envío)</string>
     <string name="t_9feb71c0" formatted="false">¿Eliminar tu clave de OpenRouter?</string>
     <string name="t_a0341d02" formatted="false">Primero la transcripción, luego decides tú</string>
     <string name="t_a035c0e5" formatted="false">palabras %1$s  velocidad %2$s</string>
@@ -405,6 +447,7 @@
     <string name="t_a5b51395" formatted="false">Anthropic tuvo un problema (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Conectar bb</string>
     <string name="t_a6416f07" formatted="false">Salir de manos libres</string>
+    <string name="t_a6448af5" formatted="false">Enviado ✓ con el botón Enviar</string>
     <string name="t_a64714a0" formatted="false">Dictate &amp; Delegate usa este modelo para cada nota.</string>
     <string name="t_a6a5d215" formatted="false">Abre Ajustes de Android → Accesibilidad → Dictate &amp; Delegate.</string>
     <string name="t_a6ab7640" formatted="false">Has cerrado sesión en bb. Inicia sesión de nuevo en Ajustes → bb.</string>
@@ -412,17 +455,20 @@
     <string name="t_a72f83aa" formatted="false">Necesita el permiso de accesibilidad: consulta Insertar.</string>
     <string name="t_a75a18d5" formatted="false">No se pudo contactar con %1$s en %2$s: %3$s.</string>
     <string name="t_a75b1302" formatted="false">dirección desconocida</string>
+    <string name="t_aad98ab5" formatted="false">Enviado ✓ antes de terminar la llamada</string>
     <string name="t_aadc023e" formatted="false">No se pudo iniciar el micrófono.</string>
     <string name="t_aaeacf0a" formatted="false">Las palabras cuentan al final de lo que dices; separa varias con comas.</string>
     <string name="t_aafc2622" formatted="false">Aún no hay notas.</string>
     <string name="t_aafdfd52" formatted="false">Pulir usa ahora %1$s</string>
     <string name="t_ab247fbe" formatted="false">Tu voz y texto solo van a los proveedores que elijas. Dictate &amp; Delegate no tiene servidor.</string>
     <string name="t_ab7143b8" formatted="false">Permisos</string>
+    <string name="t_ab754703" formatted="false">Te escucho</string>
     <string name="t_ac224344" formatted="false">Guardada, cifrada · voz, decisiones y Pulir</string>
     <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate usa el permiso de accesibilidad solo para dos cosas: colocar el texto en el cursor al tocar Insertar y detectar cuándo mantienes pulsado el botón de volumen elegido. No solicita eventos ni lee la pantalla; solo busca el campo de texto activo al tocar Insertar. Dictate &amp; Delegate es de código abierto, puedes comprobarlo.</string>
     <string name="t_ac66579e" formatted="false">No se pudo conectar con bb. Inténtalo de nuevo.</string>
     <string name="t_acdb2a77" formatted="false">Modelo para Pulir</string>
     <string name="t_ad007023" formatted="false">Instala las habilidades del jefe en bb si es necesario y crea un hilo llamado «Chief of staff» en Personal (sin proyecto) que las utiliza.</string>
+    <string name="t_ad0affb8" formatted="false">la voz se detuvo</string>
     <string name="t_ad36a70e" formatted="false">Palabras de envío</string>
     <string name="t_ad395bc2" formatted="false">Pega una clave nueva para sustituirla</string>
     <string name="t_ad6a7ed6" formatted="false">✓ Guardado</string>
@@ -433,6 +479,7 @@
     <string name="t_ae754c67" formatted="false">Sobre ti</string>
     <string name="t_aec69fc2" formatted="false">✓  bb responde.</string>
     <string name="t_aec6e5df" formatted="false">Código abierto. Tu propia clave de OpenRouter, sin servidores de Dictate &amp; Delegate de por medio.</string>
+    <string name="t_afa7d7fe" formatted="false">La respuesta sigue: no se dijeron palabras sobre ella</string>
     <string name="t_b01f4f95" formatted="false">Listo</string>
     <string name="t_b048967b" formatted="false">Conecta bb primero.</string>
     <string name="t_b048b7e4" formatted="false">Al pedir un texto, nombrar una plantilla o si el dictado necesita retoques</string>
@@ -440,10 +487,13 @@
     <string name="t_b0ad5840" formatted="false">Aún no hay plantillas.</string>
     <string name="t_b0bc3188" formatted="false">Palabras</string>
     <string name="t_b0c515f3" formatted="false">✓  Activado</string>
+    <string name="t_b0cc93e0" formatted="false">Escribiendo…</string>
     <string name="t_b15fa13c" formatted="false">Sin conexión con %1$s. Comprueba tu conexión a internet.</string>
     <string name="t_b1c2889b" formatted="false">Comprobar habilidades en bb</string>
     <string name="t_b203fda8" formatted="false">Dirección personalizada</string>
     <string name="t_b214280c" formatted="false">Eliminar plantilla</string>
+    <string name="t_b36a2ca5" formatted="false">Respuesta en espera</string>
+    <string name="t_b3a08580" formatted="false">Nada que enviar: no se transcribieron palabras</string>
     <string name="t_b4211199" formatted="false">Unidad de precio no verificada · ver origen</string>
     <string name="t_b48c5f39" formatted="false">Jev · nada empieza por sí solo</string>
     <string name="t_b4c82195" formatted="false">Dictate &amp; Delegate llama a los modelos de voz y texto mediante OpenRouter con tu propia clave. Pagas a OpenRouter por tu consumo; Dictate &amp; Delegate no tiene servidor ni se lleva comisión.</string>
@@ -473,6 +523,8 @@
     <string name="t_bbb4c248" formatted="false">¿Algo más que Dictate &amp; Delegate deba saber?</string>
     <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate conecta con bb mediante su servidor MCP (plugin bb--mcp), que debe estar activado en bb.</string>
     <string name="t_bc1b2887" formatted="false">El servidor ntfy respondió con HTTP %1$d.</string>
+    <string name="t_bc72aa99" formatted="false">Enviado ✓ tras %1$d s de silencio</string>
+    <string name="t_bd0c0093" formatted="false">Palabra de envío detectada sola en los últimos 2 s («%1$s»)</string>
     <string name="t_bdae2794" formatted="false">Se usan para escribir bien nombres y términos al transcribir y procesar.</string>
     <string name="t_be7f9242" formatted="false">No se pudo guardar el historial de transcripciones.</string>
     <string name="t_bed11d96" formatted="false">Texto de tu jefe copiado</string>
@@ -507,6 +559,7 @@
     <string name="t_c7a54a7c" formatted="false">Transcribiendo… Puedes seguir usando otras apps.</string>
     <string name="t_c7ad7feb" formatted="false">Sin conexión con OpenRouter. Comprueba tu conexión a internet y vuelve a intentarlo.</string>
     <string name="t_c8210626" formatted="false">Modelo de texto a voz</string>
+    <string name="t_c8ebf858" formatted="false">%1$s falló (%2$s)</string>
     <string name="t_c96b1a45" formatted="false">Iniciando…</string>
     <string name="t_c997df74" formatted="false">bb rechazó el inicio de sesión: %1$s</string>
     <string name="t_c998a38e" formatted="false">El audio ha caducado o se ha eliminado. El texto sigue guardado.</string>
@@ -521,6 +574,7 @@
     <string name="t_ce96200c" formatted="false">bb ya no acepta esta sesión. Inicia sesión de nuevo en Ajustes → bb.</string>
     <string name="t_ced42332" formatted="false">«%1$s»</string>
     <string name="t_cee0bed5" formatted="false">%1$s respondió con una redirección (HTTP %2$d). Comprueba la dirección.</string>
+    <string name="t_cf3ec448" formatted="false">Sonidos suaves</string>
     <string name="t_cf47d48c" formatted="false">Cancelar: no se transcribe ni se envía nada</string>
     <string name="t_cf584634" formatted="false">Dictado</string>
     <string name="t_cf684db1" formatted="false">OpenRouter no pudo procesar esta petición (HTTP %1$d): %2$s</string>
@@ -531,6 +585,7 @@
     <string name="t_d27e302d" formatted="false">Tu jefe de gabinete lo recibe todo: texto pegado en el mensaje, imágenes y PDF como archivos adjuntos.</string>
     <string name="t_d2be46f0" formatted="false">Esta nota costó %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Cerrar</string>
+    <string name="t_d32bef21" formatted="false">Respuesta en pausa: quizás estás hablando (más alto que su eco)</string>
     <string name="t_d37efb26" formatted="false">Notificaciones</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Enviando…</string>
     <string name="t_d427e0ec" formatted="false">%1$d min</string>
@@ -541,10 +596,11 @@
     <string name="t_d6c42080" formatted="false">Iniciando la llamada…</string>
     <string name="t_d6d7613f" formatted="false">Tu plantilla</string>
     <string name="t_d6dce050" formatted="false">No hay ningún jefe de gabinete configurado. Configura uno en Ajustes → bb.</string>
+    <string name="t_d7020b31" formatted="false">Suena la respuesta: pausaste %1$.1f s; tu turno sigue después</string>
     <string name="t_d79a087e" formatted="false">Ese hilo está archivado en bb. Desarchívalo o elige otro.</string>
+    <string name="t_d7e01719" formatted="false">Respuesta lista · suena cuando pares</string>
     <string name="t_d7e63cc4" formatted="false">Al dictar, un pequeño panel flotará sobre otras apps: toca ■ para parar, y luego Insertar, Mejorar o Jefe. Para permitirlo, Android mostrará una lista de apps: toca Dictate &amp; Delegate, actívalo y vuelve.</string>
     <string name="t_d8427f19" formatted="false">Tu clave de OpenRouter</string>
-    <string name="t_d893f184" formatted="false">Leyendo respuesta</string>
     <string name="t_d90fc528" formatted="false">Cambia el idioma en Ajustes de Android → Aplicaciones → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Palabras para terminar (envía lo anterior y finaliza el manos libres)</string>
     <string name="t_db5195fa" formatted="false">texto pegado</string>
@@ -554,11 +610,13 @@
     <string name="t_dc8ad2bb" formatted="false">Los días sin dictados no cuestan nada.</string>
     <string name="t_dcc7acfb" formatted="false">Tu jefe de gabinete envió texto para insertar</string>
     <string name="t_dcd686af" formatted="false">Inicia Dictate &amp; Delegate y sigue usando cualquier app: lee, busca o cambia. Al parar, tus palabras quedan escritas, listas para insertar donde escribas. Luego decide: ✨ Mejorar las transforma en el texto que necesitas, y tu jefe de gabinete asume tareas.</string>
+    <string name="t_dce1cb9b" formatted="false">Solo se oyó la palabra de envío: nada que enviar</string>
     <string name="t_dcf39d20" formatted="false">Se lo pasa a tu jefe de gabinete en bb, si configuraste uno. Luego, Abrir chat ↗.</string>
     <string name="t_dd6fa894" formatted="false">El texto y los costes se conservan. Las notas ya no se podrán rehacer.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">jefe de gabinete</string>
     <string name="t_ddd7f31e" formatted="false">Créditos de Anthropic usados este mes ≈%1$s (Mejorar con tu clave de Anthropic, a precio de tarifa; no incluido en el total)</string>
+    <string name="t_ddefb7a2" formatted="false">No contó como voz: muy bajo (nivel %1$.0f &lt; %2$.1f× fondo %3$.0f)</string>
     <string name="t_de8e5494" formatted="false">Toca el micrófono para grabar</string>
     <string name="t_def9cb9f" formatted="false">Empezar</string>
     <string name="t_df336a1d" formatted="false">Enlace o ID del hilo (thr_…)</string>
@@ -566,10 +624,12 @@
     <string name="t_dfcb5ec6" formatted="false">1. Toca Iniciar y di una frase.\n2. Toca Parar. Dictate &amp; Delegate la transcribirá.\n3. Toca el cuadro inferior y luego 📥 Insertar en el panel flotante. Tu portapapeles no cambiará.</string>
     <string name="t_dff4964d" formatted="false">Te has quedado sin saldo en OpenRouter. Añade saldo en openrouter.ai y vuelve a intentarlo.</string>
     <string name="t_dff686d8" formatted="false">Súbelos si el ruido u otras personas te interrumpen; bájalos si se pierden tus palabras más suaves. Los eventos recientes a continuación muestran cada decisión con sus niveles.</string>
+    <string name="t_e0f871ec" formatted="false">Palabra de envío oída: tu mensaje ya se había enviado</string>
     <string name="t_e124f150" formatted="false">Por ejemplo: Ada</string>
     <string name="t_e16301de" formatted="false">Anthropic · %1$s</string>
     <string name="t_e17493b2" formatted="false">nada responde en esta dirección</string>
     <string name="t_e17c28b4" formatted="false">Decisiones</string>
+    <string name="t_e19691ff" formatted="false">Responde con la voz de Android: %1$s</string>
     <string name="t_e244f6df" formatted="false">¿Descartar el audio guardado?</string>
     <string name="t_e24b4cba" formatted="false">Error al iniciar sesión: %1$s</string>
     <string name="t_e2530adf" formatted="false">Insertar aquí</string>
@@ -589,16 +649,20 @@
     <string name="t_e6b9caa8" formatted="false">El modelo está ocupado ahora mismo. Espera un momento y vuelve a intentarlo.</string>
     <string name="t_e6d8f947" formatted="false">Tu tema</string>
     <string name="t_e6e6003d" formatted="false">Sesión cerrada en bb.</string>
+    <string name="t_e70fcc33" formatted="false">Enviado ✓</string>
     <string name="t_e7224453" formatted="false">Nueva plantilla</string>
     <string name="t_e75c6468" formatted="false">Añade tu clave de OpenRouter para empezar a dictar</string>
+    <string name="t_e7dda7bb" formatted="false">No se pudieron transcribir %1$.1f s de lo dicho: %2$s</string>
     <string name="t_e8683fe0" formatted="false">Estudios</string>
     <string name="t_e8ef0352" formatted="false">Pulir de nuevo</string>
     <string name="t_e939503f" formatted="false">Añadir palabra o nombre</string>
     <string name="t_e972981e" formatted="false">Pruébalo una vez</string>
+    <string name="t_e9c3da71" formatted="false">su audio no empezó</string>
     <string name="t_ea954889" formatted="false">Continuar</string>
     <string name="t_eaa82cf9" formatted="false">No se reconoció voz. Listo para volver a grabar.</string>
     <string name="t_eb150f22" formatted="false">No se pudo completar esta acción. Comprueba el permiso del micrófono, el almacenamiento disponible y tu clave guardada, y vuelve a intentarlo.</string>
     <string name="t_eb89173a" formatted="false">Abrir ajustes de accesibilidad</string>
+    <string name="t_ec054ecf" formatted="false">Envío ignorado: ya se está enviando</string>
     <string name="t_ec8fbe93" formatted="false">Se eliminarán su texto, versiones, costes y audio. Esto no se puede deshacer.</string>
     <string name="t_ed4646d0" formatted="false">Termina o descarta primero la grabación pendiente</string>
     <string name="t_ed783112" formatted="false">✓  Usando %1$s (%2$s). Se le indicó que use las habilidades.</string>
@@ -622,6 +686,7 @@
     <string name="t_f2cd6d4e" formatted="false">Automático · %1$s</string>
     <string name="t_f37b2ae0" formatted="false">bb no pudo hacerlo: %1$s</string>
     <string name="t_f3856474" formatted="false">bb Connect no tiene ningún servidor llamado «%1$s». Comprueba el usuario y que bb Connect esté activo en bb.</string>
+    <string name="t_f4070e9b" formatted="false">Di %1$s</string>
     <string name="t_f41dc081" formatted="false">✓  Enviado. Debería aparecer en la app de ntfy.</string>
     <string name="t_f443b068" formatted="false">Lee en voz alta las respuestas de tu jefe en el modo manos libres, que por ahora solo está disponible en inglés.</string>
     <string name="t_f48b5876" formatted="false">Modelo de voz a texto</string>
@@ -637,12 +702,14 @@
     <string name="t_f7503f59" formatted="false">Espera a que termine esta nota</string>
     <string name="t_f7508945" formatted="false">Grabación guardada encontrada. Abre Dictate &amp; Delegate para reintentar o descartar.</string>
     <string name="t_f791ca6c" formatted="false">Notas, audio, plantillas, claves, sesión de bb y ajustes</string>
+    <string name="t_f79ac613" formatted="false">«%1$s» tomada como la palabra de envío «%2$s»</string>
     <string name="t_f8964565" formatted="false">Cierra el panel. La nota permanece en Dictate &amp; Delegate.</string>
     <string name="t_f8a28f83" formatted="false">Botón de ajustes rápidos</string>
     <string name="t_f927dded" formatted="false">%1$s grabados</string>
     <string name="t_f9dd979f" formatted="false">✓  Guardado.</string>
     <string name="t_fa57ce65" formatted="false">Solo transcripción</string>
     <string name="t_fa8361bc" formatted="false">Añadir botón</string>
+    <string name="t_faa31491" formatted="false">Transcribiendo…</string>
     <string name="t_fab497fe" formatted="false">Habla donde sea.</string>
     <string name="t_fac75a8c" formatted="false">Saldo y uso en openrouter.ai</string>
     <string name="t_fb6e7c77" formatted="false">3 · Panel flotante</string>
@@ -651,6 +718,7 @@
     <string name="t_fc4b6317" formatted="false">✓  Permitido</string>
     <string name="t_fcaa7d5e" formatted="false">Transcribiendo</string>
     <string name="t_fd25c726" formatted="false">Plantilla guardada</string>
+    <string name="t_fd6e29d9" formatted="false">La respuesta sigue: era su propia voz (eco)</string>
     <string name="t_fdbea202" formatted="false">Abrir chat ↗</string>
     <string name="t_fe0bc00f" formatted="false">Datos en este teléfono</string>
     <string name="t_fe11d138" formatted="false">Nombre</string>

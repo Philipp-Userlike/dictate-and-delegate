@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity android:name="app.driftdictation.TestPadActivity" android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+        <activity android:name="app.driftdictation.WebPadActivity" android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 </manifest>

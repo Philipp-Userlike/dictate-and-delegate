@@ -23,4 +23,18 @@ public class TalkAccessibilityTest {
     // Web editors turn edge spaces into non-breaking ones.
     assertEquals(9, TalkAccessibility.locate("Rich text PASTED", " PASTED", 9));
   }
+
+  @Test
+  public void aPlaceholderReportedAsTheFieldsTextCountsAsEmpty() {
+    String bb = "Ask for a follow-up. @ to mention files, folders, sections, or threads";
+    // The bb app's editor in Chrome: its placeholder comes as the text, and as its label.
+    assertEquals("", TalkAccessibility.own(bb, false, "", bb));
+    assertEquals("", TalkAccessibility.own(bb + "\u200b", false, bb, ""));
+    assertEquals("", TalkAccessibility.own("Message…", false, "Message", ""));
+    assertEquals("", TalkAccessibility.own("anything", true));
+    // Real text stays, also with a placeholder around.
+    assertEquals("I mean, I don't know", TalkAccessibility.own("I mean, I don't know", false, bb, bb));
+    assertEquals("Dear Jana,", TalkAccessibility.own("Dear Jana,", false, "", ""));
+    assertEquals("", TalkAccessibility.own("", false, bb));
+  }
 }

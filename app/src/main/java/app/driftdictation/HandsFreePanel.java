@@ -14,8 +14,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * The hands-free call over other apps, as a call bar: a status dot and short label (Listening,
- * Working…, Reading), send while you can talk, and hang up. Never takes focus; drag it anywhere,
+ * The hands-free call over other apps, as a call bar: a status dot and short label of what's
+ * happening (Listening, Hearing you, Sent ✓, Reply waiting, Reading…), send while you can talk,
+ * and hang up. Never takes focus; drag it anywhere,
  * tap the status to open the full screen; it always stays whole on screen.
  */
 final class HandsFreePanel extends LinearLayout {
@@ -149,27 +150,26 @@ final class HandsFreePanel extends LinearLayout {
   }
 
   /**
-   * The state, short (the full words for TalkBack and on a long press), its colour, and only the
-   * buttons that fit it.
+   * What's happening, short (the full words for TalkBack and on a long press), its colour, and
+   * only the buttons that fit it.
    */
-  void render(HandsFreeSession.Phase phase) {
-    state.setText(
-        switch (phase) {
-          case READING -> tr("Reading");
-          case SENDING -> tr("Sending…");
-          case WORKING -> tr("Working…");
-          default -> tr("Listening");
-        });
-    state.setContentDescription(HandsFreeService.phaseLabel(phase));
-    state.setTooltipText(HandsFreeService.phaseLabel(phase));
-    // Green: you can talk; amber: you can talk, the chief works; violet: a reply plays.
+  void render(HandsFreeSession s) {
+    HandsFreeSession.Phase phase = s.phase();
+    HandsFreeSession.Live live = s.live();
+    state.setText(HandsFreeService.shortLabel(s));
+    state.setContentDescription(HandsFreeService.liveLabel(s));
+    state.setTooltipText(HandsFreeService.liveLabel(s));
+    // Green: you can talk; amber: you can talk, something's on its way or waiting; violet: a
+    // reply plays; grey: the microphone is paused a moment.
     dot.setColor(
-        switch (phase) {
-          case READING -> 0xffb197fc;
-          case SENDING, WORKING -> 0xfff5b84a;
-          default -> 0xff3fd6a1;
-        });
-    send.setVisibility(HandsFreeService.canSend(phase) ? VISIBLE : GONE);
+        live == HandsFreeSession.Live.MUTED
+            ? 0xff9aa0a6
+            : switch (phase) {
+              case READING -> 0xffb197fc;
+              case SENDING, WORKING -> 0xfff5b84a;
+              default -> live == HandsFreeSession.Live.REPLY_WAITING ? 0xfff5b84a : 0xff3fd6a1;
+            });
+    send.setVisibility(HandsFreeService.canSend(s) ? VISIBLE : GONE);
     if (getParent() != null) {
       fit();
       windows.updateViewLayout(this, layout);

@@ -49,6 +49,19 @@ final class HandsFree {
     return Math.max(500, Math.min(15_000, prefs.getInt(PAUSE_MS, DEFAULT_PAUSE_MS)));
   }
 
+  /** Prefs: quiet sounds for the key moments (on by default), and how long a voice model may take. */
+  static final String SOUNDS = "hfSounds", VOICE_WAIT_MS = "hfVoiceWaitMs";
+
+  /**
+   * A voice model slower than this to send a reply's audio is given up for Android's voice:
+   * Kokoro sometimes took 13 s. ElevenLabs answers in about half a second.
+   */
+  static final int DEFAULT_VOICE_WAIT_MS = 1500;
+
+  static int voiceWaitMs(SharedPreferences prefs) {
+    return Math.max(500, Math.min(60_000, prefs.getInt(VOICE_WAIT_MS, DEFAULT_VOICE_WAIT_MS)));
+  }
+
   static int silenceSendMs(SharedPreferences prefs) {
     return Math.max(5_000, Math.min(300_000, prefs.getInt(SILENCE_SEND_MS, DEFAULT_SILENCE_SEND_MS)));
   }
@@ -86,6 +99,42 @@ final class HandsFree {
     return null;
   }
 
+  /**
+   * A part said on its own (one or two words) that sounds like a one-word send word: one letter
+   * off ("ovr", "oh ver"), or a known mishearing ("ova"). The send word, or null. Only for parts
+   * on their own, so "the best day ever" never sends.
+   */
+  static String nearWord(String text, List<String> words) {
+    String n = normalize(text);
+    if (n.isEmpty()) return null;
+    String[] w = n.split(" ");
+    if (w.length > 2) return null;
+    String last = w[w.length - 1], joined = n.replace(" ", "");
+    for (String word : words) {
+      String nw = normalize(word);
+      if (nw.contains(" ") || nw.length() < 4) continue;
+      if (nw.equals("over") && (joined.equals("ova") || joined.equals("ovah"))) return word.trim();
+      // One word on its own, or two that join into it ("oh ver"): never a part with other words.
+      if (w.length == 1 && distance(last, nw) <= 1 || distance(joined, nw) <= 1) return word.trim();
+    }
+    return null;
+  }
+
+  /** Edit distance (insert, delete, change a letter). */
+  static int distance(String a, String b) {
+    int[] prev = new int[b.length() + 1], cur = new int[b.length() + 1];
+    for (int j = 0; j <= b.length(); j++) prev[j] = j;
+    for (int i = 1; i <= a.length(); i++) {
+      cur[0] = i;
+      for (int j = 1; j <= b.length(); j++)
+        cur[j] = Math.min(Math.min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + (a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1));
+      int[] t = prev;
+      prev = cur;
+      cur = t;
+    }
+    return prev[b.length()];
+  }
+
   /** The text without its last n words, and without the punctuation left before them. */
   private static String cut(String text, int n) {
     String t = text.replaceAll("[^\\p{L}\\p{N}]+$", "");
@@ -102,7 +151,11 @@ final class HandsFree {
   static final String GATE = "hfGate", TAKE_MS = "hfTakeMs";
 
   static final double DEFAULT_GATE = 3.0;
-  static final int DEFAULT_TAKE_MS = 1000;
+  /**
+   * Voice needed to take the turn, counted within the last TAKE_WINDOW_MS, so natural speech with
+   * its little gaps counts ("Hi, can you hear me"); 1 s without gaps was too much for it.
+   */
+  static final int DEFAULT_TAKE_MS = 400;
 
   static double gate(SharedPreferences prefs) {
     return Math.max(1.5, Math.min(20, prefs.getFloat(GATE, (float) DEFAULT_GATE)));
@@ -124,12 +177,17 @@ final class HandsFree {
    * Splits a stream of 20 ms frames into stretches of your speech, in three layers: a frame counts
    * if the detector calls it speech (1) and it's at least gate times louder than the measured
    * background (2), so your voice close to the phone counts and distant voices or music mostly
-   * don't. A stretch only counts once it holds minSpeechMs of such frames (3); shorter ones are
-   * noise. It ends after pauseMs without speech, and keeps a little audio before and after it.
-   * Silence in between never goes to the speech model.
+   * don't. A stretch only counts once it holds minSpeechMs of such frames within the last
+   * WINDOW_MS, or a burst of BURST_FRAMES at least BURST times louder than the background (3);
+   * shorter ones are noise. It ends after pauseMs without speech, and keeps a little audio before
+   * and after it. Silence in between never goes to the speech model.
    */
   static final class Segmenter {
-    static final int FRAME_MS = 20, PAD_MS = 300;
+    // Synchronized: the microphone feeds it while Send, the ticker and a barge-in use it too.
+    static final int FRAME_MS = 20, PAD_MS = 300, WINDOW_MS = 1500, BURST_FRAMES = 5;
+    static final double BURST = 10;
+    /** The background is learned fast over the first quiet frames (the default is a guess), then slowly. */
+    static final int LEARN_FRAMES = 50;
 
     interface Listener {
       /** A stretch of speech ended: its 16 kHz 16-bit mono PCM. */
@@ -140,6 +198,12 @@ final class HandsFree {
 
       /** It ended too short: noise, dropped. */
       default void noise(int speechMs, double level, double background) {}
+
+      /**
+       * Something like a voice went on for a while but never was gate times louder than the
+       * background, so it didn't count (only reported, for the reasons on screen).
+       */
+      default void tooQuiet(int ms, double level, double background) {}
     }
 
     private final int pauseFrames, padFrames = PAD_MS / FRAME_MS;
@@ -153,6 +217,16 @@ final class HandsFree {
     private boolean confirmed;
     private double background = 300, peak;
     private long quietMs;
+    // A stretch of sound that's too quiet to count (for the reasons only; it changes nothing).
+    private int nearFrames, nearGap;
+    private double nearPeak;
+    /** Frame numbers of the recent loud frames (within the window), and frames seen in all. */
+    private final java.util.ArrayDeque<Long> voiced = new java.util.ArrayDeque<>();
+    private long frameNo;
+    private int quietFrames;
+    /** The audio of sounds that didn't count, since the last stretch that did: Send writes it down. */
+    private java.io.ByteArrayOutputStream noiseAudio;
+    private long noiseAt;
 
     Segmenter(int pauseMs, Listener listener) {
       this(pauseMs, () -> 200, DEFAULT_GATE, LEVEL, listener);
@@ -167,21 +241,21 @@ final class HandsFree {
     }
 
     /** Milliseconds since the last confirmed speech (or since the start). */
-    long quietMs() {
+    synchronized long quietMs() {
       return quietMs;
     }
 
     /** Speech is going on (it reached minSpeechMs and hasn't ended yet). */
-    boolean speaking() {
+    synchronized boolean speaking() {
       return current != null && confirmed;
     }
 
     /** Something loud started but isn't confirmed speech yet. */
-    boolean candidate() {
+    synchronized boolean candidate() {
       return current != null;
     }
 
-    double background() {
+    synchronized double background() {
       return background;
     }
 
@@ -197,12 +271,20 @@ final class HandsFree {
     }
 
     /** Feeds one 20 ms frame (640 bytes at 16 kHz). */
-    void frame(byte[] frame) {
+    synchronized void frame(byte[] frame) {
       double level = level(frame, frame.length);
       boolean loud = detector.speech(frame, level, background) && level >= background * gate;
-      if (!loud) background = background * 0.995 + level * 0.005; // Follows the quiet frames only.
+      if (!loud) { // Follows the quiet frames only.
+        double a = quietFrames++ < LEARN_FRAMES ? 0.1 : 0.005;
+        background = background * (1 - a) + level * a;
+      }
+      frameNo++;
+      if (loud) voiced.addLast(frameNo);
+      long window = Math.max(WINDOW_MS, minSpeechMs.getAsInt() * 3 / 2) / FRAME_MS;
+      while (!voiced.isEmpty() && voiced.peekFirst() <= frameNo - window) voiced.removeFirst();
       // Two loud frames in a row start a candidate, so a click doesn't.
       streak = loud ? streak + 1 : 0;
+      nearly(loud, level);
       if (current == null) {
         before.addLast(frame.clone());
         while (before.size() > padFrames) before.removeFirst();
@@ -229,24 +311,79 @@ final class HandsFree {
         silentFrames++;
         if (confirmed) quietMs += FRAME_MS;
       }
-      // A candidate that isn't confirmed ends after a short gap; speech after the full pause.
-      if (silentFrames >= (confirmed ? pauseFrames : Math.min(pauseFrames, 500 / FRAME_MS))) finish();
+      // Both end after the pause: a candidate's little gaps (between words) don't end it.
+      if (silentFrames >= pauseFrames) finish();
     }
 
+    /**
+     * Notes sound that's clearly there (half again the background, above the detector's minimum)
+     * but not loud enough to count: once it's gone for half a second after at least 0.3 s of it,
+     * the listener hears it was too quiet. Thresholds stay as they are; this only reports.
+     */
+    private void nearly(boolean loud, double level) {
+      boolean near = !loud && current == null && level > Math.max(600, background * 1.5);
+      if (near) {
+        nearFrames++;
+        nearGap = 0;
+        nearPeak = Math.max(nearPeak, level);
+        return;
+      }
+      if (nearFrames == 0) return;
+      if (loud || current != null) { // It became speech after all.
+        nearFrames = 0;
+        nearPeak = 0;
+        return;
+      }
+      if (++nearGap < 500 / FRAME_MS) return;
+      if (nearFrames * FRAME_MS >= 300) listener.tooQuiet(nearFrames * FRAME_MS, nearPeak, background);
+      nearFrames = 0;
+      nearGap = 0;
+      nearPeak = 0;
+    }
+
+    double gate() {
+      return gate;
+    }
+
+    /** Enough voice within the window, or a clearly loud burst. */
     private void confirm(double level) {
-      if (confirmed || speechFrames * FRAME_MS < minSpeechMs.getAsInt()) return;
+      if (confirmed) return;
+      boolean enough = voiced.size() * FRAME_MS >= minSpeechMs.getAsInt();
+      boolean burst = speechFrames >= BURST_FRAMES && peak >= background * BURST;
+      if (!enough && !burst) return;
       confirmed = true;
       quietMs = 0;
       listener.started(peak, background);
     }
 
-    /** Ends the current stretch now (Send pressed, or the mode ends). */
+    /** Ends the current stretch now (the mode ends). */
     void flush() {
-      if (current != null) finish();
+      flush(false);
+    }
+
+    /**
+     * Ends the current stretch now; with force (Send pressed) a stretch that didn't count yet is
+     * written down anyway, unless it's only a click.
+     */
+    synchronized void flush(boolean force) {
+      if (current == null) return;
+      if (force && speechFrames >= 2) confirmed = true;
+      finish();
+    }
+
+    /**
+     * The sounds that didn't count as speech in the last ten seconds (since the last stretch that
+     * did), or null: Send pressed with nothing written down writes them down. Taken once.
+     */
+    synchronized byte[] takeNoise() {
+      java.io.ByteArrayOutputStream n = noiseAudio;
+      noiseAudio = null;
+      if (n == null || frameNo - noiseAt > 10_000 / FRAME_MS) return null;
+      return n.toByteArray();
     }
 
     /** Forgets everything in progress (a reply was read meanwhile). */
-    void reset() {
+    synchronized void reset() {
       current = null;
       before.clear();
       silentFrames = 0;
@@ -254,6 +391,10 @@ final class HandsFree {
       streak = 0;
       confirmed = false;
       quietMs = 0;
+      nearFrames = nearGap = 0;
+      nearPeak = 0;
+      voiced.clear();
+      noiseAudio = null;
     }
 
     private void finish() {
@@ -267,8 +408,16 @@ final class HandsFree {
       silentFrames = 0;
       speechFrames = 0;
       confirmed = false;
-      if (real) listener.segment(java.util.Arrays.copyOf(all, keep));
-      else listener.noise(ms, peak, background);
+      voiced.clear();
+      if (real) {
+        noiseAudio = null;
+        listener.segment(java.util.Arrays.copyOf(all, keep));
+      } else {
+        if (noiseAudio == null || frameNo - noiseAt > 10_000 / FRAME_MS) noiseAudio = new java.io.ByteArrayOutputStream();
+        if (noiseAudio.size() < 15 * AudioFiles.BYTES_PER_SECOND) noiseAudio.write(all, 0, keep);
+        noiseAt = frameNo;
+        listener.noise(ms, peak, background);
+      }
     }
   }
 }
