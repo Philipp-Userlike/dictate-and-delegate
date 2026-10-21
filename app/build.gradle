@@ -6,7 +6,7 @@ android {
         applicationId 'app.driftdictation'
         minSdk 34
         targetSdk 36
-        versionCode((project.findProperty('versionCode') ?: '41') as int)
+        versionCode((project.findProperty('versionCode') ?: '42') as int)
         versionName project.findProperty('versionName') ?: '3.2.7'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         // OpenRouter's API. Tests point debug builds at a local fake: -PopenrouterUrl=http://127.0.0.1:8797/api/v1

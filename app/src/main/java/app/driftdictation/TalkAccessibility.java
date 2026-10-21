@@ -240,6 +240,8 @@ public final class TalkAccessibility extends AccessibilityService {
     AccessibilityNodeInfo n = field();
     if (n == null) return null;
     String before = text(n);
+    // Text that may be a placeholder: paste at the cursor rather than rewrite the field with it.
+    if (!trusted(web(n), n.getHintText() == null ? "" : n.getHintText().toString(), before)) return pasteAtCursor(context, n, before, text);
     int s = n.getTextSelectionStart(), e = n.getTextSelectionEnd();
     if (s < 0 || e < 0 || s > before.length() || e > before.length()) s = e = before.length();
     if (s > e) {
@@ -261,6 +263,34 @@ public final class TalkAccessibility extends AccessibilityService {
     int at = locate(now, earlier.text(), earlier.start());
     if (at < 0) return null;
     return put(context, n, now, at, at + earlier.text().length(), text);
+  }
+
+  /** Is the field web content (Chromium: Chrome, WebView, a web app)? */
+  static boolean web(AccessibilityNodeInfo n) {
+    Bundle extras = n.getExtras();
+    return extras != null && extras.containsKey("AccessibilityNodeInfo.chromeRole");
+  }
+
+  /**
+   * Can a field's text be spliced into and written back whole? Not a web field's with no hint:
+   * a web editor whose placeholder is drawn by CSS (the bb app's, ::before) reports the
+   * placeholder as its text, with nothing telling it apart. A web field that names its hint, a
+   * native field or an empty one can be.
+   */
+  static boolean trusted(boolean web, String hint, String text) {
+    return !web || !hint.isEmpty() || text.isEmpty();
+  }
+
+  /**
+   * Pastes at the field's own cursor (replacing its selection), without reading or rewriting what's
+   * in it: needs the clipboard. Null if the app refused.
+   */
+  private Inserted pasteAtCursor(Context context, AccessibilityNodeInfo n, String before, String text) {
+    DictationService.copy(context, text);
+    if (!n.performAction(AccessibilityNodeInfo.ACTION_PASTE)) return null;
+    String after = settle(n, before);
+    if (after.equals(before)) return null;
+    return new Inserted(n, text, locate(after, text, -1), true);
   }
 
   /** Where the inserted text is now: at its old place, or its only occurrence; -1 if gone. */

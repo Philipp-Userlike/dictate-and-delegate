@@ -37,4 +37,14 @@ public class TalkAccessibilityTest {
     assertEquals("Dear Jana,", TalkAccessibility.own("Dear Jana,", false, "", ""));
     assertEquals("", TalkAccessibility.own("", false, bb));
   }
+
+  @Test
+  public void aWebFieldsTextIsOnlyRewrittenWhenItCantBeAPlaceholder() {
+    // A web editor with a CSS placeholder: its "text" may be the placeholder, so paste instead.
+    assertFalse(TalkAccessibility.trusted(true, "", "Ask for a follow-up. @ to mention files\n"));
+    // A web field naming its hint, an empty one, a native one: spliced as before.
+    assertTrue(TalkAccessibility.trusted(true, "Ask for a follow-up", "Hi Jana,"));
+    assertTrue(TalkAccessibility.trusted(true, "", ""));
+    assertTrue(TalkAccessibility.trusted(false, "", "Dear Jana,"));
+  }
 }

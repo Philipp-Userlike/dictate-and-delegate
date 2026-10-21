@@ -124,13 +124,21 @@ public class PanelTest {
 
   /** The test pad's text field, with this text in it and the cursor at its end. */
   UiObject2 pad(String text) throws Exception {
-    shell("am start -W -n app.driftdictation.test/app.driftdictation.TestPadActivity");
+    shell("am start -W --activity-clear-task -n app.driftdictation.test/app.driftdictation.TestPadActivity"); // Alone: no web pad below it.
     UiObject2 field = find(By.clazz("android.widget.EditText"), "the test pad's field");
     field.setText(text);
     field.click();
     Thread.sleep(400);
     device.pressKeyCode(KeyEvent.KEYCODE_MOVE_END);
     Thread.sleep(300);
+    // The keyboard sometimes trims a trailing space as the field gets focus: put it back.
+    if (!text.equals(padText())) {
+      field.setText(text);
+      Thread.sleep(300);
+      device.pressKeyCode(KeyEvent.KEYCODE_MOVE_END);
+      Thread.sleep(300);
+    }
+    assertEquals("the pad's text before inserting", text, padText());
     return field;
   }
 
@@ -278,27 +286,49 @@ public class PanelTest {
     assertEquals("um so see you at ten I mean eleven", e.json.optString("original"));
   }
 
-  @Test
-  public void insertIntoAnEmptyWebEditorLeavesItsPlaceholderOut() throws Exception {
-    // A real message to the chief began with the bb editor's placeholder: Chrome reports it as
-    // the empty field's text.
+  /**
+   * Inserts into a web field (WebPadActivity: kind, with text in it already) and returns what the
+   * field holds afterwards. A real message began with the bb editor's placeholder: Chromium
+   * reports an empty web field's placeholder as its text.
+   */
+  String insertIntoWebField(String kind, String already) throws Exception {
+    TestServer.reset();
     TestServer.transcripts("I mean, I don't know");
     TestServer.decide(0.1, 0, "none");
-    shell("am start -W -n app.driftdictation.test/app.driftdictation.WebPadActivity");
-    UiObject2 field = find(By.clazz("android.widget.EditText"), "the web editor");
+    // A fresh page each time; spaces in the text go as _ (the shell command isn't quoted).
+    shell("am start -W --activity-clear-task -n app.driftdictation.test/app.driftdictation.WebPadActivity --es kind " + kind
+        + (already.isEmpty() ? "" : " --es text " + already.replace(' ', '_')));
+    UiObject2 field = find(By.clazz("android.widget.EditText"), "the web field");
     field.click();
     Thread.sleep(800);
     dictate();
     find("Insert").click();
+    String[] now = {null};
     until(
-        "the transcript alone is in the web editor",
+        "the transcript is in the " + kind + " field",
         () -> {
           UiObject2 f = device.findObject(By.clazz("android.widget.EditText"));
-          String t = f == null ? null : f.getText();
-          return t != null && t.contains("I mean, I don't know");
+          now[0] = f == null ? null : f.getText();
+          return now[0] != null && now[0].contains("I mean, I don't know");
         });
-    String t = device.findObject(By.clazz("android.widget.EditText")).getText();
-    assertFalse(t, t.contains("Ask for a follow-up"));
+    return now[0];
+  }
+
+  @Test
+  public void insertIntoEmptyWebFieldsLeavesTheirPlaceholderOut() throws Exception {
+    for (String kind : new String[] {"textarea", "aria", "css"}) {
+      String t = insertIntoWebField(kind, "");
+      assertEquals(kind + ": " + t, "I mean, I don't know", t.trim());
+    }
+  }
+
+  @Test
+  public void insertIntoWebFieldsWithTextStillGoesAtTheCursor() throws Exception {
+    for (String kind : new String[] {"textarea", "aria", "css"}) {
+      String t = insertIntoWebField(kind, "Hi Jana, ");
+      // A web editor drops the space at the end of its text (HTML): either is right.
+      assertTrue(kind + ": " + t, t.replace('\u00a0', ' ').trim().matches("Hi Jana, ?I mean, I don't know"));
+    }
   }
 
   @Test
