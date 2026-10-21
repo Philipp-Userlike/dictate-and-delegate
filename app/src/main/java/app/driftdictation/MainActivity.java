@@ -3164,7 +3164,7 @@ public final class MainActivity extends Activity {
     ui.add(
         content,
         ui.text(
-            tr("Say %1$s to send, %2$s to end. The headset button sends too. A reply waits while you talk and plays when you pause; talk over it to stop it, and it plays again later.",
+            tr("Talk, then pause: when you're clearly done (a question asked, %1$s), it's sent; say %2$s to end. Send and the headset button send at once. A reply waits while you talk and plays when you pause; talk over it to stop it, and it plays again later.",
                 quoteList(HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)),
                 quoteList(HandsFree.list(HandsFree.endSetting(prefs)))),
             13,
@@ -3247,10 +3247,10 @@ public final class MainActivity extends Activity {
 
   /** Settings → Hands-free: the words, the timing and the voice. */
   private void handsFreeSettingsPage() {
-    heading(tr("Hands-free"), tr("Hands-free settings"), tr("Words count at the end of what you say; separate several with commas."));
+    heading(tr("Hands-free"), tr("Hands-free settings"), tr("At each longer pause Jev decides whether you're done; these words are clear cues for it (also used if Jev can't be asked). Separate several with commas."));
     wordsField(tr("Send words"), HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND);
     wordsField(tr("End words (send what came before, then end hands-free)"), HandsFree.END_WORDS, HandsFree.DEFAULT_END);
-    secondsField(tr("Pause before a part is written down (seconds)"), HandsFree.PAUSE_MS, HandsFree.pauseMs(prefs));
+    secondsField(tr("Pause after which it checks whether you're done (seconds)"), HandsFree.PAUSE_MS, HandsFree.pauseMs(prefs));
     secondsField(tr("Send anyway after this much silence (seconds)"), HandsFree.SILENCE_SEND_MS, HandsFree.silenceSendMs(prefs));
     ui.add(content, ui.strong(tr("Telling your voice from the background"), 15), 24);
     ui.add(

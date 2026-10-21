@@ -171,7 +171,7 @@ public final class HandsFreeService extends Service {
             HandsFree.list(HandsFree.endSetting(prefs)),
             wav -> {
               OpenRouter.Result r = new OpenRouter(this).transcribe(wav, model, hints);
-              // Parts, their last 2 s and whole turns are written down on different threads.
+              // Turns and words said over a reply are written down on different threads.
               synchronized (this) {
                 seconds += (wav.length - 44) / (double) AudioFiles.BYTES_PER_SECOND;
                 if (r.cost() == null) unpriced = true;
@@ -180,6 +180,7 @@ public final class HandsFreeService extends Service {
                   callCost = callCost.add(r.cost());
                 }
               }
+              event(String.format(java.util.Locale.ROOT, "speech model %s: %.1f s, %s", model, (wav.length - 44) / (double) AudioFiles.BYTES_PER_SECOND, r.cost() == null ? "cost unknown" : "$" + r.cost().stripTrailingZeros().toPlainString()));
               return r.text();
             },
             said -> {
@@ -245,8 +246,18 @@ public final class HandsFreeService extends Service {
             },
             () -> main.post(this::changed));
     session.onEvent(this::event);
-    session.wholeTurn = true;
-    session.tailCheck = true;
+    // At each longer pause Jev says whether the turn is done (sent) or you want to end the call.
+    java.util.List<String> sendWords = session.sendWords, endWords = session.endWords;
+    session.judge =
+        said -> {
+          HandsFreeSession.Verdict v = Jev.turn(this, said, sendWords, endWords);
+          if (v.cost() != null)
+            synchronized (this) {
+              cost = cost.add(v.cost());
+              callCost = callCost.add(v.cost());
+            }
+          return v;
+        };
     session.cues = c -> prefs.getBoolean(HandsFree.SOUNDS, true) && cues.play(c);
     if (!choice.model().isEmpty()) voice.warm();
     callCost = BigDecimal.ZERO;
@@ -595,8 +606,8 @@ public final class HandsFreeService extends Service {
     HandsFreeSession.Live live = s.live();
     return switch (live) {
       case HEARING -> tr("Hearing you");
-      case WRITING -> s.writingMs() >= 3000 ? tr("Writing down… (%1$d s)", s.writingMs() / 1000) : tr("Writing down…");
-      case WAITING_SEND -> tr("Waiting for %1$s or Send", quoted(s.sendWords));
+      case WRITING -> s.writingMs() >= 3000 ? tr("Checking whether you're done… (%1$d s)", s.writingMs() / 1000) : tr("Checking whether you're done…");
+      case WAITING_SEND -> tr("Listening · not sent yet");
       case SENDING -> tr("Sending…");
       case SENT -> tr("Sent ✓");
       case WAITING_CHIEF -> tr("Waiting for the chief · you can talk");
@@ -614,8 +625,8 @@ public final class HandsFreeService extends Service {
   static String shortLabel(HandsFreeSession s) {
     return switch (s.live()) {
       case HEARING -> tr("Hearing you");
-      case WRITING -> s.writingMs() >= 3000 ? tr("Writing… %1$d s", s.writingMs() / 1000) : tr("Writing…");
-      case WAITING_SEND -> tr("Say %1$s", quoted(s.sendWords.isEmpty() ? java.util.List.of() : s.sendWords.subList(0, 1)));
+      case WRITING -> s.writingMs() >= 3000 ? tr("Checking… %1$d s", s.writingMs() / 1000) : tr("Checking…");
+      case WAITING_SEND -> tr("Not sent yet");
       case SENDING -> tr("Sending…");
       case SENT -> tr("Sent ✓");
       case WAITING_CHIEF -> tr("Working…");
@@ -627,12 +638,6 @@ public final class HandsFreeService extends Service {
       case ENDED -> tr("Ended");
       default -> tr("Listening");
     };
-  }
-
-  private static String quoted(java.util.List<String> words) {
-    StringBuilder out = new StringBuilder();
-    for (String w : words) out.append(out.length() == 0 ? "" : ", ").append('"').append(w).append('"');
-    return out.length() == 0 ? "–" : out.toString();
   }
 
   private PendingIntent action(String a, int code) {

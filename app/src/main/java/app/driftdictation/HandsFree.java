@@ -25,17 +25,18 @@ final class HandsFree {
   /** Prefs keys. */
   static final String SEND_WORDS = "hfSendWords",
       END_WORDS = "hfEndWords",
-      PAUSE_MS = "hfPauseMs",
+      PAUSE_MS = "hfTurnPauseMs",
       SILENCE_SEND_MS = "hfSilenceSendMs",
       VOICE = "hfVoice";
 
   /** One English word per action by default; each setting may hold several, comma-separated. */
   static final String DEFAULT_SEND = "over", DEFAULT_END = "end the call";
   /**
-   * A short pause ends a part: it's written down then, and a send or end word at its end acts at
-   * once. Each part is transcribed once, so short parts cost the same as one long one.
+   * A pause this long ends a part of your turn: then the whole turn so far is written down and
+   * Jev asked whether you're done (a new key: the old setting was the much shorter pause after
+   * which each part was written down on its own).
    */
-  static final int DEFAULT_PAUSE_MS = 800, DEFAULT_SILENCE_SEND_MS = 30_000;
+  static final int DEFAULT_PAUSE_MS = 1800, DEFAULT_SILENCE_SEND_MS = 30_000;
 
   static List<String> words(SharedPreferences prefs, String key, String fallback) {
     return list(prefs.getString(key, fallback));
@@ -100,42 +101,6 @@ final class HandsFree {
     return null;
   }
 
-  /**
-   * A part said on its own (one or two words) that sounds like a one-word send word: one letter
-   * off ("ovr", "oh ver"), or a known mishearing ("ova"). The send word, or null. Only for parts
-   * on their own, so "the best day ever" never sends.
-   */
-  static String nearWord(String text, List<String> words) {
-    String n = normalize(text);
-    if (n.isEmpty()) return null;
-    String[] w = n.split(" ");
-    if (w.length > 2) return null;
-    String last = w[w.length - 1], joined = n.replace(" ", "");
-    for (String word : words) {
-      String nw = normalize(word);
-      if (nw.contains(" ") || nw.length() < 4) continue;
-      if (nw.equals("over") && (joined.equals("ova") || joined.equals("ovah"))) return word.trim();
-      // One word on its own, or two that join into it ("oh ver"): never a part with other words.
-      if (w.length == 1 && distance(last, nw) <= 1 || distance(joined, nw) <= 1) return word.trim();
-    }
-    return null;
-  }
-
-  /** Edit distance (insert, delete, change a letter). */
-  static int distance(String a, String b) {
-    int[] prev = new int[b.length() + 1], cur = new int[b.length() + 1];
-    for (int j = 0; j <= b.length(); j++) prev[j] = j;
-    for (int i = 1; i <= a.length(); i++) {
-      cur[0] = i;
-      for (int j = 1; j <= b.length(); j++)
-        cur[j] = Math.min(Math.min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + (a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1));
-      int[] t = prev;
-      prev = cur;
-      cur = t;
-    }
-    return prev[b.length()];
-  }
-
   /** The text without its last n words, and without the punctuation left before them. */
   private static String cut(String text, int n) {
     String t = text.replaceAll("[^\\p{L}\\p{N}]+$", "");
@@ -189,6 +154,9 @@ final class HandsFree {
     static final double BURST = 10;
     /** The background is learned fast over the first quiet frames (the default is a guess), then slowly. */
     static final int LEARN_FRAMES = 50;
+
+    /** How fast the background follows quieter frames down (half way in about 0.3 s). */
+    static final double FALL = 0.05;
 
     interface Listener {
       /** A stretch of speech ended: its 16 kHz 16-bit mono PCM. */
@@ -276,7 +244,9 @@ final class HandsFree {
       double level = level(frame, frame.length);
       boolean loud = detector.speech(frame, level, background) && level >= background * gate;
       if (!loud) { // Follows the quiet frames only.
-        double a = quietFrames++ < LEARN_FRAMES ? 0.1 : 0.005;
+        // Fast at first, and fast down always: the noise at the start of a call (or any loud
+        // spell) passes, and the background mustn't stay up with it. Slowly up.
+        double a = quietFrames++ < LEARN_FRAMES ? 0.1 : level < background ? FALL : 0.005;
         background = background * (1 - a) + level * a;
       }
       frameNo++;

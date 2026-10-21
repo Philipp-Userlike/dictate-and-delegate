@@ -95,12 +95,12 @@ public class HandsFreeFlowTest {
 
   @Test
   public void talkSendByWordHearTheReplyThenEndByWord() throws Exception {
-    // Each part, then the whole turn again in one pass when it's sent, then the end phrase.
+    // At each longer pause the whole turn so far is written down and Jev asked whether it's done.
     TestServer.transcripts(
         "I've been thinking about the trip.",
-        "Book a table for Friday. Over.",
         "I've been thinking about the trip, book a table for Friday. Over.",
         "End the call.");
+    TestServer.turns("unfinished", "over", "end");
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
     talk();
@@ -115,11 +115,15 @@ public class HandsFreeFlowTest {
     Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(tell);
     assertTrue(tell, m.find());
     String request = m.group(1);
-    // Each part transcribed once, and the whole turn once more: three transcriptions so far.
+    // The turn written down at each of its two pauses, and Jev asked each time.
     JSONArray r = TestServer.requests();
-    int transcriptions = 0;
-    for (int i = 0; i < r.length(); i++) if (r.getJSONObject(i).getString("kind").equals("transcribe")) transcriptions++;
-    assertEquals(3, transcriptions);
+    int transcriptions = 0, decisions = 0;
+    for (int i = 0; i < r.length(); i++) {
+      if (r.getJSONObject(i).getString("kind").equals("transcribe")) transcriptions++;
+      if (r.getJSONObject(i).getString("kind").equals("decide")) decisions++;
+    }
+    assertEquals(2, transcriptions);
+    assertEquals(2, decisions);
     // The note keeps it, with the chief's thread.
     try (HistoryStore h = new HistoryStore(context)) {
       HistoryEntry e = h.list(1, 0).get(0);
@@ -143,7 +147,8 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.READING, "reading the reply");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after reading");
     // Reading it cost $0.0001 (the fake's generation); the note of that message has it, on top of
-    // the three transcriptions ($0.001 each), and the call total counts both.
+    // the two transcriptions ($0.001 each) and Jev's two answers ($0.00002 each); the call total
+    // counts them all.
     until(
         () -> {
           try (HistoryStore h = new HistoryStore(context)) {
@@ -154,14 +159,14 @@ public class HandsFreeFlowTest {
         "the voice's cost on the note");
     try (HistoryStore h = new HistoryStore(context)) {
       HistoryEntry e = h.list(1, 0).get(0);
-      assertEquals(0, new java.math.BigDecimal("0.0031").compareTo(e.cost()));
+      assertEquals(0, new java.math.BigDecimal("0.00214").compareTo(e.cost()));
       assertEquals("hexgrad/kokoro-82m", e.json.optString("voiceModel"));
       JSONArray steps = e.json.getJSONArray("steps");
       assertEquals("voice", steps.getJSONObject(steps.length() - 1).getString("kind"));
       assertTrue(e.json.getJSONArray("handsFreeLog").length() > 0);
       assertFalse(e.json.optString("call").isEmpty());
     }
-    assertEquals(0, new java.math.BigDecimal("0.0031").compareTo(HandsFreeService.callCost));
+    assertEquals(0, new java.math.BigDecimal("0.00214").compareTo(HandsFreeService.callCost));
     int speech = 0;
     JSONArray all = TestServer.requests();
     for (int i = 0; i < all.length(); i++) if (all.getJSONObject(i).getString("kind").equals("speech")) speech++;
@@ -178,6 +183,7 @@ public class HandsFreeFlowTest {
   @Test
   public void theScreenStartsSendsAndEnds() throws Exception {
     TestServer.transcripts("Remind me to call Jana");
+    TestServer.turns("unfinished"); // Not done at the pause: Send sends it.
     context.startActivity(
         new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     UiObject2 entry = device.wait(Until.findObject(By.text("🎧 Hands-free with your chief")), 8000);
@@ -282,6 +288,8 @@ public class HandsFreeFlowTest {
     TestServer.transcripts(
         "Quick test call: is the Atlantic bigger than the Indian Ocean? Answer in one short sentence. Over.",
         "And which one is deeper? One short sentence");
+    // The first turn ends at its pause (done), the second isn't done there and goes by the button.
+    TestServer.turns("question", "unfinished");
     // Only this call's events count: the log goes on across calls.
     HandsFreeService.logFile(context).delete();
     try {
@@ -393,7 +401,7 @@ public class HandsFreeFlowTest {
     // The dictation itself left no note and no saved audio.
     assertFalse(DictationService.audio(context).exists());
     // The call floats: its panel shows the state and End.
-    assertNotNull(device.wait(Until.findObject(By.text("Say \"over\"")), 5000));
+    assertNotNull(device.wait(Until.findObject(By.text("Not sent yet")), 5000));
     assertNotNull(device.wait(Until.findObject(By.desc("End hands-free")), 5000));
     // Exactly where the dictation panel was, and its own place stays as it was.
     assertArrayEquals(dictationPanel, HandsFreeService.panelPosition());
@@ -478,6 +486,7 @@ public class HandsFreeFlowTest {
     device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
     prefs.edit().putInt(HandsFreePanel.X, 40).putInt(HandsFreePanel.Y, 1500).commit();
     TestServer.transcripts("Book a table for Friday. Over.", "Also check the train");
+    TestServer.turns("over", "unfinished");
     context.startActivity(
         new Intent(context, MainActivity.class).putExtra("open", "handsfree").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     UiObject2 start = device.wait(Until.findObject(By.text("Start hands-free")), 8000);
@@ -529,7 +538,9 @@ public class HandsFreeFlowTest {
 
   @Test
   public void talkingOverAReplyInterruptsItAndYourMessageSaysWhatYouHeard() throws Exception {
+    // The message; your words over the reply (not done yet); then "over" after them.
     TestServer.transcripts("Book a table for Friday. Over.", "Hold on, book the train instead", "Over.");
+    TestServer.turns("over", "unfinished", "over");
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
     talk();

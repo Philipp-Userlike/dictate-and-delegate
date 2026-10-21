@@ -135,6 +135,23 @@ final class HandsFreeSession {
     String transcribe(byte[] wav) throws Exception;
   }
 
+  /**
+   * Is your turn done? Asked at each longer pause with everything you said in it so far (Jev).
+   * Throws when it can't tell (failed, too slow).
+   */
+  interface Judge {
+    Verdict judge(String said) throws Exception;
+  }
+
+  /**
+   * Jev's answer: where you are (over, question, request, end, unfinished, more), how sure it is
+   * that the turn is done and that you want to end the call, and what asking cost (null unknown).
+   */
+  record Verdict(String choice, double send, double end, java.math.BigDecimal cost) {}
+
+  /** At these probabilities a turn is sent, or the call ended, without a word from you. */
+  static final double SEND_AT = 0.7, END_AT = 0.8;
+
   interface Sender {
     /** Sends a message to the chief; returns its request ID. */
     String send(String said) throws Exception;
@@ -217,18 +234,22 @@ final class HandsFreeSession {
       voices = Executors.newSingleThreadExecutor(),
       tails = Executors.newSingleThreadExecutor();
   /**
-   * Each part is written down on its own for the screen and the send word; with wholeTurn, a turn
-   * of several parts is written down again in one pass when it's sent (like a dictation: better,
-   * with the context), and that's the text that goes. With tailCheck, the last 2 s of a longer
-   * part are written down on their own too, in case the send word got lost at its end.
+   * Your turn: nothing is written down while you talk. Its audio is collected part by part (a
+   * part ends at a longer pause); at each such pause the whole turn so far is written down in one
+   * pass and the judge (Jev) is asked whether you're done. Null judge: the send and end words.
    */
-  volatile boolean wholeTurn, tailCheck;
-  /** The audio of this turn's parts, in order (under its own lock); talked over a reply: no pass. */
+  volatile Judge judge;
+  /** The audio of this turn's parts, in order (under its lock), and what changes it counts. */
   private final List<byte[]> turnAudio = new ArrayList<>();
-  private volatile boolean turnBarged;
-  /** A part that took this long to be written down is shown as slow. */
+  private int turnVersion;
+  /** The last check's text and the turn version it was for: Send right after reuses it. */
+  private String checkedText = "";
+  private int checkedVersion = -1;
+  /** Words of your turn said over a reply (written down then): they come before its audio. */
+  private volatile String turnPrefix = "";
+  /** Writing down took this long: shown as slow. */
   static final long SLOW_WRITING_MS = 4000;
-  /** Writing down started (for the live line's seconds), 0 when nothing is. */
+  /** A check (writing down, then Jev) started (for the live line's seconds), 0 when none runs. */
   private volatile long writingSince;
   /** Messages handed to the outbox and not delivered yet. */
   private final AtomicInteger outgoing = new AtomicInteger();
@@ -243,7 +264,7 @@ final class HandsFreeSession {
   private final List<String> requests = new ArrayList<>();
   /** Request → {replies so far, sent at}: for "Chief is working". */
   private final java.util.Map<String, long[]> working = new java.util.HashMap<>();
-  /** Stretches handed to the speech model and not back yet. */
+  /** Checks of your turn (writing down, Jev) queued or running. */
   private final AtomicInteger transcribing = new AtomicInteger();
   private volatile State state = State.LISTENING;
   private volatile String pending = "", status = "", error = "", reply = "";
@@ -325,9 +346,9 @@ final class HandsFreeSession {
             detector,
             new HandsFree.Segmenter.Listener() {
               public void segment(byte[] pcm) {
-                transcribing.incrementAndGet();
-                long at = clock.getAsLong();
-                execute(() -> heard(pcm, at), () -> transcribing.decrementAndGet());
+                addPart(pcm);
+                // A longer pause: is the turn done? With Send pressed: it goes, no question.
+                check(sendAfterFlush ? "button" : "pause");
               }
 
               public void started(double level, double background) {
@@ -346,7 +367,7 @@ final class HandsFreeSession {
                 if (speechMs >= 100)
                   reason("Didn't count as speech: too short (%1$d ms, %2$d ms needed)", speechMs, floorIsYours() ? SHORT_MS : takeMs);
                 // Send now during a sound too short to count: what was said before still goes.
-                if (sendAfterFlush) execute(() -> send(pending, "button"), null);
+                if (sendAfterFlush) check("button");
               }
 
               public void tooQuiet(int ms, double level, double background) {
@@ -412,7 +433,7 @@ final class HandsFreeSession {
     if (transcribing.get() > 0) return Live.WRITING;
     if (sendPressed || outgoing.get() > 0) return Live.SENDING;
     if (held() > 0) return voiceReady ? Live.REPLY_WAITING : Live.REPLY_COMING;
-    if (!pending.isEmpty()) return Live.WAITING_SEND;
+    if (hasTurn()) return Live.WAITING_SEND;
     if (now - deliveredAt < SENT_SHOWN_MS) return Live.SENT;
     synchronized (this) {
       for (long[] w : working.values()) if (w[0] < 2 && now - w[1] < WORKING_MS) return Live.WAITING_CHIEF;
@@ -480,7 +501,7 @@ final class HandsFreeSession {
 
   /** Is your turn going on: speaking, being written down, unsent text, or going out? */
   private boolean floorIsYours() {
-    return takenByYou || segmenter.speaking() || transcribing.get() > 0 || !pending.isEmpty() || outgoing.get() > 0;
+    return takenByYou || segmenter.speaking() || transcribing.get() > 0 || hasTurn() || outgoing.get() > 0;
   }
 
   Floor floor() {
@@ -653,9 +674,13 @@ final class HandsFreeSession {
     }
     prepare(again);
     reason("Reply stopped: you talked over it. It plays again from \"%1$s\" at your next pause", firstWords(rest, 6));
-    for (byte[] f : more) segmenter.frame(f); // What you went on saying meanwhile.
-    turnBarged = true; // The snippet has the reply in it too: no second pass for this turn.
-    took(text, 0);
+    // Your words over the reply start your turn (written down already: the snippet has the reply
+    // in it too, so it isn't written down again); then what you went on saying meanwhile.
+    turnPrefix = (turnPrefix + " " + text).trim();
+    pending = (pending + " " + text).trim();
+    listener.changed();
+    for (byte[] f : more) segmenter.frame(f);
+    if (!segmenter.candidate()) check("pause"); // You stopped already: is that all?
     readNext();
   }
 
@@ -746,9 +771,9 @@ final class HandsFreeSession {
       finishReading(token, false, started ? tr("it played far too long") : tr("its audio didn't start"));
       return;
     }
-    if (state == State.LISTENING && !pending.isEmpty() && !segmenter.candidate() && transcribing.get() == 0
+    if (state == State.LISTENING && hasTurn() && !segmenter.candidate() && transcribing.get() == 0
         && segmenter.quietMs() >= silenceSendMs)
-      execute(() -> send(pending, "silence"), null);
+      check("silence");
     readNext();
   }
 
@@ -768,9 +793,8 @@ final class HandsFreeSession {
     if (pcm.length == 0) return;
     log(String.format(java.util.Locale.ROOT, "started from a dictation (%.1f s)", pcm.length / (double) AudioFiles.BYTES_PER_SECOND));
     takenByYou = true;
-    transcribing.incrementAndGet();
-    long at = clock.getAsLong();
-    execute(() -> heard(pcm, at), () -> transcribing.decrementAndGet());
+    addPart(pcm);
+    check("seed"); // Shown; you go on talking, so not judged yet.
   }
 
   /**
@@ -794,19 +818,17 @@ final class HandsFreeSession {
     }
     // Sounds that didn't count as speech just before: Send means they were meant, so they're
     // written down and sent.
-    byte[] noise = state == State.LISTENING && pending.isEmpty() && transcribing.get() == 0 && !segmenter.candidate() ? segmenter.takeNoise() : null;
+    byte[] noise = state == State.LISTENING && !hasTurn() && transcribing.get() == 0 && !segmenter.candidate() ? segmenter.takeNoise() : null;
     if (noise != null) {
       sendPressed = true;
-      sendAfterFlush = true;
       takenByYou = true;
       log(String.format(java.util.Locale.ROOT, "send pressed: writing down the last %.1f s of sounds that didn't count as speech", noise.length / (double) AudioFiles.BYTES_PER_SECOND));
       reason("Send: writing down what didn't count as speech, then it goes");
-      transcribing.incrementAndGet();
-      long at = clock.getAsLong();
-      execute(() -> heard(noise, at), () -> transcribing.decrementAndGet());
+      addPart(noise);
+      check("button");
       return;
     }
-    if (pending.isEmpty() && transcribing.get() == 0 && !segmenter.candidate()) {
+    if (!hasTurn() && transcribing.get() == 0 && !segmenter.candidate()) {
       if (state == State.READING) {
         log("send pressed while a reply is read: nothing of yours to send (talk over the reply to interrupt it)");
         reason("Send ignored: a reply is playing and you have nothing unsent");
@@ -824,11 +846,11 @@ final class HandsFreeSession {
       sendAfterFlush = true;
       segmenter.flush(true); // Written down even if it didn't count as speech yet.
     } else {
-      boolean wait = transcribing.get() > 0;
-      // Your unsent words go also while a reply plays: sending doesn't stop it.
-      log("send pressed" + (wait ? ": goes once what you said is written down" : "") + (state == State.READING ? " (a reply plays on)" : ""));
-      if (wait) reason("Send: goes once what you said is written down");
-      execute(() -> send(pending, "button"), () -> sendPressed = false);
+      // Your unsent words go also while a reply plays: sending doesn't stop it. Written down
+      // first (after a check that's running), never judged: Send always sends.
+      log("send pressed: writing down your turn, then it goes" + (state == State.READING ? " (a reply plays on)" : ""));
+      reason("Send: writing down your turn, then it goes");
+      check("button");
     }
   }
 
@@ -848,7 +870,7 @@ final class HandsFreeSession {
     }
     endNote = note.toString();
     if (waiting > 0) log("ended with " + waiting + " reply(ies) still waiting: the chief is told");
-    if (!pending.isEmpty()) log("ended: your unsent words weren't sent (\"" + pending + "\")");
+    if (hasTurn()) log("ended: what you said since your last message wasn't sent (\"" + pending + "\")");
     log("ended");
     speaker.stop();
     status = "ended";
@@ -920,7 +942,7 @@ final class HandsFreeSession {
     synchronized (this) {
       if (state != State.LISTENING || held.isEmpty()) return;
       Held first = held.peekFirst();
-      boolean turn = takenByYou || !pending.isEmpty();
+      boolean turn = takenByYou || hasTurn();
       if (segmenter.candidate()) waits = "talking";
       else if (transcribing.get() > 0) waits = "writing";
       else if (turn && segmenter.quietMs() < REPLY_PAUSE_MS) waits = "pause";
@@ -933,7 +955,7 @@ final class HandsFreeSession {
     if (waits != null) {
       switch (waits) {
         case "talking" -> reason("Reply waits: you're talking");
-        case "writing" -> reason("Reply waits: what you said is being written down");
+        case "writing" -> reason("Reply waits: checking whether you're done");
         default -> reason("Reply waits for your pause (%1$.1f s quiet)", REPLY_PAUSE_MS / 1000.0);
       }
       readNext(); // It may play right away after all (it was told, so this doesn't repeat).
@@ -945,7 +967,7 @@ final class HandsFreeSession {
     }
     synchronized (this) {
       if (state != State.LISTENING || held.isEmpty() || !held.peekFirst().ready) return;
-      boolean turn = takenByYou || !pending.isEmpty();
+      boolean turn = takenByYou || hasTurn();
       if (segmenter.candidate() || transcribing.get() > 0 || turn && segmenter.quietMs() < REPLY_PAUSE_MS) return;
       next = held.removeFirst();
       state = State.READING;
@@ -1042,134 +1064,219 @@ final class HandsFreeSession {
     return true;
   }
 
+  /** Is there a turn of yours not sent yet (audio or words)? */
+  private boolean hasTurn() {
+    synchronized (turnAudio) {
+      return !turnAudio.isEmpty() || !turnPrefix.isEmpty();
+    }
+  }
+
+  /** A part of your turn: its audio, written down at the next check. */
+  private void addPart(byte[] pcm) {
+    synchronized (turnAudio) {
+      turnAudio.add(pcm);
+      turnVersion++;
+    }
+    takenByYou = true;
+  }
+
   /**
-   * A stretch of your speech ended at endedAt (on the work thread). The log says how long it
-   * waited for the work queue and how long the speech model took.
+   * Checks your turn, on the work queue: why is "pause" (a longer pause: written down, then Jev
+   * asked whether you're done), "button" or "silence" (written down and sent, no question) or
+   * "seed" (written down to show it).
    */
-  private void heard(byte[] pcm, long endedAt) {
+  private void check(String why) {
+    transcribing.incrementAndGet();
+    execute(() -> checkNow(why), () -> transcribing.decrementAndGet());
+  }
+
+  private void checkNow(String why) {
+    boolean button = why.equals("button");
     try {
       if (state == State.ENDED) return;
+      List<byte[]> audio;
+      String prefix;
+      int version;
       synchronized (turnAudio) {
-        turnAudio.add(pcm);
+        audio = new ArrayList<>(turnAudio);
+        prefix = turnPrefix;
+        version = turnVersion;
       }
-      double seconds = pcm.length / (double) AudioFiles.BYTES_PER_SECOND;
-      long start = clock.getAsLong();
-      writingSince = start;
-      // The last 2 s on their own, at the same time: a send word lost at the end of a long part.
-      java.util.concurrent.Future<String> tail = null;
-      if (tailCheck && seconds >= 2.5) {
-        byte[] last = java.util.Arrays.copyOfRange(pcm, pcm.length - 2 * AudioFiles.BYTES_PER_SECOND, pcm.length);
-        try {
-          tail = tails.submit(() -> transcriber.transcribe(AudioFiles.wav(last)).trim());
-        } catch (java.util.concurrent.RejectedExecutionException ended) {
-          /* Ending. */
+      if (audio.isEmpty() && prefix.isEmpty()) {
+        if (button) {
+          sendAfterFlush = false;
+          sendPressed = false;
+          if (clock.getAsLong() - sentAt < 10_000) {
+            log("send: your message had already gone");
+            reason("Send: your message had already gone");
+          } else reason("Nothing to send: no words were written down");
+          listener.changed();
         }
-      }
-      String text;
-      try {
-        text = transcriber.transcribe(AudioFiles.wav(pcm)).trim();
-      } catch (Exception ex) {
-        status = "transcription failed: " + ex.getMessage();
-        // Send was pressed for this part: what was written down before still goes.
-        if (sendAfterFlush && transcribing.get() <= 1) {
-          if (!pending.isEmpty()) send(pending, "button");
-          else {
-            sendAfterFlush = false;
-            sendPressed = false;
-          }
-        }
-        error = "Couldn't write down what you said: " + ex.getMessage();
-        log(String.format(java.util.Locale.ROOT, "heard %.1f s, transcription failed after %d ms: %s", seconds, clock.getAsLong() - start, ex.getMessage()));
-        cue(Cue.FAILED);
-        reason("Couldn't write down %1$.1f s of what you said: %2$s", seconds, ex.getMessage());
-        // Nothing else of your turn left: the floor opens again.
-        if (pending.isEmpty() && transcribing.get() <= 1 && !segmenter.candidate()) giveUpTurn("not written down");
-        listener.changed();
         return;
       }
-      long done = clock.getAsLong();
-      log(String.format(java.util.Locale.ROOT, "heard %.1f s: \"%s\" (written down in %d ms, waited %d ms)", seconds, text, done - start, start - endedAt));
-      if (done - start >= SLOW_WRITING_MS) reason("Writing down took %1$.1f s (the speech model was slow)", (done - start) / 1000.0);
-      if (tail != null && HandsFree.endsWith(text, sendWords) == null && HandsFree.endsWith(text, endWords) == null) {
+      long start = clock.getAsLong();
+      writingSince = start;
+      listener.changed();
+      String text = prefix;
+      int bytes = 0;
+      for (byte[] p : audio) bytes += p.length;
+      double seconds = bytes / (double) AudioFiles.BYTES_PER_SECOND;
+      String cached;
+      synchronized (turnAudio) {
+        cached = checkedVersion == version ? checkedText : null;
+      }
+      if (cached != null) text = cached; // Written down already, unchanged since: no second pass.
+      else if (!audio.isEmpty()) {
         try {
-          String t = tail.get(20, java.util.concurrent.TimeUnit.SECONDS);
-          if (HandsFree.endsWith(t, sendWords) != null && !sendWords.isEmpty()) {
-            log("the last 2 s on their own: \"" + t + "\": the send word, lost at the end of the part");
-            reason("Send word found in the last 2 s on their own (\"%1$s\")", t);
-            text = text + " " + sendWords.get(0);
-          }
+          String t = transcriber.transcribe(AudioFiles.wav(joined(audio))).trim();
+          text = (prefix + " " + t).trim();
         } catch (Exception ex) {
-          log("the last 2 s not written down on their own: " + ex);
+          status = "transcription failed: " + ex.getMessage();
+          error = "Couldn't write down what you said: " + ex.getMessage();
+          log(String.format(java.util.Locale.ROOT, "check (%s): %.1f s, transcription failed after %d ms: %s", why, seconds, clock.getAsLong() - start, ex.getMessage()));
+          cue(Cue.FAILED);
+          reason("Couldn't write down %1$.1f s of what you said: %2$s", seconds, ex.getMessage());
+          // Kept: the next pause or Send tries again with it.
+          sendAfterFlush = false;
+          sendPressed = false;
+          listener.changed();
+          return;
         }
       }
-      took(text, seconds);
+      long written = clock.getAsLong() - start;
+      synchronized (turnAudio) {
+        checkedText = text;
+        checkedVersion = version;
+      }
+      error = "";
+      pending = text;
+      listener.changed();
+      log(String.format(java.util.Locale.ROOT, "check (%s): %d part(s), %.1f s, %s in %d ms: \"%s\"", why, audio.size(), seconds, cached != null ? "written down already" : "written down", written, text));
+      if (written >= SLOW_WRITING_MS) reason("Writing down took %1$.1f s (the speech model was slow)", written / 1000.0);
+      if (why.equals("seed")) return;
+      if (text.isEmpty()) {
+        if (stale(version) && !button) return;
+        reason("The speech model heard no words: your turn ends");
+        giveUpTurn("nothing was said");
+        return;
+      }
+      if (!why.equals("pause")) {
+        send(text, why, audio.size(), prefix);
+        return;
+      }
+      if (stale(version)) {
+        log("you went on talking: checked again at your next pause");
+        return;
+      }
+      decide(text, audio.size(), prefix, version);
     } finally {
-      writingSince = transcribing.get() > 1 ? clock.getAsLong() : 0;
+      writingSince = 0;
       transcribing.decrementAndGet();
+      listener.changed();
       readNext();
     }
   }
 
-  /** How long what you said has been being written down, 0 when nothing is. */
-  long writingMs() {
-    long since = writingSince;
-    return since == 0 || transcribing.get() == 0 ? 0 : Math.max(0, clock.getAsLong() - since);
+  /** Did the turn change (a new part) or are you talking again, since the check began? */
+  private boolean stale(int version) {
+    synchronized (turnAudio) {
+      if (turnVersion != version) return true;
+    }
+    return segmenter.candidate();
+  }
+
+  /** The parts' audio in one, 0.3 s of silence between them. */
+  private static byte[] joined(List<byte[]> parts) {
+    java.io.ByteArrayOutputStream all = new java.io.ByteArrayOutputStream();
+    byte[] gap = new byte[AudioFiles.BYTES_PER_SECOND * 3 / 10 & ~1];
+    for (byte[] p : parts) {
+      if (all.size() > 0) all.write(gap, 0, gap.length);
+      all.write(p, 0, p.length);
+    }
+    return all.toByteArray();
   }
 
   /**
-   * What you said (a part of seconds, 0 for words said over a reply), written down: added to
-   * your turn; a send or end word at its end acts.
+   * At a longer pause: asks the judge whether your turn is done, and acts: sends it, ends the
+   * call, or listens on. Without a judge, or when it fails, the send and end words decide.
    */
-  private void took(String text, double seconds) {
-    {
-      // A short part on its own that sounds like the send word ("Ova.") is taken as it.
-      String near = pending.isEmpty() ? null : HandsFree.nearWord(text, sendWords);
-      if (near != null && HandsFree.endsWith(text, sendWords) == null) {
-        log("\"" + text + "\" taken as the send word \"" + near + "\"");
-        reason("\"%1$s\" taken as the send word \"%2$s\"", text, near);
-        text = near;
+  private void decide(String text, int parts, String prefix, int version) {
+    Verdict v = null;
+    long start = clock.getAsLong();
+    String failed = null;
+    if (judge != null) {
+      try {
+        v = judge.judge(text);
+      } catch (Exception ex) {
+        failed = String.valueOf(ex.getMessage());
       }
-      // The send word on its own right after your message went (with Send): nothing more to send.
-      if (pending.isEmpty() && "".equals(HandsFree.endsWith(text, sendWords)) && clock.getAsLong() - sentAt < 10_000) {
+    }
+    long ms = clock.getAsLong() - start;
+    if (v != null)
+      log(String.format(
+          java.util.Locale.ROOT,
+          "Jev in %d ms%s: %s (done %.2f, end the call %.2f)",
+          ms,
+          v.cost() == null ? "" : ", $" + v.cost().stripTrailingZeros().toPlainString(),
+          v.choice(),
+          v.send(),
+          v.end()));
+    else if (failed != null) log("Jev failed after " + ms + " ms (" + failed + "): the send and end words decide");
+    if (stale(version)) {
+      log("you went on talking: checked again at your next pause");
+      return;
+    }
+    String ended = HandsFree.endsWith(text, endWords), over = HandsFree.endsWith(text, sendWords);
+    boolean end = v != null ? v.end() >= END_AT : ended != null;
+    boolean done = v != null ? v.send() >= SEND_AT : over != null;
+    if (failed != null) reason("Couldn't ask whether you're done (%1$s): say %2$s or press Send", failed, sendWords.isEmpty() ? "Send" : "\"" + sendWords.get(0) + "\"");
+    if (end) {
+      log("end of the call");
+      reason("Ending the call: you said goodbye");
+      String rest = ended != null ? ended : text;
+      if (!rest.isEmpty()) send(rest, "end phrase", parts, prefix);
+      end();
+      return;
+    }
+    int pct = v == null ? 0 : (int) Math.round(100 * v.send());
+    if (done) {
+      String rest = over != null ? over : text;
+      if (rest.isEmpty() && clock.getAsLong() - sentAt < 10_000) { // "Over" just after Send.
         log("the send word came after your message went: nothing more to send");
         reason("Send word heard: your message had already gone");
         endTurn();
         return;
       }
-      if (!text.isEmpty()) {
-        pending = pending.isEmpty() ? text : pending + " " + text;
-        listener.changed();
-      }
-      String rest = HandsFree.endsWith(pending, endWords);
-      if (rest != null) {
-        log("end phrase");
-        reason("End phrase heard: the call ends");
-        if (!rest.isEmpty()) send(rest, "end phrase");
-        end();
+      if (rest.isEmpty()) { // Only "over".
+        reason("Only the send word was heard: nothing to send");
+        giveUpTurn("only the send word");
         return;
       }
-      rest = HandsFree.endsWith(pending, sendWords);
-      if (rest != null) {
-        if (rest.isEmpty()) {
-          reason("Only the send word was heard: nothing to send");
-          giveUpTurn("only the send word");
+      if (v == null) reason("Sent: you said %1$s", "\"" + sendWords.get(0) + "\"");
+      else
+        switch (v.choice()) {
+          case "question" -> reason("Sent: you asked your question (%1$d%%)", pct);
+          case "request" -> reason("Sent: you finished what you were saying (%1$d%%)", pct);
+          default -> reason("Sent: you said you're done (%1$d%%)", pct);
         }
-        else send(rest, "send word");
-        return;
-      }
-      if (sendAfterFlush) {
-        send(pending, "button");
-        return;
-      }
-      if (pending.isEmpty() && transcribing.get() <= 1 && !segmenter.candidate()) {
-        reason("The speech model heard no words: your turn ends");
-        giveUpTurn("nothing was said");
-        return;
-      }
-      // A short part that didn't end your turn: it may have been meant as the send word.
-      if (seconds > 0 && seconds <= 2 && !text.isEmpty() && text.split("\\s+").length <= 3)
-        reason("Not the send word: heard \"%1$s\"", text);
+      send(rest, "jev", parts, prefix);
+      return;
     }
+    if (v == null) {
+      if (failed == null) reason("Not sent: no %1$s yet", sendWords.isEmpty() ? "send word" : "\"" + sendWords.get(0) + "\"");
+    } else
+      switch (v.choice()) {
+        case "unfinished" -> reason("Not sent: you seem mid-sentence (%1$d%% done)", pct);
+        case "more" -> reason("Not sent: you seem to have more to say (%1$d%% done)", pct);
+        default -> reason("Not sent: not clearly done yet (%1$d%%)", pct);
+      }
+    listener.changed();
+  }
+
+  /** How long the current check (writing down, Jev) has been running, 0 when none is. */
+  long writingMs() {
+    long since = writingSince;
+    return since == 0 || transcribing.get() == 0 ? 0 : Math.max(0, clock.getAsLong() - since);
   }
 
   /** Your turn is over without a message, quietly (nothing was lost). */
@@ -1180,8 +1287,9 @@ final class HandsFreeSession {
     sendPressed = false;
     synchronized (turnAudio) {
       turnAudio.clear();
+      turnPrefix = "";
+      turnVersion++;
     }
-    turnBarged = false;
     listener.changed();
   }
 
@@ -1195,16 +1303,10 @@ final class HandsFreeSession {
    * Your message goes, with a note for each reply that couldn't be played. Replies waiting
    * meanwhile stay waiting: they play at your next pause.
    */
-  private void send(String text, String why) {
+  private void send(String text, String why, int parts, String prefix) {
     sendAfterFlush = false;
     sendPressed = false;
     if (text.trim().isEmpty()) {
-      if (clock.getAsLong() - sentAt < 10_000) { // Send pressed for a message the send word sent.
-        log("send: your message had already gone");
-        reason("Send: your message had already gone (send word)");
-        endTurn();
-        return;
-      }
       reason("Nothing to send: no words were written down");
       giveUpTurn("empty");
       return;
@@ -1215,21 +1317,22 @@ final class HandsFreeSession {
       for (String u : unheard) notes.append("\n\n").append(u);
       failed = unheard.size();
     }
-    List<byte[]> audio;
+    // The turn is over: the parts written down go; what you said since starts your next turn.
+    boolean more;
     synchronized (turnAudio) {
-      audio = turnBarged || !wholeTurn ? List.of() : new ArrayList<>(turnAudio);
-      turnAudio.clear();
+      turnAudio.subList(0, Math.min(parts, turnAudio.size())).clear();
+      if (turnPrefix.equals(prefix)) turnPrefix = "";
+      turnVersion++;
+      more = !turnAudio.isEmpty() || !turnPrefix.isEmpty();
     }
-    turnBarged = false;
-    // The turn is over: you can go on talking at once (a new turn) while this one is delivered.
     pending = "";
-    takenByYou = false;
+    takenByYou = more;
     outgoing.incrementAndGet();
     sentAt = clock.getAsLong();
     listener.changed();
     long queued = clock.getAsLong();
     String note = notes.toString();
-    Runnable delivery = () -> deliver(text.trim(), note, audio, text, why, failed, queued);
+    Runnable delivery = () -> deliver(text.trim() + note, text, why, failed, queued);
     try {
       outbox.execute(delivery);
     } catch (java.util.concurrent.RejectedExecutionException ended) {
@@ -1241,8 +1344,7 @@ final class HandsFreeSession {
    * Delivers a message to the chief (on the outbox): in order, without holding up what you say
    * next. The log says how long it waited for earlier messages and how long bb took.
    */
-  private void deliver(String words, String notes, List<byte[]> audio, String text, String why, int failed, long queued) {
-    String said = again(words, audio) + notes;
+  private void deliver(String said, String text, String why, int failed, long queued) {
     long start = clock.getAsLong();
     try {
       String request = sender.send(said);
@@ -1260,14 +1362,19 @@ final class HandsFreeSession {
       log(String.format(java.util.Locale.ROOT, "sent %s (%s, %d characters; bb took %d ms, waited %d ms)", request, why, said.length(), done - start, start - queued));
       cue(Cue.SENT);
       switch (why) {
-        case "send word" -> reason("Sent ✓ by the send word");
+        case "jev" -> reason("Sent ✓");
         case "silence" -> reason("Sent ✓ after %1$d s of silence", silenceSendMs / 1000);
         case "end phrase" -> reason("Sent ✓ before the call ended");
         default -> reason("Sent ✓ by the Send button");
       }
     } catch (Exception ex) {
-      // Kept, before whatever you said since, so the next send word or button tries again.
+      // Kept, before whatever you said since, so the next check or Send tries again.
+      synchronized (turnAudio) {
+        turnPrefix = (text + " " + turnPrefix).trim();
+        turnVersion++;
+      }
       pending = pending.isEmpty() ? text : text + " " + pending;
+      takenByYou = true;
       status = "not sent: " + ex.getMessage();
       error = "Not sent: " + ex.getMessage();
       log(String.format(java.util.Locale.ROOT, "not sent (%s) after %d ms: %s", why, clock.getAsLong() - start, ex.getMessage()));
@@ -1277,37 +1384,6 @@ final class HandsFreeSession {
       outgoing.decrementAndGet();
       listener.changed();
       readNext();
-    }
-  }
-
-  /**
-   * A turn of several parts, written down again in one pass (on the outbox, before it goes): the
-   * send or end word at its end cut off. The parts' words when that fails or comes back empty.
-   */
-  private String again(String words, List<byte[]> audio) {
-    if (audio.size() < 2) return words;
-    java.io.ByteArrayOutputStream all = new java.io.ByteArrayOutputStream();
-    byte[] gap = new byte[AudioFiles.BYTES_PER_SECOND * 3 / 10 & ~1]; // 0.3 s of silence between parts.
-    for (byte[] p : audio) {
-      if (all.size() > 0) all.write(gap, 0, gap.length);
-      all.write(p, 0, p.length);
-    }
-    long start = clock.getAsLong();
-    try {
-      String whole = transcriber.transcribe(AudioFiles.wav(all.toByteArray())).trim();
-      String cut = HandsFree.endsWith(whole, endWords);
-      if (cut == null) cut = HandsFree.endsWith(whole, sendWords);
-      if (cut == null) cut = whole;
-      log(String.format(java.util.Locale.ROOT, "the whole turn (%d parts) written down again in %d ms: \"%s\"", audio.size(), clock.getAsLong() - start, cut));
-      // Much shorter than the parts' words: some got lost in the second pass, so the parts go.
-      if (cut.length() < words.length() * 0.6) {
-        log("the second pass is much shorter than the parts' words: the parts' words go");
-        return words;
-      }
-      return cut;
-    } catch (Exception ex) {
-      log("the whole turn not written down again (" + ex.getMessage() + "): its parts' words go");
-      return words;
     }
   }
 

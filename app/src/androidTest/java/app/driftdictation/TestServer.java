@@ -49,6 +49,14 @@ final class TestServer {
     script("decide", new JSONObject().put("refine", refine).put("chief", chief).put("template", template));
   }
 
+  /**
+   * Queues Jev's hands-free answers, one per check at a pause: "over", "question", "request"
+   * (sent), "end", "unfinished" or "more" (listens on). Without one the fake says "over".
+   */
+  static void turns(String... choices) throws Exception {
+    for (String c : choices) script("decide", new JSONObject().put("turn", c));
+  }
+
   /** Queues text-model replies; null queues a provider error. */
   static void replies(String... texts) throws Exception {
     post("/test/script", new JSONObject().put("text", answers(texts)));
