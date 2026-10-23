@@ -73,7 +73,23 @@ final class HandsFreeLog {
 
   /** The line that starts a call's events: "── call started 14:05 ──". */
   static String callStarted(String time) {
-    return "── call started " + time + " ──";
+    return CALL_STARTED + time + " ──";
+  }
+
+  private static final String CALL_STARTED = "── call started ";
+
+  /**
+   * The last calls of a log, newest included: from the line that started the oldest of them to
+   * the end, so no call is cut. The whole log if it holds fewer calls.
+   */
+  static String lastCalls(String log, int calls) {
+    int from = log.length();
+    for (int i = 0; i < calls; i++) {
+      int at = from == 0 ? -1 : log.lastIndexOf(CALL_STARTED, from - 1);
+      if (at < 0) return log;
+      from = at;
+    }
+    return log.substring(from);
   }
 
   private static long lineCount(File file) throws IOException {

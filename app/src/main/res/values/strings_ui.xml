@@ -299,7 +299,6 @@
     <string name="t_69d3f1cd" formatted="false">Send: ending what you\'re saying, then it goes</string>
     <string name="t_69ee1c02" formatted="false">bb isn\'t reachable right now (HTTP %1$d). Is your computer on and bb running?</string>
     <string name="t_6a21d63f" formatted="false">Start dictating</string>
-    <string name="t_6a8517e4" formatted="false">Copy events</string>
     <string name="t_6acf5248" formatted="false">Recent</string>
     <string name="t_6af514f2" formatted="false">From your chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Saved</string>
@@ -680,6 +679,7 @@
     <string name="t_eb89173a" formatted="false">Open Accessibility settings</string>
     <string name="t_ec054ecf" formatted="false">Send ignored: already sending</string>
     <string name="t_ec8fbe93" formatted="false">Its text, versions, costs and audio are removed. This can\'t be undone.</string>
+    <string name="t_ecb6c206" formatted="false">Copy last call</string>
     <string name="t_ed4646d0" formatted="false">Finish or discard the pending recording first</string>
     <string name="t_ed783112" formatted="false">✓  Using %1$s (%2$s). It was told to use the skills.</string>
     <string name="t_ed8814bc" formatted="false">Copy</string>
@@ -712,6 +712,7 @@
     <string name="t_f55495e0" formatted="false">Save</string>
     <string name="t_f5e73ad1" formatted="false">The connection to OpenRouter was lost. Check your internet connection, then retry.</string>
     <string name="t_f5efdb60" formatted="false">Talk with your chief while you drive or cook. Pause as long as you like; answers are read aloud.</string>
+    <string name="t_f6604f22" formatted="false">Copy last 3 calls</string>
     <string name="t_f6a5c392" formatted="false">Hands-free mode</string>
     <string name="t_f6a8c847" formatted="false">Delete all saved audio?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter reported no cost for this note yet.</string>

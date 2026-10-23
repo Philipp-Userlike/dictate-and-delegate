@@ -297,7 +297,6 @@
     <string name="t_69d3f1cd" formatted="false">Senden: Spracheingabe wird beendet, dann gesendet</string>
     <string name="t_69ee1c02" formatted="false">bb ist gerade nicht erreichbar (HTTP %1$d). Ist dein Computer an und bb geöffnet?</string>
     <string name="t_6a21d63f" formatted="false">Diktat starten</string>
-    <string name="t_6a8517e4" formatted="false">Ereignisse kopieren</string>
     <string name="t_6acf5248" formatted="false">Zuletzt</string>
     <string name="t_6af514f2" formatted="false">Von deinem Chief of Staff</string>
     <string name="t_6b228094" formatted="false">✓  Gespeichert</string>
@@ -731,4 +730,6 @@
     <string name="t_ff38152f" formatted="false">Speicher fast voll. Aufnahme gestoppt; Audio kann wiederholt werden.</string>
     <string name="t_ff770e18" formatted="false">Kosten und Aktivität</string>
     <string name="t_ffd9a681" formatted="false">Wird mit klügerem Modell wiederholt… Du kannst diesen Bereich verlassen.</string>
+    <string name="t_ecb6c206" formatted="false">Letzten Anruf kopieren</string>
+    <string name="t_f6604f22" formatted="false">Letzte 3 Anrufe kopieren</string>
 </resources>

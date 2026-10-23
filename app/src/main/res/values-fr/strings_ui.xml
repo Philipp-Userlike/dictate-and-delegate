@@ -298,7 +298,6 @@
     <string name="t_69d3f1cd" formatted="false">Envoi : fin de ta phrase, puis départ</string>
     <string name="t_69ee1c02" formatted="false">bb n\'est pas joignable pour le moment (HTTP %1$d). Ton ordinateur est-il allumé et bb en cours d\'exécution ?</string>
     <string name="t_6a21d63f" formatted="false">Commencer à dicter</string>
-    <string name="t_6a8517e4" formatted="false">Copier les événements</string>
     <string name="t_6acf5248" formatted="false">Récents</string>
     <string name="t_6af514f2" formatted="false">De ton chef de cabinet</string>
     <string name="t_6b228094" formatted="false">✓  Enregistré</string>
@@ -736,4 +735,6 @@
     <string name="t_ff38152f" formatted="false">Espace de stockage presque plein. Enregistrement arrêté ; réessai possible.</string>
     <string name="t_ff770e18" formatted="false">Coûts et activité</string>
     <string name="t_ffd9a681" formatted="false">Traitement avec un modèle plus performant… Tu peux quitter cet écran.</string>
+    <string name="t_ecb6c206" formatted="false">Copier le dernier appel</string>
+    <string name="t_f6604f22" formatted="false">Copier les 3 derniers appels</string>
 </resources>

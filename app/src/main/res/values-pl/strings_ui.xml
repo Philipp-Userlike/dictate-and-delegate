@@ -299,7 +299,6 @@
     <string name="t_69d3f1cd" formatted="false">Wyślij: kończę Twoją wypowiedź i wysyłam</string>
     <string name="t_69ee1c02" formatted="false">bb jest teraz nieosiągalne (HTTP %1$d). Czy Twój komputer jest włączony, a bb działa?</string>
     <string name="t_6a21d63f" formatted="false">Zacznij dyktować</string>
-    <string name="t_6a8517e4" formatted="false">Kopiuj zdarzenia</string>
     <string name="t_6acf5248" formatted="false">Ostatnie</string>
     <string name="t_6af514f2" formatted="false">Od twojego szefa sztabu</string>
     <string name="t_6b228094" formatted="false">✓  Zapisano</string>
@@ -741,4 +740,6 @@
     <string name="t_ff38152f" formatted="false">Pamięć niemal pełna. Nagrywanie zatrzymane; zapisany dźwięk można ponowić.</string>
     <string name="t_ff770e18" formatted="false">Koszty i aktywność</string>
     <string name="t_ffd9a681" formatted="false">Poprawianie inteligentniejszym modelem… Możesz opuścić ten ekran.</string>
+    <string name="t_ecb6c206" formatted="false">Kopiuj ostatnią rozmowę</string>
+    <string name="t_f6604f22" formatted="false">Kopiuj 3 ostatnie rozmowy</string>
 </resources>

@@ -1360,4 +1360,21 @@ public class HandsFreeTest {
       file.delete();
     }
   }
+
+  @Test
+  public void copyingTakesWholeCallsNewestIncluded() {
+    String log =
+        "old line\n"
+            + HandsFreeLog.callStarted("22:10") + "\nfirst a\n"
+            + HandsFreeLog.callStarted("23:29") + "\nsecond a\nsecond b\n"
+            + HandsFreeLog.callStarted("23:41") + "\nthird a\nthird b\n";
+    assertEquals("── call started 23:41 ──\nthird a\nthird b\n", HandsFreeLog.lastCalls(log, 1));
+    assertEquals(
+        "── call started 23:29 ──\nsecond a\nsecond b\n── call started 23:41 ──\nthird a\nthird b\n",
+        HandsFreeLog.lastCalls(log, 2));
+    assertEquals(log.substring(log.indexOf("── call started 22:10")), HandsFreeLog.lastCalls(log, 3));
+    assertEquals("fewer calls than asked: all of it", log, HandsFreeLog.lastCalls(log, 4));
+    assertEquals("no call yet: all of it", "a\nb\n", HandsFreeLog.lastCalls("a\nb\n", 1));
+    assertEquals("", HandsFreeLog.lastCalls("", 1));
+  }
 }

@@ -298,7 +298,6 @@
     <string name="t_69d3f1cd" formatted="false">Enviar: a concluir o que estás a dizer, depois segue</string>
     <string name="t_69ee1c02" formatted="false">O bb não está acessível no momento (HTTP %1$d). O teu computador está ligado e o bb em execução?</string>
     <string name="t_6a21d63f" formatted="false">Começar a ditar</string>
-    <string name="t_6a8517e4" formatted="false">Copiar eventos</string>
     <string name="t_6acf5248" formatted="false">Recentes</string>
     <string name="t_6af514f2" formatted="false">Do teu chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Guardado</string>
@@ -736,4 +735,6 @@
     <string name="t_ff38152f" formatted="false">Armazenamento quase cheio. Gravação parada; podes tentar de novo com o áudio guardado.</string>
     <string name="t_ff770e18" formatted="false">Custos e atividade</string>
     <string name="t_ffd9a681" formatted="false">A refazer com um modelo melhor… Podes sair deste ecrã.</string>
+    <string name="t_ecb6c206" formatted="false">Copiar a última chamada</string>
+    <string name="t_f6604f22" formatted="false">Copiar as 3 últimas chamadas</string>
 </resources>

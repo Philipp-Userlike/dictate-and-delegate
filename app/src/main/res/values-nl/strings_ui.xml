@@ -297,7 +297,6 @@
     <string name="t_69d3f1cd" formatted="false">Verzenden: afronden wat je zegt, daarna verzonden</string>
     <string name="t_69ee1c02" formatted="false">bb is momenteel niet bereikbaar (HTTP %1$d). Staat je computer aan en draait bb?</string>
     <string name="t_6a21d63f" formatted="false">Begin met dicteren</string>
-    <string name="t_6a8517e4" formatted="false">Gebeurtenissen kopiëren</string>
     <string name="t_6acf5248" formatted="false">Recent</string>
     <string name="t_6af514f2" formatted="false">Van je stafchef</string>
     <string name="t_6b228094" formatted="false">✓  Opgeslagen</string>
@@ -731,4 +730,6 @@
     <string name="t_ff38152f" formatted="false">Opslag is bijna vol. Opname gestopt; opgeslagen audio kan opnieuw worden geprobeerd.</string>
     <string name="t_ff770e18" formatted="false">Kosten en activiteit</string>
     <string name="t_ffd9a681" formatted="false">Opnieuw doen met een slimmer model… Je kunt dit scherm verlaten.</string>
+    <string name="t_ecb6c206" formatted="false">Laatste gesprek kopiëren</string>
+    <string name="t_f6604f22" formatted="false">Laatste 3 gesprekken kopiëren</string>
 </resources>

@@ -3278,13 +3278,24 @@ public final class MainActivity extends Activity {
       ui.add(content, ui.text(tr("No events yet. They appear here once you've made a hands-free call."), 13, Ui.MUTED), 4);
       return;
     }
+    // Whole calls, newest included: the full log is too long for most places it gets pasted.
     ui.add(
         content,
         ui.button(
-            tr("Copy events"),
+            tr("Copy last call"),
             Ui.Kind.OUTLINE,
             v -> {
-              DictationService.copy(this, HandsFreeService.log(this).trim());
+              DictationService.copy(this, HandsFreeLog.lastCalls(HandsFreeService.log(this), 1).trim());
+              toast(tr("Copied. Paste it where you report the problem."));
+            }),
+        6);
+    ui.add(
+        content,
+        ui.button(
+            tr("Copy last 3 calls"),
+            Ui.Kind.OUTLINE,
+            v -> {
+              DictationService.copy(this, HandsFreeLog.lastCalls(HandsFreeService.log(this), 3).trim());
               toast(tr("Copied. Paste it where you report the problem."));
             }),
         6);

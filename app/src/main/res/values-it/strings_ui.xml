@@ -298,7 +298,6 @@
     <string name="t_69d3f1cd" formatted="false">Invio: completo ciò che stai dicendo, poi invio</string>
     <string name="t_69ee1c02" formatted="false">bb non è raggiungibile al momento (HTTP %1$d). Il computer è acceso e bb è in esecuzione?</string>
     <string name="t_6a21d63f" formatted="false">Inizia a dettare</string>
-    <string name="t_6a8517e4" formatted="false">Copia eventi</string>
     <string name="t_6acf5248" formatted="false">Recenti</string>
     <string name="t_6af514f2" formatted="false">Dal tuo chief of staff</string>
     <string name="t_6b228094" formatted="false">✓  Salvato</string>
@@ -736,4 +735,6 @@
     <string name="t_ff38152f" formatted="false">Spazio di archiviazione quasi esaurito. Registrazione interrotta; puoi riprovare con l\'audio salvato.</string>
     <string name="t_ff770e18" formatted="false">Costi e attività</string>
     <string name="t_ffd9a681" formatted="false">Rifacimento con un modello più intelligente… Puoi lasciare questa schermata.</string>
+    <string name="t_ecb6c206" formatted="false">Copia l\'ultima chiamata</string>
+    <string name="t_f6604f22" formatted="false">Copia le ultime 3 chiamate</string>
 </resources>
