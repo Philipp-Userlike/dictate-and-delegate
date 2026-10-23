@@ -231,12 +231,8 @@ public final class HandsFreeService extends Service {
                 return voice.playing();
               }
 
-              public void pause() {
-                voice.pause();
-              }
-
-              public void resume() {
-                voice.resume();
+              public void duck(boolean down) {
+                voice.duck(down);
               }
 
               public int heardChars() {
@@ -265,6 +261,7 @@ public final class HandsFreeService extends Service {
     if (!choice.model().isEmpty()) voice.warm();
     callCost = BigDecimal.ZERO;
     callId = UUID.randomUUID().toString();
+    HandsFreeLog.append(logFile(this), HandsFreeLog.callStarted(new java.text.SimpleDateFormat("HH:mm", java.util.Locale.ROOT).format(new java.util.Date())));
     event(
         String.format(
             java.util.Locale.ROOT,
@@ -519,11 +516,7 @@ public final class HandsFreeService extends Service {
   }
 
   static String log(Context context) {
-    try {
-      return new String(java.nio.file.Files.readAllBytes(logFile(context).toPath()), java.nio.charset.StandardCharsets.UTF_8);
-    } catch (Exception ex) {
-      return "";
-    }
+    return HandsFreeLog.read(logFile(context));
   }
 
   private final java.util.List<String> sinceLastNote = new java.util.ArrayList<>();
@@ -538,15 +531,7 @@ public final class HandsFreeService extends Service {
     String line =
         new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ROOT).format(new java.util.Date()) + " " + e;
     sinceLastNote.add(line);
-    try {
-      java.util.List<String> lines = new java.util.ArrayList<>(java.util.Arrays.asList(log(this).split("\n")));
-      lines.removeIf(String::isEmpty);
-      lines.add(line);
-      while (lines.size() > 300) lines.remove(0);
-      java.nio.file.Files.write(logFile(this).toPath(), (String.join("\n", lines) + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    } catch (Exception ignored) {
-      /* The log is a help, not a must. */
-    }
+    HandsFreeLog.append(logFile(this), line); // Appended under the app's one lock for the log.
   }
 
   /** Each message is kept as a note, with its transcription cost, like a dictation sent to the chief. */
@@ -620,7 +605,7 @@ public final class HandsFreeService extends Service {
       case REPLY_WAITING -> tr("Reply waiting · plays when you pause");
       case REPLY_COMING -> tr("Reply coming…");
       case PLAYING -> tr("Playing the reply");
-      case CHECKING -> tr("Reply paused · was that you?");
+      case CHECKING -> tr("Reply turned down · was that you?");
       case MUTED -> tr("Mic paused after the reply");
       case ENDED -> tr("Ended");
       default -> tr("Listening");
@@ -640,7 +625,7 @@ public final class HandsFreeService extends Service {
       case REPLY_WAITING -> tr("Reply waiting");
       case REPLY_COMING -> tr("Reply coming");
       case PLAYING -> tr("Reading");
-      case CHECKING -> tr("Paused");
+      case CHECKING -> tr("Checking");
       case MUTED -> tr("Mic paused");
       case ENDED -> tr("Ended");
       default -> tr("Listening");

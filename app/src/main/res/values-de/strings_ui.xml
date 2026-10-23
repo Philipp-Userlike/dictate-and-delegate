@@ -123,7 +123,6 @@
     <string name="t_2dad13e3" formatted="false">Sprache</string>
     <string name="t_2dc29d4d" formatted="false">Später</string>
     <string name="t_2dd159ed" formatted="false">Kein Browser vorhanden</string>
-    <string name="t_2e423333" formatted="false">Antwort pausiert · warst du das?</string>
     <string name="t_2e5c65fd" formatted="false">über OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">ntfy-Server</string>
     <string name="t_2f79a315" formatted="false">Sehr geehrter Herr Weber,\n\nich möchte Ihnen mitteilen, dass der Wasserhahn im Badezimmer seit Montag tropft.</string>
@@ -178,7 +177,6 @@
     <string name="t_3f983199" formatted="false">%1$s Die Aufnahme wurde gespeichert.</string>
     <string name="t_400b4b63" formatted="false">Du sagst</string>
     <string name="t_40de4e2a" formatted="false">Kopiert. Füge es dort ein, wo du das Problem meldest.</string>
-    <string name="t_411d4bad" formatted="false">Pausiert</string>
     <string name="t_41265b45" formatted="false">Gedrückt halten für</string>
     <string name="t_417750b1" formatted="false">Senden: deine Nachricht war schon raus</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon erlaubt</string>
@@ -309,6 +307,7 @@
     <string name="t_714149a6" formatted="false">Bei Ansprache an Chief senden</string>
     <string name="t_71cc04b4" formatted="false">bb hat keinen Anmeldecode gesendet. Starte sie erneut.</string>
     <string name="t_721589c1" formatted="false">Heute</string>
+    <string name="t_721cbeec" formatted="false">Antwort leiser gestellt · warst du das?</string>
     <string name="t_72640a34" formatted="false">Antwort gestoppt: du hast dazwischengesprochen. Sie läuft bei deiner nächsten Pause erneut ab „%1$s“</string>
     <string name="t_7382e59f" formatted="false">Abmelden…</string>
     <string name="t_73c2d986" formatted="false">Gespeichert, verschlüsselt · Verfeinern nutzt dein Anthropic-Guthaben</string>
@@ -339,6 +338,7 @@
     <string name="t_7e19ccd3" formatted="false">Nenne den Namen, um ein Diktat an deinen Chief zu senden: „Ada, …“, „das ist für Ada“. Die bloße Erwähnung im Text sendet es nicht. Ohne Namen tippe auf 🧑‍💼.</string>
     <string name="t_7e88757d" formatted="false">Trotzdem senden nach dieser Stille (Sekunden)</string>
     <string name="t_7f3bcbfd" formatted="false">Freisprechanruf mit deinem Chief</string>
+    <string name="t_7f4bb9ee" formatted="false">Wird geprüft</string>
     <string name="t_7fd53415_one" formatted="false">%1$d Vorlage</string>
     <string name="t_7fd53415_other" formatted="false">%1$d Vorlagen</string>
     <string name="t_8053d9fa" formatted="false">Sprich, dann mach eine Pause: Wenn du klar fertig bist (Frage gestellt, %1$s), wird gesendet; sag %2$s zum Beenden. Senden und die Headset-Taste senden sofort. Eine Antwort wartet, während du sprichst, und läuft, wenn du eine Pause machst; sprich dazwischen, um sie anzuhalten, dann läuft sie später erneut.</string>
@@ -498,6 +498,7 @@
     <string name="t_b36a2ca5" formatted="false">Antwort wartet</string>
     <string name="t_b3a08580" formatted="false">Nichts zu senden: es wurden keine Wörter aufgeschrieben</string>
     <string name="t_b4211199" formatted="false">Preiseinheit unbestätigt · siehe Quelle</string>
+    <string name="t_b42cfacc" formatted="false">Antwort leiser gestellt: Sprichst du gerade dazwischen?</string>
     <string name="t_b48c5f39" formatted="false">Jev · nichts startet von selbst</string>
     <string name="t_b4c82195" formatted="false">Dictate &amp; Delegate nutzt Sprach- und Textmodelle über OpenRouter mit deinem eigenen Key. Du zahlst OpenRouter direkt für deine Nutzung; Dictate &amp; Delegate hat keinen Server und nimmt keinen Anteil.</string>
     <string name="t_b50cba8b" formatted="false">Vom Chief einfügen</string>
@@ -588,7 +589,6 @@
     <string name="t_d27e302d" formatted="false">Dein Chief of Staff bekommt alles: eingefügten Text in der Nachricht, Bilder und PDFs als Anhänge.</string>
     <string name="t_d2be46f0" formatted="false">Diese Notiz hat %1$s gekostet.</string>
     <string name="t_d2c0aec0" formatted="false">Schließen</string>
-    <string name="t_d32bef21" formatted="false">Antwort pausiert: vielleicht sprichst du dazwischen (lauter als ihr Echo)</string>
     <string name="t_d37efb26" formatted="false">Benachrichtigungen</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Senden…</string>
     <string name="t_d3d608f4" formatted="false">Prüfe, ob du fertig bist…</string>
@@ -596,6 +596,7 @@
     <string name="t_d45847fe" formatted="false">In bb öffnen ↗</string>
     <string name="t_d486aa0e" formatted="false">Bereit zum Einfügen</string>
     <string name="t_d56c4783" formatted="false">Diese Anmeldung wurde hier nicht gestartet oder ist bereits abgelaufen. Starte sie erneut.</string>
+    <string name="t_d56e8c58" formatted="false">Antwort wartet: Stimme wird abgerufen (%1$d s)</string>
     <string name="t_d6bd063a" formatted="false">Kachel</string>
     <string name="t_d6c42080" formatted="false">Anruf wird gestartet…</string>
     <string name="t_d6d7613f" formatted="false">Deine Vorlage</string>
@@ -682,6 +683,7 @@
     <string name="t_f01db452" formatted="false">Erstelle dort einen Schlüssel, kopiere ihn und füge ihn oben ein. Lade auch ein paar Dollar Guthaben auf OpenRouter auf: Eine einminütige Notiz kostet meist deutlich unter einem Cent.</string>
     <string name="t_f032e365" formatted="false">Schlüssel auf console.anthropic.com abrufen</string>
     <string name="t_f05beeb6" formatted="false">Am günstigsten</string>
+    <string name="t_f0ce4e3c" formatted="false">Antwort wird abgespielt: %1$d s gewartet</string>
     <string name="t_f0d83244" formatted="false">Das Sprachmodell hat kein Transkript zurückgegeben. Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_f13b16c1" formatted="false">Dein Chief of Staff nutzt zwei Skills in bb (chief-of-staff und dictate-and-delegate): wie Aufgaben für dich erledigt werden und wie Benachrichtigungen sowie Text zurückgesendet werden. Dictate &amp; Delegate installiert und aktualisiert diese in bb über einen kurzen Thread.</string>
     <string name="t_f157fddc" formatted="false">Füge den Text so ein oder tippe ihn so, wie du ihn senden würdest.</string>

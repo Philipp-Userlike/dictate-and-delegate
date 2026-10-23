@@ -123,7 +123,6 @@
     <string name="t_2dad13e3" formatted="false">Język</string>
     <string name="t_2dc29d4d" formatted="false">Później</string>
     <string name="t_2dd159ed" formatted="false">Brak dostępnej przeglądarki</string>
-    <string name="t_2e423333" formatted="false">Wstrzymano odpowiedź · to Ty?</string>
     <string name="t_2e5c65fd" formatted="false">przez OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">Serwer ntfy</string>
     <string name="t_2f79a315" formatted="false">Szanowny Panie Weber,\n\nchciałbym poinformować, że kran w łazience cieknie od poniedziałku.</string>
@@ -180,7 +179,6 @@
     <string name="t_3f983199" formatted="false">%1$s Nagranie zostało zapisane.</string>
     <string name="t_400b4b63" formatted="false">Mówisz</string>
     <string name="t_40de4e2a" formatted="false">Skopiowano. Wklej to w miejscu zgłaszania problemu.</string>
-    <string name="t_411d4bad" formatted="false">Wstrzymano</string>
     <string name="t_41265b45" formatted="false">Przytrzymaj przez</string>
     <string name="t_417750b1" formatted="false">Wyślij: Twoja wiadomość została już wysłana</string>
     <string name="t_41c5ed6f" formatted="false">Mikrofon dozwolony</string>
@@ -311,6 +309,7 @@
     <string name="t_714149a6" formatted="false">Wysyłaj do szefa po wywołaniu</string>
     <string name="t_71cc04b4" formatted="false">bb nie przesłało kodu logowania. Rozpocznij ponownie.</string>
     <string name="t_721589c1" formatted="false">Dzisiaj</string>
+    <string name="t_721cbeec" formatted="false">Wyciszono odpowiedź · czy to Ty?</string>
     <string name="t_72640a34" formatted="false">Zatrzymano odpowiedź: przerwano mówieniem. Wznowi od „%1$s” przy kolejnej pauzie</string>
     <string name="t_7382e59f" formatted="false">Wylogowywanie…</string>
     <string name="t_73c2d986" formatted="false">Zapisano, zaszyfrowano · Dopracuj używa Twoich środków w Anthropic</string>
@@ -341,6 +340,7 @@
     <string name="t_7e19ccd3" formatted="false">Powiedz je, aby wysłać dyktando do szefa: „Ada, …”, „to dla Ady”. Samo wspomnienie imienia w treści nie wysyła wiadomości. Bez użycia imienia stuknij 🧑‍💼.</string>
     <string name="t_7e88757d" formatted="false">Wyślij mimo to po tylu sekundach ciszy (sekundy)</string>
     <string name="t_7f3bcbfd" formatted="false">Połączenie głośnomówiące z szefem</string>
+    <string name="t_7f4bb9ee" formatted="false">Sprawdzanie</string>
     <string name="t_7fd53415_few" formatted="false">%1$d szablony</string>
     <string name="t_7fd53415_many" formatted="false">%1$d szablonów</string>
     <string name="t_7fd53415_one" formatted="false">%1$d szablon</string>
@@ -504,6 +504,7 @@
     <string name="t_b36a2ca5" formatted="false">Odpowiedź czeka</string>
     <string name="t_b3a08580" formatted="false">Brak treści do wysłania: nie zapisano żadnych słów</string>
     <string name="t_b4211199" formatted="false">Jednostka ceny niezweryfikowana · zobacz źródło</string>
+    <string name="t_b42cfacc" formatted="false">Wyciszono odpowiedź: czy to Ty przerywasz?</string>
     <string name="t_b48c5f39" formatted="false">Jev · nic nie startuje samo</string>
     <string name="t_b4c82195" formatted="false">Dictate &amp; Delegate łączy się z modelami mowy i tekstu przez OpenRouter przy użyciu Twojego klucza. Płacisz OpenRouter za rzeczywiste zużycie; Dictate &amp; Delegate nie ma serwera i nie pobiera prowizji.</string>
     <string name="t_b50cba8b" formatted="false">Wstaw od szefa</string>
@@ -598,7 +599,6 @@
     <string name="t_d27e302d" formatted="false">Twój szef sztabu otrzymuje wszystko: wklejony tekst w wiadomości, obrazy i pliki PDF jako załączniki.</string>
     <string name="t_d2be46f0" formatted="false">Ta notatka kosztowała %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Zamknij</string>
-    <string name="t_d32bef21" formatted="false">Wstrzymano odpowiedź: może mówisz w trakcie (głośniej niż echo)</string>
     <string name="t_d37efb26" formatted="false">Powiadomienia</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Wysyłanie…</string>
     <string name="t_d3d608f4" formatted="false">Sprawdzam, czy to już koniec…</string>
@@ -606,6 +606,7 @@
     <string name="t_d45847fe" formatted="false">Otwórz w bb ↗</string>
     <string name="t_d486aa0e" formatted="false">Gotowe do wstawienia</string>
     <string name="t_d56c4783" formatted="false">To logowanie nie zostało rozpoczęte tutaj lub już się zakończyło. Rozpocznij ponownie.</string>
+    <string name="t_d56e8c58" formatted="false">Odpowiedź oczekuje: pobieranie głosu (%1$d s)</string>
     <string name="t_d6bd063a" formatted="false">Kafelek</string>
     <string name="t_d6c42080" formatted="false">Rozpoczynanie połączenia…</string>
     <string name="t_d6d7613f" formatted="false">Twój szablon</string>
@@ -692,6 +693,7 @@
     <string name="t_f01db452" formatted="false">Utwórz tam klucz, skopiuj go i wklej powyżej. Doładuj też konto kwotą kilku dolarów na OpenRouter: minuta notatki kosztuje zwykle znacznie poniżej jednego centa.</string>
     <string name="t_f032e365" formatted="false">Pobierz klucz na console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Najtańszy</string>
+    <string name="t_f0ce4e3c" formatted="false">Odtwarzanie odpowiedzi: oczekiwano %1$d s</string>
     <string name="t_f0d83244" formatted="false">Model mowy nie zwrócił transkrypcji. Nagranie zostało zachowane; spróbuj ponownie.</string>
     <string name="t_f13b16c1" formatted="false">Twój szef sztabu korzysta z dwóch umiejętności w bb: chief-of-staff i dictate-and-delegate (jak pracować dla Ciebie oraz jak wysyłać powiadomienia i tekst z powrotem). Dictate &amp; Delegate instaluje je i aktualizuje w bb w krótkim wątku.</string>
     <string name="t_f157fddc" formatted="false">Wklej lub wpisz tekst tak, jak chcesz go wysłać.</string>

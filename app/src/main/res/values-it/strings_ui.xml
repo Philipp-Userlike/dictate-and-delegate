@@ -123,7 +123,6 @@
     <string name="t_2dad13e3" formatted="false">Lingua</string>
     <string name="t_2dc29d4d" formatted="false">Più tardi</string>
     <string name="t_2dd159ed" formatted="false">Nessun browser disponibile</string>
-    <string name="t_2e423333" formatted="false">Risposta in pausa · eri tu?</string>
     <string name="t_2e5c65fd" formatted="false">tramite OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">Server ntfy</string>
     <string name="t_2f79a315" formatted="false">Gentile signor Weber,\n\ndesidero informarla che il rubinetto del bagno perde da lunedì.</string>
@@ -179,7 +178,6 @@
     <string name="t_3f983199" formatted="false">%1$s La registrazione è salvata.</string>
     <string name="t_400b4b63" formatted="false">Tu dici</string>
     <string name="t_40de4e2a" formatted="false">Copiato. Incollalo dove segnali il problema.</string>
-    <string name="t_411d4bad" formatted="false">In pausa</string>
     <string name="t_41265b45" formatted="false">Tieni premuto per</string>
     <string name="t_417750b1" formatted="false">Invia: il messaggio era già stato inviato</string>
     <string name="t_41c5ed6f" formatted="false">Microfono consentito</string>
@@ -310,6 +308,7 @@
     <string name="t_714149a6" formatted="false">Invia a chief se interpellato</string>
     <string name="t_71cc04b4" formatted="false">bb non ha inviato alcun codice di accesso. Riavvia la procedura.</string>
     <string name="t_721589c1" formatted="false">Oggi</string>
+    <string name="t_721cbeec" formatted="false">Risposta abbassata · eri tu?</string>
     <string name="t_72640a34" formatted="false">Risposta interrotta: ci hai parlato sopra. Riprenderà da \"%1$s\" alla prossima pausa</string>
     <string name="t_7382e59f" formatted="false">Disconnessione…</string>
     <string name="t_73c2d986" formatted="false">Salvata, crittografata · Perfeziona usa i tuoi crediti Anthropic</string>
@@ -340,6 +339,7 @@
     <string name="t_7e19ccd3" formatted="false">Pronuncialo per inviare un dettato al tuo capo: \"Ada, …\", \"questo è per Ada\". Menzionare solo il nome in un messaggio non lo invia. Senza nome, tocca 🧑‍💼.</string>
     <string name="t_7e88757d" formatted="false">Invia comunque dopo questo silenzio (secondi)</string>
     <string name="t_7f3bcbfd" formatted="false">Chiamata vivavoce con il tuo capo</string>
+    <string name="t_7f4bb9ee" formatted="false">Verifica in corso</string>
     <string name="t_7fd53415_many" formatted="false">%1$d di modelli</string>
     <string name="t_7fd53415_one" formatted="false">%1$d modello</string>
     <string name="t_7fd53415_other" formatted="false">%1$d modelli</string>
@@ -501,6 +501,7 @@
     <string name="t_b36a2ca5" formatted="false">Risposta in attesa</string>
     <string name="t_b3a08580" formatted="false">Niente da inviare: nessuna parola trascritta</string>
     <string name="t_b4211199" formatted="false">Unità di prezzo non verificata · vedi fonte</string>
+    <string name="t_b42cfacc" formatted="false">Risposta abbassata: sei tu che ci stai parlando sopra?</string>
     <string name="t_b48c5f39" formatted="false">Jev · niente parte da solo</string>
     <string name="t_b4c82195" formatted="false">Dictate &amp; Delegate richiama i modelli vocali e di testo tramite OpenRouter, usando la tua chiave personale. Paghi a OpenRouter solo ciò che usi; Dictate &amp; Delegate non ha server e non trattiene alcuna percentuale.</string>
     <string name="t_b50cba8b" formatted="false">Inserisci da chief</string>
@@ -593,7 +594,6 @@
     <string name="t_d27e302d" formatted="false">Il tuo braccio destro riceve tutto: testo incollato nel messaggio, immagini e PDF come allegati.</string>
     <string name="t_d2be46f0" formatted="false">Questa nota è costata %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Chiudi</string>
-    <string name="t_d32bef21" formatted="false">Risposta in pausa: forse ci stai parlando sopra (più forte dell\'eco)</string>
     <string name="t_d37efb26" formatted="false">Notifiche</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Invio…</string>
     <string name="t_d3d608f4" formatted="false">Controllo se hai finito…</string>
@@ -601,6 +601,7 @@
     <string name="t_d45847fe" formatted="false">Apri in bb ↗</string>
     <string name="t_d486aa0e" formatted="false">Pronto da inserire</string>
     <string name="t_d56c4783" formatted="false">Questo accesso non è iniziato qui o è già terminato. Riavvia la procedura.</string>
+    <string name="t_d56e8c58" formatted="false">Risposta in attesa: recupero voce in corso (%1$d s)</string>
     <string name="t_d6bd063a" formatted="false">Riquadro</string>
     <string name="t_d6c42080" formatted="false">Avvio della chiamata…</string>
     <string name="t_d6d7613f" formatted="false">Il tuo modello</string>
@@ -687,6 +688,7 @@
     <string name="t_f01db452" formatted="false">Crea una chiave lì, copiala e incollala qui sopra. Aggiungi anche qualche dollaro di credito su OpenRouter: una nota di un minuto costa solitamente molto meno di un centesimo.</string>
     <string name="t_f032e365" formatted="false">Ottieni una chiave su console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Più economico</string>
+    <string name="t_f0ce4e3c" formatted="false">Riproduzione risposta: atteso %1$d s</string>
     <string name="t_f0d83244" formatted="false">Il modello vocale non ha restituito alcuna trascrizione. La registrazione è conservata; riprova.</string>
     <string name="t_f13b16c1" formatted="false">Il tuo chief of staff segue due competenze in bb, chief-of-staff e dictate-and-delegate: come lavorare per te, e come inviarti notifiche e testo. Dictate &amp; Delegate le installa e le aggiorna in bb tramite un breve thread.</string>
     <string name="t_f157fddc" formatted="false">Incolla o digita il testo così come lo invieresti.</string>

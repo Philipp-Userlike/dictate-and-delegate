@@ -123,7 +123,6 @@
     <string name="t_2dad13e3" formatted="false">Idioma</string>
     <string name="t_2dc29d4d" formatted="false">Más tarde</string>
     <string name="t_2dd159ed" formatted="false">No hay navegador disponible</string>
-    <string name="t_2e423333" formatted="false">Respuesta en pausa · ¿eras tú?</string>
     <string name="t_2e5c65fd" formatted="false">vía OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">Servidor ntfy</string>
     <string name="t_2f79a315" formatted="false">Estimado Sr. Weber:\n\nLe escribo para informarle de que el grifo del baño gotea desde el lunes.</string>
@@ -179,7 +178,6 @@
     <string name="t_3f983199" formatted="false">%1$s La grabación se ha guardado.</string>
     <string name="t_400b4b63" formatted="false">Tú dices</string>
     <string name="t_40de4e2a" formatted="false">Copiado. Pégalo donde informes del problema.</string>
-    <string name="t_411d4bad" formatted="false">En pausa</string>
     <string name="t_41265b45" formatted="false">Mantener durante</string>
     <string name="t_417750b1" formatted="false">Enviar: tu mensaje ya se había enviado</string>
     <string name="t_41c5ed6f" formatted="false">Micrófono permitido</string>
@@ -310,6 +308,7 @@
     <string name="t_714149a6" formatted="false">Enviar al jefe si se le menciona</string>
     <string name="t_71cc04b4" formatted="false">bb no envió ningún código de inicio de sesión. Inícialo de nuevo.</string>
     <string name="t_721589c1" formatted="false">Hoy</string>
+    <string name="t_721cbeec" formatted="false">Respuesta silenciada · ¿eras tú?</string>
     <string name="t_72640a34" formatted="false">Respuesta detenida: hablaste encima. Seguirá desde «%1$s» en tu próxima pausa</string>
     <string name="t_7382e59f" formatted="false">Cerrando sesión…</string>
     <string name="t_73c2d986" formatted="false">Guardada, cifrada · Mejorar usa tus créditos de Anthropic</string>
@@ -340,6 +339,7 @@
     <string name="t_7e19ccd3" formatted="false">Dilo para enviar un dictado a tu jefe: \"Ada, …\", \"esto es para Ada\". Solo mencionar el nombre en un mensaje no lo envía. Sin nombre, toca 🧑‍💼.</string>
     <string name="t_7e88757d" formatted="false">Enviar igualmente tras este tiempo de silencio (segundos)</string>
     <string name="t_7f3bcbfd" formatted="false">Llamada manos libres con tu jefe</string>
+    <string name="t_7f4bb9ee" formatted="false">Comprobando</string>
     <string name="t_7fd53415_many" formatted="false">%1$d plantillas</string>
     <string name="t_7fd53415_one" formatted="false">%1$d plantilla</string>
     <string name="t_7fd53415_other" formatted="false">%1$d plantillas</string>
@@ -501,6 +501,7 @@
     <string name="t_b36a2ca5" formatted="false">Respuesta en espera</string>
     <string name="t_b3a08580" formatted="false">Nada que enviar: no se transcribieron palabras</string>
     <string name="t_b4211199" formatted="false">Unidad de precio no verificada · ver origen</string>
+    <string name="t_b42cfacc" formatted="false">Respuesta silenciada: ¿estás hablando por encima?</string>
     <string name="t_b48c5f39" formatted="false">Jev · nada empieza por sí solo</string>
     <string name="t_b4c82195" formatted="false">Dictate &amp; Delegate llama a los modelos de voz y texto mediante OpenRouter con tu propia clave. Pagas a OpenRouter por tu consumo; Dictate &amp; Delegate no tiene servidor ni se lleva comisión.</string>
     <string name="t_b50cba8b" formatted="false">Insertar del jefe</string>
@@ -593,7 +594,6 @@
     <string name="t_d27e302d" formatted="false">Tu jefe de gabinete lo recibe todo: texto pegado en el mensaje, imágenes y PDF como archivos adjuntos.</string>
     <string name="t_d2be46f0" formatted="false">Esta nota costó %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Cerrar</string>
-    <string name="t_d32bef21" formatted="false">Respuesta en pausa: quizás estás hablando (más alto que su eco)</string>
     <string name="t_d37efb26" formatted="false">Notificaciones</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Enviando…</string>
     <string name="t_d3d608f4" formatted="false">Comprobando si has terminado…</string>
@@ -601,6 +601,7 @@
     <string name="t_d45847fe" formatted="false">Abrir en bb ↗</string>
     <string name="t_d486aa0e" formatted="false">Listo para insertar</string>
     <string name="t_d56c4783" formatted="false">Este inicio de sesión no se inició aquí o ya ha finalizado. Inícialo de nuevo.</string>
+    <string name="t_d56e8c58" formatted="false">Respuesta en espera: descargando voz (%1$d s)</string>
     <string name="t_d6bd063a" formatted="false">Botón</string>
     <string name="t_d6c42080" formatted="false">Iniciando la llamada…</string>
     <string name="t_d6d7613f" formatted="false">Tu plantilla</string>
@@ -687,6 +688,7 @@
     <string name="t_f01db452" formatted="false">Crea una clave allí, cópiala y pégala arriba. Añade también unos pocos dólares de saldo en OpenRouter: una nota de un minuto suele costar mucho menos de un centavo.</string>
     <string name="t_f032e365" formatted="false">Consigue una clave en console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">El más económico</string>
+    <string name="t_f0ce4e3c" formatted="false">Reproduce respuesta: esperó %1$d s</string>
     <string name="t_f0d83244" formatted="false">El modelo de voz no devolvió ninguna transcripción. La grabación se conserva; prueba otra vez.</string>
     <string name="t_f13b16c1" formatted="false">Tu jefe de gabinete sigue dos habilidades en bb, chief-of-staff y dictate-and-delegate: cómo trabajar para ti y cómo notificarte y responderte con texto. Dictate &amp; Delegate las instala y actualiza en bb mediante un breve hilo.</string>
     <string name="t_f157fddc" formatted="false">Pega o escribe el texto tal como lo enviarías.</string>

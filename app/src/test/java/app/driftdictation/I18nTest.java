@@ -25,7 +25,7 @@ public class I18nTest {
 
   static Set<String> texts() throws Exception {
     Set<String> found = new TreeSet<>();
-    Pattern call = Pattern.compile("\\b(?:tr|reason)\\(\\s*(" + LIT + "(?:\\s*\\+\\s*" + LIT + ")*)");
+    Pattern call = Pattern.compile("\\b(?:tr|reason|ongoing)\\(\\s*(" + LIT + "(?:\\s*\\+\\s*" + LIT + ")*)");
     for (File f : new File(main(), "java/app/driftdictation").listFiles()) {
       if (!f.getName().endsWith(".java")) continue;
       String code = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);

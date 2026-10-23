@@ -29,7 +29,7 @@ def texts():
             continue
         code = open(os.path.join(SRC, name), encoding="utf-8").read()
         # The first argument of tr(…): one or more literals joined with +.
-        for m in re.finditer(r'\b(?:tr|reason)\(\s*(' + LIT + r'(?:\s*\+\s*' + LIT + r')*)', code):
+        for m in re.finditer(r'\b(?:tr|reason|ongoing)\(\s*(' + LIT + r'(?:\s*\+\s*' + LIT + r')*)', code):
             text = "".join(unescape(x) for x in re.findall(LIT, m.group(1)))
             found[text] = name
         # Labels stored in English and translated when shown: tr(variable).

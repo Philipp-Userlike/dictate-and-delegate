@@ -96,7 +96,7 @@ public class HandsFreeTest {
     /** Ends the reply being read, played to the end. */
     volatile Runnable done, fail;
     /** The voice: its audio starts at once (as long as this is true), or never. */
-    volatile boolean audioStarts = true, audioPlaying, paused, stopped;
+    volatile boolean audioStarts = true, audioPlaying, ducked, stopped;
     volatile int heardChars;
     /** While set, the speech model waits for it (a slow transcription). */
     volatile java.util.concurrent.CountDownLatch slow;
@@ -151,12 +151,8 @@ public class HandsFreeTest {
                   return audioPlaying;
                 }
 
-                public void pause() {
-                  paused = true;
-                }
-
-                public void resume() {
-                  paused = false;
+                public void duck(boolean down) {
+                  ducked = down;
                 }
 
                 public int heardChars() {
@@ -726,17 +722,18 @@ public class HandsFreeTest {
     f.session.reply("r1", LONG_REPLY);
     until(() -> f.spoken.size() == 1);
     for (int i = 0; i < HandsFreeSession.ECHO_FRAMES + 20; i++) f.session.frame(frame(1500)); // Its echo.
-    assertFalse("the echo alone doesn't pause it", f.paused);
+    assertFalse("the echo alone doesn't turn it down", f.ducked);
     f.heardChars = LONG_REPLY.indexOf("from gate");
     return f;
   }
 
   @Test
-  public void talkingOverAReplyPausesItAndInterruptsItAndItPlaysLaterFromThatSentence() throws Exception {
+  public void talkingOverAReplyInterruptsItAndItPlaysLaterFromThatSentence() throws Exception {
     Fake f = playingReply("Hold on, book the train instead", "Over.");
     f.heardChars = LONG_REPLY.indexOf("Lisbon");
     for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // You, clearly louder.
-    assertTrue("paused at once", f.paused);
+    assertTrue("turned down at once", f.ducked);
+    assertFalse("but it plays on until your words are written down", f.stopped);
     assertEquals(HandsFreeSession.Live.CHECKING, f.session.live());
     f.quiet(1100); // You pause: what you said is written down.
     until(() -> f.session.state() == HandsFreeSession.State.LISTENING);
@@ -757,9 +754,9 @@ public class HandsFreeTest {
   public void theRepliesOwnVoiceComingBackResumesIt() throws Exception {
     Fake f = playingReply("the morning from gate twelve");
     for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // A loud stretch of its own voice.
-    assertTrue(f.paused);
+    assertTrue(f.ducked);
     f.quiet(1100);
-    until(() -> !f.paused);
+    until(() -> !f.ducked);
     assertEquals(HandsFreeSession.State.READING, f.session.state());
     assertFalse(f.stopped);
     assertEquals("", f.session.pending());
@@ -1058,5 +1055,193 @@ public class HandsFreeTest {
     f.talk();
     until(() -> !f.session.error().isEmpty());
     assertTrue(reasons(f), reasons(f).startsWith("Couldn't write down 1."));
+  }
+
+  // ------------------------------------------------------------------ 3.2.9: replies reach you
+
+  /** A household sound: n frames at the given amplitude. */
+  static void clatter(HandsFreeSession session, int amplitude, int frames) {
+    for (int i = 0; i < frames; i++) session.frame(frame(amplitude));
+  }
+
+  @Test
+  public void householdBurstsInAQuietRoomNeverOpenATurnButYourVoiceDoes() {
+    List<String> started = new ArrayList<>();
+    List<byte[]> out = new ArrayList<>();
+    HandsFree.Segmenter s =
+        new HandsFree.Segmenter(
+            HandsFree.DEFAULT_PAUSE_MS,
+            () -> HandsFree.DEFAULT_TAKE_MS,
+            HandsFree.DEFAULT_GATE,
+            HandsFree.LEVEL,
+            new HandsFree.Segmenter.Listener() {
+              public void segment(byte[] pcm) {
+                out.add(pcm);
+              }
+
+              public void started(double level, double background) {
+                started.add(String.format(java.util.Locale.ROOT, "level %.0f, background %.0f", level, background));
+              }
+            });
+    java.util.Random random = new java.util.Random(7);
+    feed(s, 140, 3000); // A quiet room: background about 100.
+    for (int i = 0; i < 40; i++) { // A minute and a half: a cup, a door, a drawer every few seconds.
+      int amplitude = 1400 + random.nextInt(2000); // Levels 1000 to 2400: ten to twenty-four times the room.
+      feed(s, amplitude, 60 + random.nextInt(5) * 20); // 60 to 140 ms.
+      feed(s, 140, 1800 + random.nextInt(1500));
+    }
+    assertEquals("noise took the turn", List.of(), started);
+    assertTrue(out.isEmpty());
+    assertTrue("background " + s.background(), s.background() < 150);
+    feed(s, 6000, 600); // You, close to the phone.
+    assertEquals(1, started.size());
+    feed(s, 6000, 120);
+    feed(s, 140, 2000);
+    assertEquals(1, out.size());
+  }
+
+  @Test
+  public void aReadyReplyWaitsTwelveSecondsAtMostWhileNoiseKeepsItsPauseAway() throws Exception {
+    Fake f = new Fake();
+    f.quiet(1000);
+    clatter(f.session, 2100, 3); // A sound that never counts as speech, again and again.
+    f.session.reply("r1", "Your table is booked.");
+    until(() -> reasons(f).contains("Reply waits: you're talking"));
+    long start = f.now.get();
+    for (int i = 0; i < 30; i++) {
+      clatter(f.session, 50, 22);
+      clatter(f.session, 2100, 3);
+      f.now.addAndGet(500);
+      f.session.tick();
+      if (f.now.get() - start < HandsFreeSession.REPLY_WAIT_MS) assertTrue("played after " + (f.now.get() - start) + " ms", f.spoken.isEmpty());
+    }
+    assertEquals(List.of("Your table is booked."), f.spoken);
+    assertTrue(reasons(f), reasons(f).contains("Reply plays: waited 12 s"));
+    assertEquals("the noise never took the turn", "", f.session.pending());
+    assertEquals(0, f.transcriptions.get());
+  }
+
+  @Test
+  public void pastTwelveSecondsOnlySpeechGoingOnHoldsAReply() throws Exception {
+    Fake f = new Fake("I was thinking about the trip");
+    java.util.concurrent.CountDownLatch slow = new java.util.concurrent.CountDownLatch(1);
+    f.slow = slow; // Writing down your turn takes long.
+    long timeout = HandsFreeSession.writeTimeoutMs;
+    HandsFreeSession.writeTimeoutMs = 60_000;
+    try {
+      f.quiet(1000);
+      f.talk();
+      f.session.reply("r1", "Your table is booked.");
+      until(() -> reasons(f).contains("Reply waits: checking whether you're done"));
+      f.speak(); // You go on talking.
+      f.now.addAndGet(HandsFreeSession.REPLY_WAIT_MS + 1000);
+      f.session.tick();
+      assertTrue("you're speaking: it waits", f.spoken.isEmpty());
+      f.quiet(100); // A little gap in your speech: still speaking.
+      f.session.tick();
+      assertTrue(f.spoken.isEmpty());
+      f.quiet(1100); // Your pause: your words still being written down, and it has waited enough.
+      f.session.tick();
+      until(() -> f.spoken.size() == 1);
+      assertTrue(reasons(f), reasons(f).contains("Reply plays: waited 12 s"));
+    } finally {
+      slow.countDown();
+      HandsFreeSession.writeTimeoutMs = timeout;
+    }
+  }
+
+  @Test
+  public void waitingForTheVoiceIsShownAndCountsUp() throws Exception {
+    Fake f = new Fake();
+    java.util.concurrent.CountDownLatch fetched = new java.util.concurrent.CountDownLatch(1);
+    f.prepare =
+        text -> {
+          try {
+            fetched.await();
+          } catch (InterruptedException ignored) {
+            /* Go on. */
+          }
+          return text;
+        };
+    f.quiet(1000);
+    f.session.reply("r1", "Your table is booked.");
+    f.session.tick();
+    assertFalse("not in the first second", reasons(f).contains("its voice"));
+    f.now.addAndGet(1000);
+    f.session.tick();
+    assertTrue(reasons(f), reasons(f).startsWith("Reply waits: its voice is being fetched (1 s)"));
+    f.now.addAndGet(2000);
+    f.session.tick();
+    String r = reasons(f);
+    assertTrue(r, r.startsWith("Reply waits: its voice is being fetched (3 s)"));
+    assertFalse("counted up in place", r.contains("(1 s)"));
+    assertEquals(1, f.log.stream().filter(l -> l.contains("its voice is being fetched")).count());
+    fetched.countDown();
+    until(() -> f.spoken.size() == 1);
+  }
+
+  @Test
+  public void noiseOverAReplyNeverStopsItRealWordsDo() throws Exception {
+    Fake f = playingReply("", "", "Stop, cancel the train");
+    for (int burst = 0; burst < 2; burst++) {
+      int n = burst;
+      for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // A clatter, louder than the reply.
+      assertFalse("never paused or stopped by a sound", f.stopped);
+      assertEquals(HandsFreeSession.State.READING, f.session.state());
+      f.quiet(1100);
+      until(() -> f.transcriptions.get() == n + 1 && !f.ducked);
+      assertEquals(HandsFreeSession.State.READING, f.session.state());
+      assertTrue(reasons(f), reasons(f).startsWith("Reply plays on: no words were said over it"));
+    }
+    assertFalse(f.stopped);
+    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // Now you.
+    f.quiet(1100);
+    until(() -> f.stopped);
+    until(() -> f.session.pending().equals("Stop, cancel the train"));
+    assertEquals(1, f.session.held()); // It plays again later.
+  }
+
+  @Test
+  public void wordsOverAReplyThatEndsMeanwhileStillStartYourTurn() throws Exception {
+    Fake f = playingReply("Wait, one more thing");
+    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // You, over its last words.
+    f.done.run(); // It ends while you talk.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    until(() -> f.session.pending().equals("Wait, one more thing"));
+    assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
+  }
+
+  // ------------------------------------------------------------------ the log
+
+  @Test
+  public void theLogLosesNoLineFromManyThreadsAndKeepsTheLastThousand() throws Exception {
+    java.io.File file = java.io.File.createTempFile("handsfree", ".log");
+    try {
+      StringBuilder old = new StringBuilder();
+      for (int i = 0; i < 1000; i++) old.append("old ").append(i).append('\n');
+      java.nio.file.Files.write(file.toPath(), old.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      HandsFreeLog.append(file, HandsFreeLog.callStarted("14:05"));
+      List<Thread> threads = new ArrayList<>();
+      for (int t = 0; t < 8; t++) {
+        int n = t;
+        threads.add(new Thread(() -> {
+          for (int i = 0; i < 100; i++) HandsFreeLog.append(file, "thread " + n + " event " + i);
+        }));
+      }
+      for (Thread t : threads) t.start();
+      HandsFreeLog.append(file, "call ended"); // While the others write.
+      for (Thread t : threads) t.join();
+      HandsFreeLog.append(file, "told the chief: [hands-free call ended]");
+      List<String> lines = java.nio.file.Files.readAllLines(file.toPath());
+      for (int t = 0; t < 8; t++) for (int i = 0; i < 100; i++) assertTrue("lost: thread " + t + " event " + i, lines.contains("thread " + t + " event " + i));
+      assertTrue(lines.contains("call ended"));
+      assertTrue(lines.contains("── call started 14:05 ──"));
+      assertEquals("told the chief: [hands-free call ended]", lines.get(lines.size() - 1));
+      assertTrue("old lines dropped: " + lines.size(), lines.size() <= HandsFreeLog.KEEP + 100);
+      assertFalse("the oldest go first", lines.contains("old 0"));
+      assertEquals(lines.size(), new java.util.HashSet<>(lines).size());
+    } finally {
+      file.delete();
+    }
   }
 }

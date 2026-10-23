@@ -108,7 +108,6 @@ final class Voice {
   /** The reply being read; for Android's voice, where its spoken part starts and how far it got. */
   private volatile String text = "";
   private volatile int ttsBase, ttsAt;
-  private volatile boolean pausing;
   private int replies;
   /**
    * Android's voice: one engine for the whole call, started at once (it takes a moment to be
@@ -209,7 +208,7 @@ final class Voice {
         }
 
         public void onStop(String id, boolean interrupted) {
-          if (id.equals(utterance) && !pausing) finished(false); // Paused: resume speaks the rest.
+          if (id.equals(utterance)) finished(false);
         }
       };
 
@@ -334,7 +333,6 @@ final class Voice {
     }
     this.text = text;
     ttsBase = ttsAt = 0;
-    pausing = false;
     focus(true);
     new Thread(
             () -> {
@@ -428,50 +426,22 @@ final class Voice {
     }
   }
 
-  /** Pauses the reply (you may be talking over it). */
-  void pause() {
-    MediaPlayer p;
-    synchronized (this) {
-      p = player;
-    }
-    try {
-      if (p != null) {
-        if (p.isPlaying()) p.pause();
-        return;
-      }
-    } catch (IllegalStateException ignored) {
-      return;
-    }
-    TextToSpeech t = tts;
-    if (t != null && t.isSpeaking()) {
-      pausing = true;
-      ttsBase += ttsAt; // Android's voice can't pause: it stops, and resume speaks from here.
-      ttsAt = 0;
-      t.stop();
-    }
-  }
+  /** How loud a reply plays while what's said over it is checked. */
+  static final float DUCKED = 0.25f;
 
-  /** Plays on from where it paused. */
-  void resume() {
+  /**
+   * Turns the reply down (you may be talking over it) or back up; it plays on either way. Android's
+   * voice can't change its volume while it speaks: it plays on as it is.
+   */
+  void duck(boolean down) {
     MediaPlayer p;
     synchronized (this) {
       p = player;
     }
     try {
-      if (p != null) {
-        p.start();
-        return;
-      }
+      if (p != null) p.setVolume(down ? DUCKED : 1f, down ? DUCKED : 1f);
     } catch (IllegalStateException ignored) {
-      return;
-    }
-    TextToSpeech t = tts;
-    if (t != null && pausing) {
-      pausing = false;
-      String rest = text.substring(Math.min(ttsBase, text.length()));
-      String id = "rest-" + (++utterances);
-      utterance = id;
-      if (rest.isBlank() || t.speak(rest, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) finished(true);
+      /* Already done. */
     }
   }
 
@@ -644,7 +614,6 @@ final class Voice {
 
   /** Stops reading at once; the playback still hears it ended. */
   void stop() {
-    pausing = false;
     MediaPlayer p;
     synchronized (this) {
       p = player;

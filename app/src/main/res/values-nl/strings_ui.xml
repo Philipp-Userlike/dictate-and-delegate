@@ -123,7 +123,6 @@
     <string name="t_2dad13e3" formatted="false">Taal</string>
     <string name="t_2dc29d4d" formatted="false">Later</string>
     <string name="t_2dd159ed" formatted="false">Geen browser beschikbaar</string>
-    <string name="t_2e423333" formatted="false">Antwoord gepauzeerd · was jij dat?</string>
     <string name="t_2e5c65fd" formatted="false">via OpenRouter: %1$s</string>
     <string name="t_2ef3166c" formatted="false">ntfy-server</string>
     <string name="t_2f79a315" formatted="false">Geachte heer Weber,\n\nIk wil u laten weten dat de kraan in de badkamer sinds maandag lekt.</string>
@@ -178,7 +177,6 @@
     <string name="t_3f983199" formatted="false">%1$s De opname is opgeslagen.</string>
     <string name="t_400b4b63" formatted="false">Jij zegt</string>
     <string name="t_40de4e2a" formatted="false">Gekopieerd. Plak het waar je het probleem meldt.</string>
-    <string name="t_411d4bad" formatted="false">Gepauzeerd</string>
     <string name="t_41265b45" formatted="false">Ingedrukt houden voor</string>
     <string name="t_417750b1" formatted="false">Verzenden: je bericht was al verstuurd</string>
     <string name="t_41c5ed6f" formatted="false">Microfoon toegestaan</string>
@@ -309,6 +307,7 @@
     <string name="t_714149a6" formatted="false">Naar stafchef sturen indien aangesproken</string>
     <string name="t_71cc04b4" formatted="false">bb stuurde geen aanmeldcode. Start opnieuw.</string>
     <string name="t_721589c1" formatted="false">Vandaag</string>
+    <string name="t_721cbeec" formatted="false">Antwoord zachter gezet · was jij dat?</string>
     <string name="t_72640a34" formatted="false">Antwoord gestopt: je praatte erdoorheen. Speelt opnieuw vanaf \"%1$s\" bij je volgende pauze</string>
     <string name="t_7382e59f" formatted="false">Uitloggen…</string>
     <string name="t_73c2d986" formatted="false">Opgeslagen, versleuteld · Verfijnen gebruikt je Anthropic-tegoed</string>
@@ -339,6 +338,7 @@
     <string name="t_7e19ccd3" formatted="false">Zeg de naam om een dictaat naar je leidinggevende te sturen: \"Ada, …\", \"dit is voor Ada\". Alleen de naam noemen in een bericht verzendt het niet. Zonder naam, tik op 🧑‍💼.</string>
     <string name="t_7e88757d" formatted="false">Toch verzenden na deze stilte (seconden)</string>
     <string name="t_7f3bcbfd" formatted="false">Handsfree bellen met je chef</string>
+    <string name="t_7f4bb9ee" formatted="false">Controleren</string>
     <string name="t_7fd53415_one" formatted="false">%1$d sjabloon</string>
     <string name="t_7fd53415_other" formatted="false">%1$d sjablonen</string>
     <string name="t_8053d9fa" formatted="false">Praat en pauzeer: zodra je duidelijk klaar bent (vraag gesteld, %1$s), wordt het verzonden; zeg %2$s om af te sluiten. Verzenden en de headsetknop verzenden direct. Een antwoord wacht zolang je praat en speelt af bij een pauze; praat erdoorheen om het te stoppen, het speelt later opnieuw.</string>
@@ -498,6 +498,7 @@
     <string name="t_b36a2ca5" formatted="false">Antwoord wacht</string>
     <string name="t_b3a08580" formatted="false">Niets om te verzenden: er zijn geen woorden uitgeschreven</string>
     <string name="t_b4211199" formatted="false">Prijseenheid niet geverifieerd · zie bron</string>
+    <string name="t_b42cfacc" formatted="false">Antwoord zachter gezet: praat jij erdoorheen?</string>
     <string name="t_b48c5f39" formatted="false">Jev · niets start vanzelf</string>
     <string name="t_b4c82195" formatted="false">Dictate &amp; Delegate roept de spraak- en tekstmodellen aan via OpenRouter met je eigen sleutel. Je betaalt OpenRouter voor wat je verbruikt; Dictate &amp; Delegate heeft geen server en houdt niets in.</string>
     <string name="t_b50cba8b" formatted="false">Invoegen van stafchef</string>
@@ -588,7 +589,6 @@
     <string name="t_d27e302d" formatted="false">Je stafchef krijgt alles: geplakte tekst in het bericht, afbeeldingen en pdf\'s als bijlagen.</string>
     <string name="t_d2be46f0" formatted="false">Deze notitie kostte %1$s.</string>
     <string name="t_d2c0aec0" formatted="false">Sluiten</string>
-    <string name="t_d32bef21" formatted="false">Antwoord gepauzeerd: praat je erdoorheen? (luider dan echo)</string>
     <string name="t_d37efb26" formatted="false">Meldingen</string>
     <string name="t_d3c7fe72" formatted="false">🧑‍💼 Verzenden…</string>
     <string name="t_d3d608f4" formatted="false">Controleren of je klaar bent…</string>
@@ -596,6 +596,7 @@
     <string name="t_d45847fe" formatted="false">Openen in bb ↗</string>
     <string name="t_d486aa0e" formatted="false">Klaar om in te voegen</string>
     <string name="t_d56c4783" formatted="false">Deze aanmelding is niet hier gestart of is al afgerond. Start opnieuw.</string>
+    <string name="t_d56e8c58" formatted="false">Antwoord wacht: stem wordt opgehaald (%1$d s)</string>
     <string name="t_d6bd063a" formatted="false">Tegel</string>
     <string name="t_d6c42080" formatted="false">Gesprek starten…</string>
     <string name="t_d6d7613f" formatted="false">Je sjabloon</string>
@@ -682,6 +683,7 @@
     <string name="t_f01db452" formatted="false">Maak daar een sleutel aan, kopieer hem en plak hem hierboven. Voeg ook een paar dollar tegoed toe op OpenRouter: een notitie van één minuut kost meestal ruim minder dan een cent.</string>
     <string name="t_f032e365" formatted="false">Haal een sleutel op via console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Goedkoopste</string>
+    <string name="t_f0ce4e3c" formatted="false">Antwoord speelt af: %1$d s gewacht</string>
     <string name="t_f0d83244" formatted="false">Het spraakmodel gaf geen transcriptie terug. De opname is bewaard; probeer het opnieuw.</string>
     <string name="t_f13b16c1" formatted="false">Je stafchef gebruikt twee vaardigheden in bb, chief-of-staff en dictate-and-delegate: hoe voor je te werken, en hoe je meldingen te sturen en tekst terug te zenden. Dictate &amp; Delegate installeert en updatet deze in bb via een korte thread.</string>
     <string name="t_f157fddc" formatted="false">Plak of typ de tekst zoals je deze zou versturen.</string>

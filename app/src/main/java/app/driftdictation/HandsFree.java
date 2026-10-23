@@ -144,7 +144,8 @@ final class HandsFree {
    * if the detector calls it speech (1) and it's at least gate times louder than the measured
    * background (2), so your voice close to the phone counts and distant voices or music mostly
    * don't. A stretch only counts once it holds minSpeechMs of such frames within the last
-   * WINDOW_MS, or a burst of BURST_FRAMES at least BURST times louder than the background (3);
+   * WINDOW_MS, or a burst of BURST_FRAMES at least BURST times louder than the background and
+   * above BURST_MIN (3);
    * shorter ones are noise. It ends after pauseMs without speech, and keeps a little audio before
    * and after it. Silence in between never goes to the speech model.
    */
@@ -152,6 +153,12 @@ final class HandsFree {
     // Synchronized: the microphone feeds it while Send, the ticker and a barge-in use it too.
     static final int FRAME_MS = 20, PAD_MS = 300, WINDOW_MS = 1500, BURST_FRAMES = 5;
     static final double BURST = 10;
+    /**
+     * A burst also has to be at least this loud: with the background down at 50 (a quiet room,
+     * 3.2.8 lets it fall fast), 10× is only 500, and a clatter or a door took the turn with it.
+     * A short word close to the phone is far louder.
+     */
+    static final double BURST_MIN = 2500;
     /** The background is learned fast over the first quiet frames (the default is a guess), then slowly. */
     static final int LEARN_FRAMES = 50;
 
@@ -320,7 +327,7 @@ final class HandsFree {
     private void confirm(double level) {
       if (confirmed) return;
       boolean enough = voiced.size() * FRAME_MS >= minSpeechMs.getAsInt();
-      boolean burst = speechFrames >= BURST_FRAMES && peak >= background * BURST;
+      boolean burst = speechFrames >= BURST_FRAMES && peak >= Math.max(BURST_MIN, background * BURST);
       if (!enough && !burst) return;
       confirmed = true;
       quietMs = 0;
