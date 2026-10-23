@@ -14,9 +14,14 @@ import java.util.List;
 import org.junit.Test;
 
 public class VoiceStreamTest {
-  /** The fake OpenRouter's reply: a real MP3 (MPEG-2 Layer III, 24 kHz mono, 64 kbps). */
+  /**
+   * The fake OpenRouter's reply: a real MP3 (MPEG-2 Layer III, 24 kHz mono, 64 kbps). It isn't in
+   * git (*.mp3 is ignored): without it the tests that need it are skipped.
+   */
   static byte[] replyMp3() throws Exception {
-    return Files.readAllBytes(Path.of("../scripts/fakes/reply.mp3"));
+    Path p = Path.of("../scripts/fakes/reply.mp3");
+    org.junit.Assume.assumeTrue("scripts/fakes/reply.mp3 isn't there", Files.exists(p));
+    return Files.readAllBytes(p);
   }
 
   static List<byte[]> frames(byte[] mp3, int chunk) {
