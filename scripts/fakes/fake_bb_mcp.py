@@ -29,7 +29,8 @@ Test control (not part of bb):
   POST /test/fail     {"kind": "spawn"|"tell"|"show"|"any", "error": "tool"|"http401"|"http503"|"rpc"}
                       queues one failure for the next matching call: "tool" is an isError result
                       ("bb thread tell failed: …"), "httpNNN" answers that HTTP status, "rpc" a
-                      JSON-RPC error
+                      JSON-RPC error; with "thread": "thr_…", only a call for that thread
+                      (a tell to the talker, not the chief)
   POST /test/config   {"token": "secret"} requires "Authorization: Bearer secret" (401 otherwise);
                       {"token": ""} turns that off
   POST /test/skills   {"installed": {"dictate-and-delegate": "abc", ...}} sets what bb has ("" missing,
@@ -83,10 +84,10 @@ def kind_of(code):
     return "other"
 
 
-def take_failure(kind):
+def take_failure(kind, code):
     with lock:
         for i, f in enumerate(failures):
-            if f.get("kind") in (kind, "any"):
+            if f.get("kind") in (kind, "any") and (not f.get("thread") or '"%s"' % f["thread"] in code):
                 return failures.pop(i)
     return None
 
@@ -234,7 +235,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def call(self, rid, code):
         kind = kind_of(code)
-        failure = take_failure(kind)
+        failure = take_failure(kind, code)
         if failure:
             error = failure.get("error", "tool")
             if error.startswith("http"):

@@ -100,6 +100,7 @@
     <string name="t_248af959" formatted="false">Eine Aufnahme wurde gespeichert, aber nicht transkribiert.</string>
     <string name="t_24c47eae" formatted="false">Kein MCP-Server unter dieser Adresse (HTTP 404). Prüfe die Adresse und ob das MCP-Plugin von bb aktiv ist.</string>
     <string name="t_24c7367a" formatted="false">Kopierten Text einfügen</string>
+    <string name="t_252c6bbe" formatted="false">Weder Chief noch Talker haben es erhalten: %1$s</string>
     <string name="t_256649c4" formatted="false">schnell</string>
     <string name="t_260e77ee" formatted="false">Nicht gesendet: du hast wohl noch mehr zu sagen (%1$d%% fertig)</string>
     <string name="t_262860bd" formatted="false">Mit bb anmelden</string>
@@ -332,6 +333,7 @@
     <string name="t_783d9fbc" formatted="false">Bild konnte nicht gelesen werden.</string>
     <string name="t_78e66b38" formatted="false">Lokale Daten löschen?</string>
     <string name="t_791246e5" formatted="false">Name deines Chiefs</string>
+    <string name="t_7a213062" formatted="false">Das ist dein Chief of Staff. Der Talker muss ein anderer Thread sein.</string>
     <string name="t_7a933498" formatted="false">Konnte nicht alle Audios löschen</string>
     <string name="t_7abc2e98" formatted="false">Senden: was du gesagt hast, wird aufgeschrieben, dann geht es raus</string>
     <string name="t_7b65d791" formatted="false">Dictate &amp; Delegate ruft Sprach- und Textmodelle über OpenRouter mit diesem Key ab.</string>
@@ -479,6 +481,7 @@
     <string name="t_ab247fbe" formatted="false">Deine Stimme und dein Text gehen nur an die Anbieter, die du wählst. Es gibt keinen Server von Dictate &amp; Delegate.</string>
     <string name="t_ab7143b8" formatted="false">Berechtigungen</string>
     <string name="t_ab754703" formatted="false">Höre dich</string>
+    <string name="t_abfd3b0d" formatted="false">Talker verwenden</string>
     <string name="t_ac224344" formatted="false">Gespeichert, verschlüsselt · Sprache, Entscheidungen und Verfeinern</string>
     <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate nutzt die Bedienungshilfen-Berechtigung von Android ausschließlich für zwei Dinge: um deinen Text beim Tippen auf „Einfügen“ direkt am Cursor einzufügen und um das Halten der gewählten Lautstärketaste zu erkennen. Es fragt keine Bedienungshilfen-Ereignisse ab und liest nichts auf deinem Bildschirm; das Textfeld wird erst beim Antippen von „Einfügen“ abgefragt. Dictate &amp; Delegate ist Open Source, du kannst den Code jederzeit prüfen.</string>
     <string name="t_ac66579e" formatted="false">bb konnte nicht erreicht werden. Versuche es erneut.</string>
@@ -503,6 +506,7 @@
     <string name="t_b0bc3188" formatted="false">Wörter</string>
     <string name="t_b0c515f3" formatted="false">✓  An</string>
     <string name="t_b15fa13c" formatted="false">Keine Verbindung zu %1$s. Prüfe deine Internetverbindung.</string>
+    <string name="t_b1a746c0" formatted="false">Talker-Thread</string>
     <string name="t_b1c2889b" formatted="false">Skills in bb prüfen</string>
     <string name="t_b203fda8" formatted="false">Eigene Adresse</string>
     <string name="t_b214280c" formatted="false">Vorlage löschen</string>
@@ -533,6 +537,7 @@
     <string name="t_b942a462" formatted="false">keine Details</string>
     <string name="t_b99de9e8" formatted="false">Kein Anthropic-Schlüssel festgelegt.</string>
     <string name="t_b9bde03c" formatted="false">Hört zu</string>
+    <string name="t_b9d30202" formatted="false">An Chief gesendet ✓. Der Talker hat es nicht erhalten: %1$s</string>
     <string name="t_b9e8ea84" formatted="false">Letzte Ereignisse</string>
     <string name="t_bbb4c248" formatted="false">Gibt es noch etwas, das Dictate &amp; Delegate wissen sollte?</string>
     <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate verbindet sich über den MCP-Server von bb (Plugin bb--mcp), der in bb aktiv sein muss.</string>
@@ -565,6 +570,7 @@
     <string name="t_c5501bfa" formatted="false">✨ Verfeinern</string>
     <string name="t_c5573507" formatted="false">Hinzufügen</string>
     <string name="t_c55b8799" formatted="false">Die lokale Adresse von bb ist http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Erreiche sie vom Smartphone über dein Tailnet (Tailscale Serve, HTTPS) oder adb reverse.</string>
+    <string name="t_c574e601" formatted="false">Talker-Thread-Link oder -ID (thr_…)</string>
     <string name="t_c5cf792a" formatted="false">Nicht festgelegt</string>
     <string name="t_c681543c" formatted="false">Bilder, PDFs oder Textdateien, bis zu 10 MB.</string>
     <string name="t_c6a86804" formatted="false">Text deines Chiefs konnte nicht von ntfy geladen werden. Versuche es erneut.</string>
@@ -575,11 +581,13 @@
     <string name="t_c7ad7feb" formatted="false">Keine Verbindung zu OpenRouter. Prüfe deine Internetverbindung und versuche es erneut.</string>
     <string name="t_c7b2a2f8" formatted="false">noch kein Schlüssel</string>
     <string name="t_c8210626" formatted="false">Sprachausgabe-Modell</string>
+    <string name="t_c90e13f1" formatted="false">Nur an Talker gesendet. Der Chief hat es nicht erhalten: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Startet…</string>
     <string name="t_c997df74" formatted="false">bb hat die Anmeldung abgelehnt: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio ist abgelaufen oder wurde gelöscht. Text ist weiterhin gespeichert.</string>
     <string name="t_ca00a779" formatted="false">Schlüssel speichern</string>
     <string name="t_ca4b7d63" formatted="false">Antwort wartet: prüfe, ob du fertig bist</string>
+    <string name="t_ca513a47" formatted="false">Ab deinem nächsten Freisprechanruf</string>
     <string name="t_caf67b49" formatted="false">Claude hat es abgelehnt, diesen Text zu verfeinern.</string>
     <string name="t_cba5c7dd" formatted="false">Lautstärke leiser</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy ist kostenlos und Open Source. Installiere es und tippe erneut auf „In ntfy öffnen“.</string>
@@ -746,6 +754,7 @@
     <string name="t_fdbea202" formatted="false">Chat öffnen ↗</string>
     <string name="t_fe0bc00f" formatted="false">Daten auf diesem Handy</string>
     <string name="t_fe11d138" formatted="false">Name</string>
+    <string name="t_fe7a0c7d" formatted="false">Ein zweiter bb-Thread, der dir schnell per Sprache antwortet, während dein Chief of Staff die Arbeit erledigt. Wenn aktiv, geht jede Freisprech-Nachricht an beide, und dein Chief sendet seine Ergebnisse an den Talker.</string>
     <string name="t_feccbddf" formatted="false">Verfeinert. Der Text ist in Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Nicht erforderlich: Bildschirmaufnahme, Benachrichtigungen, Kontakte, Standort.</string>
     <string name="t_ff38152f" formatted="false">Speicher fast voll. Aufnahme gestoppt; Audio kann wiederholt werden.</string>

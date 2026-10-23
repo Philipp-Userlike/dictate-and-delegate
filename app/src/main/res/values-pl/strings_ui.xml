@@ -100,6 +100,7 @@
     <string name="t_248af959" formatted="false">Nagranie zostało zapisane, ale nie przetranskrybowane.</string>
     <string name="t_24c47eae" formatted="false">Brak serwera MCP pod tym adresa (HTTP 404). Sprawdź adres i upewnij się, że wtyczka MCP w bb jest włączona.</string>
     <string name="t_24c7367a" formatted="false">Wklej to, co masz w schowku</string>
+    <string name="t_252c6bbe" formatted="false">ani szef, ani mówca tego nie otrzymali: %1$s</string>
     <string name="t_256649c4" formatted="false">szybki</string>
     <string name="t_260e77ee" formatted="false">Nie wysłano: wygląda na to, że chcesz powiedzieć coś więcej (%1$d%% gotowe)</string>
     <string name="t_262860bd" formatted="false">Zaloguj się przez bb</string>
@@ -334,6 +335,7 @@
     <string name="t_783d9fbc" formatted="false">Nie udało się odczytać tego obrazu.</string>
     <string name="t_78e66b38" formatted="false">Usunąć dane lokalne?</string>
     <string name="t_791246e5" formatted="false">Imię Twojego szefa</string>
+    <string name="t_7a213062" formatted="false">To Twój szef personelu. Mówca musi być innym wątkiem.</string>
     <string name="t_7a933498" formatted="false">Nie udało się usunąć całego dźwięku</string>
     <string name="t_7abc2e98" formatted="false">Wyślij: zapisuję Twoją wypowiedź, zaraz wyślę</string>
     <string name="t_7b65d791" formatted="false">Dictate &amp; Delegate łączy się z modelami mowy i tekstu przez OpenRouter przy użyciu tego klucza.</string>
@@ -485,6 +487,7 @@
     <string name="t_ab247fbe" formatted="false">Twój głos i tekst trafiają wyłącznie do wybranych przez Ciebie dostawców. Dictate &amp; Delegate nie ma własnego serwera.</string>
     <string name="t_ab7143b8" formatted="false">Uprawnienia</string>
     <string name="t_ab754703" formatted="false">Słucham Cię</string>
+    <string name="t_abfd3b0d" formatted="false">Używaj mówcy</string>
     <string name="t_ac224344" formatted="false">Zapisano, zaszyfrowano · mowa, decyzje i Dopracuj</string>
     <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate używa uprawnienia Ułatwienia dostępu tylko w dwóch celach: aby wstawić tekst przy kursorze po dotknięciu Wstaw oraz aby wykryć przytrzymanie wybranego przycisku głośności. Nie wymaga zdarzeń ułatwień dostępu i nie czyta ekranu; sprawdza pole tekstowe tylko po naciśnięciu Wstaw. Dictate &amp; Delegate to projekt open source, więc możesz to sprawdzić.</string>
     <string name="t_ac66579e" formatted="false">Nie udało się połączyć z bb. Spróbuj ponownie.</string>
@@ -509,6 +512,7 @@
     <string name="t_b0bc3188" formatted="false">Słowa</string>
     <string name="t_b0c515f3" formatted="false">✓  Włączone</string>
     <string name="t_b15fa13c" formatted="false">Brak połączenia z %1$s. Sprawdź połączenie z internetem.</string>
+    <string name="t_b1a746c0" formatted="false">Wątek mówcy</string>
     <string name="t_b1c2889b" formatted="false">Sprawdź umiejętności w bb</string>
     <string name="t_b203fda8" formatted="false">Własny adres</string>
     <string name="t_b214280c" formatted="false">Usuń szablon</string>
@@ -541,6 +545,7 @@
     <string name="t_b942a462" formatted="false">brak szczegółów</string>
     <string name="t_b99de9e8" formatted="false">Brak klucza Anthropic.</string>
     <string name="t_b9bde03c" formatted="false">Słucham</string>
+    <string name="t_b9d30202" formatted="false">Wysłano ✓ do szefa. Mówca tego nie otrzymał: %1$s</string>
     <string name="t_b9e8ea84" formatted="false">Ostatnie zdarzenia</string>
     <string name="t_bbb4c248" formatted="false">Czy jest coś jeszcze, o czym Dictate &amp; Delegate powinno wiedzieć?</string>
     <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate łączy się z bb przez serwer MCP (wtyczka bb--mcp), który musi być włączony w bb.</string>
@@ -575,6 +580,7 @@
     <string name="t_c5501bfa" formatted="false">✨ Dopracuj</string>
     <string name="t_c5573507" formatted="false">Dodaj</string>
     <string name="t_c55b8799" formatted="false">Lokalny adres bb to http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Połącz się z nim z telefonu przez tailnet (Tailscale Serve, HTTPS) lub adb reverse.</string>
+    <string name="t_c574e601" formatted="false">Link lub ID wątku mówcy (thr_…)</string>
     <string name="t_c5cf792a" formatted="false">Nie ustawiono</string>
     <string name="t_c681543c" formatted="false">Obrazy, pliki PDF lub tekstowe, do 10 MB.</string>
     <string name="t_c6a86804" formatted="false">Nie udało się pobrać tekstu od szefa z ntfy. Spróbuj ponownie.</string>
@@ -585,11 +591,13 @@
     <string name="t_c7ad7feb" formatted="false">Brak połączenia z OpenRouter. Sprawdź połączenie z internetem i spróbuj ponownie.</string>
     <string name="t_c7b2a2f8" formatted="false">brak klucza</string>
     <string name="t_c8210626" formatted="false">Model tekstu na mowę</string>
+    <string name="t_c90e13f1" formatted="false">Wysłano tylko do mówcy. Szef tego nie otrzymał: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Uruchamianie…</string>
     <string name="t_c997df74" formatted="false">bb odrzuciło logowanie: %1$s</string>
     <string name="t_c998a38e" formatted="false">Dźwięk wygasł lub został usunięty. Tekst jest nadal zapisany.</string>
     <string name="t_ca00a779" formatted="false">Zapisz klucz</string>
     <string name="t_ca4b7d63" formatted="false">Odpowiedź czeka: sprawdzam, czy to koniec</string>
+    <string name="t_ca513a47" formatted="false">Od następnego połączenia w trybie głośnomówiącym</string>
     <string name="t_caf67b49" formatted="false">Claude odmówił dopracowania tego tekstu.</string>
     <string name="t_cba5c7dd" formatted="false">Ciszej</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy jest darmowe i open source. Zainstaluj je, a następnie dotknij ponownie Otwórz w ntfy.</string>
@@ -756,6 +764,7 @@
     <string name="t_fdbea202" formatted="false">Otwórz czat ↗</string>
     <string name="t_fe0bc00f" formatted="false">Dane na tym telefonie</string>
     <string name="t_fe11d138" formatted="false">Nazwa</string>
+    <string name="t_fe7a0c7d" formatted="false">Drugi wątek bb, który szybko odpowiada Ci głosowo, podczas gdy Twój szef personelu zajmuje się pracą. Gdy jest włączony, każda wiadomość w trybie głośnomówiącym trafia do obu, a szef przesyła swoje wyniki do mówcy.</string>
     <string name="t_feccbddf" formatted="false">Udoskonalono. Tekst znajduje się w Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Niepotrzebne: nagrywanie ekranu, powiadomienia, kontakty, lokalizacja.</string>
     <string name="t_ff38152f" formatted="false">Pamięć niemal pełna. Nagrywanie zatrzymane; zapisany dźwięk można ponowić.</string>

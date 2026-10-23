@@ -100,6 +100,7 @@
     <string name="t_248af959" formatted="false">Uma gravação foi guardada mas não transcrita.</string>
     <string name="t_24c47eae" formatted="false">Nenhum servidor MCP neste endereço (HTTP 404). Verifica o endereço e se o plugin MCP do bb está ativo.</string>
     <string name="t_24c7367a" formatted="false">Colar o que copiaste</string>
+    <string name="t_252c6bbe" formatted="false">Nem o chefe nem o interlocutor receberam: %1$s</string>
     <string name="t_256649c4" formatted="false">rápido</string>
     <string name="t_260e77ee" formatted="false">Não enviado: pareces ter mais a dizer (%1$d%% concluído)</string>
     <string name="t_262860bd" formatted="false">Iniciar sessão com bb</string>
@@ -333,6 +334,7 @@
     <string name="t_783d9fbc" formatted="false">Não foi possível ler esta imagem.</string>
     <string name="t_78e66b38" formatted="false">Apagar os dados locais?</string>
     <string name="t_791246e5" formatted="false">Nome do teu chefe</string>
+    <string name="t_7a213062" formatted="false">Esse é o teu chefe de gabinete. O interlocutor tem de ser outro tópico.</string>
     <string name="t_7a933498" formatted="false">Não foi possível apagar todo o áudio</string>
     <string name="t_7abc2e98" formatted="false">Enviar: a transcrever a tua fala, a enviar a seguir</string>
     <string name="t_7b65d791" formatted="false">O Dictate &amp; Delegate acede aos modelos de voz e texto através do OpenRouter com esta chave.</string>
@@ -482,6 +484,7 @@
     <string name="t_ab247fbe" formatted="false">A tua voz e texto vão apenas para os fornecedores que escolheres. Não há nenhum servidor do Dictate &amp; Delegate.</string>
     <string name="t_ab7143b8" formatted="false">Permissões</string>
     <string name="t_ab754703" formatted="false">A ouvir-te</string>
+    <string name="t_abfd3b0d" formatted="false">Usar o interlocutor</string>
     <string name="t_ac224344" formatted="false">Guardada, encriptada · voz, decisões e Refinar</string>
     <string name="t_ac5e3616" formatted="false">O Dictate &amp; Delegate usa a permissão de Acessibilidade do Android apenas para duas coisas: inserir texto no cursor ao tocar em Inserir e detetar quando manténs premida a tecla de volume escolhida. Não pede eventos de acessibilidade nem lê o ecrã; só localiza o campo de texto onde estás a escrever ao tocar em Inserir. O Dictate &amp; Delegate é open source, por isso podes verificar.</string>
     <string name="t_ac66579e" formatted="false">Não foi possível contactar o bb. Tenta novamente.</string>
@@ -506,6 +509,7 @@
     <string name="t_b0bc3188" formatted="false">Palavras</string>
     <string name="t_b0c515f3" formatted="false">✓  Ativado</string>
     <string name="t_b15fa13c" formatted="false">Sem ligação a %1$s. Verifica a tua ligação à internet.</string>
+    <string name="t_b1a746c0" formatted="false">Tópico do interlocutor</string>
     <string name="t_b1c2889b" formatted="false">Verificar habilidades no bb</string>
     <string name="t_b203fda8" formatted="false">Endereço personalizado</string>
     <string name="t_b214280c" formatted="false">Eliminar modelo</string>
@@ -537,6 +541,7 @@
     <string name="t_b942a462" formatted="false">sem detalhes</string>
     <string name="t_b99de9e8" formatted="false">Nenhuma chave Anthropic configurada.</string>
     <string name="t_b9bde03c" formatted="false">Ouvindo</string>
+    <string name="t_b9d30202" formatted="false">Enviado ✓ ao chefe. O interlocutor não recebeu: %1$s</string>
     <string name="t_b9e8ea84" formatted="false">Eventos recentes</string>
     <string name="t_bbb4c248" formatted="false">Mais alguma coisa que o Dictate &amp; Delegate deva saber?</string>
     <string name="t_bbfdd3ed" formatted="false">O Dictate &amp; Delegate comunica com o bb através do servidor MCP do bb (plugin bb--mcp), que deve estar ativo no bb.</string>
@@ -570,6 +575,7 @@
     <string name="t_c5501bfa" formatted="false">✨ Refinar</string>
     <string name="t_c5573507" formatted="false">Adicionar</string>
     <string name="t_c55b8799" formatted="false">O endereço local do bb é http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Acede a partir do telemóvel através da tua tailnet (Tailscale Serve, HTTPS) ou adb reverse.</string>
+    <string name="t_c574e601" formatted="false">Link ou ID do tópico do interlocutor (thr_…)</string>
     <string name="t_c5cf792a" formatted="false">Não definido</string>
     <string name="t_c681543c" formatted="false">Imagens, PDFs ou ficheiros de texto, até 10 MB.</string>
     <string name="t_c6a86804" formatted="false">Não foi possível obter o texto do teu chief do ntfy. Tenta novamente.</string>
@@ -580,11 +586,13 @@
     <string name="t_c7ad7feb" formatted="false">Sem ligação ao OpenRouter. Verifica a tua ligação à internet e tenta novamente.</string>
     <string name="t_c7b2a2f8" formatted="false">ainda sem chave</string>
     <string name="t_c8210626" formatted="false">Modelo de texto para voz</string>
+    <string name="t_c90e13f1" formatted="false">Enviado só ao interlocutor. O chefe não recebeu: %1$s</string>
     <string name="t_c96b1a45" formatted="false">A iniciar…</string>
     <string name="t_c997df74" formatted="false">O bb recusou o início de sessão: %1$s</string>
     <string name="t_c998a38e" formatted="false">O áudio expirou ou foi apagado. O texto continua guardado.</string>
     <string name="t_ca00a779" formatted="false">Guardar chave</string>
     <string name="t_ca4b7d63" formatted="false">Resposta em espera: a verificar se terminaste</string>
+    <string name="t_ca513a47" formatted="false">A partir da tua próxima chamada mãos-livres</string>
     <string name="t_caf67b49" formatted="false">O Claude recusou refinar este texto.</string>
     <string name="t_cba5c7dd" formatted="false">Diminuir volume</string>
     <string name="t_cc1ec5e4" formatted="false">O ntfy é gratuito e open source. Instala-o e toca novamente em Abrir no ntfy.</string>
@@ -751,6 +759,7 @@
     <string name="t_fdbea202" formatted="false">Abrir chat ↗</string>
     <string name="t_fe0bc00f" formatted="false">Dados neste telemóvel</string>
     <string name="t_fe11d138" formatted="false">Nome</string>
+    <string name="t_fe7a0c7d" formatted="false">Um segundo tópico bb que te responde rápido por voz enquanto o teu chefe de gabinete faz o trabalho. Quando ativo, cada mensagem mãos-livres vai para ambos, e o chefe envia os resultados ao interlocutor.</string>
     <string name="t_feccbddf" formatted="false">Aperfeiçoado. O texto está no Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Não são necessários: gravação de ecrã, notificações, contactos, localização.</string>
     <string name="t_ff38152f" formatted="false">Armazenamento quase cheio. Gravação parada; podes tentar de novo com o áudio guardado.</string>

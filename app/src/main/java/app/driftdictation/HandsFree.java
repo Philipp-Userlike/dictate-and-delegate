@@ -22,6 +22,11 @@ final class HandsFree {
   /** What the chief hears when a call starts and ends: whether spoken messages are heard. */
   static final String CALL_STARTED = "[hands-free call started]", CALL_ENDED = "[hands-free call ended]";
 
+  /** The chief's call start: it names the talker, if there is one, so the chief sends it its results. */
+  static String callStarted(String talker) {
+    return talker.isEmpty() ? CALL_STARTED : CALL_STARTED + " [talker: " + talker + "]";
+  }
+
   /** Prefs keys. */
   static final String SEND_WORDS = "hfSendWords",
       END_WORDS = "hfEndWords",

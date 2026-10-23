@@ -57,6 +57,9 @@ public final class HandsFreeService extends Service {
   private volatile boolean running;
   private ChiefText.Replies replies;
   private Voice voice;
+
+  /** This call's talker thread (Settings → Hands-free), fixed when the call starts; "" for none. */
+  private volatile String talker = "";
   private MediaSession media;
   private HandsFreePanel panel;
   private Cues cues;
@@ -152,6 +155,7 @@ public final class HandsFreeService extends Service {
     if (session != null) return;
     SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
     BbBridge bb = new BbBridge(this);
+    talker = bb.talkerId();
     voice = new Voice(this);
     // The call's audio stays open (silent) for the whole call: a reply starts without a new track
     // and its warm-up. Opened first, so even the first reply finds it.
@@ -190,8 +194,12 @@ public final class HandsFreeService extends Service {
             },
             said -> {
               String request = ChiefText.requestId();
-              bb.sendHandsFree(bb.chiefId(), said, request);
-              keepNote(said, request, model);
+              if (talker.isEmpty()) {
+                bb.sendHandsFree(bb.chiefId(), said, request);
+                keepNote(said, request, model);
+                return request;
+              }
+              sendBoth(bb, said, request, model);
               return request;
             },
             new HandsFreeSession.Speaker() {
@@ -291,6 +299,7 @@ public final class HandsFreeService extends Service {
             HandsFree.takeMs(prefs),
             Math.max(HandsFree.Segmenter.WINDOW_MS, HandsFree.takeMs(prefs) * 3 / 2),
             HandsFree.gate(prefs)));
+    if (!talker.isEmpty()) event("talker " + talker + ": every message goes to it and to the chief");
     signal(bb, HandsFree.CALL_STARTED);
     if (seed != null) {
       try {
@@ -546,8 +555,29 @@ public final class HandsFreeService extends Service {
   }
 
   /**
-   * Tells the chief a call started or ended, so it knows whether spoken messages are heard. In the
-   * background; returns the thread doing it, or null without a chief.
+   * A message of a call with a talker: to the chief and the talker at once, the same text and
+   * request ID. Throws when neither got it (your words are kept); PartlySent when one did.
+   */
+  private void sendBoth(BbBridge bb, String said, String request, String model) throws Exception {
+    String chief = bb.chiefId(), message = BbBridge.handsFreeMessage(said, request);
+    java.util.Map<String, String> to = new java.util.LinkedHashMap<>();
+    to.put(chief, message);
+    to.put(talker, message);
+    java.util.Map<String, String> failed = bb.tellEach(to);
+    String chiefWhy = failed.get(chief), talkerWhy = failed.get(talker);
+    if (chiefWhy != null) event("the chief didn't get " + request + ": " + chiefWhy);
+    if (talkerWhy != null) event("the talker (" + talker + ") didn't get " + request + ": " + talkerWhy);
+    if (chiefWhy != null && talkerWhy != null)
+      throw new java.io.IOException(tr("neither the chief nor the talker got it: %1$s", chiefWhy));
+    keepNote(said, request, model);
+    if (chiefWhy != null) throw new HandsFreeSession.PartlySent(request, true, chiefWhy);
+    if (talkerWhy != null) throw new HandsFreeSession.PartlySent(request, false, talkerWhy);
+    event("sent " + request + " to the talker too");
+  }
+
+  /**
+   * Tells the chief a call started or ended, so it knows whether spoken messages are heard; and the
+   * talker, with one. In the background; returns the thread doing it, or null without a chief.
    */
   private Thread signal(BbBridge bb, String line) {
     return signal(bb, line, null);
@@ -555,17 +585,22 @@ public final class HandsFreeService extends Service {
 
   /** As above, after the messages still on their way in that session are delivered (in order). */
   private Thread signal(BbBridge bb, String line, HandsFreeSession after) {
-    String chief = bb.chiefId();
+    String chief = bb.chiefId(), talker = this.talker;
     if (chief.isEmpty()) return null;
+    // The call start names the talker for the chief only; the talker gets the plain line.
+    String chiefLine = line.equals(HandsFree.CALL_STARTED) ? HandsFree.callStarted(talker) : line;
     Thread t =
         new Thread(
             () -> {
               if (after != null && !after.awaitDelivered(25_000)) event("a message was still on its way when the call ended");
-              try {
-                bb.send(chief, line);
-                event("told the chief: " + line);
-              } catch (Exception ex) {
-                event("couldn't tell the chief " + line + ": " + ex.getMessage());
+              java.util.Map<String, String> to = new java.util.LinkedHashMap<>();
+              to.put(chief, chiefLine);
+              if (!talker.isEmpty()) to.put(talker, line);
+              java.util.Map<String, String> failed = bb.tellEach(to);
+              for (String id : to.keySet()) {
+                String who = id.equals(chief) ? "the chief" : "the talker (" + id + ")";
+                if (failed.containsKey(id)) event("couldn't tell " + who + " " + to.get(id) + ": " + failed.get(id));
+                else event("told " + who + ": " + to.get(id));
               }
             },
             "call-signal");

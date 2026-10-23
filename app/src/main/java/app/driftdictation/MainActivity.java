@@ -3273,6 +3273,7 @@ public final class MainActivity extends Activity {
     live.setOnCheckedChangeListener((b, on) -> prefs.edit().putBoolean(HandsFree.LIVE, on).apply());
     ui.add(content, ui.row(tr("Live transcription"), tr("Your words are written down as you speak, and a send word sends at once. Off, or without a key: written down at each pause."), live, null), 8);
     ui.add(content, ui.row(tr("Live transcription model"), liveLabel(), null, v -> open("live")), 8);
+    talkerSetting();
     recentEvents();
   }
 
@@ -3365,6 +3366,35 @@ public final class MainActivity extends Activity {
       remove.setTextColor(Ui.WARN);
       ui.add(content, remove, 0);
     }
+  }
+
+  /**
+   * The talker: a second bb thread, fast, that talks with you while the chief does the work. With
+   * it on, every hands-free message goes to both; the chief sends its results to the talker.
+   */
+  private void talkerSetting() {
+    ui.add(content, ui.strong(tr("Talker thread"), 15), 24);
+    ui.add(
+        content,
+        ui.text(tr("A second bb thread that answers you quickly by voice while your chief of staff does the work. When it's on, each hands-free message goes to both, and your chief sends its results to the talker."), 13, Ui.MUTED),
+        4);
+    Switch on = ui.toggle(prefs.getBoolean(BbBridge.TALKER_ON, false));
+    on.setOnCheckedChangeListener((b, checked) -> prefs.edit().putBoolean(BbBridge.TALKER_ON, checked).apply());
+    ui.add(content, ui.row(tr("Use the talker"), tr("From your next hands-free call on"), on, null), 8);
+    EditText field = ui.input(prefs.getString(BbBridge.TALKER_ID, ""), tr("Talker thread link or id (thr_…)"), false);
+    ui.add(content, field, 6);
+    TextView problem = ui.add(content, ui.text("", 13, Ui.MUTED), 4);
+    autosave(
+        field,
+        t -> {
+          String id = BbBridge.threadId(t);
+          prefs.edit().putString(BbBridge.TALKER_ID, id).apply();
+          String chief = new BbBridge(this).chiefId();
+          problem.setText(
+              !t.isBlank() && id.isEmpty()
+                  ? tr("That isn't a bb thread link or id (it starts with thr_).")
+                  : !id.isEmpty() && id.equals(chief) ? tr("That's your chief of staff. The talker must be another thread.") : "");
+        });
   }
 
   /**

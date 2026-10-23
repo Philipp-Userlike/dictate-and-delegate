@@ -211,8 +211,23 @@ final class HandsFreeSession {
   static final double SEND_AT = 0.7, END_AT = 0.8;
 
   interface Sender {
-    /** Sends a message to the chief; returns its request ID. */
+    /** Sends a message to the chief (and the talker, with one); returns its request ID. */
     String send(String said) throws Exception;
+  }
+
+  /**
+   * A message that reached one of the chief and the talker but not the other: it counts as sent
+   * (sending it again would repeat it to the one that got it), and the reason says who missed it.
+   */
+  static final class PartlySent extends Exception {
+    final String request;
+    final boolean chiefMissed;
+
+    PartlySent(String request, boolean chiefMissed, String why) {
+      super(why);
+      this.request = request;
+      this.chiefMissed = chiefMissed;
+    }
   }
 
   interface Speaker {
@@ -1953,7 +1968,14 @@ final class HandsFreeSession {
   private void deliver(String said, String text, String why, int failed, long queued) {
     long start = clock.getAsLong();
     try {
-      String request = sender.send(said);
+      String request;
+      PartlySent partly = null;
+      try {
+        request = sender.send(said);
+      } catch (PartlySent p) {
+        request = p.request;
+        partly = p;
+      }
       long done = clock.getAsLong();
       synchronized (this) {
         requests.add(request);
@@ -1968,8 +1990,11 @@ final class HandsFreeSession {
       error = "";
       log(String.format(java.util.Locale.ROOT, "sent %s (%s, %d characters; bb took %d ms, waited %d ms%s)", request, why, said.length(), done - start, start - queued,
           why.equals("send phrase") || why.equals("end phrase") ? "; " + (done - keywordAt) + " ms after the phrase was heard" : ""));
-      cue(Cue.SENT);
-      switch (why) {
+      cue(partly != null && partly.chiefMissed ? Cue.FAILED : Cue.SENT);
+      if (partly != null) {
+        if (partly.chiefMissed) reason("Sent to the talker only. The chief didn't get it: %1$s", partly.getMessage());
+        else reason("Sent ✓ to the chief. The talker didn't get it: %1$s", partly.getMessage());
+      } else switch (why) {
         case "jev", "send phrase" -> reason("Sent ✓");
         case "silence" -> reason("Sent ✓ after %1$d s of silence", silenceSendMs / 1000);
         case "end phrase", "end of the call" -> reason("Sent ✓ before the call ended");

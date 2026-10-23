@@ -100,6 +100,7 @@
     <string name="t_248af959" formatted="false">Un enregistrement a été sauvegardé mais non transcrit.</string>
     <string name="t_24c47eae" formatted="false">Aucun serveur MCP à cette adresse (HTTP 404). Vérifie l\'adresse et assure-toi que le plugin MCP de bb est activé.</string>
     <string name="t_24c7367a" formatted="false">Coller ce qui a été copié</string>
+    <string name="t_252c6bbe" formatted="false">Ni le chef ni le bavard ne l\'ont reçu : %1$s</string>
     <string name="t_256649c4" formatted="false">rapide</string>
     <string name="t_260e77ee" formatted="false">Non envoyé : tu sembles avoir autre chose à dire (%1$d%% fini)</string>
     <string name="t_262860bd" formatted="false">Se connecter avec bb</string>
@@ -333,6 +334,7 @@
     <string name="t_783d9fbc" formatted="false">Impossible de lire cette image.</string>
     <string name="t_78e66b38" formatted="false">Supprimer les données locales ?</string>
     <string name="t_791246e5" formatted="false">Nom de ton chef</string>
+    <string name="t_7a213062" formatted="false">C\'est ton chef d\'état-major. Le bavard doit être un autre fil.</string>
     <string name="t_7a933498" formatted="false">Impossible de supprimer tout l\'audio</string>
     <string name="t_7abc2e98" formatted="false">Envoyer : transcription en cours, puis envoi</string>
     <string name="t_7b65d791" formatted="false">Dictate &amp; Delegate appelle les modèles vocaux et textuels via OpenRouter avec cette clé.</string>
@@ -482,6 +484,7 @@
     <string name="t_ab247fbe" formatted="false">Ta voix et tes textes vont uniquement aux fournisseurs que tu choisis. Il n\'y a aucun serveur Dictate &amp; Delegate.</string>
     <string name="t_ab7143b8" formatted="false">Autorisations</string>
     <string name="t_ab754703" formatted="false">À l\'écoute</string>
+    <string name="t_abfd3b0d" formatted="false">Utiliser le bavard</string>
     <string name="t_ac224344" formatted="false">Enregistrée, chiffrée · voix, décisions et Peaufiner</string>
     <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate utilise l\'autorisation d\'accessibilité d\'Android pour deux choses seulement : placer ton texte au niveau du curseur quand tu touches Insérer, et détecter quand tu maintiens la touche de volume choisie. L\'appli ne demande aucun événement d\'accessibilité et ne lit rien sur ton écran ; elle cherche le champ de texte où tu écris uniquement quand tu touches Insérer. Dictate &amp; Delegate est open source, tu peux le vérifier.</string>
     <string name="t_ac66579e" formatted="false">bb n\'a pas pu être joint. Réessaie.</string>
@@ -506,6 +509,7 @@
     <string name="t_b0bc3188" formatted="false">Mots</string>
     <string name="t_b0c515f3" formatted="false">✓  Activé</string>
     <string name="t_b15fa13c" formatted="false">Pas de connexion à %1$s. Vérifie ta connexion Internet.</string>
+    <string name="t_b1a746c0" formatted="false">Fil du bavard</string>
     <string name="t_b1c2889b" formatted="false">Vérifier les compétences dans bb</string>
     <string name="t_b203fda8" formatted="false">Adresse personnalisée</string>
     <string name="t_b214280c" formatted="false">Supprimer le modèle</string>
@@ -537,6 +541,7 @@
     <string name="t_b942a462" formatted="false">aucun détail</string>
     <string name="t_b99de9e8" formatted="false">Aucune clé Anthropic configurée.</string>
     <string name="t_b9bde03c" formatted="false">Écoute en cours</string>
+    <string name="t_b9d30202" formatted="false">Envoyé ✓ au chef. Le bavard ne l\'a pas reçu : %1$s</string>
     <string name="t_b9e8ea84" formatted="false">Événements récents</string>
     <string name="t_bbb4c248" formatted="false">Autre chose que Dictate &amp; Delegate devrait savoir ?</string>
     <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate communique avec bb via le serveur MCP de bb (plugin bb--mcp), qui doit être activé dans bb.</string>
@@ -570,6 +575,7 @@
     <string name="t_c5501bfa" formatted="false">✨ Peaufiner</string>
     <string name="t_c5573507" formatted="false">Ajouter</string>
     <string name="t_c55b8799" formatted="false">L\'adresse locale de bb est http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Accède-y depuis ton téléphone via ton tailnet (Tailscale Serve, HTTPS) ou adb reverse.</string>
+    <string name="t_c574e601" formatted="false">Lien ou ID du fil du bavard (thr_…)</string>
     <string name="t_c5cf792a" formatted="false">Non défini</string>
     <string name="t_c681543c" formatted="false">Images, PDF ou fichiers texte, jusqu\'à 10 Mo.</string>
     <string name="t_c6a86804" formatted="false">Impossible de récupérer le texte de ton chef depuis ntfy. Réessaie.</string>
@@ -580,11 +586,13 @@
     <string name="t_c7ad7feb" formatted="false">Aucune connexion à OpenRouter. Vérifie ta connexion Internet, puis réessaie.</string>
     <string name="t_c7b2a2f8" formatted="false">pas encore de clé</string>
     <string name="t_c8210626" formatted="false">Modèle texte-vers-voix</string>
+    <string name="t_c90e13f1" formatted="false">Envoyé uniquement au bavard. Le chef ne l\'a pas reçu : %1$s</string>
     <string name="t_c96b1a45" formatted="false">Démarrage…</string>
     <string name="t_c997df74" formatted="false">bb a refusé la connexion : %1$s</string>
     <string name="t_c998a38e" formatted="false">L\'audio a expiré ou a été supprimé. Le texte reste enregistré.</string>
     <string name="t_ca00a779" formatted="false">Enregistrer la clé</string>
     <string name="t_ca4b7d63" formatted="false">Réponse en attente : vérification si tu as fini</string>
+    <string name="t_ca513a47" formatted="false">Dès ton prochain appel mains libres</string>
     <string name="t_caf67b49" formatted="false">Claude a refusé d\'affiner ce texte.</string>
     <string name="t_cba5c7dd" formatted="false">Volume bas</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy est gratuit et open source. Installe-le, puis réappuie sur Ouvrir dans ntfy.</string>
@@ -751,6 +759,7 @@
     <string name="t_fdbea202" formatted="false">Ouvrir le chat ↗</string>
     <string name="t_fe0bc00f" formatted="false">Données sur ce téléphone</string>
     <string name="t_fe11d138" formatted="false">Nom</string>
+    <string name="t_fe7a0c7d" formatted="false">Un second fil bb qui te répond vite à la voix pendant que ton chef d\'état-major s\'occupe du reste. Activé, chaque message mains libres va aux deux, et ton chef transmet ses résultats au bavard.</string>
     <string name="t_feccbddf" formatted="false">Affiné. Le texte se trouve dans Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Non requis : enregistrement de l\'écran, notifications, contacts, position.</string>
     <string name="t_ff38152f" formatted="false">Espace de stockage presque plein. Enregistrement arrêté ; réessai possible.</string>

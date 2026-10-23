@@ -115,6 +115,8 @@ public class HandsFreeTest {
     volatile boolean wholeFails;
     /** While set, the whole turn's pass waits for it (a slow one). */
     volatile java.util.concurrent.CountDownLatch slowWhole;
+    /** While set, deliveries reach only one of the chief and the talker: "chief" or "talker" misses them. */
+    volatile String missedBy;
     /** What preparing a reply does (fetching its audio); by default nothing. */
     volatile java.util.function.Function<String, Object> prepare = text -> text;
     final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
@@ -171,6 +173,8 @@ public class HandsFreeTest {
                 java.util.concurrent.CountDownLatch l = slowBb;
                 if (l != null) l.await();
                 sent.add(said);
+                String missed = missedBy;
+                if (missed != null) throw new HandsFreeSession.PartlySent("r" + sent.size(), missed.equals("chief"), "thread not found");
                 return "r" + sent.size();
               },
               new HandsFreeSession.Speaker() {
@@ -1913,5 +1917,23 @@ public class HandsFreeTest {
     assertEquals("fewer calls than asked: all of it", log, HandsFreeLog.lastCalls(log, 4));
     assertEquals("no call yet: all of it", "a\nb\n", HandsFreeLog.lastCalls("a\nb\n", 1));
     assertEquals("", HandsFreeLog.lastCalls("", 1));
+  }
+
+  @Test
+  public void aMessageOnlyTheTalkerOrOnlyTheChiefGotCountsAsSentAndSaysWhoMissedIt() throws Exception {
+    Fake f = new Fake("Book the hotel. Over.", "And the train. Over.");
+    f.missedBy = "talker";
+    f.talk();
+    until(() -> f.session.sent() == 1);
+    assertTrue(f.session.ours("r1"));
+    assertEquals("", f.session.pending()); // Not kept: the chief has it.
+    until(() -> reasons(f).contains("Sent ✓ to the chief. The talker didn't get it: thread not found"));
+    f.missedBy = "chief";
+    f.now.addAndGet(5000);
+    f.talk();
+    until(() -> f.session.sent() == 2);
+    assertEquals("", f.session.pending()); // Not sent again: the talker would hear it twice.
+    until(() -> reasons(f).contains("Sent to the talker only. The chief didn't get it: thread not found"));
+    assertEquals(2, f.sent.size());
   }
 }

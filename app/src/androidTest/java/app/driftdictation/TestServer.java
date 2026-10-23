@@ -108,6 +108,11 @@ final class TestServer {
     postTo(bbRoot(), "/test/fail", new JSONObject().put("kind", kind).put("error", error));
   }
 
+  /** Queues one failure for the next call of that kind for that thread only (a tell to the talker). */
+  static void bbFail(String kind, String error, String thread) throws Exception {
+    postTo(bbRoot(), "/test/fail", new JSONObject().put("kind", kind).put("error", error).put("thread", thread));
+  }
+
   /** The fake's REST upload answers with this status (200 to take files). */
   static void bbUploadStatus(int status) throws Exception {
     postTo(bbRoot(), "/test/config", new JSONObject().put("uploadStatus", status));

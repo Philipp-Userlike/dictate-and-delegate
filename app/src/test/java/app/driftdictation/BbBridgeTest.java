@@ -92,4 +92,15 @@ public class BbBridgeTest {
     assertEquals(
         "ntfy://example.org:8080/t?secure=false", BbBridge.ntfyLink("http://example.org:8080/", "t"));
   }
+
+  @Test
+  public void theCallStartNamesTheTalkerOnlyWhenThereIsOne() {
+    assertEquals("[hands-free call started]", HandsFree.callStarted(""));
+    assertEquals("[hands-free call started] [talker: thr_talk1]", HandsFree.callStarted("thr_talk1"));
+  }
+
+  @Test
+  public void aHandsFreeMessageIsTaggedBeforeItsRequest() {
+    assertEquals("Book it\n\n[hands-free]\n\n[request: ab12]", BbBridge.handsFreeMessage(" Book it ", "ab12"));
+  }
 }

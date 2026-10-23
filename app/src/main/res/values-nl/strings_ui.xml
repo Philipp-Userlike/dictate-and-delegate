@@ -100,6 +100,7 @@
     <string name="t_248af959" formatted="false">Een opname is opgeslagen maar niet getranscribeerd.</string>
     <string name="t_24c47eae" formatted="false">Geen MCP-server op dit adres (HTTP 404). Controleer het adres en of de MCP-plug-in van bb aanstaat.</string>
     <string name="t_24c7367a" formatted="false">Geplakte tekst invoegen</string>
+    <string name="t_252c6bbe" formatted="false">noch de chief, noch de talker heeft het ontvangen: %1$s</string>
     <string name="t_256649c4" formatted="false">snel</string>
     <string name="t_260e77ee" formatted="false">Niet verzonden: je lijkt nog meer te willen zeggen (%1$d%% klaar)</string>
     <string name="t_262860bd" formatted="false">Inloggen met bb</string>
@@ -332,6 +333,7 @@
     <string name="t_783d9fbc" formatted="false">Kon deze afbeelding niet lezen.</string>
     <string name="t_78e66b38" formatted="false">Lokale gegevens verwijderen?</string>
     <string name="t_791246e5" formatted="false">Naam van je leidinggevende</string>
+    <string name="t_7a213062" formatted="false">Dat is je stafchef. De talker moet een andere thread zijn.</string>
     <string name="t_7a933498" formatted="false">Kon niet alle audio verwijderen</string>
     <string name="t_7abc2e98" formatted="false">Verzenden: je tekst wordt uitgeschreven en dan verstuurd</string>
     <string name="t_7b65d791" formatted="false">Dictate &amp; Delegate roept de spraak- en tekstmodellen aan via OpenRouter met deze sleutel.</string>
@@ -479,6 +481,7 @@
     <string name="t_ab247fbe" formatted="false">Je stem en tekst gaan alleen naar de providers die je zelf kiest. Er is geen Dictate &amp; Delegate-server.</string>
     <string name="t_ab7143b8" formatted="false">Machtigingen</string>
     <string name="t_ab754703" formatted="false">Luisteren…</string>
+    <string name="t_abfd3b0d" formatted="false">Talker gebruiken</string>
     <string name="t_ac224344" formatted="false">Opgeslagen, versleuteld · spraak, beslissingen en Verfijnen</string>
     <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate gebruikt Androids Toegankelijkheidstoestemming voor slechts twee dingen: om je tekst bij de cursor te plaatsen wanneer je op Invoegen tikt, en om te detecteren wanneer je de gekozen volumeknop ingedrukt houdt. Het vraagt geen toegankelijkheidsgebeurtenissen op en leest niets op je scherm; het zoekt het tekstveld waarin je typt alleen op wanneer je op Invoegen tikt. Dictate &amp; Delegate is open source, dus je kunt dit controleren.</string>
     <string name="t_ac66579e" formatted="false">bb kon niet worden bereikt. Probeer het opnieuw.</string>
@@ -503,6 +506,7 @@
     <string name="t_b0bc3188" formatted="false">Woorden</string>
     <string name="t_b0c515f3" formatted="false">✓  Aan</string>
     <string name="t_b15fa13c" formatted="false">Geen verbinding met %1$s. Controleer je internetverbinding.</string>
+    <string name="t_b1a746c0" formatted="false">Talker-thread</string>
     <string name="t_b1c2889b" formatted="false">Skills controleren in bb</string>
     <string name="t_b203fda8" formatted="false">Aangepast adres</string>
     <string name="t_b214280c" formatted="false">Sjabloon verwijderen</string>
@@ -533,6 +537,7 @@
     <string name="t_b942a462" formatted="false">geen details</string>
     <string name="t_b99de9e8" formatted="false">Geen Anthropic-sleutel ingesteld.</string>
     <string name="t_b9bde03c" formatted="false">Luisteren</string>
+    <string name="t_b9d30202" formatted="false">Verzonden ✓ naar de chief. De talker heeft het niet ontvangen: %1$s</string>
     <string name="t_b9e8ea84" formatted="false">Recente gebeurtenissen</string>
     <string name="t_bbb4c248" formatted="false">Is er nog iets dat Dictate &amp; Delegate moet weten?</string>
     <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate bereikt bb via bb\'s MCP-server (plug-in bb--mcp), die ingeschakeld moet zijn in bb.</string>
@@ -565,6 +570,7 @@
     <string name="t_c5501bfa" formatted="false">✨ Verfijn</string>
     <string name="t_c5573507" formatted="false">Toevoegen</string>
     <string name="t_c55b8799" formatted="false">bb\'s lokale adres is http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Bereik het vanaf je telefoon via je tailnet (Tailscale Serve, HTTPS) of adb reverse.</string>
+    <string name="t_c574e601" formatted="false">Talker-threadlink of -id (thr_…)</string>
     <string name="t_c5cf792a" formatted="false">Niet ingesteld</string>
     <string name="t_c681543c" formatted="false">Afbeeldingen, pdf\'s of tekstbestanden, tot 10 MB.</string>
     <string name="t_c6a86804" formatted="false">Kon de tekst van je stafchef niet ophalen via ntfy. Probeer het opnieuw.</string>
@@ -575,11 +581,13 @@
     <string name="t_c7ad7feb" formatted="false">Geen verbinding met OpenRouter. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="t_c7b2a2f8" formatted="false">nog geen sleutel</string>
     <string name="t_c8210626" formatted="false">Tekst-naar-spraak-model</string>
+    <string name="t_c90e13f1" formatted="false">Alleen naar de talker verzonden. De chief heeft het niet ontvangen: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Starten…</string>
     <string name="t_c997df74" formatted="false">bb weigerde de aanmelding: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio is verlopen of verwijderd. Tekst is nog bewaard.</string>
     <string name="t_ca00a779" formatted="false">Sleutel opslaan</string>
     <string name="t_ca4b7d63" formatted="false">Antwoord wacht: controleren of je klaar bent</string>
+    <string name="t_ca513a47" formatted="false">Vanaf je volgende handsfree oproep</string>
     <string name="t_caf67b49" formatted="false">Claude heeft geweigerd deze tekst te verfijnen.</string>
     <string name="t_cba5c7dd" formatted="false">Volume omlaag</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy is gratis en open source. Installeer het en tik nogmaals op Openen in ntfy.</string>
@@ -746,6 +754,7 @@
     <string name="t_fdbea202" formatted="false">Chat openen ↗</string>
     <string name="t_fe0bc00f" formatted="false">Gegevens op deze telefoon</string>
     <string name="t_fe11d138" formatted="false">Naam</string>
+    <string name="t_fe7a0c7d" formatted="false">Een tweede bb-thread die je snel met spraak antwoordt terwijl je stafchef het werk doet. Als dit aanstaat, gaat elk handsfree-bericht naar beide, en stuurt je stafchef de resultaten door naar de talker.</string>
     <string name="t_feccbddf" formatted="false">Verfijnd. De tekst staat in Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Niet nodig: schermopname, meldingen, contacten, locatie.</string>
     <string name="t_ff38152f" formatted="false">Opslag is bijna vol. Opname gestopt; opgeslagen audio kan opnieuw worden geprobeerd.</string>

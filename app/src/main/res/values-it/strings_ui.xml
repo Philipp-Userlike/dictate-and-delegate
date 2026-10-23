@@ -100,6 +100,7 @@
     <string name="t_248af959" formatted="false">Una registrazione è stata salvata ma non trascritta.</string>
     <string name="t_24c47eae" formatted="false">Nessun server MCP a questo indirizzo (HTTP 404). Controlla l\'indirizzo e che il plugin MCP di bb sia attivo.</string>
     <string name="t_24c7367a" formatted="false">Incolla ciò che hai copiato</string>
+    <string name="t_252c6bbe" formatted="false">né il capo né l\'interlocutore l\'hanno ricevuto: %1$s</string>
     <string name="t_256649c4" formatted="false">veloce</string>
     <string name="t_260e77ee" formatted="false">Non inviato: sembri avere altro da dire (%1$d%% completato)</string>
     <string name="t_262860bd" formatted="false">Accedi con bb</string>
@@ -333,6 +334,7 @@
     <string name="t_783d9fbc" formatted="false">Impossibile leggere questa immagine.</string>
     <string name="t_78e66b38" formatted="false">Eliminare i dati locali?</string>
     <string name="t_791246e5" formatted="false">Nome del tuo capo</string>
+    <string name="t_7a213062" formatted="false">Questo è il tuo capo staff. L\'interlocutore deve essere un altro thread.</string>
     <string name="t_7a933498" formatted="false">Impossibile eliminare tutto l\'audio</string>
     <string name="t_7abc2e98" formatted="false">Invia: trascrizione in corso, poi parte</string>
     <string name="t_7b65d791" formatted="false">Dictate &amp; Delegate richiama i modelli vocali e di testo tramite OpenRouter con questa chiave.</string>
@@ -482,6 +484,7 @@
     <string name="t_ab247fbe" formatted="false">La tua voce e il tuo testo vanno solo ai fornitori scelti da te. Non c\'è alcun server di Dictate &amp; Delegate.</string>
     <string name="t_ab7143b8" formatted="false">Autorizzazioni</string>
     <string name="t_ab754703" formatted="false">In ascolto</string>
+    <string name="t_abfd3b0d" formatted="false">Usa l\'interlocutore</string>
     <string name="t_ac224344" formatted="false">Salvata, crittografata · voce, decisioni e Perfeziona</string>
     <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate usa l\'autorizzazione di accessibilità di Android solo per due scopi: inserire il testo al cursore quando tocchi Inserisci e rilevare quando tieni premuto il tasto del volume scelto. Non richiede eventi di accessibilità e non legge nulla sullo schermo; individua il campo di testo in cui stai digitando solo quando tocchi Inserisci. Dictate &amp; Delegate è open source, quindi puoi verificare.</string>
     <string name="t_ac66579e" formatted="false">Impossibile raggiungere bb. Riprova.</string>
@@ -506,6 +509,7 @@
     <string name="t_b0bc3188" formatted="false">Parole</string>
     <string name="t_b0c515f3" formatted="false">✓  Attivo</string>
     <string name="t_b15fa13c" formatted="false">Nessuna connessione a %1$s. Controlla la connessione internet.</string>
+    <string name="t_b1a746c0" formatted="false">Thread dell\'interlocutore</string>
     <string name="t_b1c2889b" formatted="false">Controlla le skill in bb</string>
     <string name="t_b203fda8" formatted="false">Indirizzo personalizzato</string>
     <string name="t_b214280c" formatted="false">Elimina modello</string>
@@ -537,6 +541,7 @@
     <string name="t_b942a462" formatted="false">nessun dettaglio</string>
     <string name="t_b99de9e8" formatted="false">Nessuna chiave Anthropic impostata.</string>
     <string name="t_b9bde03c" formatted="false">In ascolto</string>
+    <string name="t_b9d30202" formatted="false">Inviato ✓ al capo. L\'interlocutore non l\'ha ricevuto: %1$s</string>
     <string name="t_b9e8ea84" formatted="false">Eventi recenti</string>
     <string name="t_bbb4c248" formatted="false">C\'è altro che Dictate &amp; Delegate dovrebbe sapere?</string>
     <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate comunica con bb tramite il server MCP di bb (plugin bb--mcp), che deve essere attivo in bb.</string>
@@ -570,6 +575,7 @@
     <string name="t_c5501bfa" formatted="false">✨ Perfeziona</string>
     <string name="t_c5573507" formatted="false">Aggiungi</string>
     <string name="t_c55b8799" formatted="false">L\'indirizzo locale di bb è http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Raggiungilo dal telefono tramite la tua tailnet (Tailscale Serve, HTTPS) o con adb reverse.</string>
+    <string name="t_c574e601" formatted="false">Link o ID thread dell\'interlocutore (thr_…)</string>
     <string name="t_c5cf792a" formatted="false">Non impostato</string>
     <string name="t_c681543c" formatted="false">Immagini, PDF o file di testo, fino a 10 MB.</string>
     <string name="t_c6a86804" formatted="false">Impossibile recuperare il testo del chief da ntfy. Riprova.</string>
@@ -580,11 +586,13 @@
     <string name="t_c7ad7feb" formatted="false">Nessuna connessione a OpenRouter. Controlla la connessione internet e riprova.</string>
     <string name="t_c7b2a2f8" formatted="false">nessuna chiave</string>
     <string name="t_c8210626" formatted="false">Modello testo-voce</string>
+    <string name="t_c90e13f1" formatted="false">Inviato solo all\'interlocutore. Il capo non l\'ha ricevuto: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Avvio…</string>
     <string name="t_c997df74" formatted="false">bb ha rifiutato l\'accesso: %1$s</string>
     <string name="t_c998a38e" formatted="false">L\'audio è scaduto o è stato eliminato. Il testo è ancora salvato.</string>
     <string name="t_ca00a779" formatted="false">Salva chiave</string>
     <string name="t_ca4b7d63" formatted="false">Risposta in attesa: controllo se hai finito</string>
+    <string name="t_ca513a47" formatted="false">Dalla tua prossima chiamata in vivavoce in poi</string>
     <string name="t_caf67b49" formatted="false">Claude ha rifiutato di perfezionare questo testo.</string>
     <string name="t_cba5c7dd" formatted="false">Volume giù</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy è gratuita e open source. Installala, poi tocca di nuovo Apri in ntfy.</string>
@@ -751,6 +759,7 @@
     <string name="t_fdbea202" formatted="false">Apri chat ↗</string>
     <string name="t_fe0bc00f" formatted="false">Dati su questo telefono</string>
     <string name="t_fe11d138" formatted="false">Nome</string>
+    <string name="t_fe7a0c7d" formatted="false">Un secondo thread bb che ti risponde rapidamente a voce mentre il tuo capo staff lavora. Quando è attivo, ogni messaggio a mani libere va a entrambi e il tuo capo invia i risultati all\'interlocutore.</string>
     <string name="t_feccbddf" formatted="false">Perfezionato. Il testo è in Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Non richiesti: registrazione schermo, notifiche, contatti, posizione.</string>
     <string name="t_ff38152f" formatted="false">Spazio di archiviazione quasi esaurito. Registrazione interrotta; puoi riprovare con l\'audio salvato.</string>

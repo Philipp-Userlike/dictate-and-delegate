@@ -38,6 +38,8 @@ final class BbBridge {
       LINK_BASE = "bbLinkBase",
       CHIEF_ID = "chiefId",
       CHIEF_NAME = "chiefTitle",
+      TALKER_ID = "talkerId",
+      TALKER_ON = "talkerOn",
       NTFY_SERVER = "ntfyServer",
       TOKEN = "bbToken",
       NTFY_TOPIC = "ntfyTopic";
@@ -93,6 +95,24 @@ final class BbBridge {
 
   String chiefTitle() {
     return prefs.getString(CHIEF_NAME, "");
+  }
+
+  /** The talker thread as saved (Settings → Hands-free), on or off; "" for none. */
+  String savedTalker() {
+    return prefs.getString(TALKER_ID, "");
+  }
+
+  boolean talkerOn() {
+    return prefs.getBoolean(TALKER_ON, false);
+  }
+
+  /**
+   * The talker for hands-free calls: a fast thread that does the talking while the chief does the
+   * work. "" when off, not set, or the chief itself.
+   */
+  String talkerId() {
+    String t = savedTalker();
+    return talkerOn() && !t.equals(chiefId()) ? t : "";
   }
 
   /** The chief can get requests: bb is connected and a chief is set. */
@@ -415,7 +435,47 @@ final class BbBridge {
 
   /** A message from hands-free mode: what was said, tagged so the chief answers in speakable form. */
   void sendHandsFree(String chiefId, String said, String request) throws Exception {
-    run(tellSnippet(chiefId, message(said, List.of(), HandsFree.TAG, request)));
+    run(tellSnippet(chiefId, handsFreeMessage(said, request)));
+  }
+
+  static String handsFreeMessage(String said, String request) {
+    return message(said, List.of(), HandsFree.TAG, request);
+  }
+
+  /**
+   * Sends each thread its message, all at the same time: a failure to reach one doesn't hold up
+   * the others. Returns the failures, thread ID → why; empty when every thread got its message.
+   */
+  java.util.Map<String, String> tellEach(java.util.Map<String, String> messages) {
+    java.util.Map<String, String> failed = new java.util.concurrent.ConcurrentHashMap<>();
+    List<java.lang.Thread> others = new java.util.ArrayList<>();
+    String first = null;
+    for (String id : messages.keySet()) {
+      if (first == null) {
+        first = id;
+        continue;
+      }
+      java.lang.Thread t = new java.lang.Thread(() -> tellOne(id, messages.get(id), failed), "bb-tell");
+      t.start();
+      others.add(t);
+    }
+    if (first != null) tellOne(first, messages.get(first), failed);
+    for (java.lang.Thread t : others) {
+      try {
+        t.join();
+      } catch (InterruptedException ex) {
+        java.lang.Thread.currentThread().interrupt();
+      }
+    }
+    return new java.util.LinkedHashMap<>(failed);
+  }
+
+  private void tellOne(String id, String message, java.util.Map<String, String> failed) {
+    try {
+      run(tellSnippet(id, message));
+    } catch (Exception ex) {
+      failed.put(id, ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
+    }
   }
 
   /** What the chief is told about files that came as base64 text parts. */

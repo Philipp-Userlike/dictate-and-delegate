@@ -100,6 +100,7 @@
     <string name="t_248af959" formatted="false">A recording was saved but not transcribed.</string>
     <string name="t_24c47eae" formatted="false">No MCP server at this address (HTTP 404). Check the address, and that bb\'s MCP plugin is on.</string>
     <string name="t_24c7367a" formatted="false">Paste what you copied</string>
+    <string name="t_252c6bbe" formatted="false">neither the chief nor the talker got it: %1$s</string>
     <string name="t_256649c4" formatted="false">fast</string>
     <string name="t_260e77ee" formatted="false">Not sent: you seem to have more to say (%1$d%% done)</string>
     <string name="t_262860bd" formatted="false">Sign in with bb</string>
@@ -334,6 +335,7 @@
     <string name="t_783d9fbc" formatted="false">Could not read this image.</string>
     <string name="t_78e66b38" formatted="false">Delete local data?</string>
     <string name="t_791246e5" formatted="false">Your chief\'s name</string>
+    <string name="t_7a213062" formatted="false">That\'s your chief of staff. The talker must be another thread.</string>
     <string name="t_7a933498" formatted="false">Could not delete all audio</string>
     <string name="t_7abc2e98" formatted="false">Send: writing down your turn, then it goes</string>
     <string name="t_7b65d791" formatted="false">Dictate &amp; Delegate calls the speech and text models through OpenRouter with this key.</string>
@@ -485,6 +487,7 @@
     <string name="t_ab247fbe" formatted="false">Your voice and text go only to the providers you choose. There\'s no Dictate &amp; Delegate server.</string>
     <string name="t_ab7143b8" formatted="false">Permissions</string>
     <string name="t_ab754703" formatted="false">Hearing you</string>
+    <string name="t_abfd3b0d" formatted="false">Use the talker</string>
     <string name="t_ac224344" formatted="false">Saved, encrypted · speech, decisions and Refine</string>
     <string name="t_ac5e3616" formatted="false">Dictate &amp; Delegate uses Android\'s Accessibility permission for two things only: to put your text at the cursor when you tap Insert, and to notice when you hold the volume key you chose. It asks for no accessibility events and reads nothing on your screen; it looks up the text field you\'re typing in only when you tap Insert. Dictate &amp; Delegate is open source, so you can check.</string>
     <string name="t_ac66579e" formatted="false">bb couldn\'t be reached. Try again.</string>
@@ -509,6 +512,7 @@
     <string name="t_b0bc3188" formatted="false">Words</string>
     <string name="t_b0c515f3" formatted="false">✓  On</string>
     <string name="t_b15fa13c" formatted="false">No connection to %1$s. Check your internet connection.</string>
+    <string name="t_b1a746c0" formatted="false">Talker thread</string>
     <string name="t_b1c2889b" formatted="false">Check the skills in bb</string>
     <string name="t_b203fda8" formatted="false">Custom address</string>
     <string name="t_b214280c" formatted="false">Delete template</string>
@@ -541,6 +545,7 @@
     <string name="t_b942a462" formatted="false">no details</string>
     <string name="t_b99de9e8" formatted="false">No Anthropic key is set.</string>
     <string name="t_b9bde03c" formatted="false">Listening</string>
+    <string name="t_b9d30202" formatted="false">Sent ✓ to the chief. The talker didn\'t get it: %1$s</string>
     <string name="t_b9e8ea84" formatted="false">Recent events</string>
     <string name="t_bbb4c248" formatted="false">Anything else Dictate &amp; Delegate should know?</string>
     <string name="t_bbfdd3ed" formatted="false">Dictate &amp; Delegate reaches bb through bb\'s MCP server (plugin bb--mcp), which has to be on in bb.</string>
@@ -575,6 +580,7 @@
     <string name="t_c5501bfa" formatted="false">✨ Refine</string>
     <string name="t_c5573507" formatted="false">Add</string>
     <string name="t_c55b8799" formatted="false">bb\'s local address is http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp. Reach it from the phone through your tailnet (Tailscale Serve, HTTPS) or adb reverse.</string>
+    <string name="t_c574e601" formatted="false">Talker thread link or id (thr_…)</string>
     <string name="t_c5cf792a" formatted="false">Not set</string>
     <string name="t_c681543c" formatted="false">Images, PDFs or text files, up to 10 MB.</string>
     <string name="t_c6a86804" formatted="false">Couldn\'t get your chief\'s text from ntfy. Try again.</string>
@@ -585,11 +591,13 @@
     <string name="t_c7ad7feb" formatted="false">No connection to OpenRouter. Check your internet connection, then try again.</string>
     <string name="t_c7b2a2f8" formatted="false">no key yet</string>
     <string name="t_c8210626" formatted="false">Text-to-speech model</string>
+    <string name="t_c90e13f1" formatted="false">Sent to the talker only. The chief didn\'t get it: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Starting…</string>
     <string name="t_c997df74" formatted="false">bb refused the sign-in: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio has expired or was deleted. Text is still saved.</string>
     <string name="t_ca00a779" formatted="false">Save key</string>
     <string name="t_ca4b7d63" formatted="false">Reply waits: checking whether you\'re done</string>
+    <string name="t_ca513a47" formatted="false">From your next hands-free call on</string>
     <string name="t_caf67b49" formatted="false">Claude declined to refine this text.</string>
     <string name="t_cba5c7dd" formatted="false">Volume down</string>
     <string name="t_cc1ec5e4" formatted="false">ntfy is free and open source. Install it, then tap Open in ntfy again.</string>
@@ -756,6 +764,7 @@
     <string name="t_fdbea202" formatted="false">Open chat ↗</string>
     <string name="t_fe0bc00f" formatted="false">Data on this phone</string>
     <string name="t_fe11d138" formatted="false">Name</string>
+    <string name="t_fe7a0c7d" formatted="false">A second bb thread that answers you quickly by voice while your chief of staff does the work. When it\'s on, each hands-free message goes to both, and your chief sends its results to the talker.</string>
     <string name="t_feccbddf" formatted="false">Refined. The text is in Dictate &amp; Delegate.</string>
     <string name="t_ff1ae3ef" formatted="false">Not needed: screen recording, notifications, contacts, location.</string>
     <string name="t_ff38152f" formatted="false">Storage is nearly full. Recording stopped; saved audio can be retried.</string>

@@ -50,6 +50,8 @@ public class HandsFreeFlowTest {
         .remove(HandsFree.LIVE)
         .remove(HandsFree.LIVE_MODEL)
         .remove(HandsFree.OPEN_AUDIO)
+        .remove(BbBridge.TALKER_ID)
+        .remove(BbBridge.TALKER_ON)
         .commit();
     // Live transcription only where a test turns it on (with a key for the fake).
     new Vault(context).remove(StreamingSpeech.ASSEMBLYAI_KEY);
@@ -97,6 +99,34 @@ public class HandsFreeFlowTest {
     for (int i = snippets.size() - 1; i >= 0; i--)
       if (snippets.get(i).contains("\"thread\",\"tell\"") && snippets.get(i).contains("[request:")) return snippets.get(i);
     return "";
+  }
+
+  static final String TALKER = "thr_faketalker";
+
+  /** What was sent to one thread with bb thread tell, oldest first. */
+  List<String> tellsTo(String thread) throws Exception {
+    List<String> out = new java.util.ArrayList<>();
+    for (String code : TestServer.bbSnippets())
+      if (code.contains("\"thread\",\"tell\"," + org.json.JSONObject.quote(thread))) out.add(code);
+    return out;
+  }
+
+  boolean toldTo(String thread, String line) throws Exception {
+    for (String code : tellsTo(thread)) if (code.contains(line)) return true;
+    return false;
+  }
+
+  /** The hands-free messages (with a request) sent to one thread. */
+  List<String> messagesTo(String thread) throws Exception {
+    List<String> out = new java.util.ArrayList<>();
+    for (String code : tellsTo(thread)) if (code.contains("[request:")) out.add(code);
+    return out;
+  }
+
+  String reasons() {
+    StringBuilder out = new StringBuilder();
+    for (HandsFreeSession.Reason r : HandsFreeService.session().reasons()) out.append(r.text()).append('\n');
+    return out.toString();
   }
 
   boolean told(String line) throws Exception {
@@ -838,5 +868,79 @@ public class HandsFreeFlowTest {
     assertTrue(tell, tell.contains("[heard up to: ") || tell.contains("[didn't hear your reply: "));
     Thread.sleep(3000);
     assertEquals("never played again", 1, count(HandsFreeService.log(context), "floor: chief, reading " + m.group(1)));
+  }
+
+  @Test
+  public void withATalkerEachMessageAndTheCallsStartAndEndGoToBoth() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();
+    TestServer.transcripts("Book a table for Friday. Over.", "End the call.");
+    TestServer.turns("over", "end");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    // The chief learns who the talker is; the talker gets the plain call start.
+    until(() -> toldTo(TestServer.CHIEF, "[hands-free call started] [talker: " + TALKER + "]"), "the chief told the call started, with the talker");
+    until(() -> toldTo(TALKER, "[hands-free call started]"), "the talker told the call started");
+    assertFalse(toldTo(TALKER, "[talker: "));
+    talk();
+    until(() -> messagesTo(TestServer.CHIEF).size() == 1 && messagesTo(TALKER).size() == 1, "the message sent to both");
+    // The same message to both, with the same request ID.
+    String toChief = messagesTo(TestServer.CHIEF).get(0), toTalker = messagesTo(TALKER).get(0);
+    assertTrue(toChief, toChief.contains("Book a table for Friday.\\n\\n[hands-free]\\n\\n[request: "));
+    assertEquals(toChief.replace(TestServer.CHIEF, TALKER), toTalker);
+    assertEquals(1, HandsFreeService.session().sent());
+    assertTrue(HandsFreeService.log(context), HandsFreeService.log(context).contains("talker " + TALKER + ": every message goes to it and to the chief"));
+    // The talker's spoken reply plays like the chief's.
+    Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(toTalker);
+    assertTrue(m.find());
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), m.group(1), "Sure, Alex is booking it.");
+    until(() -> HandsFreeService.session().state() == HandsFreeSession.State.READING, "reading the talker's reply");
+    until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after reading");
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
+    talk();
+    until(() -> HandsFreeService.instance == null, "hands-free ended by the end word");
+    until(() -> toldTo(TestServer.CHIEF, "[hands-free call ended]") && toldTo(TALKER, "[hands-free call ended]"), "both told the call ended");
+  }
+
+  @Test
+  public void oneOfTalkerAndChiefFailingDoesntHoldUpTheOther() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();
+    TestServer.transcripts("Book a table for Friday. Over.", "And the train. Over.");
+    TestServer.turns("over", "over");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    until(() -> toldTo(TestServer.CHIEF, "[hands-free call started]") && toldTo(TALKER, "[hands-free call started]"), "both told the call started");
+    // The talker can't be reached: the chief still gets the message, and it counts as sent.
+    TestServer.bbFail("tell", "tool", TALKER);
+    talk();
+    until(() -> messagesTo(TestServer.CHIEF).size() == 1, "the message sent to the chief");
+    until(() -> reasons().contains("Sent ✓ to the chief. The talker didn't get it: bb couldn't do it:"), "the reason says the talker missed it");
+    assertEquals(0, messagesTo(TALKER).size());
+    assertEquals("", HandsFreeService.session().pending());
+    String log = HandsFreeService.log(context);
+    assertTrue(log, log.contains("the talker (" + TALKER + ") didn't get "));
+    // The chief can't be reached: the talker still gets the message.
+    TestServer.bbFail("tell", "tool", TestServer.CHIEF);
+    Thread.sleep(3500); // Past Sent ✓.
+    talk();
+    until(() -> messagesTo(TALKER).size() == 1, "the message sent to the talker");
+    until(() -> reasons().contains("Sent to the talker only. The chief didn't get it: bb couldn't do it:"), "the reason says the chief missed it");
+    assertEquals(2, HandsFreeService.session().sent());
+    assertEquals("", HandsFreeService.session().pending());
+    assertTrue(HandsFreeService.log(context).contains("the chief didn't get "));
+    assertTrue(messagesTo(TALKER).get(0), messagesTo(TALKER).get(0).contains("And the train."));
+  }
+
+  @Test
+  public void withTheTalkerSwitchedOffOnlyTheChiefHearsTheCall() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, false).commit();
+    TestServer.transcripts("Book a table for Friday. Over.");
+    TestServer.turns("over");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> messagesTo(TestServer.CHIEF).size() == 1, "the message sent to the chief");
+    until(() -> told("[hands-free call started]"), "the call start told");
+    assertFalse(told("[talker: "));
+    assertTrue(tellsTo(TALKER).isEmpty());
   }
 }

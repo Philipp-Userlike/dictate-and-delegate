@@ -181,6 +181,8 @@ public class BbFlowTest {
         .remove(ChiefSkills.CHIEF_TOLD)
         .remove(BbBridge.CHIEF_NAME)
         .remove(BbBridge.NTFY_SERVER)
+        .remove(BbBridge.TALKER_ID)
+        .remove(BbBridge.TALKER_ON)
         .commit();
     new Attachments(context).clearPending();
   }
@@ -785,4 +787,43 @@ public class BbFlowTest {
     assertEquals("thr_existing7", bb.chiefId());
   }
 
+
+  @Test
+  public void theTalkerIsSetInHandsFreeSettingsAndSwitchedOnAndOff() throws Exception {
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(TestServer.bbUrl(), "", LINKS);
+    bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
+    context.startActivity(
+        new Intent(context, MainActivity.class)
+            .putExtra("open", "handsfree")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    tap("Hands-free settings");
+    scrollTo(new UiSelector().text("Use the talker"));
+    // Off, and none, until you set it.
+    assertEquals("", bb.talkerId());
+    UiObject2 field = find(By.clazz("android.widget.EditText").text("Talker thread link or id (thr_…)"), "the talker field");
+    // The chief can't be its own talker.
+    field.setText(LINKS + "/threads/" + TestServer.CHIEF);
+    find(By.text("That's your chief of staff. The talker must be another thread."), "the chief refused");
+    field.setText(LINKS + "/threads/thr_faketalker");
+    until(() -> "thr_faketalker".equals(prefs.getString(BbBridge.TALKER_ID, "")), "the talker saved from its link");
+    assertNull(device.findObject(By.textStartsWith("That's your chief")));
+    assertEquals("still off", "", bb.talkerId());
+    UiObject2 toggle = switchIn(find("Use the talker"));
+    toggle.click();
+    until(() -> "thr_faketalker".equals(new BbBridge(context).talkerId()), "the talker on");
+    toggle.click();
+    until(() -> new BbBridge(context).talkerId().isEmpty(), "the talker off");
+    assertEquals("kept while off", "thr_faketalker", bb.savedTalker());
+  }
+
+  /** The switch in a settings row, from its title. */
+  UiObject2 switchIn(UiObject2 title) {
+    for (UiObject2 o = title.getParent(); o != null; o = o.getParent()) {
+      UiObject2 s = o.findObject(By.checkable(true));
+      if (s != null) return s;
+    }
+    fail("No switch next to " + title.getText());
+    return null;
+  }
 }
