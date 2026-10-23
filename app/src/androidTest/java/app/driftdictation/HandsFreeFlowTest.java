@@ -442,8 +442,36 @@ public class HandsFreeFlowTest {
     TestServer.script("speech", new JSONObject().put("delay", 6));
     TestServer.script("speech", new JSONObject().put("delay", 6));
     String log = callWithOneReply("The table is booked for Friday at eight.", 20_000, "Android's voice reads it");
-    assertTrue(log, log.contains("took over 3.0 s"));
+    assertTrue(log, log.contains("Kokoro: no answer in 3.0 s"));
     assertTrue(log, log.contains("Android's voice reads it"));
+  }
+
+  @Test
+  public void aVoiceThatSendsRawSamplesIsPlayedToTheEnd() throws Exception {
+    // Gemini and HeyGen send only PCM: wrapped as WAV at the rate their Content-Type says.
+    prefs.edit().putString(HandsFree.VOICE, "gemini-kore").commit();
+    try {
+      String log = callWithOneReply("The table is booked for Friday at eight.", 15_000, "reply played to the end");
+      assertTrue(log, log.contains("voice google/gemini-3.8-flash-lite-tts for"));
+      assertTrue(log, log.contains("reply played to the end"));
+      assertFalse(log, log.contains("Voice failed") || log.contains("Android's voice reads it"));
+      JSONArray all = TestServer.requests();
+      boolean pcm = false;
+      for (int i = 0; i < all.length(); i++)
+        if (all.getJSONObject(i).getString("kind").equals("speech")) pcm |= all.getJSONObject(i).getJSONObject("body").optString("response_format").equals("pcm");
+      assertTrue("asked for PCM", pcm);
+    } finally {
+      prefs.edit().putString(HandsFree.VOICE, Voice.KOKORO.id()).commit();
+    }
+  }
+
+  @Test
+  public void aVoiceThatFailsSaysWhyAndTheReplyIsStillRead() throws Exception {
+    for (int i = 0; i < 3; i++) TestServer.script("speech", new JSONObject().put("status", 503).put("message", "No provider available"));
+    String log = callWithOneReply("The table is booked for Friday at eight.", 20_000, "reply played to the end");
+    assertTrue(log, log.contains("HTTP 503: No provider available"));
+    assertTrue(log, log.contains("→ Voice failed (Kokoro: HTTP 503: No provider available): Android's voice reads the reply"));
+    assertTrue(log, log.contains("reply played to the end"));
   }
 
   @Test
@@ -609,7 +637,7 @@ public class HandsFreeFlowTest {
   @Test
   public void talkingOverAReplyInterruptsItAndYourMessageSaysWhatYouHeard() throws Exception {
     // The message; your words over the reply (not done yet); then "over" after them.
-    TestServer.transcripts("Book a table for Friday. Over.", "Hold on, book the train instead", "Over.");
+    TestServer.transcripts("Book a table for Friday. Over.", "Hold on, book the train instead", "Hold on, book the train instead. Over.");
     TestServer.turns("over", "unfinished", "over");
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
@@ -621,18 +649,24 @@ public class HandsFreeFlowTest {
         new BbBridge(context).ntfyTopic(), m.group(1), "The flight leaves at nine in the morning from gate twelve, and the train costs about forty euros.");
     HandsFreeSession s = HandsFreeService.session();
     until(s::audioPlaying, "the reply playing");
-    // Its echo, then you over it: the reply pauses, and what you said starts your turn.
-    for (int i = 0; i < HandsFreeSession.ECHO_FRAMES + 5; i++) s.frame(HandsFreeTestFrames.frame(1500));
+    // What's left of its echo, then you over it: the reply stops, and what you said is your turn.
+    for (int i = 0; i < 50; i++) s.frame(HandsFreeTestFrames.frame(300));
+    assertTrue("its echo doesn't stop it", s.audioPlaying());
     for (int i = 0; i < 20; i++) s.frame(HandsFreeTestFrames.frame(8000));
+    assertEquals("stopped at once", HandsFreeSession.State.LISTENING, s.state());
     for (int i = 0; i < 75; i++) s.frame(HandsFreeTestFrames.frame(50));
     until(() -> s.pending().equals("Hold on, book the train instead"), "your interruption, your turn");
-    assertEquals(HandsFreeSession.State.LISTENING, s.state());
+    assertTrue(HandsFreeService.log(context).contains("barge-in: speech 300 ms → stopped"));
+    // It plays again at your pause (your turn goes on after it); you talk over it once more.
+    until(s::audioPlaying, "the reply again at your pause");
     talk();
-    until(() -> HandsFreeService.session().sent() == 2, "your message sent");
+    long deadline = SystemClock.elapsedRealtime() + 20_000;
+    while (SystemClock.elapsedRealtime() < deadline && HandsFreeService.session().sent() < 2) Thread.sleep(100);
+    assertEquals(HandsFreeService.log(context), 2, HandsFreeService.session().sent());
     String tell = lastTell();
     assertTrue(tell, tell.contains("Hold on, book the train instead"));
     // Nothing about the reply: it isn't lost, it plays again once your turn is over.
     assertFalse(tell, tell.contains("[heard up to: ") || tell.contains("[didn't hear your reply: "));
-    until(() -> HandsFreeService.log(context).contains("floor: chief, reading " + m.group(1)) && count(HandsFreeService.log(context), "floor: chief, reading " + m.group(1)) >= 2, "the reply read again");
+    until(() -> count(HandsFreeService.log(context), "floor: chief, reading " + m.group(1)) >= 3, "the reply read again");
   }
 }

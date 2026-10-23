@@ -60,6 +60,7 @@ public final class HandsFreeService extends Service {
   private MediaSession media;
   private HandsFreePanel panel;
   private Cues cues;
+  private CallAudio callAudio;
   private PowerManager.WakeLock wake;
   private BigDecimal cost = BigDecimal.ZERO;
   /** Everything this call cost on OpenRouter: transcription and the voice. */
@@ -199,15 +200,16 @@ public final class HandsFreeService extends Service {
                 // model is waited for (its second and third requests still race the first).
                 Voice.Prepared p = voice.prepare(c, text, voice.androidUnavailable ? 30_000 : HandsFree.voiceWaitMs(prefs));
                 long ms = android.os.SystemClock.elapsedRealtime() - asked;
-                if (p.mp3() != null) {
+                if (p.audio() != null) {
                   event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms%s", c.model(), request, p.firstByteMs(), p.allMs(),
                       p.how().isEmpty() ? "" : " · " + p.how()));
                   chargeVoice(request, c, text, p.generation(), ms);
                 } else if (!c.model().isEmpty()) {
-                  event("voice " + c.model() + " for " + request + ": " + p.fallback() + (p.how().isEmpty() ? "" : " · " + p.how())
-                      + " (first byte " + p.firstByteMs() + " ms): Android's voice reads it");
+                  boolean android = !voice.androidUnavailable;
+                  event("voice " + c.model() + " for " + request + " failed: " + p.fallback() + (p.how().isEmpty() ? "" : " · " + p.how())
+                      + " (first byte " + p.firstByteMs() + " ms)" + (android ? ": Android's voice reads it" : ": no Android voice on this phone"));
                   HandsFreeSession s = session;
-                  if (s != null) s.reason("Reply in Android's voice: %1$s", p.fallback());
+                  if (s != null) s.voiceFailed(p.fallback(), android);
                 }
                 return p;
               }
@@ -231,9 +233,6 @@ public final class HandsFreeService extends Service {
                 return voice.playing();
               }
 
-              public void duck(boolean down) {
-                voice.duck(down);
-              }
 
               public int heardChars() {
                 return voice.heardChars();
@@ -300,6 +299,13 @@ public final class HandsFreeService extends Service {
       /* No topic: replies can't be read aloud; messages still go. */
     }
     startMedia();
+    // A call: replies on the communication path, so echo cancellation takes them out of the mic.
+    callAudio = new CallAudio(this, this::event);
+    try {
+      callAudio.start();
+    } catch (RuntimeException ex) {
+      event("audio: couldn't switch to call mode: " + ex.getMessage());
+    }
     wake = getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Dictate & Delegate:hands-free");
     wake.setReferenceCounted(false);
     wake.acquire(4 * 60 * 60_000L);
@@ -361,10 +367,13 @@ public final class HandsFreeService extends Service {
       finish();
       return;
     }
+    // Talking over a reply relies on it: say in the log whether this phone has it.
+    String echo = "not available on this phone";
     if (AcousticEchoCanceler.isAvailable()) {
       AcousticEchoCanceler aec = AcousticEchoCanceler.create(recorder.getAudioSessionId());
-      if (aec != null) aec.setEnabled(true);
+      echo = aec != null && aec.setEnabled(true) == AcousticEchoCanceler.SUCCESS && aec.getEnabled() ? "on" : "couldn't be turned on";
     }
+    event("audio: echo cancellation " + echo);
     recorder.startRecording();
     running = true;
     reader =
@@ -411,7 +420,7 @@ public final class HandsFreeService extends Service {
             mediaButton();
           }
         });
-    // The volume keys change the replies' volume while a call is on (their stream, not music's).
+    // The volume keys change the replies' volume while a call is on: the call volume.
     media.setPlaybackToLocal(Voice.attributes());
     media.setPlaybackState(
         new PlaybackState.Builder()
@@ -592,6 +601,8 @@ public final class HandsFreeService extends Service {
   /** What's happening right now, in full: the screen's live line, the notification, TalkBack. */
   static String liveLabel(HandsFreeSession s) {
     HandsFreeSession.Live live = s.live();
+    String failed = voiceFailure(s);
+    if (failed != null) return tr("Voice failed: %1$s", failed);
     return switch (live) {
       case HEARING -> tr("Hearing you");
       case WRITING ->
@@ -605,7 +616,6 @@ public final class HandsFreeService extends Service {
       case REPLY_WAITING -> tr("Reply waiting · plays when you pause");
       case REPLY_COMING -> tr("Reply coming…");
       case PLAYING -> tr("Playing the reply");
-      case CHECKING -> tr("Reply turned down · was that you?");
       case MUTED -> tr("Mic paused after the reply");
       case ENDED -> tr("Ended");
       default -> tr("Listening");
@@ -614,6 +624,8 @@ public final class HandsFreeService extends Service {
 
   /** The same, short, for the call bar. */
   static String shortLabel(HandsFreeSession s) {
+    String failed = voiceFailure(s);
+    if (failed != null) return tr("Voice failed · %1$s", brief(failed));
     return switch (s.live()) {
       case HEARING -> tr("Hearing you");
       case WRITING ->
@@ -625,11 +637,29 @@ public final class HandsFreeService extends Service {
       case REPLY_WAITING -> tr("Reply waiting");
       case REPLY_COMING -> tr("Reply coming");
       case PLAYING -> tr("Reading");
-      case CHECKING -> tr("Checking");
       case MUTED -> tr("Mic paused");
       case ENDED -> tr("Ended");
       default -> tr("Listening");
     };
+  }
+
+  /**
+   * Why the voice model just failed (shown a while, while nothing more important is going on:
+   * you talking, a reply playing), or null.
+   */
+  static String voiceFailure(HandsFreeSession s) {
+    String failed = s.voiceError();
+    if (failed.isEmpty()) return null;
+    return switch (s.live()) {
+      case LISTENING, WAITING_CHIEF, REPLY_WAITING, REPLY_COMING, SENT -> failed;
+      default -> null;
+    };
+  }
+
+  /** "Kokoro: HTTP 503: Service unavailable" → "Kokoro: HTTP 503": short enough for the call bar. */
+  static String brief(String failed) {
+    String[] parts = failed.split(": ", 3);
+    return parts.length < 2 ? failed : parts[0] + ": " + parts[1];
   }
 
   private PendingIntent action(String a, int code) {
@@ -690,6 +720,14 @@ public final class HandsFreeService extends Service {
     if (replies != null) replies.finish();
     if (voice != null) voice.shutdown();
     if (cues != null) cues.release();
+    if (callAudio != null) {
+      try {
+        callAudio.stop();
+      } catch (RuntimeException ex) {
+        event("audio: couldn't leave call mode: " + ex.getMessage());
+      }
+      callAudio = null;
+    }
     if (media != null) media.release();
     if (panel != null) {
       panel.hide();

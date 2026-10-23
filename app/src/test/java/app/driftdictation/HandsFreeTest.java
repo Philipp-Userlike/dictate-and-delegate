@@ -96,7 +96,7 @@ public class HandsFreeTest {
     /** Ends the reply being read, played to the end. */
     volatile Runnable done, fail;
     /** The voice: its audio starts at once (as long as this is true), or never. */
-    volatile boolean audioStarts = true, audioPlaying, ducked, stopped;
+    volatile boolean audioStarts = true, audioPlaying, stopped;
     volatile int heardChars;
     /** While set, the speech model waits for it (a slow transcription). */
     volatile java.util.concurrent.CountDownLatch slow;
@@ -149,10 +149,6 @@ public class HandsFreeTest {
 
                 public boolean playing() {
                   return audioPlaying;
-                }
-
-                public void duck(boolean down) {
-                  ducked = down;
                 }
 
                 public int heardChars() {
@@ -220,16 +216,19 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void chiefFirstOnAnOpenFloorIsReadAndTheMicrophoneIsOffMeanwhile() throws Exception {
+  public void chiefFirstOnAnOpenFloorIsReadAndItsEchoIsNeverYourTurn() throws Exception {
     Fake f = new Fake("Next question. Over.");
     f.quiet(1000);
     f.session.reply("r1", "First answer from what I know.");
     f.session.reply("r1", "The final answer.");
     until(() -> f.session.floor() == HandsFreeSession.Floor.CHIEF);
     assertEquals(List.of("First answer from what I know."), f.spoken);
-    // The voice coming back through the microphone while reading: nothing is captured.
-    f.talk();
+    // What's left of the voice in the microphone after echo cancellation: nothing is captured.
+    for (int i = 0; i < 100; i++) f.session.frame(frame(i % 5 == 0 ? 750 : 350));
+    f.quiet(1200);
+    Thread.sleep(150);
     assertEquals(1, f.transcripts.size());
+    assertFalse(f.stopped);
     f.done.run(); // The first finished; the floor opens and the second, held, is read.
     until(() -> f.spoken.size() == 2);
     assertEquals(List.of("First answer from what I know.", "The final answer."), f.spoken);
@@ -715,54 +714,65 @@ public class HandsFreeTest {
   static final String LONG_REPLY =
       "The flight leaves at nine in the morning from gate twelve. The train to Lisbon costs about forty euros if you book today.";
 
-  /** A reply playing, its echo measured at a moderate level. */
+  /** A reply playing, what's left of its echo after the phone's echo cancellation in the mic. */
   static Fake playingReply(String... transcripts) throws Exception {
     Fake f = new Fake(transcripts);
     f.quiet(1000);
     f.session.reply("r1", LONG_REPLY);
     until(() -> f.spoken.size() == 1);
-    for (int i = 0; i < HandsFreeSession.ECHO_FRAMES + 20; i++) f.session.frame(frame(1500)); // Its echo.
-    assertFalse("the echo alone doesn't turn it down", f.ducked);
+    for (int i = 0; i < 100; i++) f.session.frame(frame(i % 7 == 0 ? 700 : 300)); // Its leftover echo.
+    assertFalse("its own echo doesn't stop it", f.stopped);
     f.heardChars = LONG_REPLY.indexOf("from gate");
     return f;
   }
 
-  @Test
-  public void talkingOverAReplyInterruptsItAndItPlaysLaterFromThatSentence() throws Exception {
-    Fake f = playingReply("Hold on, book the train instead", "Over.");
-    f.heardChars = LONG_REPLY.indexOf("Lisbon");
-    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // You, clearly louder.
-    assertTrue("turned down at once", f.ducked);
-    assertFalse("but it plays on until your words are written down", f.stopped);
-    assertEquals(HandsFreeSession.Live.CHECKING, f.session.live());
-    f.quiet(1100); // You pause: what you said is written down.
-    until(() -> f.session.state() == HandsFreeSession.State.LISTENING);
-    assertTrue("the reply stopped", f.stopped);
-    until(() -> f.session.pending().equals("Hold on, book the train instead"));
-    assertTrue(reasons(f), reasons(f).contains("Reply stopped: you talked over it. It plays again from \"The train to Lisbon costs about…\""));
-    assertEquals(1, f.session.held());
-    f.talk();
-    until(() -> f.sent.size() == 1);
-    // Your message as said; the reply isn't lost: it plays after your turn, from that sentence.
-    assertEquals("Hold on, book the train instead", f.sent.get(0));
-    until(() -> f.spoken.size() == 2);
-    assertEquals("The train to Lisbon costs about forty euros if you book today.", f.spoken.get(1));
-    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("barge-in suspected"));
+  /** Feeds your speech over the reply until it stops (at most limit frames): how many it took. */
+  static int framesToStop(Fake f, int amplitude, int limit) {
+    for (int i = 1; i <= limit; i++) {
+      f.session.frame(frame(amplitude));
+      if (f.stopped) return i;
+    }
+    return -1;
   }
 
   @Test
-  public void theRepliesOwnVoiceComingBackResumesIt() throws Exception {
-    Fake f = playingReply("the morning from gate twelve");
-    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // A loud stretch of its own voice.
-    assertTrue(f.ducked);
-    f.quiet(1100);
-    until(() -> !f.ducked);
-    assertEquals(HandsFreeSession.State.READING, f.session.state());
+  public void talkingOverAReplyStopsItAtOnceAndItPlaysLaterFromThatSentence() throws Exception {
+    Fake f = playingReply("Hold on, book the train instead", "Hold on, book the train instead. Over.");
+    f.heardChars = LONG_REPLY.indexOf("Lisbon");
+    int frames = framesToStop(f, 8000, 40); // You, over the reply.
+    assertEquals("stopped after 300 ms of your speech", HandsFreeSession.BARGE_MS / 20, frames);
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    assertEquals("nothing had to be written down to stop it", 0, f.transcriptions.get());
+    String log = String.join("\n", f.log);
+    assertTrue(log, log.contains("barge-in: speech 300 ms → stopped"));
+    assertTrue(reasons(f), reasons(f).contains("Reply stopped: you talked over it. It plays again from \"The train to Lisbon costs about…\""));
+    assertEquals(1, f.session.held());
+    // You go on: all of it is your turn.
+    for (int i = 0; i < 30; i++) f.session.frame(frame(8000));
+    f.quiet(1200);
+    until(() -> f.session.pending().equals("Hold on, book the train instead"));
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Hold on, book the train instead.", f.sent.get(0));
+    // The reply isn't lost: it plays after your turn, from that sentence.
+    until(() -> f.spoken.size() == 2);
+    assertEquals("The train to Lisbon costs about forty euros if you book today.", f.spoken.get(1));
+  }
+
+  @Test
+  public void clattersAndItsOwnEchoNeverStopAReply() throws Exception {
+    Fake f = playingReply();
+    for (int i = 0; i < 6; i++) {
+      for (int k = 0; k < 10; k++) f.session.frame(frame(9000)); // 200 ms, far louder than the room.
+      for (int k = 0; k < 80; k++) f.session.frame(frame(300)); // 1.6 s of its leftover echo.
+    }
     assertFalse(f.stopped);
-    assertEquals("", f.session.pending());
-    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("echo"));
+    assertEquals(HandsFreeSession.State.READING, f.session.state());
+    assertEquals(HandsFreeSession.Live.PLAYING, f.session.live());
+    assertEquals(0, f.transcriptions.get());
     f.done.run();
     assertEquals(0, f.session.unheard());
+    assertEquals("", f.session.pending());
   }
 
   @Test
@@ -772,8 +782,6 @@ public class HandsFreeTest {
     assertEquals("[heard up to: \"The flight\"]", HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf("leaves") + 3));
     // Hardly anything heard: as if not heard at all.
     assertTrue(HandsFreeSession.heardUpTo(LONG_REPLY, 3).startsWith("[didn't hear your reply:"));
-    assertTrue(HandsFreeSession.echoOf("from gate twelve the train", LONG_REPLY, LONG_REPLY.indexOf("train")));
-    assertFalse(HandsFreeSession.echoOf("no wait, cancel the hotel", LONG_REPLY, LONG_REPLY.indexOf("train")));
   }
 
   @Test
@@ -1181,34 +1189,115 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void noiseOverAReplyNeverStopsItRealWordsDo() throws Exception {
-    Fake f = playingReply("", "", "Stop, cancel the train");
-    for (int burst = 0; burst < 2; burst++) {
-      int n = burst;
-      for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // A clatter, louder than the reply.
-      assertFalse("never paused or stopped by a sound", f.stopped);
-      assertEquals(HandsFreeSession.State.READING, f.session.state());
-      f.quiet(1100);
-      until(() -> f.transcriptions.get() == n + 1 && !f.ducked);
-      assertEquals(HandsFreeSession.State.READING, f.session.state());
-      assertTrue(reasons(f), reasons(f).startsWith("Reply plays on: no words were said over it"));
-    }
-    assertFalse(f.stopped);
-    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // Now you.
-    f.quiet(1100);
-    until(() -> f.stopped);
-    until(() -> f.session.pending().equals("Stop, cancel the train"));
-    assertEquals(1, f.session.held()); // It plays again later.
+  public void wordsYouStartAsAReplyEndsAreKept() throws Exception {
+    Fake f = playingReply("Wait, one more thing");
+    for (int i = 0; i < 8; i++) f.session.frame(frame(8000)); // You, over its last words.
+    f.done.run(); // It ends before that's enough to stop it.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    for (int i = 0; i < 30; i++) f.session.frame(frame(8000)); // The microphone stayed on.
+    f.quiet(1200);
+    until(() -> f.session.pending().equals("Wait, one more thing"));
+    assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
+  }
+
+  // ------------------------------------------------------------------ 3.2.10: voices
+
+  @Test
+  public void rawSamplesBecomeAWavWithTheirRate() throws Exception {
+    assertArrayEquals(new int[] {44100, 1}, Voice.pcmFormat("audio/pcm;rate=44100;channels=1"));
+    assertArrayEquals(new int[] {24000, 1}, Voice.pcmFormat("audio/pcm; rate=24000"));
+    assertNull(Voice.pcmFormat("audio/mpeg"));
+    assertNull(Voice.pcmFormat("audio/pcm"));
+    assertNull(Voice.pcmFormat(null));
+    byte[] h = Voice.wavHeader(24000, 1, 48000);
+    java.nio.ByteBuffer b = java.nio.ByteBuffer.wrap(h).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+    assertEquals(44, h.length);
+    assertEquals("RIFF", new String(h, 0, 4, java.nio.charset.StandardCharsets.US_ASCII));
+    assertEquals(36 + 48000, b.getInt(4));
+    assertEquals("WAVEfmt ", new String(h, 8, 8, java.nio.charset.StandardCharsets.US_ASCII));
+    assertEquals(1, b.getShort(20)); // PCM
+    assertEquals(1, b.getShort(22)); // mono
+    assertEquals(24000, b.getInt(24));
+    assertEquals(48000, b.getInt(28)); // bytes a second
+    assertEquals(2, b.getShort(32));
+    assertEquals(16, b.getShort(34));
+    assertEquals("data", new String(h, 36, 4, java.nio.charset.StandardCharsets.US_ASCII));
+    assertEquals(48000, b.getInt(40));
+    // The same header as the app's own WAV files for 16 kHz mono.
+    byte[] own = AudioFiles.wav(new byte[320]);
+    assertArrayEquals(java.util.Arrays.copyOf(own, 44), Voice.wavHeader(AudioFiles.RATE, 1, 320));
   }
 
   @Test
-  public void wordsOverAReplyThatEndsMeanwhileStillStartYourTurn() throws Exception {
-    Fake f = playingReply("Wait, one more thing");
-    for (int i = 0; i < 20; i++) f.session.frame(frame(8000)); // You, over its last words.
-    f.done.run(); // It ends while you talk.
-    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
-    until(() -> f.session.pending().equals("Wait, one more thing"));
-    assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
+  public void theNewVoicesAskForWhatTheySend() throws Exception {
+    Voice.Choice gemini = Voice.choice("gemini-kore"), fish = Voice.choice("fish-drama"), mai = Voice.choice("mai-harper");
+    JSONObject g = Voice.body(gemini, "Hi");
+    assertEquals("google/gemini-3.8-flash-lite-tts", g.getString("model"));
+    assertEquals("Kore", g.getString("voice"));
+    assertEquals("pcm", g.getString("response_format"));
+    assertEquals("pcm", Voice.body(Voice.choice("heygen-bram"), "Hi").getString("response_format"));
+    JSONObject d = Voice.body(fish, "Hi");
+    assertFalse("drama-3 takes no voice", d.has("voice"));
+    assertEquals("mp3", d.getString("response_format"));
+    assertEquals("en-US-Harper:MAI-Voice-2.1-Flash", Voice.body(mai, "Hi").getString("voice"));
+    java.util.Set<String> ids = new java.util.HashSet<>();
+    for (Voice.Choice c : Voice.CHOICES) assertTrue("twice: " + c.id(), ids.add(c.id()));
+    assertTrue(ids.containsAll(List.of("kokoro", "eleven", "android"))); // Chosen before: still there.
+  }
+
+  @Test
+  public void aVoiceThatFailsSaysWhy() throws Exception {
+    assertEquals("HTTP 503: No provider available", Voice.httpError(503, "{\"error\":{\"message\":\"No provider available\",\"code\":503}}"));
+    assertEquals("HTTP 502: Bad gateway", Voice.httpError(502, "Bad\n  gateway"));
+    assertEquals("HTTP 500", Voice.httpError(500, ""));
+    assertTrue(Voice.httpError(400, "x".repeat(500)).endsWith("…"));
+    Fake f = new Fake();
+    f.session.voiceFailed("Kokoro: no answer in 30.0 s", false);
+    assertTrue(reasons(f), reasons(f).startsWith("Voice failed (Kokoro: no answer in 30.0 s): this phone has no other voice"));
+    assertEquals("Kokoro: no answer in 30.0 s", f.session.voiceError());
+    assertTrue(String.join("\n", f.log).contains("Voice failed (Kokoro: no answer in 30.0 s)"));
+    f.now.addAndGet(HandsFreeSession.VOICE_ERROR_MS);
+    assertEquals("shown a while, then gone", "", f.session.voiceError());
+    f.session.voiceFailed("Kokoro: HTTP 503: No provider available", true);
+    assertTrue(reasons(f), reasons(f).startsWith("Voice failed (Kokoro: HTTP 503: No provider available): Android's voice reads the reply"));
+  }
+
+  @Test
+  public void aHangingVoiceNeverHoldsUpTheNextReply() throws Exception {
+    Fake f = new Fake();
+    java.util.concurrent.CountDownLatch hang = new java.util.concurrent.CountDownLatch(1);
+    f.prepare =
+        text -> {
+          if (text.startsWith("First")) {
+            try {
+              hang.await();
+            } catch (InterruptedException ignored) {
+              /* Go on. */
+            }
+          }
+          return text;
+        };
+    f.quiet(1000);
+    f.session.reply("r1", "First reply.");
+    f.session.reply("r2", "Second reply.");
+    until(() -> f.log.stream().anyMatch(l -> l.startsWith("voice ready for r2")));
+    hang.countDown();
+    until(() -> f.spoken.size() == 1);
+    assertEquals("First reply.", f.spoken.get(0));
+    f.done.run();
+    f.now.addAndGet(HandsFreeSession.TAIL_MS);
+    f.session.tick();
+    until(() -> f.spoken.size() == 2);
+  }
+
+  @Test
+  public void callAudioUsesAHeadsetElseTheSpeakerNeverTheEarpiece() {
+    int earpiece = android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE, speaker = android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+        sco = android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO, wired = android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET;
+    assertEquals(speaker, CallAudio.pick(List.of(earpiece, speaker)));
+    assertEquals(sco, CallAudio.pick(List.of(earpiece, speaker, wired, sco)));
+    assertEquals(wired, CallAudio.pick(List.of(speaker, wired)));
+    assertEquals(-1, CallAudio.pick(List.of(earpiece)));
   }
 
   // ------------------------------------------------------------------ the log

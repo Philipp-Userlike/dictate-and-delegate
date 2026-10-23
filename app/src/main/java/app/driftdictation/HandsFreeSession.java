@@ -18,8 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>You take the floor by speaking (the segmenter's three layers decide what counts). You hold
  *       it while you talk, while your words are written down, and while you have unsent text,
  *       until the message goes (send word, Send now, long silence) or your turn comes to nothing.
- *   <li>A chief message arriving on an open floor is read aloud; the microphone is off meanwhile
- *       and a moment after, and nothing interrupts it.
+ *   <li>A chief message arriving on an open floor is read aloud, as call audio the phone's echo
+ *       cancellation removes from the microphone; your speech over it stops it (BARGE_MS), and the
+ *       microphone is off a moment after it.
  *   <li>A chief message arriving while you talk (or while what you said is written down) waits,
  *       and is read at your next pause, also when you have unsent words: your turn goes on after
  *       it. Sending never drops it. A reply you talk over goes back to waiting and plays again
@@ -67,7 +68,6 @@ final class HandsFreeSession {
     REPLY_WAITING,
     REPLY_COMING,
     PLAYING,
-    CHECKING,
     MUTED,
     ENDED
   }
@@ -112,7 +112,7 @@ final class HandsFreeSession {
   static final long TAIL_MS = 800;
 
   /**
-   * The microphone is off only while a reply plays: audio has to start this soon after the floor
+   * A reply's audio has to start this soon after the floor
    * is taken, and end this long after its own length, or the reading is given up and listening
    * resumes. The audio is fetched before, while the floor is still open.
    */
@@ -125,15 +125,13 @@ final class HandsFreeSession {
   static final long READING_CAP_MS = 10 * 60_000;
 
   /**
-   * Talking while a reply plays (barge-in): for ECHO_FRAMES after its audio starts the session
-   * measures how loud the reply comes back through the microphone; then BARGE_FRAMES louder than
-   * BARGE_FACTOR times that turn the reply down (it plays on), and what was said is written down:
-   * only real words that aren't the reply's own (echo) stop it and start your turn. A sound alone
-   * never stops a reply. What's written down ends at your pause, or after SNIPPET_MS.
+   * Talking while a reply plays (barge-in): replies are call audio, so the phone's echo
+   * cancellation takes them out of the microphone, and the microphone's frames go to the
+   * segmenter as when listening. This much of your speech (by its level and gate rules, without
+   * the short-burst rule: a clatter isn't you) stops the reply at once; what you say goes on as
+   * your turn, and the reply plays again later from the sentence you were hearing.
    */
-  static final int ECHO_FRAMES = 35, BARGE_FRAMES = 15, SNIPPET_MS = 8000;
-
-  static final double BARGE_FACTOR = 2.5;
+  static final int BARGE_MS = 300;
 
   /** Once you hold the floor, a stretch this short still counts ("Over." on its own). */
   static final int SHORT_MS = 200;
@@ -180,8 +178,6 @@ final class HandsFreeSession {
       return false;
     }
 
-    /** Turns the reply down (you may be talking over it), or back up; it plays on either way. */
-    default void duck(boolean down) {}
 
     /** How many characters of the reply's text have been played (heard) so far. */
     default int heardChars() {
@@ -237,11 +233,11 @@ final class HandsFreeSession {
    * Three queues, so nothing waits on what it doesn't need: work writes down what you say (in
    * order) and checks barge-ins; outbox delivers your messages to bb (in order), so writing down
    * your next words never waits for bb and a message never waits for transcription of words
-   * that came after it; voices fetches the chief's audio.
+   * that came after it; voices fetches the chief's audio, each reply's at once.
    */
   private final ExecutorService work = Executors.newSingleThreadExecutor(),
       outbox = Executors.newSingleThreadExecutor(),
-      voices = Executors.newSingleThreadExecutor(),
+      voices = Executors.newCachedThreadPool(), // In parallel: a hanging voice never holds up the next reply's.
       speech = Executors.newCachedThreadPool();
   /**
    * Your turn: nothing is written down while you talk. Its audio is collected part by part (a
@@ -309,15 +305,6 @@ final class HandsFreeSession {
   private long readingDeadline, readingSince;
   private final int pauseFrames;
   private final double gate;
-  // Barge-in, while a reply plays (under this's lock). Suspect: a sound over the reply is being
-  // collected or checked, the reply turned down meanwhile; suspectAt is where it was then.
-  private int echoFrames, bargeLoud, snippetQuiet, suspectAt;
-  private double echoLevel;
-  private boolean suspect, checking;
-  private java.io.ByteArrayOutputStream snippet;
-  private final ArrayDeque<byte[]> recent = new ArrayDeque<>();
-  /** Your speech while a snippet is checked: the start of your turn if it was you. */
-  private final List<byte[]> overflow = new ArrayList<>();
   /** The time; tests set their own. */
   java.util.function.LongSupplier clock = System::currentTimeMillis;
 
@@ -358,7 +345,8 @@ final class HandsFreeSession {
         new HandsFree.Segmenter(
             pauseMs,
             // Taking the floor needs takeMs of speech; once it's yours, short stretches count too.
-            () -> floorIsYours() ? SHORT_MS : takeMs,
+            // Over a reply, BARGE_MS of your speech stops it.
+            () -> state == State.READING ? BARGE_MS : floorIsYours() ? SHORT_MS : takeMs,
             gate,
             detector,
             new HandsFree.Segmenter.Listener() {
@@ -380,8 +368,9 @@ final class HandsFreeSession {
 
               public void noise(int speechMs, double level, double background) {
                 log(String.format(java.util.Locale.ROOT, "noise ignored (%d ms, level %.0f, background %.0f)", speechMs, level, background));
-                // Clicks are left out of the reasons; anything you might have meant is in.
-                if (speechMs >= 100)
+                // Clicks are left out of the reasons; anything you might have meant is in. Not over a
+                // reply: what's left of its echo would fill the list.
+                if (speechMs >= 100 && state != State.READING)
                   reason("Didn't count as speech: too short (%1$d ms, %2$d ms needed)", speechMs, floorIsYours() ? SHORT_MS : takeMs);
                 // Send now during a sound too short to count: what was said before still goes.
                 if (sendAfterFlush) check("button");
@@ -389,7 +378,7 @@ final class HandsFreeSession {
 
               public void tooQuiet(int ms, double level, double background) {
                 log(String.format(java.util.Locale.ROOT, "too quiet to count (%d ms, level %.0f, background %.0f, gate ×%.1f)", ms, level, background, gate));
-                reason("Didn't count as speech: too quiet (level %1$.0f < %2$.1f× background %3$.0f)", level, gate, background);
+                if (state != State.READING) reason("Didn't count as speech: too quiet (level %1$.0f < %2$.1f× background %3$.0f)", level, gate, background);
               }
             });
   }
@@ -426,7 +415,7 @@ final class HandsFreeSession {
     return segmenter.speaking();
   }
 
-  /** A reply's audio is coming out (also turned down for a barge-in check). */
+  /** A reply's audio is coming out. */
   synchronized boolean audioPlaying() {
     return state == State.READING && playing;
   }
@@ -442,7 +431,7 @@ final class HandsFreeSession {
     long now = clock.getAsLong();
     boolean voiceReady;
     synchronized (this) {
-      if (state == State.READING) return !playing ? Live.REPLY_COMING : suspect || checking ? Live.CHECKING : Live.PLAYING;
+      if (state == State.READING) return !playing ? Live.REPLY_COMING : Live.PLAYING;
       voiceReady = held.isEmpty() || held.peekFirst().ready;
     }
     if (now < mutedUntil) return Live.MUTED;
@@ -606,134 +595,35 @@ final class HandsFreeSession {
   }
 
   /**
-   * Barge-in: is that you over the reply? A sound louder than its echo turns it down (it plays
-   * on), and what's said over it is written down: only real words stop it (checkBargeIn).
+   * Barge-in: the microphone's frames while a reply plays go to the segmenter (the reply's echo
+   * cancelled by the phone); once it hears BARGE_MS of your speech the reply stops.
    */
   private void bargeFrame(byte[] frame, boolean cue) {
-    double level = HandsFree.Segmenter.level(frame, frame.length);
-    byte[] pcm = null;
-    String suspected = null, replyText = null;
     int token;
     synchronized (this) {
-      if (state != State.READING || !playing) return; // Not before the reply's audio started.
-      if (!suspect && cue) return; // A sound of ours, not you.
+      if (state != State.READING) return; // Also before its audio starts: you may talk first.
       token = reading;
-      if (checking) {
-        if (overflow.size() < 30_000 / HandsFree.Segmenter.FRAME_MS) overflow.add(frame.clone());
-        return;
-      }
-      recent.addLast(frame.clone());
-      while (recent.size() > HandsFree.Segmenter.PAD_MS / HandsFree.Segmenter.FRAME_MS) recent.removeFirst();
-      double floor = Math.max(segmenter.background() * gate, 600);
-      double threshold = Math.max(echoLevel * BARGE_FACTOR, floor);
-      if (!suspect) {
-        if (echoFrames < ECHO_FRAMES) { // The reply's own level coming back.
-          echoFrames++;
-          echoLevel = Math.max(echoLevel, level);
-          return;
-        }
-        if (level > threshold) bargeLoud++;
-        else {
-          bargeLoud = Math.max(0, bargeLoud - 2);
-          echoLevel = Math.max(echoLevel * 0.998, level); // Follows the reply's level.
-        }
-        if (bargeLoud < BARGE_FRAMES) return;
-        suspect = true;
-        bargeLoud = 0;
-        snippetQuiet = 0;
-        snippet = new java.io.ByteArrayOutputStream();
-        for (byte[] b : recent) snippet.write(b, 0, b.length);
-        recent.clear();
-        suspected =
-            String.format(
-                java.util.Locale.ROOT, "barge-in suspected (level %.0f, echo %.0f, threshold %.0f): reply turned down, plays on", level, echoLevel, threshold);
-      } else if (snippet != null) { // Null once the check started (until the reading ends).
-        snippet.write(frame, 0, frame.length);
-        // The reply goes on, turned down: its echo stays under the threshold, your voice doesn't.
-        snippetQuiet = level > threshold ? 0 : snippetQuiet + 1;
-        if (snippetQuiet >= pauseFrames || snippet.size() > SNIPPET_MS / 1000 * AudioFiles.BYTES_PER_SECOND) {
-          pcm = snippet.toByteArray();
-          snippet = null;
-          checking = true;
-          replyText = current.text;
-        }
-      }
     }
-    if (suspected != null) {
-      speaker.duck(true);
-      int at = speaker.heardChars();
-      synchronized (this) {
-        suspectAt = at;
-      }
-      log(suspected + " at character " + at);
-      reason("Reply turned down: is that you talking over it?");
-    }
-    if (pcm != null) {
-      byte[] said = pcm;
-      String text = replyText;
-      execute(() -> checkBargeIn(token, said, text), null);
-    }
+    if (cue && !segmenter.candidate()) return; // A sound of ours, not you.
+    segmenter.frame(frame);
+    if (segmenter.speaking()) bargeIn(token);
   }
 
-  /**
-   * What was said over the reply, written down: no words, or the reply's own (echo), and it plays
-   * on at full volume; real words stop it and start your turn. If the reply ended meanwhile, those
-   * words still start your turn.
-   */
-  private void checkBargeIn(int token, byte[] pcm, String replyText) {
-    String text;
-    try {
-      text = transcriber.transcribe(AudioFiles.wav(pcm)).trim();
-    } catch (Exception ex) {
-      text = null;
-      log("barge-in not written down: " + ex.getMessage());
-      reason("Couldn't check what was said over the reply (%1$s): it plays on", ex.getMessage());
-    }
-    int heard = speaker.heardChars();
-    String request = null;
-    int at = 0;
-    boolean live, echo;
-    List<byte[]> more = List.of();
+  /** You talk over the reply: it stops at once, your speech goes on as your turn. */
+  private void bargeIn(int token) {
+    int at = speaker.heardChars();
+    String text, request;
     synchronized (this) {
-      if (state == State.ENDED) return;
-      live = token == reading && state == State.READING && current != null;
-      // The echo is looked for around where the reply is now (all of it, if it ended).
-      echo = text == null || text.isEmpty() || echoOf(text, replyText, live ? heard : replyText.length());
-      if (live) {
-        request = current.request;
-        at = suspectAt;
-        more = new ArrayList<>(overflow);
-        overflow.clear();
-        checking = false;
-        if (echo) {
-          suspect = false;
-          readingDeadline = Math.max(readingDeadline, clock.getAsLong() + OVERRUN_MS);
-        }
-      }
+      if (token != reading || state != State.READING || current == null) return;
+      text = current.text;
+      request = current.request;
     }
-    if (echo) {
-      log("barge-in was " + (text == null || text.isEmpty() ? "no words" : "the reply's echo (\"" + text + "\")") + (live ? ": plays on" : ""));
-      if (!live) return;
-      if (text != null && !text.isEmpty()) reason("Reply plays on: that was its own voice (echo)");
-      else if (text != null) reason("Reply plays on: no words were said over it");
-      speaker.duck(false);
-      listener.changed();
-      return;
-    }
-    if (!live) { // It ended while this was written down: your words start your turn all the same.
-      log("words over the reply as it ended (\"" + text + "\"): your turn starts with them");
-      takenByYou = true;
-      turnPrefix = (turnPrefix + " " + text).trim();
-      pending = (pending + " " + text).trim();
-      listener.changed();
-      if (!segmenter.candidate()) check("pause");
-      return;
-    }
-    String rest = restFrom(replyText, at);
-    log("interrupted by you (\"" + text + "\"): the reply waits, from \"" + firstWords(rest, 8) + "\"");
-    endReading(token, null, false);
+    int speech = segmenter.voicedMs();
+    long since = clock.getAsLong();
+    String rest = restFrom(text, at);
+    if (!endReading(token, null, false)) return;
     speaker.stop();
-    takenByYou = true;
+    log(String.format(java.util.Locale.ROOT, "barge-in: speech %d ms → stopped (in %d ms, at character %d of %d)", speech, clock.getAsLong() - since, at, text.length()));
     // It plays again later, from the start of the sentence you stopped hearing it in.
     Held again = new Held(request, rest, clock.getAsLong());
     synchronized (this) {
@@ -741,14 +631,6 @@ final class HandsFreeSession {
     }
     prepare(again);
     reason("Reply stopped: you talked over it. It plays again from \"%1$s\" at your next pause", firstWords(rest, 6));
-    // Your words over the reply start your turn (written down already: the snippet has the reply
-    // in it too, so it isn't written down again); then what you went on saying meanwhile.
-    turnPrefix = (turnPrefix + " " + text).trim();
-    pending = (pending + " " + text).trim();
-    listener.changed();
-    for (byte[] f : more) segmenter.frame(f);
-    if (!segmenter.candidate()) check("pause"); // You stopped already: is that all?
-    readNext();
   }
 
   /**
@@ -771,29 +653,6 @@ final class HandsFreeSession {
     return out + (w.length > n ? "…" : "");
   }
 
-  /** Normalized words of a text. */
-  private static List<String> words(String text) {
-    List<String> out = new ArrayList<>();
-    for (String w : HandsFree.normalize(text).split(" ")) if (!w.isEmpty()) out.add(w);
-    return out;
-  }
-
-  /**
-   * Is what was said the reply's own words around where it is (the voice coming back through
-   * the microphone)? Most of its words are among the reply's last 30 words before that point
-   * and the next 8.
-   */
-  static boolean echoOf(String said, String reply, int heardChars) {
-    List<String> s = words(said);
-    if (s.isEmpty()) return true;
-    List<String> r = words(reply);
-    int at = words(reply.substring(0, Math.max(0, Math.min(heardChars, reply.length())))).size();
-    java.util.Set<String> near = new java.util.HashSet<>(r.subList(Math.max(0, at - 30), Math.min(r.size(), at + 8)));
-    int hits = 0;
-    for (String w : s) if (near.contains(w)) hits++;
-    return hits >= Math.ceil(s.size() * 0.6);
-  }
-
   /** The note for a reply you interrupted: its last words you heard (or that you heard none). */
   static String heardUpTo(String reply, int heardChars) {
     String part = reply.substring(0, Math.max(0, Math.min(heardChars, reply.length()))).trim();
@@ -808,6 +667,29 @@ final class HandsFreeSession {
     return "[heard up to: \"" + (w.length > 8 ? "…" : "") + last + "\"]";
   }
 
+  /** How long the call bar and screen say the voice model failed. */
+  static final long VOICE_ERROR_MS = 20_000;
+
+  private volatile String voiceError = "";
+  private volatile long voiceErrorAt;
+
+  /**
+   * The voice model failed to deliver a reply's audio (why: its HTTP status and what it said, or
+   * how long it didn't answer): on screen, on the call bar a while, and in the log. With Android's
+   * voice the reply is read in it; without, playing it fails and it's tried once more.
+   */
+  void voiceFailed(String why, boolean android) {
+    voiceError = why;
+    voiceErrorAt = clock.getAsLong();
+    if (android) reason("Voice failed (%1$s): Android's voice reads the reply", why);
+    else reason("Voice failed (%1$s): this phone has no other voice", why);
+  }
+
+  /** Why the voice model failed, while it's shown; "" otherwise. */
+  String voiceError() {
+    return clock.getAsLong() - voiceErrorAt < VOICE_ERROR_MS ? voiceError : "";
+  }
+
   /** Once a second: a long silence sends anyway, a held reply may start, a hung voice is let go. */
   void tick() {
     if (state == State.ENDED) return;
@@ -817,11 +699,6 @@ final class HandsFreeSession {
     synchronized (this) {
       token = reading;
       late = state == State.READING && now > readingDeadline;
-      // Turned down for a barge-in check: it's waiting for you, not hung.
-      if (late && (suspect || checking) && now - readingSince < READING_CAP_MS) {
-        readingDeadline = now + OVERRUN_MS;
-        late = false;
-      }
       // Longer than it said, but audio still coming out: let it finish.
       if (late && playing && now - readingSince < READING_CAP_MS && speaker.playing()) {
         readingDeadline = now + OVERRUN_MS;
@@ -895,7 +772,7 @@ final class HandsFreeSession {
       check("button");
       return;
     }
-    if (!hasTurn() && transcribing.get() == 0 && !segmenter.candidate()) {
+    if (!hasTurn() && transcribing.get() == 0 && !talking()) {
       if (state == State.READING) {
         log("send pressed while a reply is read: nothing of yours to send (talk over the reply to interrupt it)");
         reason("Send ignored: a reply is playing and you have nothing unsent");
@@ -907,7 +784,7 @@ final class HandsFreeSession {
     }
     sendPressed = true;
     listener.changed();
-    if (segmenter.candidate()) {
+    if (talking()) {
       log("send pressed: ending what you're saying");
       reason("Send: ending what you're saying, then it goes");
       sendAfterFlush = true;
@@ -1059,12 +936,9 @@ final class HandsFreeSession {
       reply = next.text;
       current = next;
       playing = false;
-      suspect = checking = false;
-      echoFrames = bargeLoud = 0;
-      echoLevel = 0;
-      snippet = null;
-      recent.clear();
-      overflow.clear();
+      // The microphone stays on: what it hears over the reply goes to the segmenter, afresh.
+      segmenter.reset();
+      segmenter.bursts = false;
       token = ++reading;
       readingSince = clock.getAsLong();
       readingDeadline = readingSince + START_MS;
@@ -1167,40 +1041,26 @@ final class HandsFreeSession {
 
   /**
    * Ends reading number token: note (if any) goes with your next message; tail mutes the
-   * microphone a moment (not when you interrupted: then you're talking). False if it had ended.
+   * microphone a moment and forgets what it heard during the reply. Not when you talked over it:
+   * then your speech goes on, as your turn. False if it had ended.
    */
   private boolean endReading(int token, String note, boolean tail) {
-    byte[] said = null;
-    String replyText;
-    List<byte[]> more = List.of();
     synchronized (this) {
       if (token != reading || state != State.READING) return false;
-      replyText = current == null ? "" : current.text;
       if (note != null) unheard.add(note);
-      // It ended while a sound over it was collected or checked: that may be you, so it's
-      // checked all the same, the microphone stays on, and what came meanwhile is yours.
-      if (suspect) tail = false;
-      if (snippet != null && snippet.size() > 0) said = snippet.toByteArray();
-      if (checking) more = new ArrayList<>(overflow);
-      overflow.clear();
+      // You started talking over its last words: they're kept, the microphone stays on.
+      if (tail && segmenter.candidate()) tail = false;
       current = null;
-      suspect = checking = false;
-      snippet = null;
       mutedUntil = tail ? clock.getAsLong() + TAIL_MS : 0;
       tailHeard = false;
-      segmenter.reset();
+      if (tail) segmenter.reset();
+      segmenter.bursts = true;
       reply = "";
       state = State.LISTENING;
     }
     status = "listening";
     log("floor: " + (tail ? "open" : "you"));
     if (tail) reason("Mic paused %1$.1f s after the reply (echo)", TAIL_MS / 1000.0);
-    for (byte[] f : more) segmenter.frame(f);
-    if (said != null) {
-      byte[] pcm = said;
-      String text = replyText;
-      execute(() -> checkBargeIn(token, pcm, text), null);
-    }
     listener.changed();
     return true;
   }
@@ -1406,7 +1266,15 @@ final class HandsFreeSession {
     synchronized (turnAudio) {
       if (turnVersion != version) return true;
     }
-    return segmenter.candidate();
+    return talking();
+  }
+
+  /**
+   * A sound you may be making is going on. Not while a reply plays: what the segmenter has then
+   * hasn't stopped it, so it isn't you (yet).
+   */
+  private boolean talking() {
+    return state != State.READING && segmenter.candidate();
   }
 
   /** The parts' audio in one, 0.3 s of silence between them. */

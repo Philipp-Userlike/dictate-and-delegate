@@ -7,7 +7,8 @@ Serves the OpenRouter endpoints Dictate & Delegate uses, under /api/v1 and /api/
   GET  /api/v1/models                 a small catalog (CATALOG) for the Refine model picker
   POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."
   POST /api/v1/chat/completions       Refine: a queued reply, or the dictation echoed
-  POST /api/v1/audio/speech           hands-free replies: a short MP3 (scripts/fakes/reply.mp3); a voice is required
+  POST /api/v1/audio/speech           hands-free replies: a short MP3 (scripts/fakes/reply.mp3), or PCM when asked
+                                      for; a voice is required
   GET  /api/v1/generation?id=…        its cost: $0.0001
   POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
                                       only the questions asked are answered
@@ -173,6 +174,21 @@ class Handler(BaseHTTPRequestHandler):
             item = next_item("speech", {})
             if item.get("delay"):
                 time.sleep(float(item["delay"]))
+            # Queued {"status": 503, "message": "..."}: the voice model fails with that.
+            if item.get("status"):
+                return self.reply(int(item["status"]), {"error": {"code": int(item["status"]), "message": item.get("message", "Failed")}})
+            if body.get("response_format") == "pcm":
+                # Raw 16-bit samples, as Gemini and HeyGen send them: 1.5 s of a quiet tone at 24 kHz.
+                import math
+                rate = 24000
+                data = b"".join(int(3000 * math.sin(2 * math.pi * 330 * i / rate)).to_bytes(2, "little", signed=True) for i in range(rate * 3 // 2))
+                self.send_response(200)
+                self.send_header("Content-Type", "audio/pcm;rate=%d;channels=1" % rate)
+                self.send_header("X-Generation-Id", "gen-tts-fake")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
             data = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "reply.mp3"), "rb").read()
             self.send_response(200)
             self.send_header("Content-Type", "audio/mpeg")

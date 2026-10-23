@@ -33,7 +33,7 @@ final class Cues {
             new AudioTrack.Builder()
                 .setAudioAttributes(
                     new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION) // With the replies: echo-cancelled.
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build())
                 .setAudioFormat(

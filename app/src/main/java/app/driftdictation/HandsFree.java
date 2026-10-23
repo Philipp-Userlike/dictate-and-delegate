@@ -10,7 +10,7 @@ import java.util.Locale;
  * Hands-free mode: talking with the chief of staff without touching the phone. The phone listens
  * (voice activity, no model), transcribes each stretch of speech once when you pause, and sends the
  * message when it ends with one of your send words ("over"), or after a long silence; an end word
- * ends the mode. The chief's spoken replies are read aloud with the microphone off. These are the
+ * ends the mode. The chief's spoken replies are read aloud as call audio; talking over one stops it. These are the
  * settings and the pure parts: keyword matching and the voice activity segmenter.
  */
 final class HandsFree {
@@ -235,6 +235,14 @@ final class HandsFree {
       return background;
     }
 
+    /** The short-burst rule applies (not over a reply: a clatter mustn't stop it). */
+    volatile boolean bursts = true;
+
+    /** Milliseconds of voice within the window: how much it took to count. */
+    synchronized int voicedMs() {
+      return voiced.size() * FRAME_MS;
+    }
+
     /** Root mean square of a frame of 16-bit little-endian samples. */
     static double level(byte[] frame, int length) {
       double sum = 0;
@@ -327,7 +335,7 @@ final class HandsFree {
     private void confirm(double level) {
       if (confirmed) return;
       boolean enough = voiced.size() * FRAME_MS >= minSpeechMs.getAsInt();
-      boolean burst = speechFrames >= BURST_FRAMES && peak >= Math.max(BURST_MIN, background * BURST);
+      boolean burst = bursts && speechFrames >= BURST_FRAMES && peak >= Math.max(BURST_MIN, background * BURST);
       if (!enough && !burst) return;
       confirmed = true;
       quietMs = 0;

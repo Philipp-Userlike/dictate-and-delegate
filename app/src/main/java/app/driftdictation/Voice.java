@@ -1,7 +1,5 @@
 package app.driftdictation;
 
-import static app.driftdictation.I18n.tr;
-
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
@@ -12,7 +10,6 @@ import android.media.MediaPlayer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,12 +21,21 @@ import org.json.JSONObject;
 
 /**
  * Reads the chief's replies aloud in hands-free mode: a speech model through OpenRouter
- * (POST /audio/speech, MP3, with the user's OpenRouter key), or Android's own voice offline and as
- * the fallback when OpenRouter fails.
+ * (POST /audio/speech, MP3, or PCM wrapped as WAV, with the user's OpenRouter key), or Android's
+ * own voice offline and as the fallback when OpenRouter fails. Replies play as call audio, so the
+ * phone's echo cancellation takes them out of the microphone.
  */
 final class Voice {
-  /** A choice in Settings → Hands-free: the OpenRouter model and voice, or Android's. */
-  record Choice(String id, String name, String note, String model, String voice, String pricePerCharacter) {
+  /**
+   * A choice in Settings → Models & providers → Text-to-speech: the OpenRouter model and voice
+   * ("" when the model needs none), or Android's; format is what's asked for, "mp3" or "pcm" (for
+   * the models that only send raw samples).
+   */
+  record Choice(String id, String name, String note, String model, String voice, String pricePerCharacter, String format) {
+    Choice(String id, String name, String note, String model, String voice, String pricePerCharacter) {
+      this(id, name, note, model, voice, pricePerCharacter, "mp3");
+    }
+
     String label() {
       return name + " · " + note;
     }
@@ -40,10 +46,39 @@ final class Voice {
     }
   }
 
+  static final String MAI = "microsoft/mai-voice-2.1-flash", VOXTRAL = "mistralai/voxtral-mini-tts-3-0",
+      HEYGEN = "heygen/heygen-voice-1-turbo", GEMINI = "google/gemini-3.8-flash-lite-tts";
+
   static final Choice KOKORO = new Choice("kokoro", "Kokoro", "cheapest", "hexgrad/kokoro-82m", "af_heart", "0.00000062"),
-      ELEVEN = new Choice("eleven", "ElevenLabs Flash v2.5", "best voice", "elevenlabs/eleven-flash-v2.5", "george", "0.00002"),
+      ELEVEN = new Choice("eleven", "ElevenLabs Flash v2.5", "best voice", "elevenlabs/eleven-flash-v2.5", "george", "0.00004"),
       ANDROID = new Choice("android", "Android's voice", "offline, free", "", "", "0");
-  static final Choice[] CHOICES = {KOKORO, ELEVEN, ANDROID};
+
+  /**
+   * Prices are OpenRouter's per character; Gemini's is per token (audio out at $6 a million), about
+   * $10 a million characters. Each voice answered once in about 0.5 to 2 s (October 2026).
+   */
+  static final Choice[] CHOICES = {
+    KOKORO,
+    new Choice("fish-drama", "Fish Audio Drama 3", "fast, cheap", "fish-audio/drama-3", "", "0.000002"),
+    new Choice("gemini-kore", "Gemini Flash Lite TTS · Kore", "cheap", GEMINI, "Kore", "0.00001", "pcm"),
+    new Choice("gemini-puck", "Gemini Flash Lite TTS · Puck", "cheap", GEMINI, "Puck", "0.00001", "pcm"),
+    new Choice("gemini-charon", "Gemini Flash Lite TTS · Charon", "cheap", GEMINI, "Charon", "0.00001", "pcm"),
+    new Choice("gemini-aoede", "Gemini Flash Lite TTS · Aoede", "cheap", GEMINI, "Aoede", "0.00001", "pcm"),
+    new Choice("heygen-bram", "HeyGen Voice 1 Turbo · Bram", "cheap", HEYGEN, "bram", "0.000004", "pcm"),
+    new Choice("heygen-nadine", "HeyGen Voice 1 Turbo · Nadine", "cheap", HEYGEN, "nadine", "0.000004", "pcm"),
+    new Choice("heygen-lucian", "HeyGen Voice 1 Turbo · Lucian", "cheap", HEYGEN, "lucian", "0.000004", "pcm"),
+    new Choice("heygen-tabitha", "HeyGen Voice 1 Turbo · Tabitha", "cheap", HEYGEN, "tabitha", "0.000004", "pcm"),
+    new Choice("voxtral-paul", "Voxtral Mini TTS · Paul", "fast", VOXTRAL, "en_paul_neutral", "0.000013"),
+    new Choice("voxtral-paul-cheerful", "Voxtral Mini TTS · Paul, cheerful", "fast", VOXTRAL, "en_paul_cheerful", "0.000013"),
+    new Choice("voxtral-jane", "Voxtral Mini TTS · Jane (British)", "fast", VOXTRAL, "gb_jane_neutral", "0.000013"),
+    new Choice("voxtral-oliver", "Voxtral Mini TTS · Oliver (British)", "fast", VOXTRAL, "gb_oliver_neutral", "0.000013"),
+    new Choice("mai-harper", "MAI-Voice 2.1 Flash · Harper", "fastest", MAI, "en-US-Harper:MAI-Voice-2.1-Flash", "0.000015"),
+    new Choice("mai-iris", "MAI-Voice 2.1 Flash · Iris", "fastest", MAI, "en-US-Iris:MAI-Voice-2.1-Flash", "0.000015"),
+    new Choice("mai-jasper", "MAI-Voice 2.1 Flash · Jasper", "fastest", MAI, "en-US-Jasper:MAI-Voice-2.1-Flash", "0.000015"),
+    new Choice("mai-ethan", "MAI-Voice 2.1 Flash · Ethan", "fastest", MAI, "en-US-Ethan:MAI-Voice-2.1-Flash", "0.000015"),
+    ELEVEN,
+    ANDROID
+  };
 
   /** The hands-free voice until another is chosen: the cheapest. */
   static final Choice DEFAULT = KOKORO;
@@ -67,9 +102,17 @@ final class Voice {
    * -1 when it didn't), and why Android's voice reads it ("" when it doesn't).
    */
   /** how: which request delivered it ("", or that a second request was sent, and which won). */
-  record Prepared(File mp3, String generation, long firstByteMs, long allMs, String fallback, String how) {
-    Prepared(File mp3, String generation) {
-      this(mp3, generation, -1, -1, "", "");
+  /** audio: an MP3 or WAV file. fallback: why there's none, its cause in a few words. */
+  record Prepared(File audio, String generation, long firstByteMs, long allMs, String fallback, String how) {
+    Prepared(File audio, String generation) {
+      this(audio, generation, -1, -1, "", "");
+    }
+  }
+
+  /** A voice model's request failed: why, in a few words (HTTP status and what it said). */
+  static final class Failed extends IOException {
+    Failed(String why) {
+      super(why);
     }
   }
 
@@ -105,9 +148,9 @@ final class Voice {
   private MediaPlayer player;
   private volatile TextToSpeech tts;
   private Playback current;
-  /** The reply being read; for Android's voice, where its spoken part starts and how far it got. */
+  /** The reply being read; for Android's voice, how far it got. */
   private volatile String text = "";
-  private volatile int ttsBase, ttsAt;
+  private volatile int ttsAt;
   private int replies;
   /**
    * Android's voice: one engine for the whole call, started at once (it takes a moment to be
@@ -235,7 +278,63 @@ final class Voice {
 
   /** The request for OpenRouter's speech endpoint. */
   static JSONObject body(Choice c, String text) throws Exception {
-    return new JSONObject().put("model", c.model()).put("voice", c.voice()).put("input", text).put("response_format", "mp3");
+    JSONObject b = new JSONObject().put("model", c.model()).put("input", text).put("response_format", c.format());
+    if (!c.voice().isEmpty()) b.put("voice", c.voice());
+    return b;
+  }
+
+  /** "audio/pcm;rate=44100;channels=1" → {44100, 1}; null if it isn't PCM with a rate. */
+  static int[] pcmFormat(String contentType) {
+    if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("audio/pcm")) return null;
+    int rate = 0, channels = 1;
+    for (String part : contentType.split(";")) {
+      String[] kv = part.trim().split("=", 2);
+      if (kv.length < 2) continue;
+      try {
+        if (kv[0].trim().equalsIgnoreCase("rate")) rate = Integer.parseInt(kv[1].trim());
+        else if (kv[0].trim().equalsIgnoreCase("channels")) channels = Integer.parseInt(kv[1].trim());
+      } catch (NumberFormatException ignored) {
+        return null;
+      }
+    }
+    return rate <= 0 || channels <= 0 ? null : new int[] {rate, channels};
+  }
+
+  /** The 44-byte header that makes 16-bit little-endian PCM a WAV file of that many bytes. */
+  static byte[] wavHeader(int rate, int channels, long pcmBytes) {
+    java.nio.ByteBuffer h = java.nio.ByteBuffer.allocate(44).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+    h.put(new byte[] {'R', 'I', 'F', 'F'})
+        .putInt((int) (36 + pcmBytes))
+        .put(new byte[] {'W', 'A', 'V', 'E', 'f', 'm', 't', ' '})
+        .putInt(16)
+        .putShort((short) 1)
+        .putShort((short) channels)
+        .putInt(rate)
+        .putInt(rate * channels * 2)
+        .putShort((short) (channels * 2))
+        .putShort((short) 16)
+        .put(new byte[] {'d', 'a', 't', 'a'})
+        .putInt((int) pcmBytes);
+    return h.array();
+  }
+
+  /**
+   * Why a request failed, in a few words: "HTTP 503: <what it said>", its JSON error message if
+   * it sent one, cut to a line.
+   */
+  static String httpError(int status, String body) {
+    String said = body == null ? "" : body.trim();
+    try {
+      JSONObject j = new JSONObject(said);
+      JSONObject e = j.optJSONObject("error");
+      String m = e != null ? e.optString("message") : j.optString("message");
+      if (!m.isEmpty()) said = m;
+    } catch (Exception notJson) {
+      /* As it came. */
+    }
+    said = said.replaceAll("\\s+", " ");
+    if (said.length() > 160) said = said.substring(0, 160) + "…";
+    return "HTTP " + status + (said.isEmpty() ? "" : ": " + said);
   }
 
   /**
@@ -286,8 +385,10 @@ final class Voice {
         } else if (now >= deadline) {
           if (a != null) a.drop();
           if (b != null) b.drop();
+          boolean answered = a != null && a.first[0] >= 0 || b != null && b.first[0] >= 0;
           return new Prepared(null, "", a == null ? -1 : a.first[0], -1,
-              tr("%1$s took over %2$.1f s", choice.name(), waitMs / 1000.0), b == null ? "" : "two requests");
+              String.format(Locale.ROOT, answered ? "%1$s: its audio wasn't all there in %2$.1f s" : "%1$s: no answer in %2$.1f s", choice.name(), waitMs / 1000.0),
+              b == null ? "" : "two requests");
         }
         Thread.sleep(25);
       }
@@ -299,7 +400,7 @@ final class Voice {
       failed = ex;
     }
     android.util.Log.w("Voice", "OpenRouter's voice failed, Android's reads instead", failed);
-    return new Prepared(null, "", -1, -1, tr("%1$s failed (%2$s)", choice.name(), String.valueOf(failed == null ? "" : failed.getMessage())), "");
+    return new Prepared(null, "", -1, -1, choice.name() + ": " + (failed instanceof Failed ? failed.getMessage() : String.valueOf(failed == null ? "failed" : failed.getMessage())), "");
   }
 
   /**
@@ -332,7 +433,7 @@ final class Voice {
       current = playback;
     }
     this.text = text;
-    ttsBase = ttsAt = 0;
+    ttsAt = 0;
     focus(true);
     new Thread(
             () -> {
@@ -343,7 +444,7 @@ final class Voice {
                   return;
                 }
               }
-              if (prepared.mp3() == null) speakAndroid(text, playback);
+              if (prepared.audio() == null) speakAndroid(text, playback);
               else
                 main.post(
                     () -> {
@@ -351,10 +452,10 @@ final class Voice {
                         if (current != playback) return; // Stopped meanwhile.
                       }
                       try {
-                        play(prepared.mp3(), playback);
+                        play(prepared.audio(), playback);
                       } catch (Exception ex) {
                         release();
-                        prepared.mp3().delete();
+                        prepared.audio().delete();
                         speakAndroid(text, playback); // The audio doesn't play: Android's voice instead.
                       }
                     });
@@ -372,10 +473,15 @@ final class Voice {
   /** Silence played first, so the route is awake for the first word. */
   static final int WARM_MS = 500;
 
-  /** The replies' audio: also the hands-free media session's, so the volume keys change their volume. */
+  /**
+   * The replies' audio: call audio, so the phone's echo cancellation removes it from the
+   * microphone (it only takes out what plays on the communication path) and you can talk over a
+   * reply. Also the hands-free media session's, so the volume keys change its volume (the call
+   * volume). The sounds play on it too.
+   */
   static AudioAttributes attributes() {
     return new AudioAttributes.Builder()
-        .setUsage(AudioAttributes.USAGE_ASSISTANT)
+        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
         .build();
   }
@@ -426,25 +532,6 @@ final class Voice {
     }
   }
 
-  /** How loud a reply plays while what's said over it is checked. */
-  static final float DUCKED = 0.25f;
-
-  /**
-   * Turns the reply down (you may be talking over it) or back up; it plays on either way. Android's
-   * voice can't change its volume while it speaks: it plays on as it is.
-   */
-  void duck(boolean down) {
-    MediaPlayer p;
-    synchronized (this) {
-      p = player;
-    }
-    try {
-      if (p != null) p.setVolume(down ? DUCKED : 1f, down ? DUCKED : 1f);
-    } catch (IllegalStateException ignored) {
-      /* Already done. */
-    }
-  }
-
   /**
    * How many characters of the reply have been heard: by the playback position (a third of a
    * second less, for the sound still on its way to the ear), or Android's voice's word.
@@ -464,7 +551,7 @@ final class Voice {
     } catch (IllegalStateException ignored) {
       return 0;
     }
-    return Math.min(text.length(), ttsBase + ttsAt);
+    return Math.min(text.length(), ttsAt);
   }
 
   /** Is reply audio still coming out (the session's watchdog asks)? */
@@ -542,19 +629,44 @@ final class Voice {
       try (OutputStream out = c.getOutputStream()) {
         out.write(payload);
       }
-      if (c.getResponseCode() >= 300) throw new IOException(tr("The voice model answered with HTTP %1$d.", c.getResponseCode()));
+      int status;
+      try {
+        status = c.getResponseCode();
+      } catch (java.net.SocketTimeoutException ex) {
+        throw new Failed("no answer in " + (android.os.SystemClock.elapsedRealtime() - asked) / 1000 + " s");
+      }
+      if (status >= 300) {
+        String said = "";
+        try (InputStream err = c.getErrorStream()) {
+          if (err != null) said = new String(err.readNBytes(4096), StandardCharsets.UTF_8);
+        } catch (IOException ignored) {
+          /* The status says enough. */
+        }
+        throw new Failed(httpError(status, said));
+      }
       first[0] = android.os.SystemClock.elapsedRealtime() - asked;
       String id = c.getHeaderField("X-Generation-Id");
       generation[0] = id == null ? "" : id;
+      // Raw samples (some models send nothing else): wrapped as WAV, with the rate they came at.
+      int[] pcm = pcmFormat(c.getContentType());
       // Each reply its own file: several may be ready while one plays.
       File f;
       synchronized (this) {
-        f = new File(context.getCacheDir(), "reply-" + (++replies % 8) + ".mp3");
+        f = new File(context.getCacheDir(), "reply-" + (++replies % 8) + (pcm == null ? ".mp3" : ".wav"));
       }
-      try (InputStream in = c.getInputStream(); FileOutputStream out = new FileOutputStream(f)) {
-        in.transferTo(out);
+      try (InputStream in = c.getInputStream(); java.io.RandomAccessFile out = new java.io.RandomAccessFile(f, "rw")) {
+        out.setLength(0);
+        if (pcm != null) out.write(wavHeader(pcm[0], pcm[1], 0));
+        byte[] buffer = new byte[16 * 1024];
+        for (int n; (n = in.read(buffer)) > 0; ) out.write(buffer, 0, n);
+        if (pcm != null) { // The sizes, now that they're known.
+          out.seek(0);
+          out.write(wavHeader(pcm[0], pcm[1], out.length() - 44));
+        }
+      } catch (java.net.SocketTimeoutException ex) {
+        throw new Failed("its audio stopped coming after " + (android.os.SystemClock.elapsedRealtime() - asked) / 1000 + " s");
       }
-      if (f.length() == 0) throw new IOException("The voice model sent no audio.");
+      if (f.length() <= (pcm == null ? 0 : 44)) throw new Failed("it sent no audio");
       whole = true;
       return f;
     } finally {

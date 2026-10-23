@@ -3202,7 +3202,7 @@ public final class MainActivity extends Activity {
     // The live line: what's happening right now.
     hfStatus.setText(
         switch (live) {
-              case PLAYING, REPLY_COMING, CHECKING -> "🔊  ";
+              case PLAYING, REPLY_COMING -> "🔊  ";
               case SENDING, SENT -> "📨  ";
               case REPLY_WAITING -> "⏸  ";
               case MUTED -> "🔇  ";
@@ -3213,7 +3213,7 @@ public final class MainActivity extends Activity {
     hfStatus.setBackground(
         ui.shape(
             switch (live) {
-              case PLAYING, REPLY_COMING, CHECKING -> 0xffe8e0f7;
+              case PLAYING, REPLY_COMING -> 0xffe8e0f7;
               case REPLY_WAITING, SENDING, WRITING -> 0xfffbefd5;
               case MUTED -> 0xffeceff1;
               default -> Ui.TEAL_SOFT;
@@ -3306,11 +3306,20 @@ public final class MainActivity extends Activity {
   }
 
   private static String voiceNote(Voice.Choice c) {
-    return switch (c.id()) {
-      case "eleven" -> tr("best voice");
-      case "android" -> tr("offline, free");
-      default -> tr("cheapest");
-    };
+    String note =
+        switch (c.note()) {
+          case "best voice" -> tr("best voice");
+          case "offline, free" -> tr("offline, free");
+          case "fastest" -> tr("fastest");
+          case "fast" -> tr("fast");
+          case "fast, cheap" -> tr("fast, cheap");
+          case "cheap" -> tr("cheap");
+          default -> tr("cheapest");
+        };
+    if (c.model().isEmpty()) return note;
+    // OpenRouter's price; Gemini's is per token, so about.
+    String price = c.perCharacter().multiply(java.math.BigDecimal.valueOf(1_000_000)).stripTrailingZeros().toPlainString();
+    return note + " · " + (c.model().equals(Voice.GEMINI) ? tr("about $%1$s per million characters", price) : tr("$%1$s per million characters", price));
   }
 
   /** Settings → Models & providers → Text-to-speech: the voice that reads the chief's replies. */
@@ -3333,7 +3342,7 @@ public final class MainActivity extends Activity {
     }
     ui.add(
         content,
-        ui.text(tr("Kokoro and ElevenLabs run through OpenRouter with your key; what they cost shows on each note and in Usage. Android's voice works offline, and takes over when OpenRouter fails."), 13, Ui.MUTED),
+        ui.text(tr("The voice models run through OpenRouter with your key; what they cost shows on each note and in Usage. Android's voice works offline, and takes over when OpenRouter fails. When a voice model fails, the call bar says why."), 13, Ui.MUTED),
         8);
   }
 
