@@ -6,6 +6,8 @@ import android.media.AudioFocusRequest;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.MediaCodec;
+import android.media.MediaFormat;
 import android.media.MediaPlayer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
@@ -21,9 +23,10 @@ import org.json.JSONObject;
 
 /**
  * Reads the chief's replies aloud in hands-free mode: a speech model through OpenRouter
- * (POST /audio/speech, MP3, or PCM wrapped as WAV, with the user's OpenRouter key), or Android's
- * own voice offline and as the fallback when OpenRouter fails. Replies play as call audio, so the
- * phone's echo cancellation takes them out of the microphone.
+ * (POST /audio/speech, MP3 or raw PCM, with the user's OpenRouter key), or Android's own voice
+ * offline and as the fallback when OpenRouter fails. A reply plays while its audio still comes in
+ * (VoiceStream: MP3 decoded as it arrives), from its first fifth of a second. Replies play as call
+ * audio, so the phone's echo cancellation takes them out of the microphone.
  */
 final class Voice {
   /**
@@ -106,15 +109,20 @@ final class Voice {
   }
 
   /**
-   * A reply ready to play: its audio (null: Android's voice reads the text), OpenRouter's
-   * generation ID, and how it went: when the first byte came and when all of it (ms after asking,
-   * -1 when it didn't), and why Android's voice reads it ("" when it doesn't).
+   * A reply ready to play: its audio coming in (stream), or a whole file in a format that can't be
+   * played as it comes (audio); neither: Android's voice reads the text. Also OpenRouter's
+   * generation ID, and how it went: when the first byte came and when enough audio to start
+   * playing (ms after asking, -1 when it didn't), why Android's voice reads it ("" when it
+   * doesn't), and which request delivered it ("", or that a second was sent and which won).
    */
-  /** how: which request delivered it ("", or that a second request was sent, and which won). */
-  /** audio: an MP3 or WAV file. fallback: why there's none, its cause in a few words. */
-  record Prepared(File audio, String generation, long firstByteMs, long allMs, String fallback, String how) {
+  record Prepared(File audio, VoiceStream stream, String generation, long firstByteMs, long playableMs, String fallback, String how) {
     Prepared(File audio, String generation) {
-      this(audio, generation, -1, -1, "", "");
+      this(audio, null, generation, -1, -1, "", "");
+    }
+
+    /** The voice model's audio is there to play. */
+    boolean ready() {
+      return audio != null || stream != null;
     }
   }
 
@@ -132,16 +140,42 @@ final class Voice {
    */
   static final long SECOND_REQUEST_MS = 1000;
 
-  /** One request for a reply's audio, running in its own thread. */
+  /**
+   * One request for a reply's audio, running in its own thread: into its stream as it comes, or
+   * (a format that can't be played as it comes) into a file, which the task returns.
+   */
   private final class Attempt {
     final long[] first = {-1};
     final String[] generation = {""};
     final HttpURLConnection[] open = {null};
+    final VoiceStream stream = new VoiceStream();
     final java.util.concurrent.FutureTask<File> task;
 
     Attempt(Choice choice, String text, long asked) {
-      task = new java.util.concurrent.FutureTask<>(() -> fetch(choice, text, generation, first, open, asked));
+      task =
+          new java.util.concurrent.FutureTask<>(
+              () -> {
+                try {
+                  return fetch(choice, text, generation, first, open, asked, stream);
+                } catch (Exception ex) {
+                  stream.fail(ex instanceof Failed ? ex.getMessage() : String.valueOf(ex.getMessage()), android.os.SystemClock.elapsedRealtime() - asked);
+                  throw ex;
+                }
+              });
+      stream.cancel = this::drop;
       new Thread(task, "voice-fetch").start();
+    }
+
+    /** It can start playing: enough audio is in, or the whole file. */
+    boolean ready() {
+      if (stream.failed() != null) return false;
+      if (stream.playable()) return true;
+      if (!task.isDone() || task.isCancelled()) return false;
+      try {
+        return task.get() != null;
+      } catch (Exception ex) {
+        return false;
+      }
     }
 
     /** Given up: not downloaded on. */
@@ -155,6 +189,14 @@ final class Voice {
   private final Context context;
   private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
   private MediaPlayer player;
+  /** A streamed reply playing: its track and its audio (null when none plays). */
+  private AudioTrack track;
+  private VoiceStream streamed;
+  /**
+   * How fast the replies are read, in characters a second: 15 until a whole reply came in, then
+   * what that one took (the voices measured 15 to 20).
+   */
+  private volatile double charsPerSecond = 15;
   private volatile TextToSpeech tts;
   private Playback current;
   /** The reply being read; for Android's voice, how far it got. */
@@ -355,8 +397,9 @@ final class Voice {
   }
 
   /**
-   * As above, but when the audio isn't all there within waitMs (0: no limit) the request is given
-   * up and Android's voice reads the reply, so a slow voice model never keeps you waiting.
+   * As above, but when there isn't enough audio to start playing within waitMs (0: no limit) the
+   * request is given up and Android's voice reads the reply, so a slow voice model never keeps you
+   * waiting. The audio goes on coming in while it plays.
    */
   Prepared prepare(Choice choice, String text, long waitMs) {
     if (choice.model().isEmpty()) return new Prepared(null, "");
@@ -368,14 +411,25 @@ final class Voice {
     try {
       while (true) {
         long now = android.os.SystemClock.elapsedRealtime();
+        Attempt ready = a != null && a.ready() ? a : b != null && b.ready() ? b : null;
+        if (ready != null) {
+          Attempt other = ready == a ? b : a;
+          if (other != null) other.drop();
+          String how = b == null ? "" : ready == b ? "second request won (sent after " + SECOND_REQUEST_MS + " ms)" : "first request won (a second was sent after " + SECOND_REQUEST_MS + " ms)";
+          File file = ready.task.isDone() ? ready.task.get() : null;
+          if (file == null) learn(ready.stream, text);
+          return new Prepared(file, file == null ? ready.stream : null, ready.generation[0], ready.first[0], now - asked, "", how);
+        }
         Attempt done = a != null && a.task.isDone() ? a : b != null && b.task.isDone() ? b : null;
         if (done != null) {
-          Attempt other = done == a ? b : a;
           try {
-            File mp3 = done.task.get();
-            if (other != null) other.drop();
-            String how = b == null ? "" : done == b ? "second request won (sent after " + SECOND_REQUEST_MS + " ms)" : "first request won (a second was sent after " + SECOND_REQUEST_MS + " ms)";
-            return new Prepared(mp3, done.generation[0], done.first[0], now - asked, "", how);
+            done.task.get();
+            throw new java.util.concurrent.ExecutionException(new Failed("it sent no audio"));
+          } catch (java.util.concurrent.CancellationException ex) {
+            failed = ex;
+            if (done == a) a = null;
+            else b = null;
+            if (a == null && b == null) break;
           } catch (java.util.concurrent.ExecutionException ex) {
             failed = ex.getCause() == null ? ex : ex.getCause();
             // One request failed: the other may still deliver; if there's none yet, send one.
@@ -395,12 +449,14 @@ final class Voice {
           if (a != null) a.drop();
           if (b != null) b.drop();
           boolean answered = a != null && a.first[0] >= 0 || b != null && b.first[0] >= 0;
-          return new Prepared(null, "", a == null ? -1 : a.first[0], -1,
-              String.format(Locale.ROOT, answered ? "%1$s: its audio wasn't all there in %2$.1f s" : "%1$s: no answer in %2$.1f s", choice.name(), waitMs / 1000.0),
+          return new Prepared(null, null, "", a == null ? -1 : a.first[0], -1,
+              String.format(Locale.ROOT, answered ? "%1$s: its audio didn't start coming in %2$.1f s" : "%1$s: no answer in %2$.1f s", choice.name(), waitMs / 1000.0),
               b == null ? "" : "two requests");
         }
         Thread.sleep(25);
       }
+    } catch (java.util.concurrent.ExecutionException ex) {
+      failed = ex.getCause(); // Can't be: a ready attempt's file was there.
     } catch (InterruptedException ex) {
       // The call ended: not downloaded on.
       if (a != null) a.drop();
@@ -409,7 +465,7 @@ final class Voice {
       failed = ex;
     }
     android.util.Log.w("Voice", "OpenRouter's voice failed, Android's reads instead", failed);
-    return new Prepared(null, "", -1, -1, choice.name() + ": " + (failed instanceof Failed ? failed.getMessage() : String.valueOf(failed == null ? "failed" : failed.getMessage())), "");
+    return new Prepared(null, null, "", -1, -1, choice.name() + ": " + (failed instanceof Failed ? failed.getMessage() : String.valueOf(failed == null ? "failed" : failed.getMessage())), "");
   }
 
   /**
@@ -453,7 +509,14 @@ final class Voice {
                   return;
                 }
               }
-              if (prepared.audio() == null) speakAndroid(text, playback);
+              // The silence keeps the route awake until the reply has started.
+              main.postDelayed(
+                  () -> {
+                    if (warm != null) warm.release();
+                  },
+                  1500);
+              if (prepared.stream() != null) playStream(prepared.stream(), text, playback);
+              else if (prepared.audio() == null) speakAndroid(text, playback);
               else
                 main.post(
                     () -> {
@@ -468,12 +531,6 @@ final class Voice {
                         speakAndroid(text, playback); // The audio doesn't play: Android's voice instead.
                       }
                     });
-              // The silence keeps the route awake until the reply has started.
-              main.postDelayed(
-                  () -> {
-                    if (warm != null) warm.release();
-                  },
-                  1500);
             },
             "voice-warm-up")
         .start();
@@ -541,16 +598,155 @@ final class Voice {
     }
   }
 
+  /** Learns how fast the voice reads once a reply's audio is all in. */
+  private void learn(VoiceStream s, String text) {
+    s.whenDone(
+        done -> {
+          if (done.failed() == null && done.audioMs() > 2000) charsPerSecond = text.length() * 1000.0 / done.audioMs();
+        });
+  }
+
+  /** How long a streamed reply will take: its length once all of it is in, else a guess. */
+  private long estimatedMs(VoiceStream s, String text) {
+    return s.complete() ? s.audioMs() : Math.max(s.audioMs(), (long) (text.length() * 1000 / charsPerSecond));
+  }
+
+  /** A stream that stops coming for this long while it plays is given up. */
+  static final long STALL_MS = 5000;
+
+  /**
+   * Plays a reply while its audio comes in (on its own thread), on a call-audio track: written as
+   * it comes, so it starts with the first fifth of a second. A stream that stops coming (STALL_MS)
+   * or fails plays what came, then ends unplayed.
+   */
+  private void playStream(VoiceStream s, String text, Playback playback) {
+    int rate = s.rate(), channels = s.channels(), frameBytes = 2 * channels;
+    AudioTrack t;
+    try {
+      AudioFormat format =
+          new AudioFormat.Builder()
+              .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+              .setSampleRate(rate)
+              .setChannelMask(channels == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO)
+              .build();
+      t =
+          new AudioTrack.Builder()
+              .setAudioAttributes(attributes())
+              .setAudioFormat(format)
+              .setTransferMode(AudioTrack.MODE_STREAM)
+              .setBufferSizeInBytes(Math.max(AudioTrack.getMinBufferSize(rate, format.getChannelMask(), AudioFormat.ENCODING_PCM_16BIT), rate * frameBytes / 2))
+              .build();
+      // It starts with what's written first, not once its half second of room is full.
+      try {
+        t.setStartThresholdInFrames(Math.min(t.getBufferSizeInFrames(), rate / 20));
+      } catch (Exception ignored) {
+        /* As it is. */
+      }
+    } catch (Exception ex) {
+      android.util.Log.w("Voice", "no track for the reply", ex);
+      s.cancel.run();
+      speakAndroid(text, playback); // It doesn't play: Android's voice instead.
+      return;
+    }
+    synchronized (this) {
+      if (current != playback) { // Stopped meanwhile.
+        t.release();
+        return;
+      }
+      track = t;
+      streamed = s;
+    }
+    byte[] buffer = new byte[rate * frameBytes / 10];
+    int at = 0;
+    boolean started = false, played = false;
+    long stalled = -1;
+    try {
+      while (stillPlaying(playback)) {
+        int n = s.read(at, buffer, 100);
+        if (n < 0) {
+          played = s.failed() == null;
+          break;
+        }
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (n == 0) {
+          if (stalled < 0) stalled = now;
+          else if (now - stalled >= STALL_MS) {
+            android.util.Log.w("Voice", "the reply's audio stopped coming");
+            s.cancel.run();
+            s.fail("its audio stopped coming for " + STALL_MS / 1000 + " s", -1);
+            break;
+          }
+          continue;
+        }
+        stalled = -1;
+        if (t.write(buffer, 0, n, AudioTrack.WRITE_BLOCKING) < 0) break;
+        at += n;
+        if (!started) {
+          t.play();
+          started = true;
+          long ms = estimatedMs(s, text);
+          main.post(() -> playback.started(ms));
+        }
+      }
+      // What was written plays to its end (stop lets the last of it out; the track's head reaches
+      // it), unless it's stopped.
+      if (started && stillPlaying(playback)) t.stop();
+      long frames = at / frameBytes, last = -1, since = android.os.SystemClock.elapsedRealtime();
+      while (started && stillPlaying(playback)) {
+        long head = t.getPlaybackHeadPosition() & 0xffffffffL;
+        if (head >= frames) break;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (head != last) {
+          last = head;
+          since = now;
+        } else if (now - since > 1000) break; // The track stopped moving.
+        Thread.sleep(20);
+      }
+    } catch (InterruptedException ex) {
+      played = false;
+    } catch (Exception ex) {
+      android.util.Log.w("Voice", "the reply's track failed", ex);
+      played = false;
+    }
+    synchronized (this) {
+      if (track == t) {
+        track = null;
+        streamed = null;
+      }
+    }
+    try {
+      t.stop();
+    } catch (IllegalStateException ignored) {
+      /* Stopped already. */
+    }
+    t.release();
+    if (stillPlaying(playback)) finished(played);
+  }
+
+  /** Is this playback still the one going on (not stopped)? */
+  private synchronized boolean stillPlaying(Playback playback) {
+    return current == playback;
+  }
+
   /**
    * How many characters of the reply have been heard: by the playback position (a third of a
-   * second less, for the sound still on its way to the ear), or Android's voice's word.
+   * second less, for the sound still on its way to the ear), or Android's voice's word. While a
+   * streamed reply still comes in, its length isn't known yet: see VoiceStream.heardChars.
    */
   int heardChars() {
     MediaPlayer p;
+    AudioTrack t;
+    VoiceStream s;
     synchronized (this) {
       p = player;
+      t = track;
+      s = streamed;
     }
     try {
+      if (t != null && s != null) {
+        long played = (t.getPlaybackHeadPosition() & 0xffffffffL) * 1000 / Math.max(1, s.rate());
+        return VoiceStream.heardChars(text.length(), played, s.audioMs(), s.complete(), charsPerSecond);
+      }
       if (p != null) {
         int duration = p.getDuration();
         if (duration <= 0) return 0;
@@ -567,6 +763,7 @@ final class Voice {
   boolean playing() {
     MediaPlayer p;
     synchronized (this) {
+      if (track != null) return true; // A streamed reply plays until its thread ends it.
       p = player;
     }
     try {
@@ -617,10 +814,12 @@ final class Voice {
   }
 
   /**
-   * Fetches a reply's audio; first[0] gets when its first byte came (ms after asked). The
-   * connection isn't closed after a whole answer, so the next reply reuses it (keep-alive).
+   * Fetches a reply's audio; first[0] gets when its first byte came (ms after asked). MP3 and raw
+   * PCM go into the stream as they come (null returned once all of it is in); anything else into a
+   * file, returned. The connection isn't closed after a whole answer, so the next reply reuses it
+   * (keep-alive).
    */
-  private File fetch(Choice choice, String text, String[] generation, long[] first, HttpURLConnection[] open, long asked) throws Exception {
+  private File fetch(Choice choice, String text, String[] generation, long[] first, HttpURLConnection[] open, long asked, VoiceStream stream) throws Exception {
     String key = new Vault(context).get(OpenRouter.KEY);
     HttpURLConnection c = (HttpURLConnection) new URL(OpenRouter.base() + "/audio/speech").openConnection();
     open[0] = c;
@@ -656,8 +855,14 @@ final class Voice {
       first[0] = android.os.SystemClock.elapsedRealtime() - asked;
       String id = c.getHeaderField("X-Generation-Id");
       generation[0] = id == null ? "" : id;
-      // Raw samples (some models send nothing else): wrapped as WAV, with the rate they came at.
+      // Raw samples (some models send nothing else), at the rate they came at, or MP3: played as
+      // they come.
       int[] pcm = pcmFormat(c.getContentType());
+      if (pcm != null || isMp3(c.getContentType())) {
+        receive(c, pcm, stream, asked);
+        whole = true;
+        return null;
+      }
       // Each reply its own file: several may be ready while one plays.
       File f;
       synchronized (this) {
@@ -680,6 +885,118 @@ final class Voice {
       return f;
     } finally {
       if (!whole) c.disconnect();
+    }
+  }
+
+  /** Is it MP3 ("audio/mpeg", "audio/mp3")? */
+  static boolean isMp3(String contentType) {
+    String t = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
+    return t.startsWith("audio/mpeg") || t.startsWith("audio/mp3");
+  }
+
+  /** Reads the audio into the stream as it comes: PCM as it is (pcm: its rate and channels), MP3 decoded. */
+  private static void receive(HttpURLConnection c, int[] pcm, VoiceStream stream, long asked) throws Exception {
+    try (InputStream in = c.getInputStream()) {
+      byte[] buffer = new byte[16 * 1024];
+      if (pcm != null) {
+        stream.format(pcm[0], pcm[1]);
+        for (int n; (n = in.read(buffer)) >= 0; ) stream.add(buffer, 0, n);
+      } else
+        try (Mp3Decoder d = new Mp3Decoder(stream)) {
+          for (int n; (n = in.read(buffer)) >= 0; ) d.add(buffer, 0, n);
+          d.finish();
+        }
+    } catch (java.net.SocketTimeoutException ex) {
+      throw new Failed("its audio stopped coming after " + (android.os.SystemClock.elapsedRealtime() - asked) / 1000 + " s");
+    }
+    if (stream.bytes() == 0) throw new Failed("it sent no audio");
+    stream.end(android.os.SystemClock.elapsedRealtime() - asked);
+  }
+
+  /**
+   * Decodes MP3 frames as they come, with Android's MP3 decoder, into the stream: 16-bit PCM at
+   * the MP3's rate.
+   */
+  private static final class Mp3Decoder implements AutoCloseable {
+    private final VoiceStream out;
+    private final VoiceStream.Mp3Frames frames = new VoiceStream.Mp3Frames();
+    private final MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+    private MediaCodec codec;
+    private long frame;
+
+    Mp3Decoder(VoiceStream out) {
+      this.out = out;
+    }
+
+    void add(byte[] b, int off, int n) throws IOException {
+      frames.add(b, off, n);
+      for (byte[] f; (f = frames.next(false)) != null; ) decode(f);
+      drain(0);
+    }
+
+    /** No more bytes come: the last frames are decoded to the end. */
+    void finish() throws IOException {
+      for (byte[] f; (f = frames.next(true)) != null; ) decode(f);
+      if (codec == null) return;
+      int i;
+      while ((i = codec.dequeueInputBuffer(10_000)) < 0) drain(0);
+      codec.queueInputBuffer(i, 0, 0, time(), MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+      long until = android.os.SystemClock.elapsedRealtime() + 2000;
+      while (!drain(10_000) && android.os.SystemClock.elapsedRealtime() < until) {}
+    }
+
+    private long time() {
+      return frame * frames.samples * 1_000_000L / Math.max(1, frames.rate);
+    }
+
+    private void decode(byte[] f) throws IOException {
+      if (codec == null) {
+        codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_MPEG);
+        codec.configure(MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_MPEG, frames.rate, frames.channels), null, null, 0);
+        codec.start();
+        out.format(frames.rate, frames.channels);
+      }
+      int i;
+      while ((i = codec.dequeueInputBuffer(10_000)) < 0) drain(0);
+      java.nio.ByteBuffer in = codec.getInputBuffer(i);
+      in.clear();
+      in.put(f);
+      codec.queueInputBuffer(i, 0, f.length, time(), 0);
+      frame++;
+    }
+
+    /** Takes what the decoder has ready into the stream; true at its end. */
+    private boolean drain(long waitUs) {
+      while (true) {
+        int o = codec.dequeueOutputBuffer(info, waitUs);
+        if (o == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+          MediaFormat f = codec.getOutputFormat();
+          // Its rate and channels, as long as nothing's in yet (an MP3's don't change).
+          if (out.bytes() == 0) out.format(f.getInteger(MediaFormat.KEY_SAMPLE_RATE), f.getInteger(MediaFormat.KEY_CHANNEL_COUNT));
+          continue;
+        }
+        if (o < 0) return false;
+        java.nio.ByteBuffer b = codec.getOutputBuffer(o);
+        if (b != null && info.size > 0) {
+          byte[] pcm = new byte[info.size];
+          b.position(info.offset);
+          b.get(pcm);
+          out.add(pcm, 0, pcm.length);
+        }
+        codec.releaseOutputBuffer(o, false);
+        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) return true;
+      }
+    }
+
+    @Override
+    public void close() {
+      if (codec == null) return;
+      try {
+        codec.stop();
+      } catch (IllegalStateException ignored) {
+        /* Failed before. */
+      }
+      codec.release();
     }
   }
 
@@ -736,8 +1053,22 @@ final class Voice {
   /** Stops reading at once; the playback still hears it ended. */
   void stop() {
     MediaPlayer p;
+    AudioTrack streaming;
+    VoiceStream s;
     synchronized (this) {
       p = player;
+      streaming = track;
+      s = streamed;
+    }
+    if (streaming != null) {
+      // Silent at once; its thread lets it go. The rest of its audio isn't fetched on.
+      try {
+        streaming.pause();
+        streaming.flush();
+      } catch (IllegalStateException ignored) {
+        /* Released meanwhile. */
+      }
+      s.cancel.run();
     }
     if (p != null) {
       try {

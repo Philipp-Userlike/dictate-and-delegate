@@ -200,8 +200,18 @@ public final class HandsFreeService extends Service {
                 // model is waited for (its second and third requests still race the first).
                 Voice.Prepared p = voice.prepare(c, text, voice.androidUnavailable ? 30_000 : HandsFree.voiceWaitMs(prefs));
                 long ms = android.os.SystemClock.elapsedRealtime() - asked;
-                if (p.audio() != null) {
-                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms%s", c.tag(), request, p.firstByteMs(), p.allMs(),
+                if (p.stream() != null) {
+                  // It plays as it comes: when enough was in to start, and later when all of it was.
+                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, playable after %d ms%s", c.tag(), request, p.firstByteMs(), p.playableMs(),
+                      p.how().isEmpty() ? "" : " · " + p.how()));
+                  p.stream().whenDone(
+                      s ->
+                          event(s.failed() == null
+                              ? String.format(java.util.Locale.ROOT, "voice for %s: all of it after %d ms (%.1f s of audio)", request, s.allMs(), s.audioMs() / 1000.0)
+                              : String.format(java.util.Locale.ROOT, "voice for %s: its audio stopped after %.1f s of it: %s", request, s.audioMs() / 1000.0, s.failed())));
+                  chargeVoice(request, c, text, p.generation(), ms);
+                } else if (p.audio() != null) {
+                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms%s", c.tag(), request, p.firstByteMs(), p.playableMs(),
                       p.how().isEmpty() ? "" : " · " + p.how()));
                   chargeVoice(request, c, text, p.generation(), ms);
                 } else if (!c.model().isEmpty()) {

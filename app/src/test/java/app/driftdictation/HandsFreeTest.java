@@ -102,8 +102,17 @@ public class HandsFreeTest {
     volatile java.util.concurrent.CountDownLatch slow;
     /** While set, delivering to bb waits for it (a slow bb). */
     volatile java.util.concurrent.CountDownLatch slowBb;
-    /** How often the speech model was asked. */
-    final java.util.concurrent.atomic.AtomicInteger transcriptions = new java.util.concurrent.atomic.AtomicInteger();
+    /** How often the speech model was asked for a part, and for a whole turn of several. */
+    final java.util.concurrent.atomic.AtomicInteger transcriptions = new java.util.concurrent.atomic.AtomicInteger(),
+        wholes = new java.util.concurrent.atomic.AtomicInteger();
+    /** What each part's audio was written down as: a whole turn is its parts' texts. */
+    final java.util.Map<java.nio.ByteBuffer, String> heard = new java.util.concurrent.ConcurrentHashMap<>();
+    /** Each stretch of speech a little louder than the last, so no two parts are the same audio. */
+    int stretches;
+    /** What a whole turn's pass makes of its parts' texts (it hears the words at their edges better). */
+    volatile java.util.function.UnaryOperator<String> wholeAs = t -> t;
+    /** The whole turn's pass fails. */
+    volatile boolean wholeFails;
     /** What preparing a reply does (fetching its audio); by default nothing. */
     volatile java.util.function.Function<String, Object> prepare = text -> text;
     final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
@@ -123,8 +132,36 @@ public class HandsFreeTest {
               wav -> {
                 java.util.concurrent.CountDownLatch l = slow;
                 if (l != null) l.await();
-                transcriptions.incrementAndGet();
-                return transcripts.remove(0);
+                List<java.nio.ByteBuffer> parts = parts(wav);
+                if (parts.size() > 1) {
+                  // The whole turn in one pass: what its parts were written down as (once they are).
+                  StringBuilder all = new StringBuilder();
+                  boolean known = heard.containsKey(parts.get(0)); // Else none was written down yet.
+                  for (int i = 0; known && i < 100 && !heard.keySet().containsAll(parts); i++) Thread.sleep(20);
+                  known &= heard.keySet().containsAll(parts);
+                  for (java.nio.ByteBuffer p : parts) {
+                    String t = heard.getOrDefault(p, "");
+                    if (!t.isEmpty()) all.append(all.length() == 0 ? "" : " ").append(t);
+                  }
+                  if (known) {
+                    wholes.incrementAndGet();
+                    if (wholeFails) throw new java.io.IOException("Fake provider error");
+                    return wholeAs.apply(all.toString());
+                  }
+                }
+                // Parts never written down on their own (after a failure): written down together,
+                // once (the same audio again gets the same text).
+                java.nio.ByteBuffer key = java.nio.ByteBuffer.wrap(wav);
+                synchronized (heard) {
+                  String again = heard.get(key);
+                  if (again != null) return again;
+                  transcriptions.incrementAndGet();
+                  String t = transcripts.remove(0);
+                  for (java.nio.ByteBuffer p : parts) heard.put(p, "");
+                  heard.put(parts.get(parts.size() - 1), t);
+                  heard.put(key, t);
+                  return t;
+                }
               },
               said -> {
                 java.util.concurrent.CountDownLatch l = slowBb;
@@ -175,7 +212,8 @@ public class HandsFreeTest {
 
     /** 1.2 s of speech close to the phone: enough to take the turn. */
     void speak() {
-      for (int i = 0; i < 60; i++) session.frame(frame(6000));
+      int level = 6000 + 10 * stretches++;
+      for (int i = 0; i < 60; i++) session.frame(frame(level));
     }
 
     /** Speech, then the pause that ends the stretch. */
@@ -186,6 +224,22 @@ public class HandsFreeTest {
     }
   }
 
+  /** A WAV's parts: the session joins them with 0.3 s of exact silence. */
+  static List<java.nio.ByteBuffer> parts(byte[] wav) {
+    List<java.nio.ByteBuffer> out = new ArrayList<>();
+    int start = 44, zeros = 0, gap = AudioFiles.BYTES_PER_SECOND * 3 / 10 / 2;
+    for (int i = 44; i + 1 < wav.length; i += 2) {
+      zeros = wav[i] == 0 && wav[i + 1] == 0 ? zeros + 1 : 0;
+      if (zeros == gap) {
+        out.add(java.nio.ByteBuffer.wrap(java.util.Arrays.copyOfRange(wav, start, i + 2 - 2 * gap)));
+        start = i + 2;
+        zeros = 0;
+      }
+    }
+    out.add(java.nio.ByteBuffer.wrap(java.util.Arrays.copyOfRange(wav, start, wav.length)));
+    return out;
+  }
+
   static void until(java.util.function.BooleanSupplier c) throws Exception {
     for (int i = 0; i < 100 && !c.getAsBoolean(); i++) Thread.sleep(20);
     assertTrue(c.getAsBoolean());
@@ -193,8 +247,8 @@ public class HandsFreeTest {
 
   @Test
   public void partsAddUpAndGoOnTheSendWord() throws Exception {
-    // Each check writes down the whole turn so far.
-    Fake f = new Fake("I was thinking about the trip.", "I was thinking about the trip. Let's book the hotel. Over.");
+    // Each check writes down only the part that's new; the turn is the parts' texts joined.
+    Fake f = new Fake("I was thinking about the trip.", "Let's book the hotel. Over.");
     f.talk();
     until(() -> f.session.pending().equals("I was thinking about the trip."));
     assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
@@ -253,7 +307,7 @@ public class HandsFreeTest {
 
   @Test
   public void aReplyWaitsWhileYouTalkIsNotDroppedBySendingAndPlaysAtThePause() throws Exception {
-    Fake f = new Fake("Also check the train", "Also check the train to Lisbon. Over.");
+    Fake f = new Fake("Also check the train", "to Lisbon. Over.");
     f.quiet(1000);
     f.speak(); // You take the floor.
     assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
@@ -280,7 +334,7 @@ public class HandsFreeTest {
 
   @Test
   public void aReplyPlaysAtYourPauseEvenWithUnsentWordsAndYourTurnGoesOnAfterIt() throws Exception {
-    Fake f = new Fake("Book the hotel", "Book the hotel for Friday. Over.");
+    Fake f = new Fake("Book the hotel", "for Friday. Over.");
     f.quiet(1000);
     f.speak();
     f.session.reply("r0", "Here's what I found.");
@@ -346,7 +400,7 @@ public class HandsFreeTest {
 
   @Test
   public void onceYouHaveTheFloorAShortOverStillCounts() throws Exception {
-    Fake f = new Fake("Book the hotel", "Book the hotel, over");
+    Fake f = new Fake("Book the hotel", "over");
     f.talk();
     until(() -> f.session.pending().equals("Book the hotel"));
     for (int i = 0; i < 20; i++) f.session.frame(frame(6000)); // 0.4 s: "Over."
@@ -357,8 +411,10 @@ public class HandsFreeTest {
 
   @Test
   public void aDictationSwitchedToHandsFreeStartsTheFirstTurn() throws Exception {
-    Fake f = new Fake("I was dictating about the trip", "I was dictating about the trip and the budget. Over.");
-    f.session.seed(new byte[32_000]);
+    Fake f = new Fake("I was dictating about the trip", "and the budget. Over.");
+    java.io.ByteArrayOutputStream dictated = new java.io.ByteArrayOutputStream();
+    for (int i = 0; i < 50; i++) dictated.writeBytes(frame(3000)); // A second of what was dictated.
+    f.session.seed(dictated.toByteArray());
     until(() -> f.session.pending().equals("I was dictating about the trip"));
     f.talk();
     until(() -> f.sent.size() == 1);
@@ -417,7 +473,7 @@ public class HandsFreeTest {
 
   @Test
   public void theButtonWaitsForEveryPartStillBeingWrittenDown() throws Exception {
-    Fake f = new Fake("First part.", "First part. Second part.");
+    Fake f = new Fake("First part.", "Second part.");
     f.slow = new java.util.concurrent.CountDownLatch(1);
     f.talk();
     f.talk();
@@ -737,7 +793,7 @@ public class HandsFreeTest {
 
   @Test
   public void talkingOverAReplyStopsItDropsTheRestAndYourNextMessageSaysHowFarYouHeard() throws Exception {
-    Fake f = playingReply("Hold on, book the train instead", "Hold on, book the train instead. Over.");
+    Fake f = playingReply("Hold on, book the train instead.", "Over.");
     f.heardChars = LONG_REPLY.indexOf("Lisbon");
     int frames = framesToStop(f, 8000, 40); // You, over the reply.
     assertEquals("stopped after 300 ms of your speech", HandsFreeSession.BARGE_MS / 20, frames);
@@ -750,7 +806,7 @@ public class HandsFreeTest {
     // You go on: all of it is your turn.
     for (int i = 0; i < 30; i++) f.session.frame(frame(8000));
     f.quiet(1200);
-    until(() -> f.session.pending().equals("Hold on, book the train instead"));
+    until(() -> f.session.pending().equals("Hold on, book the train instead."));
     f.talk();
     until(() -> f.sent.size() == 1);
     assertEquals("Hold on, book the train instead.\n\n[heard up to: \"…the morning from gate twelve. The train to\"]", f.sent.get(0));
@@ -878,8 +934,8 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void eachCheckWritesDownTheWholeTurnAndSendRightAfterReusesIt() throws Exception {
-    Fake f = new Fake("Book the", "Book the hotel for Friday");
+  public void eachCheckWritesDownOnlyTheNewPartAndSendRightAfterWritesNothing() throws Exception {
+    Fake f = new Fake("Book the", "hotel for Friday");
     f.talk();
     until(() -> f.session.pending().equals("Book the"));
     f.talk();
@@ -891,6 +947,50 @@ public class HandsFreeTest {
     assertEquals("Send after a check: nothing written down again", 2, f.transcriptions.get());
   }
 
+  @Test
+  public void onlyTheNewPartIsWrittenDownAtAPauseButTheWholeTurnInOnePassIsWhatGoes() throws Exception {
+    // On its own, a part's first word came out wrong; in one pass with the rest it's right.
+    Fake f = new Fake("Book that", "hotel for Friday. Over.");
+    f.wholeAs = t -> t.replace("Book that", "Book the");
+    List<String> asked = new CopyOnWriteArrayList<>();
+    f.session.judge = said -> {
+      asked.add(said);
+      return said.endsWith("Over.") ? verdict("over", 0.95, 0) : verdict("unfinished", 0.1, 0);
+    };
+    f.talk();
+    until(() -> f.session.pending().equals("Book that"));
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the hotel for Friday.", f.sent.get(0));
+    assertEquals("each part written down once, on its own", 2, f.transcriptions.get());
+    assertEquals("Jev judges the parts' text, whole", List.of("Book that", "Book that hotel for Friday. Over."), asked);
+    String log = String.join("\n", f.log);
+    assertTrue(log, log.contains("check (pause): 2 part(s), "));
+    assertTrue(log, log.contains("1 new (1.") && log.contains(" s) written down in "));
+    assertTrue(log, log.contains("whole turn (2 parts) written down in "));
+    assertTrue(log, log.contains("it changed 1 of 6 words of the parts' text"));
+  }
+
+  @Test
+  public void whenTheWholeTurnsPassFailsThePartsTextGoes() throws Exception {
+    Fake f = new Fake("Book the hotel", "for Friday. Over.");
+    f.wholeFails = true;
+    f.talk();
+    until(() -> f.session.pending().equals("Book the hotel"));
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the hotel for Friday.", f.sent.get(0));
+    assertTrue(String.join("\n", f.log).contains("the whole turn couldn't be written down (Fake provider error): the parts' text goes"));
+  }
+
+  @Test
+  public void wordsChangedCountsWordsAddedDroppedOrChanged() {
+    assertEquals(0, HandsFreeSession.wordsChanged("Book the hotel.", "book the  hotel"));
+    assertEquals(1, HandsFreeSession.wordsChanged("Book that hotel", "Book the hotel"));
+    assertEquals(2, HandsFreeSession.wordsChanged("Book the hotel", "Book the hotel for Friday"));
+    assertEquals(3, HandsFreeSession.wordsChanged("", "one two three"));
+  }
+
   // ------------------------------------------------------------------ Jev: is the turn done?
 
   static HandsFreeSession.Verdict verdict(String choice, double send, double end) {
@@ -899,7 +999,7 @@ public class HandsFreeTest {
 
   @Test
   public void atAPauseJevDecidesWhetherYourTurnIsDoneAndSaysWhy() throws Exception {
-    Fake f = new Fake("Can you check", "Can you check when the next train to Lisbon leaves?");
+    Fake f = new Fake("Can you check", "when the next train to Lisbon leaves?");
     List<String> asked = new CopyOnWriteArrayList<>();
     java.util.ArrayDeque<HandsFreeSession.Verdict> answers =
         new java.util.ArrayDeque<>(List.of(verdict("unfinished", 0.04, 0.0), verdict("question", 0.98, 0.0)));
@@ -946,7 +1046,7 @@ public class HandsFreeTest {
 
   @Test
   public void talkingOnWhileJevIsAskedMeansNoDecision() throws Exception {
-    Fake f = new Fake("Book the hotel", "Book the hotel and the car");
+    Fake f = new Fake("Book the hotel", "and the car");
     java.util.concurrent.CountDownLatch asking = new java.util.concurrent.CountDownLatch(1), answer = new java.util.concurrent.CountDownLatch(1);
     java.util.concurrent.atomic.AtomicInteger asked = new java.util.concurrent.atomic.AtomicInteger();
     f.session.judge = said -> {
@@ -969,7 +1069,7 @@ public class HandsFreeTest {
 
   @Test
   public void whenJevCantBeAskedTheSendWordStillWorks() throws Exception {
-    Fake f = new Fake("Book the table", "Book the table. Over.");
+    Fake f = new Fake("Book the table.", "Over.");
     f.session.judge = said -> {
       throw new java.io.IOException("timeout");
     };

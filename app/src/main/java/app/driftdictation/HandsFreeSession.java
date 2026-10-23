@@ -241,16 +241,40 @@ final class HandsFreeSession {
       speech = Executors.newCachedThreadPool();
   /**
    * Your turn: nothing is written down while you talk. Its audio is collected part by part (a
-   * part ends at a longer pause); at each such pause the whole turn so far is written down in one
-   * pass and the judge (Jev) is asked whether you're done. Null judge: the send and end words.
+   * part ends at a longer pause, so in silence); at each such pause only the parts that are new
+   * since the last check are written down, and the judge (Jev) is asked about the whole turn so
+   * far: whether you're done. Null judge: the send and end words.
    */
   volatile Judge judge;
   /** The audio of this turn's parts, in order (under its lock), and what changes it counts. */
   private final List<byte[]> turnAudio = new ArrayList<>();
   private int turnVersion;
-  /** The last check's text and the turn version it was for: Send right after reuses it. */
-  private String checkedText = "";
-  private int checkedVersion = -1;
+  /**
+   * What each part said, once written down (under turnAudio's lock; by identity): a later check
+   * only writes down the parts that are new. Parts written down together have their text on the
+   * last of them ("" on the others).
+   */
+  private final java.util.Map<byte[], String> written = new java.util.IdentityHashMap<>();
+  /**
+   * The whole turn written down in one pass, started at a check alongside the new part (under
+   * turnAudio's lock): what's sent. A part written down on its own misses the words around it, and
+   * got words at its edges wrong (on real recordings, sometimes changing the meaning); the parts'
+   * text is only for the screen and for Jev.
+   */
+  private Whole whole;
+
+  /** A pass over a turn's parts in one, running in the background. */
+  private static final class Whole {
+    final List<byte[]> parts;
+    final long started;
+    volatile long done;
+    java.util.concurrent.Future<String> text;
+
+    Whole(List<byte[]> parts, long started) {
+      this.parts = parts;
+      this.started = started;
+    }
+  }
   /** Words of your turn said over a reply (written down then): they come before its audio. */
   private volatile String turnPrefix = "";
   /** Writing down took this long: shown as slow. */
@@ -1056,12 +1080,11 @@ final class HandsFreeSession {
    */
   private void sendUnsent() {
     List<byte[]> audio;
-    String prefix, cached;
+    String prefix;
     synchronized (turnAudio) {
       if (turnAudio.isEmpty() && turnPrefix.isEmpty()) return;
       audio = new ArrayList<>(turnAudio);
       prefix = turnPrefix;
-      cached = checkedVersion == turnVersion ? checkedText : null;
       turnAudio.clear();
       turnPrefix = "";
       turnVersion++;
@@ -1071,17 +1094,17 @@ final class HandsFreeSession {
     long queued = clock.getAsLong();
     Runnable last =
         () -> {
-          String text = cached;
-          if (text == null) {
-            text = prefix;
-            if (!audio.isEmpty())
-              try {
-                text = (prefix + " " + writeDown(joined(audio), "end")).trim();
-              } catch (Exception ex) {
-                log("your last words couldn't be written down (" + ex.getMessage() + "): not sent");
-                outgoing.decrementAndGet();
-                return;
-              }
+          String text;
+          try {
+            Whole all = startWhole(audio);
+            Written w = writeTurn(audio, "end");
+            text = (prefix + " " + w.text()).trim();
+            if (w.parts() > 0) log(String.format(java.util.Locale.ROOT, "your last words: %d new part(s), %.1f s, written down in %d ms", w.parts(), w.seconds(), w.ms()));
+            text = toSend(text, all, prefix);
+          } catch (Exception ex) {
+            log("your last words couldn't be written down (" + ex.getMessage() + "): not sent");
+            outgoing.decrementAndGet();
+            return;
           }
           if (text.isEmpty()) {
             log("your last words had no words in them: nothing sent");
@@ -1156,6 +1179,118 @@ final class HandsFreeSession {
     throw last;
   }
 
+  /**
+   * Starts writing down these parts in one pass, in the background (or finds the pass already
+   * started for them); null for a single part: its own pass is the whole.
+   */
+  private Whole startWhole(List<byte[]> audio) {
+    if (audio.size() < 2) return null;
+    Whole w;
+    synchronized (turnAudio) {
+      w = whole;
+      if (w != null && w.parts.size() == audio.size()) {
+        boolean same = true;
+        for (int i = 0; i < audio.size() && same; i++) same = w.parts.get(i) == audio.get(i);
+        if (same) return w;
+      }
+      w = new Whole(new ArrayList<>(audio), clock.getAsLong());
+      whole = w;
+    }
+    Whole pass = w;
+    java.util.concurrent.FutureTask<String> task =
+        new java.util.concurrent.FutureTask<>(
+            () -> {
+              try {
+                return writeDown(joined(pass.parts), "whole turn");
+              } finally {
+                pass.done = clock.getAsLong();
+              }
+            });
+    pass.text = task;
+    try {
+      speech.execute(task);
+    } catch (java.util.concurrent.RejectedExecutionException ended) {
+      task.run(); // The call ended: your last words, here.
+    }
+    return pass;
+  }
+
+  /**
+   * The text that goes: the whole turn's pass (prefix before it), waited for; without one (a
+   * single part), or if it failed, the parts' text. The log says what it took and how many words
+   * it changed.
+   */
+  private String toSend(String partsText, Whole w, String prefix) {
+    if (w == null) return partsText;
+    long start = clock.getAsLong();
+    try {
+      String all = (prefix + " " + w.text.get()).trim();
+      log(String.format(java.util.Locale.ROOT, "whole turn (%d parts) written down in %d ms (waited %d ms for it); it changed %d of %d words of the parts' text",
+          w.parts.size(), w.done - w.started, clock.getAsLong() - start, wordsChanged(partsText, all), HandsFree.normalize(partsText).split(" ").length));
+      return all.isEmpty() ? partsText : all;
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      return partsText;
+    } catch (java.util.concurrent.ExecutionException ex) {
+      Throwable why = ex.getCause() == null ? ex : ex.getCause();
+      log("the whole turn couldn't be written down (" + why.getMessage() + "): the parts' text goes");
+      return partsText;
+    }
+  }
+
+  /** How many words differ between two texts (words added, dropped or changed), case and punctuation ignored. */
+  static int wordsChanged(String a, String b) {
+    String na = HandsFree.normalize(a), nb = HandsFree.normalize(b);
+    String[] x = na.isEmpty() ? new String[0] : na.split(" "), y = nb.isEmpty() ? new String[0] : nb.split(" ");
+    int[] d = new int[y.length + 1];
+    for (int j = 0; j <= y.length; j++) d[j] = j;
+    for (int i = 1; i <= x.length; i++) {
+      int diagonal = d[0];
+      d[0] = i;
+      for (int j = 1; j <= y.length; j++) {
+        int was = d[j];
+        d[j] = Math.min(Math.min(d[j] + 1, d[j - 1] + 1), diagonal + (x[i - 1].equals(y[j - 1]) ? 0 : 1));
+        diagonal = was;
+      }
+    }
+    return d[y.length];
+  }
+
+  /** A turn's text, and what writing it down took: the parts that were new, their seconds, and how long. */
+  record Written(String text, int parts, double seconds, long ms) {}
+
+  /**
+   * The text of a turn's parts: those written down before as they were, the new ones written down
+   * now, together in one pass (usually there's one: the part that just ended). Each part ends in
+   * a pause, so no word is cut between two.
+   */
+  private Written writeTurn(List<byte[]> audio, String why) throws Exception {
+    List<byte[]> fresh = new ArrayList<>();
+    synchronized (turnAudio) {
+      for (byte[] p : audio) if (!written.containsKey(p)) fresh.add(p);
+    }
+    long ms = 0;
+    int bytes = 0;
+    if (!fresh.isEmpty()) {
+      long start = clock.getAsLong();
+      String t = writeDown(joined(fresh), why);
+      ms = clock.getAsLong() - start;
+      for (byte[] p : fresh) bytes += p.length;
+      synchronized (turnAudio) {
+        for (byte[] p : fresh) written.put(p, "");
+        written.put(fresh.get(fresh.size() - 1), t);
+      }
+    }
+    StringBuilder text = new StringBuilder();
+    synchronized (turnAudio) {
+      for (byte[] p : audio) {
+        String t = written.getOrDefault(p, "");
+        if (!t.isEmpty()) text.append(text.length() == 0 ? "" : " ").append(t);
+      }
+    }
+    return new Written(text.toString(), fresh.size(), bytes / (double) AudioFiles.BYTES_PER_SECOND, ms);
+  }
+
   private void checkNow(String why) {
     boolean button = why.equals("button");
     try {
@@ -1187,16 +1322,14 @@ final class HandsFreeSession {
       int bytes = 0;
       for (byte[] p : audio) bytes += p.length;
       double seconds = bytes / (double) AudioFiles.BYTES_PER_SECOND;
-      String cached;
-      synchronized (turnAudio) {
-        cached = checkedVersion == version ? checkedText : null;
-      }
-      if (cached != null) text = cached; // Written down already, unchanged since: no second pass.
-      else if (!audio.isEmpty()) {
+      Written w = new Written("", 0, 0, 0);
+      // What would be sent is written down whole meanwhile (not for the screen alone).
+      Whole all = why.equals("seed") ? null : startWhole(audio);
+      if (!audio.isEmpty()) {
         try {
           checkStep = "writing";
-          String t = writeDown(joined(audio), why);
-          text = (prefix + " " + t).trim();
+          w = writeTurn(audio, why);
+          text = (prefix + " " + w.text()).trim();
         } catch (Exception ex) {
           status = "transcription failed: " + ex.getMessage();
           error = "Couldn't write down what you said: " + ex.getMessage();
@@ -1210,17 +1343,14 @@ final class HandsFreeSession {
           return;
         }
       }
-      long written = clock.getAsLong() - start;
+      long took = clock.getAsLong() - start;
       if (state == State.ENDED) return; // The call's end sends it (end()).
-      synchronized (turnAudio) {
-        checkedText = text;
-        checkedVersion = version;
-      }
       error = "";
       pending = text;
       listener.changed();
-      log(String.format(java.util.Locale.ROOT, "check (%s): %d part(s), %.1f s, %s in %d ms: \"%s\"", why, audio.size(), seconds, cached != null ? "written down already" : "written down", written, text));
-      if (written >= SLOW_WRITING_MS) reason("Writing down took %1$.1f s (the speech model was slow)", written / 1000.0);
+      log(String.format(java.util.Locale.ROOT, "check (%s): %d part(s), %.1f s; %s: \"%s\"", why, audio.size(), seconds,
+          w.parts() == 0 ? "written down already" : String.format(java.util.Locale.ROOT, "%d new (%.1f s) written down in %d ms", w.parts(), w.seconds(), w.ms()), text));
+      if (took >= SLOW_WRITING_MS) reason("Writing down took %1$.1f s (the speech model was slow)", took / 1000.0);
       if (why.equals("seed")) return;
       if (text.isEmpty()) {
         if (stale(version) && !button) return;
@@ -1229,14 +1359,14 @@ final class HandsFreeSession {
         return;
       }
       if (!why.equals("pause")) {
-        send(text, why, audio.size(), prefix);
+        send(toSend(text, all, prefix), why, audio.size(), prefix);
         return;
       }
       if (stale(version)) {
         log("you went on talking: checked again at your next pause");
         return;
       }
-      decide(text, audio.size(), prefix, version);
+      decide(text, audio.size(), prefix, version, all);
     } finally {
       writingSince = 0;
       checkStep = "";
@@ -1277,7 +1407,7 @@ final class HandsFreeSession {
    * At a longer pause: asks the judge whether your turn is done, and acts: sends it, ends the
    * call, or listens on. Without a judge, or when it fails, the send and end words decide.
    */
-  private void decide(String text, int parts, String prefix, int version) {
+  private void decide(String text, int parts, String prefix, int version, Whole all) {
     Verdict v = null;
     long start = clock.getAsLong();
     String failed = null;
@@ -1313,7 +1443,8 @@ final class HandsFreeSession {
     if (end) {
       log("end of the call");
       reason("Ending the call: you said goodbye");
-      String rest = ended != null ? ended : text;
+      String sent = toSend(text, all, prefix), cut = HandsFree.endsWith(sent, endWords);
+      String rest = cut != null ? cut : ended != null && sent.equals(text) ? ended : sent;
       if (!rest.isEmpty()) send(rest, "end phrase", parts, prefix);
       end();
       return;
@@ -1339,6 +1470,9 @@ final class HandsFreeSession {
           case "request" -> reason("Sent: you finished what you were saying (%1$d%%)", pct);
           default -> reason("Sent: you said you're done (%1$d%%)", pct);
         }
+      String sent = toSend(text, all, prefix), cut = HandsFree.endsWith(sent, sendWords);
+      // The whole pass's words go, without the send word if it heard one there too.
+      if (!sent.equals(text)) rest = cut == null ? sent : cut.isEmpty() ? rest : cut;
       send(rest, "jev", parts, prefix);
       return;
     }
@@ -1367,6 +1501,8 @@ final class HandsFreeSession {
     sendPressed = false;
     synchronized (turnAudio) {
       turnAudio.clear();
+      written.clear();
+      whole = null;
       turnPrefix = "";
       turnVersion++;
     }
@@ -1402,6 +1538,7 @@ final class HandsFreeSession {
     boolean more;
     synchronized (turnAudio) {
       turnAudio.subList(0, Math.min(parts, turnAudio.size())).clear();
+      written.keySet().retainAll(turnAudio); // ArrayList's contains: by identity for arrays.
       if (turnPrefix.equals(prefix)) turnPrefix = "";
       turnVersion++;
       more = !turnAudio.isEmpty() || !turnPrefix.isEmpty();

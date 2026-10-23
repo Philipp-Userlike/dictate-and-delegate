@@ -73,10 +73,14 @@ public class HandsFreeFlowTest {
   }
 
   /** 1.2 s of speech (enough to take the turn), then a second and a half of quiet: one part. */
+  /** Each stretch of speech a little louder than the last, so no two parts are the same audio. */
+  private int stretches;
+
   void talk() throws Exception {
     HandsFreeSession s = HandsFreeService.session();
     assertNotNull(s);
-    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000));
+    int level = 6000 + 10 * stretches++;
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(level));
     for (int i = 0; i < 75; i++) s.frame(HandsFreeTestFrames.frame(50));
   }
 
@@ -95,10 +99,11 @@ public class HandsFreeFlowTest {
 
   @Test
   public void talkSendByWordHearTheReplyThenEndByWord() throws Exception {
-    // At each longer pause the whole turn so far is written down and Jev asked whether it's done.
+    // At each longer pause the new part is written down and Jev asked whether the turn is done;
+    // what's sent is the whole turn written down in one pass.
     TestServer.transcripts(
         "I've been thinking about the trip.",
-        "I've been thinking about the trip, book a table for Friday. Over.",
+        "Book a table for Friday. Over.",
         "End the call.");
     TestServer.turns("unfinished", "over", "end");
     HandsFreeService.send(context, HandsFreeService.START);
@@ -109,20 +114,24 @@ public class HandsFreeFlowTest {
     talk();
     until(() -> lastTell().contains("[hands-free]"), "the message sent");
     String tell = lastTell();
-    // The whole turn's text, from the second pass.
-    assertTrue(tell, tell.contains("I've been thinking about the trip, book a table for Friday."));
+    // The whole turn's text, from its own pass.
+    assertTrue(tell, tell.contains("I've been thinking about the trip. Book a table for Friday."));
     assertFalse(tell, tell.contains("Over"));
     Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(tell);
     assertTrue(tell, m.find());
     String request = m.group(1);
-    // The turn written down at each of its two pauses, and Jev asked each time.
+    // Each part written down once at its pause, the whole turn once more, and Jev asked each time.
     JSONArray r = TestServer.requests();
-    int transcriptions = 0, decisions = 0;
+    int transcriptions = 0, wholes = 0, decisions = 0;
     for (int i = 0; i < r.length(); i++) {
-      if (r.getJSONObject(i).getString("kind").equals("transcribe")) transcriptions++;
+      if (r.getJSONObject(i).getString("kind").equals("transcribe")) {
+        if (r.getJSONObject(i).getJSONObject("body").optBoolean("whole")) wholes++;
+        else transcriptions++;
+      }
       if (r.getJSONObject(i).getString("kind").equals("decide")) decisions++;
     }
     assertEquals(2, transcriptions);
+    assertEquals(1, wholes);
     assertEquals(2, decisions);
     // The note keeps it, with the chief's thread.
     try (HistoryStore h = new HistoryStore(context)) {
@@ -147,8 +156,8 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.READING, "reading the reply");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after reading");
     // Reading it cost $0.0001 (the fake's generation); the note of that message has it, on top of
-    // the two transcriptions ($0.001 each) and Jev's two answers ($0.00002 each); the call total
-    // counts them all.
+    // the three transcriptions (two parts and the whole turn, $0.001 each) and Jev's two answers
+    // ($0.00002 each); the call total counts them all.
     until(
         () -> {
           try (HistoryStore h = new HistoryStore(context)) {
@@ -159,14 +168,14 @@ public class HandsFreeFlowTest {
         "the voice's cost on the note");
     try (HistoryStore h = new HistoryStore(context)) {
       HistoryEntry e = h.list(1, 0).get(0);
-      assertEquals(0, new java.math.BigDecimal("0.00214").compareTo(e.cost()));
+      assertEquals(0, new java.math.BigDecimal("0.00314").compareTo(e.cost()));
       assertEquals("hexgrad/kokoro-82m", e.json.optString("voiceModel"));
       JSONArray steps = e.json.getJSONArray("steps");
       assertEquals("voice", steps.getJSONObject(steps.length() - 1).getString("kind"));
       assertTrue(e.json.getJSONArray("handsFreeLog").length() > 0);
       assertFalse(e.json.optString("call").isEmpty());
     }
-    assertEquals(0, new java.math.BigDecimal("0.00214").compareTo(HandsFreeService.callCost));
+    assertEquals(0, new java.math.BigDecimal("0.00314").compareTo(HandsFreeService.callCost));
     int speech = 0;
     JSONArray all = TestServer.requests();
     for (int i = 0; i < all.length(); i++) if (all.getJSONObject(i).getString("kind").equals("speech")) speech++;
@@ -465,6 +474,46 @@ public class HandsFreeFlowTest {
     }
   }
 
+  /** The reply's audio started playing before all of it was in (by the log's order and times). */
+  private static void playedWhileComing(String log) {
+    Matcher playable = Pattern.compile("playable after (\\d+) ms").matcher(log), all = Pattern.compile("all of it after (\\d+) ms").matcher(log);
+    assertTrue(log, playable.find() && all.find());
+    assertTrue(log, Long.parseLong(playable.group(1)) < 1500);
+    assertTrue(log, Long.parseLong(all.group(1)) >= 2000);
+    assertTrue(log, log.indexOf("audio started") < log.indexOf("all of it after"));
+    assertTrue(log, log.contains("reply played to the end"));
+    assertFalse(log, log.contains("Android's voice reads it") || log.contains("trying again"));
+  }
+
+  @Test
+  public void aReplyPlaysWhileItsAudioStillComesIn() throws Exception {
+    // Fish sent its first audio after 0.4 s and the rest over 4 s: playing starts with the first.
+    TestServer.script("speech", new JSONObject().put("parts", 4).put("every", 0.8));
+    playedWhileComing(callWithOneReply("The table is booked for Friday at eight.", 20_000, "reply played to the end"));
+  }
+
+  @Test
+  public void aVoiceThatSendsRawSamplesPlaysWhileTheyStillComeIn() throws Exception {
+    prefs.edit().putString(HandsFree.VOICE, "gemini-kore").commit();
+    try {
+      TestServer.script("speech", new JSONObject().put("parts", 4).put("every", 0.8));
+      playedWhileComing(callWithOneReply("The table is booked for Friday at eight.", 20_000, "reply played to the end"));
+    } finally {
+      prefs.edit().putString(HandsFree.VOICE, Voice.KOKORO.id()).commit();
+    }
+  }
+
+  @Test
+  public void aReplyWhoseAudioStopsComingIsTriedAgain() throws Exception {
+    // Its first part plays, then nothing comes for longer than Voice.STALL_MS: it's given up and
+    // fetched again (the next answer comes whole), not left silent.
+    TestServer.script("speech", new JSONObject().put("parts", 4).put("stall", 12));
+    String log = callWithOneReply("The table is booked for Friday at eight.", 30_000, "reply played to the end");
+    assertTrue(log, log.contains("its audio stopped coming for 5 s"));
+    assertTrue(log, log.contains("trying again"));
+    assertTrue(log, log.contains("reply played to the end"));
+  }
+
   @Test
   public void aVoiceThatFailsSaysWhyAndTheReplyIsStillRead() throws Exception {
     for (int i = 0; i < 3; i++) TestServer.script("speech", new JSONObject().put("status", 503).put("message", "No provider available"));
@@ -637,7 +686,7 @@ public class HandsFreeFlowTest {
   @Test
   public void talkingOverAReplyStopsItAndYourMessageSaysWhatYouHeard() throws Exception {
     // The message; your words over the reply (not done yet); then "over" after them.
-    TestServer.transcripts("Book a table for Friday. Over.", "Hold on, book the train instead", "Hold on, book the train instead. Over.");
+    TestServer.transcripts("Book a table for Friday. Over.", "Hold on, book the train instead", "Over.");
     TestServer.turns("over", "unfinished", "over");
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");

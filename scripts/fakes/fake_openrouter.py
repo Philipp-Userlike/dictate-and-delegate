@@ -5,10 +5,15 @@ Serves the OpenRouter endpoints Dictate & Delegate uses, under /api/v1 and /api/
 
   GET  /api/v1/key                    the key check in setup ("bad" keys get 401)
   GET  /api/v1/models                 a small catalog (CATALOG) for the Refine model picker
-  POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."
+  POST /api/v1/audio/transcriptions   a queued transcript, or "Fake transcript."; audio of several parts (the app
+                                      joins them with 0.3 s of exact silence) that were each written down
+                                      before gets their texts joined, not the next queued one: the app's
+                                      pass over a whole turn (logged with "whole": true)
   POST /api/v1/chat/completions       Refine: a queued reply, or the dictation echoed
   POST /api/v1/audio/speech           hands-free replies: a short MP3 (scripts/fakes/reply.mp3), or PCM when asked
-                                      for; a voice is required
+                                      for; a voice is required. Streamed like the real one: no length, sent in
+                                      4 parts 0.1 s apart (queued {"parts": n, "every": seconds} to change that,
+                                      {"stall": seconds} to stop that long after the first part)
   GET  /api/v1/generation?id=…        its cost: $0.0001
   POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
                                       only the questions asked are answered
@@ -31,6 +36,8 @@ Test control (not part of OpenRouter):
 Usage: python3 scripts/fakes/fake_openrouter.py [--port 8797]
 """
 import argparse
+import base64
+import hashlib
 import json
 import os
 import threading
@@ -64,6 +71,38 @@ ANTHROPIC_ERRORS = {"key": (401, "authentication_error", "invalid x-api-key"),
                     "overloaded": (529, "overloaded_error", "Overloaded"),
                     "provider": (500, "api_error", "Internal server error")}
 requests = []
+# What each part's audio was written down as (by its samples' hash): a whole turn is its parts.
+heard = {}
+GAP = 16000 * 3 // 10  # Samples of exact silence between a turn's parts.
+
+
+def wav_parts(body):
+    """A transcription request's audio, cut at the app's gaps: the parts' hashes, in order."""
+    try:
+        pcm = base64.b64decode(((body.get("input_audio") or {}).get("data")) or "")[44:]
+    except (ValueError, TypeError):
+        return []
+    parts, start, zeros = [], 0, 0
+    for i in range(0, len(pcm) - 1, 2):
+        zeros = zeros + 1 if pcm[i] == 0 and pcm[i + 1] == 0 else 0
+        if zeros == GAP:
+            parts.append(pcm[start:i + 2 - 2 * GAP])
+            start, zeros = i + 2, 0
+    parts.append(pcm[start:])
+    return [hashlib.sha1(p).hexdigest() for p in parts]
+
+
+def whole_turn(parts):
+    """The joined texts of a whole turn's parts, once each was written down (waits a moment for the
+    newest, written down at the same time); None if it isn't one."""
+    if len(parts) < 2 or parts[0] not in heard:
+        return None
+    for _ in range(150):
+        with lock:
+            if all(p in heard for p in parts):
+                return " ".join(t for t in (heard[p] for p in parts) if t)
+        time.sleep(0.02)
+    return None
 
 
 def next_item(kind, default_text):
@@ -138,6 +177,7 @@ class Handler(BaseHTTPRequestHandler):
                 for q in queues.values():
                     q.clear()
                 requests.clear()
+                heard.clear()
             return self.reply(200, {})
         if self.path == "/test/script":
             with lock:
@@ -160,8 +200,19 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authorized():
             return
         if self.path == "/api/v1/audio/transcriptions":
+            parts = wav_parts(body)
+            whole = whole_turn(parts)
+            if whole is not None:
+                self.log("transcribe", dict(body, whole=True))
+                return self.answer("transcribe", {"text": whole}, chat=False)
             self.log("transcribe", body)
-            return self.answer("transcribe", next_item("transcribe", "Fake transcript."), chat=False)
+            item = next_item("transcribe", "Fake transcript.")
+            if parts and "error" not in item:
+                with lock:
+                    for p in parts:
+                        heard[p] = ""
+                    heard[parts[-1]] = item.get("text", "")
+            return self.answer("transcribe", item, chat=False)
         if self.path == "/api/alpha/decisions":
             self.log("decide", body)
             return self.decide(body, next_item("decide", {}))
@@ -182,25 +233,34 @@ class Handler(BaseHTTPRequestHandler):
                 import math
                 rate = 24000
                 data = b"".join(int(3000 * math.sin(2 * math.pi * 330 * i / rate)).to_bytes(2, "little", signed=True) for i in range(rate * 3 // 2))
-                self.send_response(200)
-                self.send_header("Content-Type", "audio/pcm;rate=%d;channels=1" % rate)
-                self.send_header("X-Generation-Id", "gen-tts-fake")
-                self.send_header("Content-Length", str(len(data)))
-                self.end_headers()
-                self.wfile.write(data)
-                return
+                return self.stream("audio/pcm;rate=%d;channels=1" % rate, data, item)
             data = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "reply.mp3"), "rb").read()
-            self.send_response(200)
-            self.send_header("Content-Type", "audio/mpeg")
-            self.send_header("X-Generation-Id", "gen-tts-fake")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            return self.stream("audio/mpeg", data, item)
         if self.path == "/api/v1/chat/completions":
             self.log("text", body)
             return self.answer("text", next_item("text", user_text(body)), chat=True)
         self.reply(404, {"error": {"code": 404, "message": "Not found"}})
+
+    def stream(self, content_type, data, item):
+        """Audio as the real speech endpoint sends it: as it's made, without a length (the
+        connection closes at its end), in parts with a pause between them."""
+        parts = max(1, int(item.get("parts", 4)))
+        every = float(item.get("every", 0.1))
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("X-Generation-Id", "gen-tts-fake")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+        size = -(-len(data) // parts)
+        try:
+            for i in range(0, len(data), size):
+                if i:
+                    time.sleep(float(item["stall"]) if item.get("stall") and i == size else every)
+                self.wfile.write(data[i:i + size])
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # The app gave it up (a second request won, or you talked over it).
 
     def anthropic_error(self, name):
         status, kind, message = ANTHROPIC_ERRORS[name]
