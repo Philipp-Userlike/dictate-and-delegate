@@ -1260,8 +1260,12 @@ public class HandsFreeTest {
     assertEquals("pcm", g.getString("response_format"));
     assertEquals("pcm", Voice.body(Voice.choice("heygen-bram"), "Hi").getString("response_format"));
     JSONObject d = Voice.body(fish, "Hi");
-    assertFalse("drama-3 takes no voice", d.has("voice"));
+    // Without a voice Fish picked another speaker for each reply: always one of its voice IDs.
+    assertEquals("933563129e564b19a115bedd57b7406a", d.getString("voice"));
     assertEquals("mp3", d.getString("response_format"));
+    for (Voice.Choice c : Voice.CHOICES) assertTrue("a fixed voice: " + c.id(), c.model().isEmpty() || !c.voice().isEmpty());
+    assertEquals("fish-audio/drama-3 (933563129e564b19a115bedd57b7406a)", fish.tag());
+    assertEquals("Android's voice", Voice.ANDROID.tag());
     assertEquals("en-US-Harper:MAI-Voice-2.1-Flash", Voice.body(mai, "Hi").getString("voice"));
     java.util.Set<String> ids = new java.util.HashSet<>();
     for (Voice.Choice c : Voice.CHOICES) assertTrue("twice: " + c.id(), ids.add(c.id()));

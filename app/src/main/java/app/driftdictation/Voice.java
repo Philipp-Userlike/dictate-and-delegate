@@ -40,6 +40,11 @@ final class Voice {
       return name + " · " + note;
     }
 
+    /** For the log: "fish-audio/drama-3 (933563…)", the model and the voice it was asked for. */
+    String tag() {
+      return model.isEmpty() ? "Android's voice" : voice.isEmpty() ? model : model + " (" + voice + ")";
+    }
+
     /** OpenRouter's list price, for when the real cost can't be looked up. */
     java.math.BigDecimal perCharacter() {
       return new java.math.BigDecimal(pricePerCharacter);
@@ -47,7 +52,7 @@ final class Voice {
   }
 
   static final String MAI = "microsoft/mai-voice-2.1-flash", VOXTRAL = "mistralai/voxtral-mini-tts-3-0",
-      HEYGEN = "heygen/heygen-voice-1-turbo", GEMINI = "google/gemini-3.8-flash-lite-tts";
+      HEYGEN = "heygen/heygen-voice-1-turbo", GEMINI = "google/gemini-3.8-flash-lite-tts", FISH = "fish-audio/drama-3";
 
   static final Choice KOKORO = new Choice("kokoro", "Kokoro", "cheapest", "hexgrad/kokoro-82m", "af_heart", "0.00000062"),
       ELEVEN = new Choice("eleven", "ElevenLabs Flash v2.5", "best voice", "elevenlabs/eleven-flash-v2.5", "george", "0.00004"),
@@ -59,7 +64,11 @@ final class Voice {
    */
   static final Choice[] CHOICES = {
     KOKORO,
-    new Choice("fish-drama", "Fish Audio Drama 3", "fast, cheap", "fish-audio/drama-3", "", "0.000002"),
+    // Fish takes a voice's reference ID (fish.audio); without one each reply had another speaker.
+    new Choice("fish-drama", "Fish Audio Drama 3 · Sarah", "fast, cheap", FISH, "933563129e564b19a115bedd57b7406a", "0.000002"),
+    new Choice("fish-friendly", "Fish Audio Drama 3 · Friendly", "fast, cheap", FISH, "b545c585f631496c914815291da4e893", "0.000002"),
+    new Choice("fish-adrian", "Fish Audio Drama 3 · Adrian", "fast, cheap", FISH, "bf322df2096a46f18c579d0baa36f41d", "0.000002"),
+    new Choice("fish-ethan", "Fish Audio Drama 3 · Ethan", "fast, cheap", FISH, "536d3a5e000945adb7038665781a4aca", "0.000002"),
     new Choice("gemini-kore", "Gemini Flash Lite TTS · Kore", "cheap", GEMINI, "Kore", "0.00001", "pcm"),
     new Choice("gemini-puck", "Gemini Flash Lite TTS · Puck", "cheap", GEMINI, "Puck", "0.00001", "pcm"),
     new Choice("gemini-charon", "Gemini Flash Lite TTS · Charon", "cheap", GEMINI, "Charon", "0.00001", "pcm"),

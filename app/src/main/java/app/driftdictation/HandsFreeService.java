@@ -201,12 +201,12 @@ public final class HandsFreeService extends Service {
                 Voice.Prepared p = voice.prepare(c, text, voice.androidUnavailable ? 30_000 : HandsFree.voiceWaitMs(prefs));
                 long ms = android.os.SystemClock.elapsedRealtime() - asked;
                 if (p.audio() != null) {
-                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms%s", c.model(), request, p.firstByteMs(), p.allMs(),
+                  event(String.format(java.util.Locale.ROOT, "voice %s for %s: first byte after %d ms, all of it after %d ms%s", c.tag(), request, p.firstByteMs(), p.allMs(),
                       p.how().isEmpty() ? "" : " · " + p.how()));
                   chargeVoice(request, c, text, p.generation(), ms);
                 } else if (!c.model().isEmpty()) {
                   boolean android = !voice.androidUnavailable;
-                  event("voice " + c.model() + " for " + request + " failed: " + p.fallback() + (p.how().isEmpty() ? "" : " · " + p.how())
+                  event("voice " + c.tag() + " for " + request + " failed: " + p.fallback() + (p.how().isEmpty() ? "" : " · " + p.how())
                       + " (first byte " + p.firstByteMs() + " ms)" + (android ? ": Android's voice reads it" : ": no Android voice on this phone"));
                   HandsFreeSession s = session;
                   if (s != null) s.voiceFailed(p.fallback(), android);
@@ -267,7 +267,7 @@ public final class HandsFreeService extends Service {
             "started · send %s · end %s · voice %s · pause %d ms · take %d ms in %d ms · gate ×%.1f",
             session.sendWords,
             session.endWords,
-            choice.model(),
+            choice.tag(),
             HandsFree.pauseMs(prefs),
             HandsFree.takeMs(prefs),
             Math.max(HandsFree.Segmenter.WINDOW_MS, HandsFree.takeMs(prefs) * 3 / 2),
@@ -464,7 +464,7 @@ public final class HandsFreeService extends Service {
               event(String.format(
                   java.util.Locale.ROOT,
                   "voice %s: %d characters, $%s%s%s",
-                  c.model(),
+                  c.tag(),
                   text.length(),
                   price.stripTrailingZeros().toPlainString(),
                   exact ? "" : " (at list price)",

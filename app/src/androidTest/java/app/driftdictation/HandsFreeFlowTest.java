@@ -452,7 +452,7 @@ public class HandsFreeFlowTest {
     prefs.edit().putString(HandsFree.VOICE, "gemini-kore").commit();
     try {
       String log = callWithOneReply("The table is booked for Friday at eight.", 15_000, "reply played to the end");
-      assertTrue(log, log.contains("voice google/gemini-3.8-flash-lite-tts for"));
+      assertTrue(log, log.contains("voice google/gemini-3.8-flash-lite-tts (Kore) for"));
       assertTrue(log, log.contains("reply played to the end"));
       assertFalse(log, log.contains("Voice failed") || log.contains("Android's voice reads it"));
       JSONArray all = TestServer.requests();
