@@ -11,6 +11,7 @@
     <string name="t_0255636d" formatted="false">Clé OpenRouter</string>
     <string name="t_02986d74" formatted="false">Par exemple : Candidature logement</string>
     <string name="t_02eb1806" formatted="false">Ajouter Dictate &amp; Delegate aux Réglages rapides</string>
+    <string name="t_0369ff1c" formatted="false">Réponse interrompue : tu as parlé par-dessus ; le chef entendra où tu en étais</string>
     <string name="t_04577256" formatted="false">Le modèle vocal n\'a détecté aucun mot : ton tour s\'arrête</string>
     <string name="t_04bb15b6" formatted="false">Audio sauvegardé supprimé</string>
     <string name="t_04fc2b5b" formatted="false">Image</string>
@@ -312,7 +313,6 @@
     <string name="t_714149a6" formatted="false">Envoyer au chef si interpellé</string>
     <string name="t_71cc04b4" formatted="false">bb n\'a envoyé aucun code de connexion. Recommence.</string>
     <string name="t_721589c1" formatted="false">Aujourd\'hui</string>
-    <string name="t_72640a34" formatted="false">Réponse arrêtée : tu as parlé par-dessus. Reprendra à \"%1$s\" à ta prochaine pause</string>
     <string name="t_7382e59f" formatted="false">Déconnexion…</string>
     <string name="t_73c2d986" formatted="false">Enregistré, chiffré · Affiner utilise tes crédits Anthropic</string>
     <string name="t_74350de7" formatted="false">À propos</string>

@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *       microphone is off a moment after it.
  *   <li>A chief message arriving while you talk (or while what you said is written down) waits,
  *       and is read at your next pause, also when you have unsent words: your turn goes on after
- *       it. Sending never drops it. A reply you talk over goes back to waiting and plays again
- *       later, from the start of the sentence you stopped hearing it in.
+ *       it. Sending never drops it. A reply you talk over stops and the rest of it is dropped;
+ *       your next message (or the call's end) tells the chief how far you heard it.
  *   <li>Every decision it makes is a reason on screen ({@link #reasons}), in plain words, and in
  *       the log; a few moments get a quiet sound ({@link Cue}).
  * </ul>
@@ -129,7 +129,7 @@ final class HandsFreeSession {
    * cancellation takes them out of the microphone, and the microphone's frames go to the
    * segmenter as when listening. This much of your speech (by its level and gate rules, without
    * the short-burst rule: a clatter isn't you) stops the reply at once; what you say goes on as
-   * your turn, and the reply plays again later from the sentence you were hearing.
+   * your turn, the rest of the reply is dropped, and your next message says how far you heard.
    */
   static final int BARGE_MS = 300;
 
@@ -269,6 +269,8 @@ final class HandsFreeSession {
   private final ArrayDeque<Held> held = new ArrayDeque<>();
   /** Notes for your next message about replies you didn't hear (their reading failed). */
   private final List<String> unheard = new ArrayList<>();
+  /** The first this many of unheard are in messages on their way (removed once delivered). */
+  private int claimed;
   /** The latest decisions with their reasons, oldest first (under its own lock). */
   private final ArrayDeque<Reason> reasons = new ArrayDeque<>();
   /** What the call's end tells the chief: replies still waiting, or cut off by the end. */
@@ -609,48 +611,25 @@ final class HandsFreeSession {
     if (segmenter.speaking()) bargeIn(token);
   }
 
-  /** You talk over the reply: it stops at once, your speech goes on as your turn. */
+  /**
+   * You talk over the reply: it stops at once and the rest of it is dropped (you've said something
+   * new; it no longer fits). Your next message tells the chief how far you heard; your speech goes
+   * on as your turn.
+   */
   private void bargeIn(int token) {
     int at = speaker.heardChars();
-    String text, request;
+    String text;
     synchronized (this) {
       if (token != reading || state != State.READING || current == null) return;
       text = current.text;
-      request = current.request;
     }
     int speech = segmenter.voicedMs();
     long since = clock.getAsLong();
-    String rest = restFrom(text, at);
-    if (!endReading(token, null, false)) return;
+    String note = heardUpTo(text, at);
+    if (!endReading(token, note, false)) return;
     speaker.stop();
-    log(String.format(java.util.Locale.ROOT, "barge-in: speech %d ms → stopped (in %d ms, at character %d of %d)", speech, clock.getAsLong() - since, at, text.length()));
-    // It plays again later, from the start of the sentence you stopped hearing it in.
-    Held again = new Held(request, rest, clock.getAsLong());
-    synchronized (this) {
-      held.addFirst(again);
-    }
-    prepare(again);
-    reason("Reply stopped: you talked over it. It plays again from \"%1$s\" at your next pause", firstWords(rest, 6));
-  }
-
-  /**
-   * Where a reply you talked over plays again: the start of the sentence that was playing at
-   * heardChars (the whole reply if you hardly heard any of it).
-   */
-  static String restFrom(String reply, int heardChars) {
-    int at = Math.max(0, Math.min(heardChars, reply.length()));
-    int start = 0;
-    java.util.regex.Matcher m = java.util.regex.Pattern.compile("[.!?…]+[\"”’)]*\\s+").matcher(reply);
-    while (m.find() && m.end() <= at) start = m.end();
-    return reply.substring(start).trim();
-  }
-
-  /** The first n words of a text, with … if there's more. */
-  static String firstWords(String text, int n) {
-    String[] w = text.trim().split("\\s+");
-    StringBuilder out = new StringBuilder();
-    for (int i = 0; i < Math.min(n, w.length); i++) out.append(i == 0 ? "" : " ").append(w[i]);
-    return out + (w.length > n ? "…" : "");
+    log(String.format(java.util.Locale.ROOT, "barge-in: speech %d ms → stopped (in %d ms, at character %d of %d); the rest is dropped, your next message says %s", speech, clock.getAsLong() - since, at, text.length(), note));
+    reason("Reply stopped: you talked over it; the chief will hear how far you got");
   }
 
   /** The note for a reply you interrupted: its last words you heard (or that you heard none). */
@@ -812,6 +791,12 @@ final class HandsFreeSession {
       if (state == State.READING && current != null) note.append("\n\n").append(heardUpTo(current.text, at));
       for (Held h : held) note.append("\n\n").append(missed(h.text));
       waiting = held.size();
+      // Notes no message took (a reply you talked over, then no word sent): with the call's end.
+      boolean unsent;
+      synchronized (turnAudio) {
+        unsent = !turnAudio.isEmpty() || !turnPrefix.isEmpty();
+      }
+      if (!unsent) for (String u : unheard.subList(Math.min(claimed, unheard.size()), unheard.size())) note.append("\n\n").append(u);
       held.clear();
       state = State.ENDED;
     }
@@ -1411,6 +1396,7 @@ final class HandsFreeSession {
     synchronized (this) {
       for (String u : unheard) notes.append("\n\n").append(u);
       failed = unheard.size();
+      claimed = failed;
     }
     // The turn is over: the parts written down go; what you said since starts your next turn.
     boolean more;
@@ -1448,6 +1434,7 @@ final class HandsFreeSession {
         requests.add(request);
         working.put(request, new long[] {0, done});
         for (int i = 0; i < failed && !unheard.isEmpty(); i++) unheard.remove(0);
+        claimed = Math.max(0, claimed - failed);
       }
       sent++;
       sentAt = done;

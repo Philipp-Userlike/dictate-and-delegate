@@ -11,6 +11,7 @@
     <string name="t_0255636d" formatted="false">Clave de OpenRouter</string>
     <string name="t_02986d74" formatted="false">Por ejemplo: Solicitud de piso</string>
     <string name="t_02eb1806" formatted="false">Añadir Dictate &amp; Delegate a Ajustes rápidos</string>
+    <string name="t_0369ff1c" formatted="false">Respuesta interrumpida: hablaste encima; el jefe escuchará hasta dónde llegaste</string>
     <string name="t_04577256" formatted="false">El modelo no oyó palabras: termina tu turno</string>
     <string name="t_04bb15b6" formatted="false">Audio guardado eliminado</string>
     <string name="t_04fc2b5b" formatted="false">Imagen</string>
@@ -312,7 +313,6 @@
     <string name="t_714149a6" formatted="false">Enviar al jefe si se le menciona</string>
     <string name="t_71cc04b4" formatted="false">bb no envió ningún código de inicio de sesión. Inícialo de nuevo.</string>
     <string name="t_721589c1" formatted="false">Hoy</string>
-    <string name="t_72640a34" formatted="false">Respuesta detenida: hablaste encima. Seguirá desde «%1$s» en tu próxima pausa</string>
     <string name="t_7382e59f" formatted="false">Cerrando sesión…</string>
     <string name="t_73c2d986" formatted="false">Guardada, cifrada · Mejorar usa tus créditos de Anthropic</string>
     <string name="t_74350de7" formatted="false">Acerca de</string>

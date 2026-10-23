@@ -736,7 +736,7 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void talkingOverAReplyStopsItAtOnceAndItPlaysLaterFromThatSentence() throws Exception {
+  public void talkingOverAReplyStopsItDropsTheRestAndYourNextMessageSaysHowFarYouHeard() throws Exception {
     Fake f = playingReply("Hold on, book the train instead", "Hold on, book the train instead. Over.");
     f.heardChars = LONG_REPLY.indexOf("Lisbon");
     int frames = framesToStop(f, 8000, 40); // You, over the reply.
@@ -745,18 +745,50 @@ public class HandsFreeTest {
     assertEquals("nothing had to be written down to stop it", 0, f.transcriptions.get());
     String log = String.join("\n", f.log);
     assertTrue(log, log.contains("barge-in: speech 300 ms → stopped"));
-    assertTrue(reasons(f), reasons(f).contains("Reply stopped: you talked over it. It plays again from \"The train to Lisbon costs about…\""));
-    assertEquals(1, f.session.held());
+    assertTrue(reasons(f), reasons(f).contains("Reply stopped: you talked over it; the chief will hear how far you got"));
+    assertEquals("the rest is dropped, not waiting", 0, f.session.held());
     // You go on: all of it is your turn.
     for (int i = 0; i < 30; i++) f.session.frame(frame(8000));
     f.quiet(1200);
     until(() -> f.session.pending().equals("Hold on, book the train instead"));
     f.talk();
     until(() -> f.sent.size() == 1);
-    assertEquals("Hold on, book the train instead.", f.sent.get(0));
-    // The reply isn't lost: it plays after your turn, from that sentence.
-    until(() -> f.spoken.size() == 2);
-    assertEquals("The train to Lisbon costs about forty euros if you book today.", f.spoken.get(1));
+    assertEquals("Hold on, book the train instead.\n\n[heard up to: \"…the morning from gate twelve. The train to\"]", f.sent.get(0));
+    // Nothing of it plays again.
+    f.quiet(3000);
+    f.now.addAndGet(HandsFreeSession.REPLY_WAIT_MS + 1000);
+    f.session.tick();
+    Thread.sleep(200);
+    assertEquals(List.of(LONG_REPLY), f.spoken);
+    assertEquals(0, f.session.unheard());
+  }
+
+  @Test
+  public void aReplyTalkedOverWithNoMessageAfterItIsNotedWithTheCallsEnd() throws Exception {
+    Fake f = playingReply("");
+    f.heardChars = LONG_REPLY.indexOf("twelve");
+    framesToStop(f, 8000, 40);
+    f.quiet(1200); // What you said had no words: nothing to send.
+    until(() -> f.transcriptions.get() == 1);
+    Thread.sleep(100);
+    f.session.end();
+    assertEquals("\n\n[heard up to: \"…leaves at nine in the morning from gate\"]", f.session.endNote());
+    assertTrue(f.sent.isEmpty());
+  }
+
+  @Test
+  public void aReplyArrivingWhileYouTalkStillWaitsAndPlays() throws Exception {
+    Fake f = new Fake("I was thinking about the trip");
+    f.quiet(1000);
+    f.speak();
+    f.session.reply("r1", "Your table is booked.");
+    Thread.sleep(150);
+    assertTrue("it waits while you talk", f.spoken.isEmpty());
+    f.quiet(1600); // Your pause.
+    until(() -> f.spoken.size() == 1);
+    assertEquals("Your table is booked.", f.spoken.get(0));
+    f.done.run();
+    assertEquals(0, f.session.unheard());
   }
 
   @Test
@@ -782,15 +814,6 @@ public class HandsFreeTest {
     assertEquals("[heard up to: \"The flight\"]", HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf("leaves") + 3));
     // Hardly anything heard: as if not heard at all.
     assertTrue(HandsFreeSession.heardUpTo(LONG_REPLY, 3).startsWith("[didn't hear your reply:"));
-  }
-
-  @Test
-  public void aReplyTalkedOverPlaysAgainFromTheSentenceYouStoppedHearing() {
-    assertEquals(LONG_REPLY, HandsFreeSession.restFrom(LONG_REPLY, 10));
-    assertEquals("The train to Lisbon costs about forty euros if you book today.", HandsFreeSession.restFrom(LONG_REPLY, LONG_REPLY.indexOf("Lisbon")));
-    // Right at the start of the second sentence.
-    assertEquals("The train to Lisbon costs about forty euros if you book today.", HandsFreeSession.restFrom(LONG_REPLY, LONG_REPLY.indexOf("The train")));
-    assertEquals("Yes. Really?", HandsFreeSession.restFrom("Yes. Really?", 2));
   }
 
   // ------------------------------------------------------------------ taking the turn, and the send word

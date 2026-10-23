@@ -11,6 +11,7 @@
     <string name="t_0255636d" formatted="false">Klucz OpenRouter</string>
     <string name="t_02986d74" formatted="false">Na przykład: Zgłoszenie o mieszkanie</string>
     <string name="t_02eb1806" formatted="false">Dodaj Dictate &amp; Delegate do Szybkich ustawień</string>
+    <string name="t_0369ff1c" formatted="false">Odpowiedź przerwana: wtrąciłeś się; szef usłyszy, do którego momentu udało ci się dotrzeć</string>
     <string name="t_04577256" formatted="false">Model mowy nie usłyszał słów: koniec Twojej kolejki</string>
     <string name="t_04bb15b6" formatted="false">Zapisany dźwięk został usunięty</string>
     <string name="t_04fc2b5b" formatted="false">Obraz</string>
@@ -313,7 +314,6 @@
     <string name="t_714149a6" formatted="false">Wysyłaj do szefa po wywołaniu</string>
     <string name="t_71cc04b4" formatted="false">bb nie przesłało kodu logowania. Rozpocznij ponownie.</string>
     <string name="t_721589c1" formatted="false">Dzisiaj</string>
-    <string name="t_72640a34" formatted="false">Zatrzymano odpowiedź: przerwano mówieniem. Wznowi od „%1$s” przy kolejnej pauzie</string>
     <string name="t_7382e59f" formatted="false">Wylogowywanie…</string>
     <string name="t_73c2d986" formatted="false">Zapisano, zaszyfrowano · Dopracuj używa Twoich środków w Anthropic</string>
     <string name="t_74350de7" formatted="false">Informacje</string>

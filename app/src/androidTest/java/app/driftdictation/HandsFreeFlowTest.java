@@ -635,7 +635,7 @@ public class HandsFreeFlowTest {
   }
 
   @Test
-  public void talkingOverAReplyInterruptsItAndYourMessageSaysWhatYouHeard() throws Exception {
+  public void talkingOverAReplyStopsItAndYourMessageSaysWhatYouHeard() throws Exception {
     // The message; your words over the reply (not done yet); then "over" after them.
     TestServer.transcripts("Book a table for Friday. Over.", "Hold on, book the train instead", "Hold on, book the train instead. Over.");
     TestServer.turns("over", "unfinished", "over");
@@ -657,16 +657,15 @@ public class HandsFreeFlowTest {
     for (int i = 0; i < 75; i++) s.frame(HandsFreeTestFrames.frame(50));
     until(() -> s.pending().equals("Hold on, book the train instead"), "your interruption, your turn");
     assertTrue(HandsFreeService.log(context).contains("barge-in: speech 300 ms → stopped"));
-    // It plays again at your pause (your turn goes on after it); you talk over it once more.
-    until(s::audioPlaying, "the reply again at your pause");
+    // The rest of the reply is dropped: your next message says how far you heard it.
     talk();
     long deadline = SystemClock.elapsedRealtime() + 20_000;
     while (SystemClock.elapsedRealtime() < deadline && HandsFreeService.session().sent() < 2) Thread.sleep(100);
     assertEquals(HandsFreeService.log(context), 2, HandsFreeService.session().sent());
     String tell = lastTell();
     assertTrue(tell, tell.contains("Hold on, book the train instead"));
-    // Nothing about the reply: it isn't lost, it plays again once your turn is over.
-    assertFalse(tell, tell.contains("[heard up to: ") || tell.contains("[didn't hear your reply: "));
-    until(() -> count(HandsFreeService.log(context), "floor: chief, reading " + m.group(1)) >= 3, "the reply read again");
+    assertTrue(tell, tell.contains("[heard up to: ") || tell.contains("[didn't hear your reply: "));
+    Thread.sleep(3000);
+    assertEquals("never played again", 1, count(HandsFreeService.log(context), "floor: chief, reading " + m.group(1)));
   }
 }
