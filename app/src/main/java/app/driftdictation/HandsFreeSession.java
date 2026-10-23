@@ -677,6 +677,11 @@ final class HandsFreeSession {
     events.accept(event);
   }
 
+  /** The request sent last in this call; "" before the first. */
+  synchronized String lastRequest() {
+    return requests.isEmpty() ? "" : requests.get(requests.size() - 1);
+  }
+
   /** Is this one of the requests sent in this call? */
   synchronized boolean ours(String request) {
     return requests.contains(request);

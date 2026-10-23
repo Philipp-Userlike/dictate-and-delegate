@@ -887,14 +887,20 @@ public class HandsFreeFlowTest {
     String toChief = messagesTo(TestServer.CHIEF).get(0), toTalker = messagesTo(TALKER).get(0);
     assertTrue(toChief, toChief.contains("Book a table for Friday.\\n\\n[hands-free]\\n\\n[request: "));
     assertEquals(toChief.replace(TestServer.CHIEF, TALKER), toTalker);
-    assertEquals(1, HandsFreeService.session().sent());
+    until(() -> HandsFreeService.session().sent() == 1, "counted as sent");
+    until(() -> HandsFreeService.log(context).contains("to the talker too"), "the log says the talker got it");
     assertTrue(HandsFreeService.log(context), HandsFreeService.log(context).contains("talker " + TALKER + ": every message goes to it and to the chief"));
     // The talker's spoken reply plays like the chief's.
     Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(toTalker);
     assertTrue(m.find());
-    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), m.group(1), "Sure, Alex is booking it.");
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), m.group(1), "Sure, the chief is booking it.");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.READING, "reading the talker's reply");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after reading");
+    // The chief's result, passed on by the talker without a request ID, plays too.
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), "", "The table is booked for eight.");
+    until(() -> spoken().contains("The table is booked for eight."), "the talker's update read aloud");
+    until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after the update");
     Thread.sleep(HandsFreeSession.TAIL_MS + 300);
     talk();
     until(() -> HandsFreeService.instance == null, "hands-free ended by the end word");
@@ -914,7 +920,6 @@ public class HandsFreeFlowTest {
     talk();
     until(() -> messagesTo(TestServer.CHIEF).size() == 1, "the message sent to the chief");
     until(() -> reasons().contains("Sent ✓ to the chief. The talker didn't get it: bb couldn't do it:"), "the reason says the talker missed it");
-    assertEquals(0, messagesTo(TALKER).size());
     assertEquals("", HandsFreeService.session().pending());
     String log = HandsFreeService.log(context);
     assertTrue(log, log.contains("the talker (" + TALKER + ") didn't get "));
@@ -922,12 +927,13 @@ public class HandsFreeFlowTest {
     TestServer.bbFail("tell", "tool", TestServer.CHIEF);
     Thread.sleep(3500); // Past Sent ✓.
     talk();
-    until(() -> messagesTo(TALKER).size() == 1, "the message sent to the talker");
+    // (The fake lists the tell it failed too.)
+    until(() -> messagesTo(TALKER).size() == 2, "the message sent to the talker");
     until(() -> reasons().contains("Sent to the talker only. The chief didn't get it: bb couldn't do it:"), "the reason says the chief missed it");
     assertEquals(2, HandsFreeService.session().sent());
     assertEquals("", HandsFreeService.session().pending());
     assertTrue(HandsFreeService.log(context).contains("the chief didn't get "));
-    assertTrue(messagesTo(TALKER).get(0), messagesTo(TALKER).get(0).contains("And the train."));
+    assertTrue(messagesTo(TALKER).get(1), messagesTo(TALKER).get(1).contains("And the train."));
   }
 
   @Test
@@ -942,5 +948,89 @@ public class HandsFreeFlowTest {
     until(() -> told("[hands-free call started]"), "the call start told");
     assertFalse(told("[talker: "));
     assertTrue(tellsTo(TALKER).isEmpty());
+    // Without a talker, a spoken message without a request isn't this call's.
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), "", "Not for this call.");
+    Thread.sleep(3000);
+    assertFalse(spoken().contains("Not for this call."));
+  }
+
+  /** What was sent to the voice model, oldest first. */
+  List<String> spoken() throws Exception {
+    List<String> out = new java.util.ArrayList<>();
+    JSONArray all = TestServer.requests();
+    for (int i = 0; i < all.length(); i++)
+      if (all.getJSONObject(i).getString("kind").equals("speech")) out.add(all.getJSONObject(i).getJSONObject("body").getString("input"));
+    return out;
+  }
+
+  /**
+   * Opt-in, against a real bb (the same arguments as the real checks above; realNtfy best the fake
+   * ntfy, which bb's agents reach too): a test chief with the skills and a test talker both get
+   * the call. The talker answers by voice at once; the chief hands its result to the talker, which
+   * speaks it. Logs both thread IDs and what was spoken (tag TalkRouterReal), to archive them after.
+   */
+  @Test
+  public void realTalkerAndChiefBothGetTheCallAndTheChiefsResultIsSpoken() throws Exception {
+    android.os.Bundle args = InstrumentationRegistry.getArguments();
+    Assume.assumeTrue(args.getString("realMcp") != null);
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(args.getString("realMcp"), "", args.getString("realLinks"));
+    bb.setNtfyServer(args.getString("realNtfy"));
+    TestServer.skillsCurrent(context);
+    java.util.Map<String, String> files = ChiefSkills.filled(context);
+    String title = args.getString("realTitle");
+    String chiefPrompt =
+        "For this test, follow these two skills as if they were installed, then reply \"ready\".\n\n"
+            + files.get(ChiefSkills.CHIEF)
+            + "\n"
+            + files.get(ChiefSkills.ROUTER);
+    JSONObject chief =
+        bb.run(BbBridge.spawnSnippet(chiefPrompt).replace(JSONObject.quote(BbBridge.CHIEF_TITLE), JSONObject.quote(title + " chief")));
+    android.util.Log.i("TalkRouterReal", "chief " + chief.getString("id"));
+    String speak =
+        "curl -s -H \"Title: Spoken reply\" -H \"Tags: talkrouter-speak,req-<id>\" -H \"Priority: low\" --data-binary @- "
+            + bb.ntfyServer() + "/" + bb.ntfyTopic() + " <<'TEXT'\n<what to say>\nTEXT";
+    String talkerPrompt =
+        "You are the talker in a test of hands-free voice calls (the Dictate & Delegate app). Another agent thread, the chief, gets every message from the user too and does all the work. Your only job is the conversation: short spoken replies, fast.\n\n"
+            + "- A message tagged [hands-free] with [request: <id>]: answer by voice right away in one or two short sentences. Acknowledge it, or say the chief is looking into it. Never invent facts or results.\n"
+            + "- A message starting with [chief]: the chief's result. Tell the user its gist by voice, in your own short words.\n"
+            + "- [hands-free call started] and [hands-free call ended]: don't speak.\n\n"
+            + "To speak, run this one command and nothing else, with the request ID from the user's message (for a [chief] message, which has none, use Tags: talkrouter-speak without req-):\n\n"
+            + speak
+            + "\n\nUse no other tools. Plain spoken words, no markdown. Keep your text reply in the thread to one line. Now reply \"ready\" without speaking.";
+    JSONObject talker =
+        bb.run(BbBridge.spawnSnippet(talkerPrompt).replace(JSONObject.quote(BbBridge.CHIEF_TITLE), JSONObject.quote(title + " talker")));
+    String talkerId = talker.getString("id");
+    android.util.Log.i("TalkRouterReal", "talker " + talkerId);
+    bb.setChief(new BbBridge.ThreadInfo(chief.getString("id"), title + " chief", chief.optString("status")));
+    prefs.edit().putString(BbBridge.TALKER_ID, talkerId).putBoolean(BbBridge.TALKER_ON, true).commit();
+    TestServer.transcripts("Quick test call: look up which city is the capital of Australia, and since when. Over.");
+    HandsFreeService.logFile(context).delete();
+    try {
+      HandsFreeService.send(context, HandsFreeService.START);
+      until(() -> HandsFreeService.session() != null, "hands-free started");
+      talk();
+      until(() -> HandsFreeService.session().sent() == 1, "the message sent");
+      assertTrue(HandsFreeService.log(context), HandsFreeService.log(context).contains("to the talker too"));
+      // The talker's quick answer, then the chief's result through the talker.
+      long deadline = SystemClock.elapsedRealtime() + 6 * 60_000;
+      // Each reply once, though the voice may be asked for it more than once.
+      java.util.Set<String> spoken = new java.util.LinkedHashSet<>();
+      while (SystemClock.elapsedRealtime() < deadline && spoken.size() < 2) {
+        JSONArray all = TestServer.requests();
+        for (int i = 0; i < all.length(); i++)
+          if (all.getJSONObject(i).getString("kind").equals("speech"))
+            spoken.add(all.getJSONObject(i).getJSONObject("body").getString("input"));
+        Thread.sleep(1000);
+      }
+      until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "the last reply read");
+      for (String t : spoken) android.util.Log.i("TalkRouterReal", "spoken: " + t);
+      assertTrue("the talker's answer and the chief's result, spoken: " + spoken, spoken.size() >= 2);
+      HandsFreeService.send(context, HandsFreeService.END);
+      until(() -> HandsFreeService.instance == null, "hands-free ended");
+      Thread.sleep(5000);
+    } finally {
+      for (String line : HandsFreeService.log(context).split("\n")) android.util.Log.i("TalkRouterReal", line);
+    }
   }
 }

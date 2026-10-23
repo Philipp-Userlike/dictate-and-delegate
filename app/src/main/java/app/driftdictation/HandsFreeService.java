@@ -318,6 +318,11 @@ public final class HandsFreeService extends Service {
               bb.ntfyTopic(),
               System.currentTimeMillis() / 1000 - 5,
               request -> session != null && session.ours(request),
+              // With a talker, its spoken updates from the chief carry no request: the latest one's.
+              () -> {
+                HandsFreeSession s = session;
+                return talker.isEmpty() || s == null ? "" : s.lastRequest();
+              },
               (request, text, published) -> {
                 HandsFreeSession s = session;
                 if (s != null) s.reply(request, text, published);

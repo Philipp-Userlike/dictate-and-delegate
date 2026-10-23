@@ -210,7 +210,8 @@ final class TestServer {
       c.setRequestMethod("POST");
       c.setDoOutput(true);
       c.setRequestProperty("Title", "Spoken reply");
-      c.setRequestProperty("Tags", ChiefText.SPEAK_TAG + "," + BbBridge.requestTag(request));
+      // Without a request (""): as the talker passes on the chief's results.
+      c.setRequestProperty("Tags", ChiefText.SPEAK_TAG + (request.isEmpty() ? "" : "," + BbBridge.requestTag(request)));
       try (OutputStream out = c.getOutputStream()) {
         out.write(text.getBytes(StandardCharsets.UTF_8));
       }

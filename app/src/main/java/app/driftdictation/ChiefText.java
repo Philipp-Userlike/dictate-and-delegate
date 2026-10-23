@@ -167,6 +167,14 @@ final class ChiefText {
     return speak ? request : "";
   }
 
+  /** Is it a spoken reply (SPEAK_TAG), with or without a request ID? */
+  static boolean spoken(JSONObject message) {
+    if (!"message".equals(message.optString("event", "message"))) return false;
+    JSONArray tags = message.optJSONArray("tags");
+    for (int i = 0; tags != null && i < tags.length(); i++) if (tags.optString(i).trim().equalsIgnoreCase(SPEAK_TAG)) return true;
+    return false;
+  }
+
   /**
    * Hands-free mode: reads the topic's stream until finish() and hands every spoken reply for one
    * of our requests to the callback, in order and once each; reconnects after a dropped connection.
@@ -179,6 +187,7 @@ final class ChiefText {
 
     private final String server, topic;
     private final java.util.function.Predicate<String> ours;
+    private final java.util.function.Supplier<String> untagged;
     private final Callback callback;
     private volatile boolean stopped;
     private volatile HttpURLConnection open;
@@ -186,7 +195,17 @@ final class ChiefText {
     private final java.util.Set<String> seen = new java.util.HashSet<>();
 
     Replies(String server, String topic, long sinceSeconds, java.util.function.Predicate<String> ours, Callback callback) {
+      this(server, topic, sinceSeconds, ours, () -> "", callback);
+    }
+
+    /**
+     * As above; a spoken reply without a request ID counts as one for the request untagged names
+     * ("" drops it): the talker passes on the chief's results that way.
+     */
+    Replies(String server, String topic, long sinceSeconds, java.util.function.Predicate<String> ours,
+        java.util.function.Supplier<String> untagged, Callback callback) {
       super("ntfy-replies");
+      this.untagged = untagged;
       setDaemon(true);
       this.server = server;
       this.topic = topic;
@@ -224,6 +243,7 @@ final class ChiefText {
               String id = m.optString("id");
               if (!id.isEmpty()) since = id; // Reconnect from here, not from the start.
               String request = spokenRequest(m);
+              if (request.isEmpty() && spoken(m)) request = untagged.get();
               if (request.isEmpty() || !seen.add(id) || !ours.test(request)) continue;
               String t = text(m, server);
               if (!t.isEmpty()) callback.reply(request, t, m.optLong("time") * 1000);

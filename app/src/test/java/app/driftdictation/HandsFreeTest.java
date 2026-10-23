@@ -565,6 +565,13 @@ public class HandsFreeTest {
     JSONObject paste = new JSONObject().put("tags", new org.json.JSONArray().put("talkrouter-paste").put("req-abc234"));
     assertEquals("", ChiefText.spokenRequest(paste));
     assertEquals("", ChiefText.spokenRequest(new JSONObject().put("event", "keepalive")));
+    // The talker's updates from the chief: spoken, without a request.
+    JSONObject untagged = new JSONObject().put("event", "message").put("tags", new org.json.JSONArray().put("talkrouter-speak"));
+    assertEquals("", ChiefText.spokenRequest(untagged));
+    assertTrue(ChiefText.spoken(untagged));
+    assertTrue(ChiefText.spoken(m));
+    assertFalse(ChiefText.spoken(paste));
+    assertFalse(ChiefText.spoken(new JSONObject().put("event", "keepalive")));
   }
 
   @Test
