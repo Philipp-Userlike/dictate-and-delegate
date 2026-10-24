@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">diese App nimmt Text nur über die Zwischenablage an, daher liegt er auch dort</string>
     <string name="t_068966f6" formatted="false">Verfeinern: Anthropic-Guthaben ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">Geht es um etwas Bestimmtes? Füge es hinzu, z. B. ein Angebot, auf das du antwortest.</string>
+    <string name="t_083e8bd0" formatted="false">bb hat den Skill des Talkers nicht installiert. Beim nächsten Mal wird es erneut versucht.</string>
     <string name="t_08db7524" formatted="false">Ab $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Über anderen Apps anzeigen erlauben</string>
     <string name="t_092d8ce0" formatted="false">am günstigsten</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">Deine Vorlagen bleiben auf diesem Gerät. Nur die angeforderte Vorlage wird zusammen mit deinem Diktat an die KI gesendet.</string>
     <string name="t_0d4e1237" formatted="false">Konnte nicht prüfen, ob du fertig bist (%1$s): sag %2$s oder tippe auf Senden</string>
     <string name="t_0dc541d5" formatted="false">Auf Standard zurücksetzen</string>
+    <string name="t_0dd1e692" formatted="false">Dem Talker konnte nicht gesagt werden, seinen Skill zu nutzen: %1$s</string>
     <string name="t_0de44d68" formatted="false">1 Nachricht</string>
     <string name="t_0e1c0935" formatted="false">bb antwortet, bietet aber das run-Tool nicht an. Aktualisiere bb und prüfe, ob das MCP-Plugin aktiviert ist.</string>
     <string name="t_0ea7c5dd" formatted="false">Liest vor</string>

@@ -162,6 +162,11 @@ final class TestServer {
     postTo(bbRoot(), "/test/skills", new JSONObject().put("installed", installed).put("stall", stall));
   }
 
+  /** The fake's install thread leaves out these skills (as if bb refused them). */
+  static void bbSkipSkills(String... names) throws Exception {
+    postTo(bbRoot(), "/test/skills", new JSONObject().put("skip", new JSONArray(java.util.List.of(names))));
+  }
+
   /** Marks bb's skills as current for this app, so tests about other things don't install. */
   static void skillsCurrent(android.content.Context context) throws Exception {
     String summary = ChiefSkills.summary(ChiefSkills.filled(context));

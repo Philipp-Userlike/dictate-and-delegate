@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">questa app accetta solo l\'incolla, quindi è anche negli appunti</string>
     <string name="t_068966f6" formatted="false">Perfeziona: crediti Anthropic ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">Ti riferisci a qualcosa? Aggiungilo, come un\'offerta a cui rispondi.</string>
+    <string name="t_083e8bd0" formatted="false">bb non ha installato la skill del talker. Riproverà la prossima volta.</string>
     <string name="t_08db7524" formatted="false">Da $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Consenti la visualizzazione sopra altre app</string>
     <string name="t_092d8ce0" formatted="false">più economico</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">I tuoi template rimangono su questo dispositivo. Solo quello richiesto viene inviato all\'IA insieme alla dettatura.</string>
     <string name="t_0d4e1237" formatted="false">Impossibile verificare se hai finito (%1$s): dì %2$s o premi Invia</string>
     <string name="t_0dc541d5" formatted="false">Ripristina predefiniti</string>
+    <string name="t_0dd1e692" formatted="false">Impossibile indicare al talker di usare la sua skill: %1$s</string>
     <string name="t_0de44d68" formatted="false">1 messaggio</string>
     <string name="t_0e1c0935" formatted="false">bb risponde, ma non offre lo strumento di esecuzione. Aggiorna bb e controlla che il plugin MCP sia attivo.</string>
     <string name="t_0ea7c5dd" formatted="false">Lettura</string>

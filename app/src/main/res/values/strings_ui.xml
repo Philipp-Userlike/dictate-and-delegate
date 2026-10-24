@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">this app only takes pastes, so it\'s on the clipboard too</string>
     <string name="t_068966f6" formatted="false">Refine: Anthropic credits ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">Talking about something? Add it, like an offer you reply to.</string>
+    <string name="t_083e8bd0" formatted="false">bb didn\'t install the talker\'s skill. It\'s tried again next time.</string>
     <string name="t_08db7524" formatted="false">From $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Allow display over other apps</string>
     <string name="t_092d8ce0" formatted="false">cheapest</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">Your templates stay on this device. Only the one you ask for is sent to the AI, together with your dictation.</string>
     <string name="t_0d4e1237" formatted="false">Couldn\'t ask whether you\'re done (%1$s): say %2$s or press Send</string>
     <string name="t_0dc541d5" formatted="false">Reset to default</string>
+    <string name="t_0dd1e692" formatted="false">Couldn\'t tell the talker to use its skill: %1$s</string>
     <string name="t_0de44d68" formatted="false">1 message</string>
     <string name="t_0e1c0935" formatted="false">bb answers, but it doesn\'t offer the run tool. Update bb and check that the MCP plugin is on.</string>
     <string name="t_0ea7c5dd" formatted="false">Reading</string>

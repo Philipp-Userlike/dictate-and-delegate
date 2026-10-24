@@ -3396,7 +3396,7 @@ public final class MainActivity extends Activity {
     ui.add(content, ui.row(tr("Use the talker"), tr("From your next hands-free call on"), on, null), 8);
     EditText field = ui.input(prefs.getString(BbBridge.TALKER_ID, ""), tr("Talker thread link or id (thr_…)"), false);
     ui.add(content, field, 6);
-    TextView problem = ui.add(content, ui.text("", 13, Ui.MUTED), 4);
+    TextView problem = ui.add(content, ui.text(ChiefSkills.talkerProblem(), 13, Ui.MUTED), 4);
     autosave(
         field,
         t -> {

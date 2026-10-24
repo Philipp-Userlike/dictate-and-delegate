@@ -100,15 +100,19 @@ final class ChiefSkills {
     return m.find() ? m.group(2) : "";
   }
 
-  /** The skills bb should have: name → filled file. */
+  /**
+   * The skills bb should have: name → filled file. The talker's only with a talker set (and on):
+   * a user without one doesn't wait for it, and setting one installs it.
+   */
   static Map<String, String> filled(Context context) throws Exception {
     BbBridge bb = new BbBridge(context);
     SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
     Map<String, String> files = new LinkedHashMap<>();
     for (String name : NAMES)
-      files.put(
+      if (!name.equals(TALKER) || !bb.talkerId().isEmpty())
+        files.put(
           name,
-          fill(name, template(context, name), prefs.getString(USER_NAME, ""), bb.ntfyServer(), bb.ntfyTopic(), bb.linkBase()));
+            fill(name, template(context, name), prefs.getString(USER_NAME, ""), bb.ntfyServer(), bb.ntfyTopic(), bb.linkBase()));
     return files;
   }
 
@@ -225,6 +229,17 @@ final class ChiefSkills {
   /** How long the app waits for the install thread, polling every few seconds. */
   static long installWaitMs = 4 * 60_000, pollMs = 3000;
 
+  /** Once the chief's skills are in, how long the talker's may still take. */
+  static long talkerGraceMs = 20_000;
+
+  /** Why the talker's skill isn't in bb, and why the talker couldn't be told; "" when all is well. */
+  static volatile String talkerSkillProblem = "", talkerTellProblem = "";
+
+  /** What the talker setting says is wrong, "" when nothing is. */
+  static String talkerProblem() {
+    return !talkerSkillProblem.isEmpty() ? talkerSkillProblem : talkerTellProblem;
+  }
+
   /**
    * Brings bb's skills up to date in the background. Without force it only asks bb when something
    * changed since the last install: the filled files (template, name, topic, server, link) or the
@@ -252,39 +267,53 @@ final class ChiefSkills {
     new Thread(
             () -> {
               try {
-                ensure(app, files);
-                prefs.edit().putString(INSTALLED, summary(files)).putInt(CHECKED_VERSION, BuildConfig.VERSION_CODE).apply();
+                List<String> missing = ensure(app, files);
+                // The talker's skill if bb didn't take it: tried again at the next sync, and said
+                // on its own, never as the chief's skills failing.
+                Map<String, String> got = new LinkedHashMap<>(files);
+                for (String name : missing) got.remove(name);
+                prefs.edit().putString(INSTALLED, summary(got)).putInt(CHECKED_VERSION, BuildConfig.VERSION_CODE).apply();
+                talkerSkillProblem = missing.contains(TALKER) ? tr("bb didn't install the talker's skill. It's tried again next time.") : "";
                 state = State.INSTALLED;
                 problem = "";
                 tellOlderChief(app);
-                tellTalker(app);
               } catch (Exception ex) {
                 problem = DictationService.friendly(ex);
                 state = State.FAILED;
               } finally {
                 running = false;
               }
+              safelyTellTalker(app); // Its own try: a talker that can't be told is said apart.
             },
             "chief-skills")
         .start();
   }
 
-  /** Checks bb and, if needed, installs through a thread and waits for it. Blocks. */
-  static void ensure(Context app, Map<String, String> files) throws Exception {
+  /**
+   * Checks bb and, if needed, installs through a thread and waits for it. Blocks. Only the chief's
+   * skills must be there for it to succeed; returns the optional ones (the talker's) still missing.
+   */
+  static List<String> ensure(Context app, Map<String, String> files) throws Exception {
     BbBridge bb = new BbBridge(app);
     state = State.CHECKING;
     JSONObject installed = bb.read(checkSnippet()).optJSONObject("skills");
     List<String> outdated = outdated(files, installed == null ? new JSONObject() : installed);
-    if (outdated.isEmpty()) return;
+    if (outdated.isEmpty()) return List.of();
     state = State.INSTALLING;
     String id = bb.run(spawnSnippet(installPrompt(files))).optString("id");
     if (id.isEmpty()) throw new IOException(tr("bb didn't say which thread it created."));
     try {
-      long until = SystemClock.elapsedRealtime() + installWaitMs;
+      long until = SystemClock.elapsedRealtime() + installWaitMs, talkerSince = 0;
       while (true) {
         Thread.sleep(pollMs);
         JSONObject skills = bb.read(checkSnippet()).optJSONObject("skills");
-        if (skills != null && outdated(files, skills).isEmpty()) return;
+        List<String> left = skills == null ? List.of(CHIEF) : outdated(files, skills);
+        if (left.isEmpty()) return List.of();
+        if (!left.contains(CHIEF) && !left.contains(ROUTER) && !left.contains(OLD_ROUTER)) {
+          // The chief's are in: the talker's gets a little longer (written last), then it's said apart.
+          if (talkerSince == 0) talkerSince = SystemClock.elapsedRealtime();
+          if (SystemClock.elapsedRealtime() - talkerSince > talkerGraceMs) return left;
+        }
         if (SystemClock.elapsedRealtime() > until)
           throw new IOException(tr("bb didn't install the chief's skills in time. Try again."));
       }
@@ -311,7 +340,7 @@ final class ChiefSkills {
    * The talker (set and on) gets TALKER_START once: when it's set or changed, and whenever its
    * skill changed. Only once bb has the current skills, so it finds the one it's told to use.
    */
-  static void tellTalker(Context app) throws Exception {
+  static synchronized void tellTalker(Context app) throws Exception {
     SharedPreferences prefs = app.getSharedPreferences("settings", Context.MODE_PRIVATE);
     Map<String, String> files = filled(app);
     if (talkerTold(app, files) || !summary(files).equals(prefs.getString(INSTALLED, ""))) return;
@@ -321,12 +350,14 @@ final class ChiefSkills {
     prefs.edit().putString(TALKER_TOLD, talkerToldValue(talker, files)).apply();
   }
 
-  /** The same, for a background thread: a failure is tried again at the next call or sync. */
+  /** The same, for a background thread: a failure is said apart, and tried again at the next call or sync. */
   static void safelyTellTalker(Context app) {
     try {
       tellTalker(app);
-    } catch (Exception ignored) {
-      /* Not told: tried again at the next call's start or sync. */
+      talkerTellProblem = "";
+    } catch (Exception ex) {
+      talkerTellProblem = tr("Couldn't tell the talker to use its skill: %1$s", DictationService.friendly(ex));
+      android.util.Log.w("TalkRouter", "talker not told: " + ex);
     }
   }
 

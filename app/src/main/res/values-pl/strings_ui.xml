@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">ta aplikacja przyjmuje tylko wklejanie, więc tekst jest też w schowku</string>
     <string name="t_068966f6" formatted="false">Dopracuj: środki Anthropic ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">Nawiązujesz do czegoś? Dodaj to, np. ofertę, na którą odpowiadasz.</string>
+    <string name="t_083e8bd0" formatted="false">bb nie zainstalowało umiejętności talkera. Nastąpi kolejna próba następnym razem.</string>
     <string name="t_08db7524" formatted="false">Od $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Zezwól na wyświetlanie nad innymi aplikacjami</string>
     <string name="t_092d8ce0" formatted="false">najtańszy</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">Twoje szablony zostają na tym urządzeniu. Tylko ten, o który poprosisz, jest wysyłany do AI wraz z dyktowanym tekstem.</string>
     <string name="t_0d4e1237" formatted="false">Nie udało się sprawdzić, czy to koniec (%1$s): powiedz %2$s lub naciśnij Wyślij</string>
     <string name="t_0dc541d5" formatted="false">Przywróć domyślne</string>
+    <string name="t_0dd1e692" formatted="false">Nie udało się polecić talkerowi użycia umiejętności: %1$s</string>
     <string name="t_0de44d68" formatted="false">1 wiadomość</string>
     <string name="t_0e1c0935" formatted="false">bb odpowiada, ale nie oferuje narzędzia run. Zaktualizuj bb i sprawdź, czy wtyczka MCP jest włączona.</string>
     <string name="t_0ea7c5dd" formatted="false">Czytanie</string>

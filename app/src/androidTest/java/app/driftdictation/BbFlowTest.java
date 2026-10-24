@@ -602,6 +602,49 @@ public class BbFlowTest {
   }
 
   @Test
+  public void aTalkersSkillThatBbRefusesOrATalkerThatCantBeToldNeverFailsTheChiefsSkills() throws Exception {
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(TestServer.bbUrl(), "", LINKS);
+    bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
+    prefs.edit()
+        .putBoolean(ChiefSkills.CHIEF_TOLD, true)
+        .putString(ChiefSkills.USER_NAME, "Alex")
+        .putString(BbBridge.TALKER_ID, "thr_faketalker")
+        .putBoolean(BbBridge.TALKER_ON, true)
+        .remove(ChiefSkills.TALKER_TOLD)
+        .commit();
+    ChiefSkills.pollMs = 300;
+    long grace = ChiefSkills.talkerGraceMs;
+    ChiefSkills.talkerGraceMs = 1500;
+    try {
+      // bb leaves out the talker's skill: the chief's are installed, and that's said apart.
+      TestServer.bbSkipSkills("dictate-and-delegate-talker");
+      ChiefSkills.sync(context, true);
+      until(() -> ChiefSkills.state == ChiefSkills.State.INSTALLED && !ChiefSkills.talkerSkillProblem.isEmpty(), "installed, the talker's skill missing");
+      assertEquals("", ChiefSkills.problem);
+      JSONObject installed = TestServer.bbSkills().getJSONObject("installed");
+      java.util.Map<String, String> files = ChiefSkills.filled(context);
+      assertEquals(ChiefSkills.marker(files.get("dictate-and-delegate")), installed.getString("dictate-and-delegate"));
+      assertEquals("", installed.optString("dictate-and-delegate-talker"));
+      assertEquals("not told to use a skill that isn't there", "", prefs.getString(ChiefSkills.TALKER_TOLD, ""));
+      // bb takes it next time; then the talker can't be reached: also said apart.
+      TestServer.bbSkipSkills();
+      TestServer.bbFail("tell", "tool", "thr_faketalker");
+      ChiefSkills.sync(context, true);
+      until(() -> ChiefSkills.state == ChiefSkills.State.INSTALLED && ChiefSkills.talkerSkillProblem.isEmpty() && !ChiefSkills.talkerTellProblem.isEmpty(), "installed, the talker not told");
+      assertEquals("", ChiefSkills.problem);
+      assertTrue(ChiefSkills.talkerProblem(), ChiefSkills.talkerProblem().startsWith("Couldn't tell the talker to use its skill: "));
+      // Reachable again: told at the next sync, once.
+      ChiefSkills.sync(context, false);
+      until(() -> ChiefSkills.talkerTellProblem.isEmpty() && !prefs.getString(ChiefSkills.TALKER_TOLD, "").isEmpty(), "told");
+      long told = TestServer.bbSnippets().stream().filter(c -> c.contains("Use the dictate-and-delegate-talker skill")).count();
+      assertEquals(2, told); // The failed try and the one that went.
+    } finally {
+      ChiefSkills.talkerGraceMs = grace;
+    }
+  }
+
+  @Test
   public void connectingInstallsTheSkillsAndAnOlderChiefIsToldOnce() throws Exception {
     BbBridge bb = new BbBridge(context);
     bb.useCustom(TestServer.bbUrl(), "", LINKS);
@@ -619,8 +662,7 @@ public class BbFlowTest {
     java.util.Map<String, String> files = ChiefSkills.filled(context);
     assertEquals(ChiefSkills.marker(files.get("chief-of-staff")), installed.getString("chief-of-staff"));
     assertEquals(ChiefSkills.marker(files.get("dictate-and-delegate")), installed.getString("dictate-and-delegate"));
-    assertEquals(ChiefSkills.marker(files.get("dictate-and-delegate-talker")), installed.getString("dictate-and-delegate-talker"));
-    assertTrue(TestServer.bbSkills().getJSONObject("files").getString("dictate-and-delegate-talker").contains("the voice app on Alex's phone"));
+    assertEquals("no talker: no talker skill to wait for", "", installed.optString("dictate-and-delegate-talker"));
     assertTrue(TestServer.bbSkills().getJSONObject("files").getString("chief-of-staff").contains("You're Alex's chief of staff."));
     // The install thread was archived, and the older chief got the one line, once.
     List<String> snippets = TestServer.bbSnippets();
@@ -649,7 +691,6 @@ public class BbFlowTest {
         new JSONObject()
             .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
             .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate")))
-            .put("dictate-and-delegate-talker", ChiefSkills.marker(files.get("dictate-and-delegate-talker")))
             .put("talk-router", "0ld0ld0ld0ld"),
         false);
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
@@ -660,8 +701,7 @@ public class BbFlowTest {
     TestServer.bbSetSkills(
         new JSONObject()
             .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
-            .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate")))
-            .put("dictate-and-delegate-talker", ChiefSkills.marker(files.get("dictate-and-delegate-talker"))),
+            .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate"))),
         false);
     // An app update with current skills in bb: checked, nothing installed.
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
@@ -672,8 +712,7 @@ public class BbFlowTest {
     TestServer.bbSetSkills(
         new JSONObject()
             .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
-            .put("dictate-and-delegate", "0ld0ld0ld0ld")
-            .put("dictate-and-delegate-talker", ChiefSkills.marker(files.get("dictate-and-delegate-talker"))),
+            .put("dictate-and-delegate", "0ld0ld0ld0ld"),
         false);
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
     launch();

@@ -704,6 +704,9 @@ final class HandsFreeSession {
       for (Note n : outdated) if (n.claimedBy == 0) notNoted.add(n.text);
     }
     if (!notNoted.isEmpty()) note.append("\n\n").append(missed(notNoted));
+    synchronized (this) {
+      note.append(unsentEnd);
+    }
     return note.toString();
   }
 
@@ -723,33 +726,84 @@ final class HandsFreeSession {
   boolean sendLeftover(long until) {
     if (state != State.ENDED) return true;
     settled = true;
-    if (!leftoverRunning.compareAndSet(false, true)) return false; // Another thread is at it.
-    try {
-      for (int tries = 0; ; tries++) {
-        String text;
-        synchronized (turnAudio) {
-          text = turnPrefix.trim();
-          turnPrefix = "";
-        }
-        if (text.isEmpty()) return true;
-        log("words a message couldn't take before the end: sending them now" + (tries > 0 ? " (try " + (tries + 1) + ")" : ""));
-        outgoing.incrementAndGet();
-        Handoff h = handOff(true);
-        if (deliver(text + h.notes(), text, "end of the call", h, clock.getAsLong())) return true;
-        if (tries + 1 >= LEFTOVER_TRIES || clock.getAsLong() + leftoverRetryMs > until) {
-          log("words left at the call's end couldn't be sent: given up");
-          return false;
-        }
-        try {
-          Thread.sleep(leftoverRetryMs);
-        } catch (InterruptedException ex) {
-          return false;
-        }
+    while (true) {
+      if (!leftoverRunning.compareAndSet(false, true)) return false; // Another thread is at it.
+      boolean sent;
+      try {
+        sent = leftoverOnce(until);
+      } finally {
+        leftoverRunning.set(false);
       }
-    } finally {
-      leftoverRunning.set(false);
+      if (!sent) return false;
+      // Words a message that failed meanwhile left (it saw this running): they go too.
+      synchronized (turnAudio) {
+        if (turnPrefix.trim().isEmpty()) return true;
+      }
     }
   }
+
+  /**
+   * Words left at the end, tried LEFTOVER_TRIES times. Given up, they go in the end line; if only
+   * the talker got them, in the chief's end line. False when given up.
+   */
+  private boolean leftoverOnce(long until) {
+    for (int tries = 0; ; tries++) {
+      String text;
+      synchronized (turnAudio) {
+        text = turnPrefix.trim();
+        turnPrefix = "";
+      }
+      if (text.isEmpty()) return true;
+      log("words a message couldn't take before the end: sending them now" + (tries > 0 ? " (try " + (tries + 1) + ")" : ""));
+      outgoing.incrementAndGet();
+      Handoff h = handOff(true);
+      Delivery d = deliver(text + h.notes(), text, "end of the call", h, clock.getAsLong());
+      if (d == Delivery.CHIEF_MISSED) {
+        // It counts as sent (the talker has them): the chief gets them with its end line.
+        synchronized (this) {
+          chiefOnlyEnd.append("\n\n").append(notSent(text));
+        }
+        log("the chief missed your last words: they go with its end of the call");
+        return true;
+      }
+      if (d == Delivery.SENT) return true;
+      // Not sent: deliver put them back in your turn, for the next try.
+      if (tries + 1 >= LEFTOVER_TRIES || clock.getAsLong() + leftoverRetryMs > until) {
+        String left;
+        synchronized (turnAudio) {
+          left = turnPrefix.trim();
+          turnPrefix = "";
+        }
+        synchronized (this) {
+          if (!left.isEmpty()) unsentEnd.append("\n\n").append(notSent(left));
+        }
+        log("words left at the call's end couldn't be sent: they go with the end of the call");
+        return false;
+      }
+      try {
+        Thread.sleep(leftoverRetryMs);
+      } catch (InterruptedException ex) {
+        return false;
+      }
+    }
+  }
+
+  /** Words that never reached a thread, for the end line. */
+  static String notSent(String words) {
+    return "[my last words, not sent before the end: \"" + words.trim() + "\"]";
+  }
+
+  /** Last words for both threads' end line (sending failed), and for the chief's only (the talker got them). */
+  private final StringBuilder unsentEnd = new StringBuilder(), chiefOnlyEnd = new StringBuilder();
+
+  /** The chief's end line: endNote() and the last words only the talker got. */
+  String endNoteForChief() {
+    String both = endNote();
+    synchronized (this) {
+      return both + chiefOnlyEnd;
+    }
+  }
+
 
   /** Chief messages that couldn't be read, not yet noted in a message. */
   synchronized int unheard() {
@@ -2316,8 +2370,14 @@ final class HandsFreeSession {
     for (Note n : outdated) if (n.claimedBy == number) n.claimedBy = 0;
   }
 
-  /** True when it reached bb (the chief, or only the talker). */
-  private boolean deliver(String said, String text, String why, Handoff h, long queued) {
+  /** How a message went: to bb (both), to the talker only (the chief missed it), or not at all. */
+  enum Delivery {
+    SENT,
+    CHIEF_MISSED,
+    FAILED
+  }
+
+  private Delivery deliver(String said, String text, String why, Handoff h, long queued) {
     long start = clock.getAsLong();
     int number = h.number();
     String request = h.request();
@@ -2378,7 +2438,7 @@ final class HandsFreeSession {
         case "end phrase", "end of the call" -> reason("Sent ✓ before the call ended");
         default -> reason("Sent ✓ by the Send button");
       }
-      return true;
+      return chiefMissed ? Delivery.CHIEF_MISSED : Delivery.SENT;
     } catch (Exception ex) {
       // Its notes go with the next message (or the call's end). Its request stays ours: nobody
       // got it, so no reply to it comes.
@@ -2403,7 +2463,7 @@ final class HandsFreeSession {
         log("a message failed after the call's end: its words are sent now");
         new Thread(() -> sendLeftover(clock.getAsLong() + 20_000), "leftover").start();
       }
-      return false;
+      return Delivery.FAILED;
     } finally {
       outgoing.decrementAndGet();
       listener.changed();

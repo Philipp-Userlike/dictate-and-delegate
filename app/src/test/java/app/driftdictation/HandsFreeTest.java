@@ -671,10 +671,28 @@ public class HandsFreeTest {
       assertFalse(f.session.sendLeftover(f.now.get() + 30_000));
       String log = String.join("\n", f.log);
       assertEquals(log, HandsFreeSession.LEFTOVER_TRIES, count(log, "words a message couldn't take before the end: sending them now"));
-      assertTrue(log, log.contains("words left at the call's end couldn't be sent: given up"));
+      assertTrue(log, log.contains("words left at the call's end couldn't be sent: they go with the end of the call"));
+      // In the end line for both, so they aren't lost.
+      assertEquals("\n\n[my last words, not sent before the end: \"Is the table booked?\"]", f.session.endNote());
     } finally {
       HandsFreeSession.leftoverRetryMs = retry;
     }
+  }
+
+  @Test
+  public void lastWordsOnlyTheTalkerGotGoWithTheChiefsEndLineOnly() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.");
+    f.quiet(1000);
+    f.bbDown = true;
+    f.talk();
+    for (int i = 0; i < 100 && !f.session.error().startsWith("Not sent"); i++) Thread.sleep(20);
+    f.session.end(); // Kept words go as last words, and fail.
+    assertTrue(f.session.awaitDelivered(5000));
+    f.bbDown = false;
+    f.missedBy = "chief"; // Now only the talker gets them.
+    assertTrue(f.session.sendLeftover(f.now.get() + 30_000));
+    assertEquals("the talker's end line: nothing doubled", "", f.session.endNote());
+    assertEquals("\n\n[my last words, not sent before the end: \"Is the table booked?\"]", f.session.endNoteForChief());
   }
 
   @Test

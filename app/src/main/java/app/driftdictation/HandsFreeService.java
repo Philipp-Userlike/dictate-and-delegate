@@ -609,7 +609,7 @@ public final class HandsFreeService extends Service {
     Thread t =
         new Thread(
             () -> {
-              String said = line;
+              String said = line, chiefSaid = null;
               if (after != null) {
                 // Within END_BUDGET_MS: the messages on their way, the words a failed one left
                 // (tried a few times), then the end itself.
@@ -617,11 +617,12 @@ public final class HandsFreeService extends Service {
                 if (!after.awaitDelivered(SETTLE_MS)) event("a message was still on its way when the call ended");
                 after.sendLeftover(after.clock.getAsLong() + LEFTOVER_MS - (android.os.SystemClock.elapsedRealtime() - start));
                 said = line + after.endNote();
+                chiefSaid = line + after.endNoteForChief(); // With last words only the talker got.
               }
               // The call start names the talker for the chief; the talker learns it's the talker
               // (told to use its skill first, if it wasn't told yet).
               boolean starting = said.equals(HandsFree.CALL_STARTED);
-              String chiefLine = starting ? HandsFree.callStarted(talker) : said;
+              String chiefLine = starting ? HandsFree.callStarted(talker) : chiefSaid != null ? chiefSaid : said;
               String talkerLine = starting ? HandsFree.TALKER_CALL_STARTED : said;
               if (starting && !talker.isEmpty()) ChiefSkills.safelyTellTalker(this);
               java.util.Map<String, String> to = bothTo(chief, talker, chiefLine, talkerLine);
@@ -849,7 +850,10 @@ public final class HandsFreeService extends Service {
   /** The call ended (finish), until the next one starts. */
   private volatile boolean callEnded;
 
-  private void finish() {
+  private synchronized void finish() {
+    // Once per call: a second End (or an end the session reported meanwhile) mustn't stop the
+    // service at once and cut the end's messages short.
+    if (callEnded) return;
     callEnded = true;
     running = false;
     HandsFreeSession s = session;

@@ -1088,6 +1088,7 @@ public class HandsFreeFlowTest {
   @Test
   public void aTalkerIsToldOnceToUseItsSkillAndLearnsItIsTheTalkerAtEachCallStart() throws Exception {
     prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).remove(ChiefSkills.TALKER_TOLD).commit();
+    TestServer.skillsCurrent(context); // With a talker, its skill is one of them.
     for (int call = 1; call <= 2; call++) {
       int n = call;
       HandsFreeService.send(context, HandsFreeService.START);

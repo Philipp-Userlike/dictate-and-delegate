@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">deze app accepteert alleen plakken, dus het staat ook op het klembord</string>
     <string name="t_068966f6" formatted="false">Verfijnen: Anthropic-tegoed ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">Heb je het ergens over? Voeg het toe, zoals een offerte waarop je reageert.</string>
+    <string name="t_083e8bd0" formatted="false">bb heeft de vaardigheid van de talker niet geïnstalleerd. Het wordt de volgende keer opnieuw geprobeerd.</string>
     <string name="t_08db7524" formatted="false">Vanaf $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Weergeven over andere apps toestaan</string>
     <string name="t_092d8ce0" formatted="false">goedkoopste</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">Je sjablonen blijven op dit apparaat. Alleen het sjabloon dat je aanvraagt wordt samen met je dictaat naar de AI gestuurd.</string>
     <string name="t_0d4e1237" formatted="false">Kon niet controleren of je klaar bent (%1$s): zeg %2$s of tik op Verzenden</string>
     <string name="t_0dc541d5" formatted="false">Herstellen naar standaard</string>
+    <string name="t_0dd1e692" formatted="false">Kon de talker niet instrueren om zijn vaardigheid te gebruiken: %1$s</string>
     <string name="t_0de44d68" formatted="false">1 bericht</string>
     <string name="t_0e1c0935" formatted="false">bb reageert, maar biedt de run-tool niet aan. Werk bb bij en controleer of de MCP-plug-in aanstaat.</string>
     <string name="t_0ea7c5dd" formatted="false">Lezen</string>

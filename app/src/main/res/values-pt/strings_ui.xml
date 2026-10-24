@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">esta app só aceita colar, por isso também está na área de transferência</string>
     <string name="t_068966f6" formatted="false">Refinar: créditos Anthropic ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">A falar sobre algo? Adiciona-o, como uma proposta a que respondes.</string>
+    <string name="t_083e8bd0" formatted="false">O bb não instalou a habilidade do interlocutor. Vamos tentar novamente da próxima vez.</string>
     <string name="t_08db7524" formatted="false">Desde $%1$s / min</string>
     <string name="t_08e77a0c" formatted="false">Permitir sobreposição a outras apps</string>
     <string name="t_092d8ce0" formatted="false">mais económico</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">Os teus modelos ficam neste dispositivo. Apenas o que pedires é enviado para a IA, juntamente com o teu ditado.</string>
     <string name="t_0d4e1237" formatted="false">Não foi possível verificar se terminaste (%1$s): diz %2$s ou prime Enviar</string>
     <string name="t_0dc541d5" formatted="false">Repor predefinição</string>
+    <string name="t_0dd1e692" formatted="false">Não foi possível avisar o interlocutor para usar a habilidade: %1$s</string>
     <string name="t_0de44d68" formatted="false">1 mensagem</string>
     <string name="t_0e1c0935" formatted="false">O bb responde, mas não disponibiliza a ferramenta run. Atualiza o bb e verifica se o plugin MCP está ativo.</string>
     <string name="t_0ea7c5dd" formatted="false">Lendo</string>

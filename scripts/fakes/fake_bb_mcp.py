@@ -35,7 +35,8 @@ Test control (not part of bb):
                       {"token": ""} turns that off; {"tellDelayMs": 1500} makes each tell take that
                       long (as over a slow connection), 0 turns it off
   POST /test/skills   {"installed": {"dictate-and-delegate": "abc", ...}} sets what bb has ("" missing,
-                      "old" unmarked); {"stall": true} makes the install thread never install
+                      "old" unmarked); {"stall": true} makes the install thread never install;
+                      {"skip": ["dictate-and-delegate-talker"]} makes it leave out those skills
   GET  /test/uploads  every upload: {"name", "mimeType", "size", "sha256", "via": "rest"|"mcp", "path"}
   GET  /test/skills   what's installed: {"installed": {...}, "files": {name: content}}
   POST /test/reset    empties failures, config, installed skills and the request log
@@ -68,7 +69,7 @@ lock = threading.Lock()
 failures = []
 config = {"token": "", "uploadStatus": 200, "tellDelayMs": 0}
 uploads = []
-skills = {"installed": {}, "files": {}, "stall": False}
+skills = {"installed": {}, "files": {}, "stall": False, "skip": []}
 requests = []
 
 
@@ -156,7 +157,7 @@ class Handler(BaseHTTPRequestHandler):
                 config["uploadStatus"] = 200
                 config["tellDelayMs"] = 0
                 uploads.clear()
-                skills.update({"installed": {}, "files": {}, "stall": False})
+                skills.update({"installed": {}, "files": {}, "stall": False, "skip": []})
             return self.send_json(200, {})
         if self.path == "/test/fail":
             with lock:
@@ -168,6 +169,8 @@ class Handler(BaseHTTPRequestHandler):
                     skills["installed"] = dict(body["installed"])
                 if "stall" in body:
                     skills["stall"] = bool(body["stall"])
+                if "skip" in body:
+                    skills["skip"] = list(body["skip"])
             return self.send_json(200, {})
         if self.path == "/test/config":
             with lock:
@@ -275,6 +278,8 @@ class Handler(BaseHTTPRequestHandler):
                     skills["files"].pop("talk-router", None)
                     for m in re.finditer(r"===== ~/\.bb/skills/([a-z-]+)/SKILL\.md \(begins on the next line\) =====\n(.*?)===== end of \1 =====",
                                          prompt, re.S):
+                        if m.group(1) in skills["skip"]:
+                            continue
                         skills["files"][m.group(1)] = m.group(2)
                         marker = re.search(r"<!-- [a-z-]+-skill: ([0-9a-f]+) -->", m.group(2))
                         skills["installed"][m.group(1)] = marker.group(1) if marker else "old"

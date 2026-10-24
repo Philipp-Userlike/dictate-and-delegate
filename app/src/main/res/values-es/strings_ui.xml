@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">esta app solo admite pegar, así que también está en el portapapeles</string>
     <string name="t_068966f6" formatted="false">Mejorar: créditos de Anthropic ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">¿Hablas de algo? Añádelo, como una oferta a la que respondes.</string>
+    <string name="t_083e8bd0" formatted="false">bb no instaló la habilidad del interlocutor. Se volverá a intentar la próxima vez.</string>
     <string name="t_08db7524" formatted="false">Desde %1$s $/min</string>
     <string name="t_08e77a0c" formatted="false">Permitir mostrar sobre otras apps</string>
     <string name="t_092d8ce0" formatted="false">más económica</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">Tus plantillas se quedan en este dispositivo. Solo la que pidas se enviará a la IA junto con tu dictado.</string>
     <string name="t_0d4e1237" formatted="false">No se pudo consultar si has terminado (%1$s): di %2$s o pulsa Enviar</string>
     <string name="t_0dc541d5" formatted="false">Restablecer valores predeterminados</string>
+    <string name="t_0dd1e692" formatted="false">No se pudo indicar al interlocutor que use su habilidad: %1$s</string>
     <string name="t_0de44d68" formatted="false">1 mensaje</string>
     <string name="t_0e1c0935" formatted="false">bb responde, pero no ofrece la herramienta de ejecución. Actualiza bb y comprueba que el plugin MCP esté activo.</string>
     <string name="t_0ea7c5dd" formatted="false">Leyendo</string>

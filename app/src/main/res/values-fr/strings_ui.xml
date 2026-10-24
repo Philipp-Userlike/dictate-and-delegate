@@ -23,6 +23,7 @@
     <string name="t_067329ed" formatted="false">cette appli n\'accepte que le collage, c\'est donc aussi dans le presse-papiers</string>
     <string name="t_068966f6" formatted="false">Affiner : crédits Anthropic ≈%1$s</string>
     <string name="t_07ee7593" formatted="false">Tu parles de quelque chose ? Ajoute-le, comme une offre à laquelle tu réponds.</string>
+    <string name="t_083e8bd0" formatted="false">bb n\'a pas installé la compétence du talker. Nouvel essai la prochaine fois.</string>
     <string name="t_08db7524" formatted="false">À partir de %1$s $ / min</string>
     <string name="t_08e77a0c" formatted="false">Autoriser la superposition</string>
     <string name="t_092d8ce0" formatted="false">le moins cher</string>
@@ -44,6 +45,7 @@
     <string name="t_0d35d152" formatted="false">Tes modèles restent sur cet appareil. Seul celui que tu demandes est envoyé à l\'IA, avec ta dictée.</string>
     <string name="t_0d4e1237" formatted="false">Impossible de vérifier si tu as fini (%1$s) : dis %2$s ou appuie sur Envoyer</string>
     <string name="t_0dc541d5" formatted="false">Rétablir par défaut</string>
+    <string name="t_0dd1e692" formatted="false">Impossible de demander au talker d\'utiliser sa compétence : %1$s</string>
     <string name="t_0de44d68" formatted="false">1 message</string>
     <string name="t_0e1c0935" formatted="false">bb répond, mais ne propose pas l\'outil d\'exécution. Mets à jour bb et vérifie que le plugin MCP est activé.</string>
     <string name="t_0ea7c5dd" formatted="false">Lecture</string>
