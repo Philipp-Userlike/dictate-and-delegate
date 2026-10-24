@@ -75,6 +75,13 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
   private String live = "";
   /** Finals asked for (take): counted up when one comes. */
   private int finalsSeen;
+  /**
+   * Stretches dropped (taken without their final, or discarded): their live text and late final
+   * are ignored when they come, up to and including this stretch (finalsSeen counts them).
+   */
+  private int dropThrough = -1;
+  /** Closed for good (the call ended): a connection opening meanwhile is closed at once. */
+  private boolean closed;
   private final java.util.ArrayDeque<byte[]> ring = new java.util.ArrayDeque<>();
   private final java.io.ByteArrayOutputStream chunk = new java.io.ByteArrayOutputStream();
   private volatile long lastSpeech = Long.MIN_VALUE / 2;
@@ -111,6 +118,7 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
   final void live(String text) {
     String t;
     synchronized (this) {
+      if (finalsSeen <= dropThrough) return; // A dropped stretch's: not this turn's.
       live = text == null ? "" : text.trim();
       t = textLocked();
     }
@@ -122,13 +130,28 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
     String t;
     synchronized (this) {
       String f = text == null ? "" : text.trim();
-      if (!f.isEmpty()) finals.add(f);
-      live = "";
+      boolean dropped = finalsSeen <= dropThrough; // Late, for a stretch already taken or dropped.
+      if (!f.isEmpty() && !dropped) finals.add(f);
+      if (!dropped) live = "";
       finalsSeen++;
       notifyAll();
       t = textLocked();
     }
     changed.accept(t);
+  }
+
+  /** The stretch going on is dropped: what still comes of it is ignored (under the lock). */
+  private void drop() {
+    dropThrough = finalsSeen;
+    dropped();
+  }
+
+  /** Told when a stretch is dropped (under the lock). */
+  void dropped() {}
+
+  /** A newer stretch came though the dropped one's final didn't: nothing is ignored any more. */
+  final synchronized void newerStretch() {
+    if (finalsSeen <= dropThrough) dropThrough = finalsSeen - 1;
   }
 
   private String textLocked() {
@@ -187,6 +210,7 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
 
   /** On the sender thread: the chunk goes out, or into the ring while it's closed. */
   private void deliver(byte[] c) {
+    if (closedForGood()) return;
     WebSocket ws = socket;
     long now = clock.getAsLong();
     if (ws == null || !ws.open()) {
@@ -224,8 +248,12 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
   }
 
   /** On the sender thread: opens the connection, then sends what the ring kept. */
+  private synchronized boolean closedForGood() {
+    return closed;
+  }
+
   private void connect() {
-    if (failed || connecting || socket != null && socket.open()) return;
+    if (failed || connecting || closedForGood() || socket != null && socket.open()) return;
     connecting = true;
     long start = clock.getAsLong();
     try {
@@ -255,7 +283,13 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
                 }
               },
               10_000);
-      socket = ws;
+      synchronized (this) {
+        if (closed) { // The call ended while it connected.
+          ws.close();
+          return;
+        }
+        socket = ws;
+      }
       openedMs = clock.getAsLong() - start;
       openSince = clock.getAsLong();
       events.accept(String.format(Locale.ROOT, "streaming transcription (%s) open in %d ms", choice.model(), openedMs));
@@ -280,10 +314,19 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
     // Nothing live: the last final is the end of it (forcing would bring nothing).
     if (pending && ws != null && ws.open()) {
       try {
-        sender.submit(() -> {
-              force(ws);
-              return null;
-            }).get(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        java.util.concurrent.Future<Object> asking =
+            sender.submit(
+                () -> {
+                  force(ws);
+                  return null;
+                });
+        try {
+          asking.get(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (java.util.concurrent.TimeoutException stuck) {
+          // Couldn't even ask (the connection is stuck): not used again this call.
+          asking.cancel(true);
+          fail("couldn't ask for the final text in " + waitMs + " ms");
+        }
       } catch (java.util.concurrent.ExecutionException ex) {
         throw ex.getCause() instanceof Exception e ? e : ex;
       }
@@ -297,8 +340,12 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
       }
     }
     if (failed) throw new java.io.IOException(failure);
+    boolean forced = pending && ws != null && ws.open();
     synchronized (this) {
-      if (finalsSeen == asked && pending) events.accept("streaming transcription: no final within " + waitMs + " ms; its live text is taken");
+      if (finalsSeen == asked && forced) {
+        events.accept("streaming transcription: no final within " + waitMs + " ms; its live text is taken");
+        drop(); // Its final, when it comes, isn't the next turn's.
+      }
       if (!live.isEmpty()) finals.add(live);
       live = "";
       String t = textLocked();
@@ -309,11 +356,12 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
 
   @Override
   public void discard() {
+    WebSocket ws = socket;
     synchronized (this) {
+      if (!live.isEmpty() && ws != null && ws.open()) drop(); // Its final, when it comes (asked for below), too.
       turnStart = finals.size();
       live = "";
     }
-    WebSocket ws = socket;
     if (ws != null && ws.open())
       try {
         sender.execute(
@@ -346,6 +394,9 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
 
   @Override
   public void close() {
+    synchronized (this) {
+      closed = true;
+    }
     events.accept("streaming transcription: " + usage());
     sender.shutdownNow();
     WebSocket ws = socket;
@@ -360,8 +411,15 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
    * end_of_turn true when the turn's done (ForceEndpoint ends it now). Universal Streaming English
    * sends each turn's end twice, the second formatted: that one counts.
    */
-  static final class AssemblyAi extends StreamingSpeech {
+  static class AssemblyAi extends StreamingSpeech {
     private final List<String> keyterms;
+    /** The last turn that came final, the turn live now, and the one dropped (-1: none). */
+    private int lastTurn = -1, liveTurn = -1, droppedTurn = -1;
+
+    @Override
+    void dropped() {
+      droppedTurn = liveTurn;
+    }
 
     AssemblyAi(Choice c, String key, List<String> keyterms) {
       super(c, key);
@@ -399,8 +457,20 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
       JSONObject m = new JSONObject(text);
       String type = m.optString("type");
       if (type.equals("Turn")) {
+        int order = m.optInt("turn_order", -1);
+        if (droppedTurn >= 0 && order > droppedTurn) { // The dropped turn's final never came.
+          droppedTurn = -1;
+          newerStretch();
+        }
+        if (order >= 0) liveTurn = order;
         boolean formatted = !choice.model().equals(AAI_EN.model()) || m.optBoolean("turn_is_formatted");
-        if (m.optBoolean("end_of_turn") && formatted) finished(m.optString("transcript"));
+        if (m.optBoolean("end_of_turn") && formatted) {
+          // One final per turn (Universal-3.6 Pro sent one each in Philipp's runs; a repeat is dropped).
+          int turn = m.optInt("turn_order", -1);
+          if (turn >= 0 && turn <= lastTurn) return;
+          lastTurn = Math.max(lastTurn, turn);
+          finished(m.optString("transcript"));
+        }
         else {
           String t = m.optString("transcript");
           if (t.isEmpty()) {

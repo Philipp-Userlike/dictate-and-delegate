@@ -244,6 +244,19 @@ final class HandsFree {
     /** The short-burst rule applies (not over a reply: a clatter mustn't stop it). */
     volatile boolean bursts = true;
 
+    /**
+     * Milliseconds since the last frame that counted as voice: within a stretch its silence so
+     * far, else the quiet since the last one.
+     */
+    synchronized long silentMs() {
+      return current == null ? quietMs : (long) silentFrames * FRAME_MS;
+    }
+
+    /** The audio of the stretch going on, from its start (with the little before it); empty if none. */
+    synchronized byte[] stretchAudio() {
+      return current == null ? new byte[0] : current.toByteArray();
+    }
+
     /** Milliseconds of voice within the window: how much it took to count. */
     synchronized int voicedMs() {
       return voiced.size() * FRAME_MS;

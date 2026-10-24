@@ -52,6 +52,7 @@ final class WebSocket implements AutoCloseable {
     Socket s = new Socket();
     try {
       s.connect(new InetSocketAddress(host, port), timeoutMs);
+      s.setSoTimeout(timeoutMs); // Also for the TLS handshake: a stalled one gives up.
       if (tls) {
         javax.net.ssl.SSLSocket ssl = (javax.net.ssl.SSLSocket) ((javax.net.ssl.SSLSocketFactory) javax.net.ssl.SSLSocketFactory.getDefault()).createSocket(s, host, port, true);
         // The certificate must be for this host: checked in the handshake, and on Android once more
@@ -145,11 +146,19 @@ final class WebSocket implements AutoCloseable {
     frame(0x2, java.util.Arrays.copyOfRange(data, off, off + n));
   }
 
+  /** One frame at a time goes out. */
+  private final java.util.concurrent.locks.ReentrantLock writing = new java.util.concurrent.locks.ReentrantLock();
+
   /** A frame from the client: always masked. */
-  private synchronized void frame(int opcode, byte[] payload) throws IOException {
-    if (ended) throw new IOException("closed");
-    out.write(encode(opcode, payload, randomMask()));
-    out.flush();
+  private void frame(int opcode, byte[] payload) throws IOException {
+    writing.lock();
+    try {
+      if (ended) throw new IOException("closed");
+      out.write(encode(opcode, payload, randomMask()));
+      out.flush();
+    } finally {
+      writing.unlock();
+    }
   }
 
   private byte[] randomMask() {
@@ -255,11 +264,19 @@ final class WebSocket implements AutoCloseable {
   /** Closes it (a close frame, then the socket); the listener hears it ended. */
   @Override
   public void close() {
-    try {
-      frame(0x8, new byte[] {0x03, (byte) 0xe8}); // 1000: normal.
-    } catch (IOException ignored) {
-      /* Gone already. */
-    }
+    // A close frame if nothing else is being written; never waiting behind a write that hangs
+    // (a dead network): the socket is closed regardless.
+    if (writing.tryLock())
+      try {
+        if (!ended) {
+          out.write(encode(0x8, new byte[] {0x03, (byte) 0xe8}, randomMask())); // 1000: normal.
+          out.flush();
+        }
+      } catch (IOException ignored) {
+        /* Gone already. */
+      } finally {
+        writing.unlock();
+      }
     synchronized (this) {
       ended = true;
     }

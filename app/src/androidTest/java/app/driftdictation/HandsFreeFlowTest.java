@@ -550,7 +550,8 @@ public class HandsFreeFlowTest {
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
     HandsFreeSession s = HandsFreeService.session();
-    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000)); // Speech, no pause after it.
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000)); // Speech,
+    for (int i = 0; i < 25; i++) s.frame(HandsFreeTestFrames.frame(50)); // then half a second of quiet: not yet a pause.
     until(() -> lastTell().contains("[hands-free]"), "the message sent");
     String tell = lastTell(), log = HandsFreeService.log(context);
     assertTrue(tell, tell.contains("Book a table for Friday."));

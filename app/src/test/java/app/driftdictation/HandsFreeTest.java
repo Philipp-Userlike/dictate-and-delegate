@@ -1158,18 +1158,21 @@ public class HandsFreeTest {
     assertEquals("Book the table for Friday", f.session.pending());
     live.finalText = "Book the table for Friday. Over.";
     live.say("Book the table for Friday over");
+    Thread.sleep(100);
+    assertEquals("not before you're quiet a moment after it", 0, f.sent.size());
+    f.quiet(400);
     until(() -> f.sent.size() == 1);
     assertEquals("Book the table for Friday.", f.sent.get(0));
     assertEquals("nothing written down from audio", 0, f.transcriptions.get());
     assertEquals("Jev not asked", List.of(), asked);
     String log = String.join("\n", f.log);
     assertTrue(log, log.contains("live text ends with the send phrase: \"Book the table for Friday over\""));
-    assertTrue(log, log.contains("send phrase: final text in "));
+    assertTrue(log, log.contains("send phrase: quiet "));
     assertTrue(log, log.contains("ms after the phrase was heard)"));
     // The stretch it was said in ends at the pause: it went with the message, nothing more is checked.
     f.quiet(1200);
     Thread.sleep(150);
-    assertTrue(String.join("\n", f.log).contains("the rest of the stretch with the send phrase"));
+    assertTrue(String.join("\n", f.log).contains("the rest of the stretch with the phrase"));
     assertEquals(1, f.sent.size());
     assertFalse(reasons(f), reasons(f).contains("heard no words"));
     assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
@@ -1182,12 +1185,17 @@ public class HandsFreeTest {
     f.quiet(1000);
     f.speak();
     live.say("Remind me to call Jana. That's all.");
+    f.quiet(400);
     until(() -> f.sent.size() == 1);
     assertEquals("Remind me to call Jana.", f.sent.get(0));
     f.quiet(1200);
     Thread.sleep(150);
     f.speak();
     live.say("Thanks, that was everything. End the call.");
+    f.quiet(400);
+    Thread.sleep(100);
+    assertEquals("hanging up waits longer", HandsFreeSession.State.LISTENING, f.session.state());
+    f.quiet(400);
     until(() -> f.session.state() == HandsFreeSession.State.ENDED);
     assertEquals("Thanks, that was everything.", f.sent.get(1));
   }
@@ -1202,11 +1210,110 @@ public class HandsFreeTest {
     // The live text ended with "over" for a moment; the final text goes on.
     live.finalText = "The game is over and then we left";
     live.say("The game is over");
+    f.quiet(400);
     until(() -> String.join("\n", f.log).contains("doesn't end with the phrase"));
     assertEquals(0, f.sent.size());
     live.say("and the train was late. Over.");
+    f.quiet(400);
     until(() -> f.sent.size() == 1);
     assertEquals("The game is over and then we left and the train was late.", f.sent.get(0));
+  }
+
+  @Test
+  public void endTheCallWithoutAPauseAfterItIsAHesitationNotAGoodbye() throws Exception {
+    // "Should we end the call … tomorrow": a hesitation after "call" doesn't hang up.
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    f.speak();
+    live.say("Should we end the call");
+    f.quiet(300); // A hesitation, shorter than hanging up waits for.
+    f.speak();
+    live.say("Should we end the call tomorrow");
+    f.quiet(800);
+    Thread.sleep(200);
+    String log = String.join("\n", f.log);
+    assertEquals(log, HandsFreeSession.State.LISTENING, f.session.state());
+    assertTrue(log, log.contains("you went on after the phrase: not an ending"));
+    assertEquals(log, 0, f.sent.size());
+  }
+
+  @Test
+  public void jevConfirmsAGoodbyeBeforeTheCallEnds() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    List<String> asked = new CopyOnWriteArrayList<>();
+    f.session.judge = said -> {
+      asked.add(said);
+      return said.contains("Thanks") ? verdict("end", 0.9, 0.95) : verdict("request", 0.2, 0.1);
+    };
+    f.quiet(1000);
+    f.speak();
+    live.say("Ask Jana how to end the call"); // Then quiet: but it's not a goodbye.
+    f.quiet(800);
+    until(() -> String.join("\n", f.log).contains("Jev: not a goodbye"));
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    f.speak();
+    live.say("and tell her. Thanks, end the call.");
+    f.quiet(800);
+    until(() -> f.session.state() == HandsFreeSession.State.ENDED);
+    assertEquals("Ask Jana how to end the call and tell her. Thanks", f.sent.get(0));
+  }
+
+  @Test
+  public void audioWithoutLiveTextIsWrittenDownNotDropped() throws Exception {
+    // Send pressed before the first live words came (or a short turn they never came for).
+    Fake f = new Fake("Book the table.");
+    new FakeLive(f);
+    f.quiet(1000);
+    f.talk();
+    until(() -> f.session.pending().equals("Book the table."));
+    assertTrue(String.join("\n", f.log).contains("no live text for 1."));
+    f.session.sendNow();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the table.", f.sent.get(0));
+  }
+
+  @Test
+  public void wordsTakenForAPhraseMidSentenceAreNotWrittenDownAgainAfterAFailure() throws Exception {
+    Fake f = new Fake("and the train was late. Over.");
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    f.speak();
+    live.finalText = "The game is over and then we left";
+    live.say("The game is over");
+    f.quiet(400);
+    until(() -> String.join("\n", f.log).contains("doesn't end with the phrase"));
+    f.quiet(1200); // That stretch ends: its words are in the turn already.
+    live.fail("connection lost");
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("The game is over and then we left and the train was late.", f.sent.get(0));
+    assertEquals("only the new part written down", 1, f.transcriptions.get());
+  }
+
+  @Test
+  public void aClickAfterASendPhraseDoesntCostTheNextStretch() throws Exception {
+    Fake f = new Fake("Book the table.", "Second.");
+    FakeLive live = new FakeLive(f);
+    f.session.judge = said -> verdict("more", 0.1, 0);
+    f.quiet(1000);
+    f.talk(); // No live words came: written down from its audio, not done yet.
+    until(() -> f.session.pending().equals("Book the table."));
+    // A click going on (too short to count) as the live words "… Over." come late and are acted on.
+    for (int i = 0; i < 3; i++) f.session.frame(frame(7000));
+    live.say("Book the table. Over.");
+    f.quiet(400);
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the table.", f.sent.get(0));
+    f.quiet(1200); // The click ends as noise: the next stretch is yours again.
+    live.fail("connection lost");
+    f.talk();
+    f.now.addAndGet(HandsFreeSession.REPRESS_MS + 1);
+    f.session.sendNow();
+    for (int i = 0; i < 100 && f.sent.size() < 2; i++) Thread.sleep(20);
+    assertEquals(String.join("\n", f.log), 2, f.sent.size());
+    assertEquals("Second.", f.sent.get(1));
   }
 
   @Test
@@ -1283,10 +1390,16 @@ public class HandsFreeTest {
     int before = live.loud.get();
     for (int i = 0; i < 100; i++) f.session.frame(frame(i % 7 == 0 ? 700 : 300)); // Its leftover echo.
     assertEquals("its echo isn't sent", before, live.loud.get());
-    framesToStop(f, 8000, 40); // You, over it.
+    // You, over it, with little gaps: it takes a while to count as you; all of it goes to live
+    // transcription once it does, from the start (not only the last half second).
+    int loud = 0;
+    for (int i = 0; i < 80 && f.session.state() == HandsFreeSession.State.READING; i++) {
+      boolean voiced = i % 4 < 2;
+      if (voiced) loud++;
+      f.session.frame(frame(voiced ? 8000 : 50));
+    }
     assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
-    // The half second before the stop goes to it (you, and what's left of the echo), then you.
-    assertTrue(String.valueOf(live.loud.get() - before), live.loud.get() - before >= 15);
+    assertTrue(loud + " loud frames, " + (live.loud.get() - before) + " sent", live.loud.get() - before >= loud);
   }
 
   // ------------------------------------------------------------------ Jev: is the turn done?

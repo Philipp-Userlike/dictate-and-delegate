@@ -851,8 +851,9 @@ final class Voice {
     }
 
     private void write(byte[] b, int n) {
-      t.write(b, 0, n, AudioTrack.WRITE_BLOCKING);
-      written += n / 2;
+      int w = t.write(b, 0, n, AudioTrack.WRITE_BLOCKING);
+      if (w < 0) throw new IllegalStateException("the track refused audio (" + w + ")"); // Its reply ends unplayed.
+      written += w / 2;
     }
 
     private void run() {

@@ -137,6 +137,183 @@ public class StreamingSpeechTest {
   }
 
   @Test
+  public void aLateFinalOfATakenOrDroppedStretchStaysOutOfTheNextTurn() throws Exception {
+    String was = StreamingSpeech.elevenLabsUrl;
+    try (Server server = new Server(0, true)) {
+      StreamingSpeech.elevenLabsUrl = server.url();
+      lateFinals();
+    } finally {
+      StreamingSpeech.elevenLabsUrl = was;
+    }
+  }
+
+  private void lateFinals() throws Exception {
+    StreamingSpeech s = StreamingSpeech.create(StreamingSpeech.ELEVEN, "k", List.of());
+    s.speech();
+    for (int i = 0; i < 100 && s.openedMs < 0; i++) Thread.sleep(20);
+    s.message("{\"message_type\":\"partial_transcript\",\"text\":\"send the report over\"}");
+    assertEquals("send the report over", s.take(100)); // No final in time: its live text is taken.
+    s.message("{\"message_type\":\"partial_transcript\",\"text\":\"send the report over\"}");
+    s.message("{\"message_type\":\"committed_transcript\",\"text\":\"Send the report. Over.\"}");
+    assertEquals("its final, late, isn't the next turn's", "", s.text());
+    s.message("{\"message_type\":\"partial_transcript\",\"text\":\"Mm\"}");
+    s.discard();
+    s.message("{\"message_type\":\"committed_transcript\",\"text\":\"Mm.\"}");
+    assertEquals("", s.text());
+    s.message("{\"message_type\":\"partial_transcript\",\"text\":\"Next\"}");
+    assertEquals("Next", s.text());
+    s.close();
+    // AssemblyAI: a turn that came final twice counts once.
+    StreamingSpeech a = StreamingSpeech.create(StreamingSpeech.AAI_PRO, "k", List.of());
+    a.message("{\"type\":\"Turn\",\"turn_order\":0,\"end_of_turn\":true,\"transcript\":\"Book it.\"}");
+    a.message("{\"type\":\"Turn\",\"turn_order\":0,\"end_of_turn\":true,\"transcript\":\"Book it.\"}");
+    assertEquals("Book it.", a.text());
+  }
+
+  /** A server that answers the upgrade (after delayMs), then reads what comes and reports when it ends. */
+  static final class Server implements AutoCloseable {
+    final ServerSocket socket = new ServerSocket(0);
+    final java.util.concurrent.CountDownLatch ended = new java.util.concurrent.CountDownLatch(1);
+
+    Server(long delayMs, boolean read) throws Exception {
+      new Thread(
+              () -> {
+                try (Socket c = socket.accept()) {
+                  InputStream in = c.getInputStream();
+                  StringBuilder head = new StringBuilder();
+                  while (!head.toString().endsWith("\r\n\r\n")) head.append((char) in.read());
+                  Thread.sleep(delayMs);
+                  String key = head.toString().replaceAll("(?s).*Sec-WebSocket-Key: ([^\r]+).*", "$1");
+                  c.getOutputStream().write(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + WebSocket.expectedAccept(key) + "\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
+                  if (!read) {
+                    Thread.sleep(10_000);
+                    return;
+                  }
+                  byte[] b = new byte[4096];
+                  while (true) {
+                    int n = in.read(b);
+                    if (n < 0) break;
+                    if (n >= 1 && (b[0] & 0x0f) == 0x8) break; // A close frame.
+                  }
+                  ended.countDown();
+                } catch (Exception ex) {
+                  ended.countDown();
+                }
+              })
+          .start();
+    }
+
+    String url() {
+      return "ws://127.0.0.1:" + socket.getLocalPort() + "/v3/ws";
+    }
+
+    @Override
+    public void close() throws Exception {
+      socket.close();
+    }
+  }
+
+  @Test
+  public void closedWhileItConnectsTheNewConnectionIsClosedAtOnce() throws Exception {
+    String was = StreamingSpeech.assemblyAiUrl;
+    try (Server server = new Server(400, true)) {
+      StreamingSpeech.assemblyAiUrl = server.url().replace("/v3/ws", "/v3/ws");
+      StreamingSpeech s = StreamingSpeech.create(StreamingSpeech.AAI_PRO, "k", List.of());
+      s.speech(); // Connecting (the call starts).
+      Thread.sleep(100);
+      s.close(); // The call ends before it's open.
+      assertTrue("the connection that opened after was closed", server.ended.await(3, java.util.concurrent.TimeUnit.SECONDS));
+    } finally {
+      StreamingSpeech.assemblyAiUrl = was;
+    }
+  }
+
+  @Test
+  public void askingForTheFinalTextThatHangsFailsInsteadOfFiringLater() throws Exception {
+    String was = StreamingSpeech.assemblyAiUrl;
+    try (Server server = new Server(0, true)) {
+      StreamingSpeech.assemblyAiUrl = server.url();
+      java.util.concurrent.CountDownLatch stuck = new java.util.concurrent.CountDownLatch(1);
+      StreamingSpeech s =
+          new StreamingSpeech.AssemblyAi(StreamingSpeech.AAI_PRO, "k", List.of()) {
+            @Override
+            void force(WebSocket ws) throws Exception {
+              stuck.await(); // The connection's write hangs.
+            }
+          };
+      s.speech();
+      for (int i = 0; i < 100 && s.openedMs < 0; i++) Thread.sleep(20);
+      s.message("{\"type\":\"Turn\",\"turn_order\":0,\"end_of_turn\":false,\"transcript\":\"Book the\"}");
+      long start = System.currentTimeMillis();
+      try {
+        s.take(300);
+        throw new AssertionError("it should fail");
+      } catch (java.io.IOException expected) {
+        assertTrue(expected.getMessage(), expected.getMessage().contains("couldn't ask for the final text"));
+      }
+      assertTrue(System.currentTimeMillis() - start < 2000);
+      assertFalse(s.working());
+      s.close();
+    } finally {
+      StreamingSpeech.assemblyAiUrl = was;
+    }
+  }
+
+  @Test
+  public void aTlsHandshakeThatStallsGivesUp() throws Exception {
+    try (ServerSocket silent = new ServerSocket(0)) {
+      new Thread(
+              () -> {
+                try (Socket c = silent.accept()) {
+                  Thread.sleep(5000); // Accepts, says nothing.
+                } catch (Exception ignored) {
+                }
+              })
+          .start();
+      long start = System.currentTimeMillis();
+      try {
+        WebSocket.open("wss://127.0.0.1:" + silent.getLocalPort() + "/", java.util.Map.of(), null, 500);
+        throw new AssertionError("it should give up");
+      } catch (java.io.IOException expected) {
+        assertTrue(String.valueOf(System.currentTimeMillis() - start), System.currentTimeMillis() - start < 3000);
+      }
+    }
+  }
+
+  @Test
+  public void closeDoesntWaitBehindAWriteThatHangs() throws Exception {
+    try (Server server = new Server(0, false)) { // It never reads: writes fill up and hang.
+      WebSocket ws =
+          WebSocket.open(
+              server.url(),
+              java.util.Map.of(),
+              new WebSocket.Listener() {
+                public void message(String text) {}
+
+                public void ended(int code, String why) {}
+              },
+              2000);
+      Thread writer =
+          new Thread(
+              () -> {
+                byte[] big = new byte[1 << 20];
+                try {
+                  while (true) ws.send(big, 0, big.length);
+                } catch (Exception gone) {
+                  /* Closed under it. */
+                }
+              });
+      writer.start();
+      Thread.sleep(800); // By now a write hangs.
+      long start = System.currentTimeMillis();
+      ws.close();
+      assertTrue(String.valueOf(System.currentTimeMillis() - start), System.currentTimeMillis() - start < 500);
+      writer.join(2000);
+      assertFalse("the hanging write ended too", writer.isAlive());
+    }
+  }
+
+  @Test
   public void aLongFrameHasItsLengthInTwoOrEightBytes() {
     byte[] mask = {1, 2, 3, 4};
     byte[] f = WebSocket.encode(0x2, new byte[200], mask);
