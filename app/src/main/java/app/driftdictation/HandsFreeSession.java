@@ -1243,8 +1243,9 @@ final class HandsFreeSession {
     if ("capped".equals(plays)) reason("Reply plays: it waited %1$d s without new words from you", HOLD_MAX_MS / 1000);
     else if (plays != null) reason("Reply plays: your turn is over");
     // A sound that hasn't counted as speech yet ends as noise (if it was you, talking on over the
-    // reply interrupts it).
-    if (!segmenter.speaking()) segmenter.flush(false);
+    // reply interrupts it). Speech going on (a reply past its cap) ends as a part of your turn,
+    // so the reset below doesn't lose it.
+    segmenter.flush(segmenter.speaking());
     synchronized (this) {
       if (state != State.LISTENING || held.isEmpty() || holds(held.peekFirst(), clock.getAsLong()) != null) return;
       next = held.removeFirst();
@@ -1311,9 +1312,12 @@ final class HandsFreeSession {
    * a stretch of your speech going on that started less than LONG_STRETCH_MS ago?
    */
   private boolean heldTooLong(Held h, long now) {
-    if (!h.ready || now - Math.max(h.readyAt, liveWordsAt) < HOLD_MAX_MS) return false;
+    long waited = now - Math.max(h.readyAt, liveWordsAt);
+    if (!h.ready || waited < HOLD_MAX_MS) return false;
     if (segmenter.speaking()) return now - stretchAt >= LONG_STRETCH_MS;
-    return !segmenter.candidate(); // A sound just starting may be your next sentence.
+    // A sound just starting may be your next sentence; past twice the cap it's noise that never
+    // becomes speech (road bumps, an indicator clicking).
+    return !segmenter.candidate() || waited >= 2 * HOLD_MAX_MS;
   }
 
   /**
@@ -2133,22 +2137,27 @@ final class HandsFreeSession {
       giveUpTurn("empty");
       return;
     }
-    Handoff h = handOff(false);
+    // The turn is over: the parts written down go; what you said since starts your next turn.
+    // Taken under the handover's lock: the call's end can't send them a second time.
+    boolean[] more = new boolean[1];
+    Handoff h =
+        handOff(
+            false,
+            () -> {
+              synchronized (turnAudio) {
+                turnAudio.subList(0, Math.min(parts, turnAudio.size())).clear();
+                written.keySet().retainAll(turnAudio); // ArrayList's contains: by identity for arrays.
+                if (turnPrefix.equals(prefix)) turnPrefix = "";
+                turnVersion++;
+                more[0] = !turnAudio.isEmpty() || !turnPrefix.isEmpty();
+              }
+            });
     if (h == null) {
       log("the call ended meanwhile: its end sends your words, not this check");
       return;
     }
-    // The turn is over: the parts written down go; what you said since starts your next turn.
-    boolean more;
-    synchronized (turnAudio) {
-      turnAudio.subList(0, Math.min(parts, turnAudio.size())).clear();
-      written.keySet().retainAll(turnAudio); // ArrayList's contains: by identity for arrays.
-      if (turnPrefix.equals(prefix)) turnPrefix = "";
-      turnVersion++;
-      more = !turnAudio.isEmpty() || !turnPrefix.isEmpty();
-    }
     pending = "";
-    takenByYou = more;
+    takenByYou = more[0];
     outgoing.incrementAndGet();
     sentAt = clock.getAsLong();
     listener.changed();
@@ -2174,7 +2183,13 @@ final class HandsFreeSession {
    * its way carries yet. Null once the call ended, unless last (your last words, after the end).
    */
   private synchronized Handoff handOff(boolean last) {
+    return handOff(last, () -> {});
+  }
+
+  /** As above; consume takes the message's words from your turn, at once with the handover. */
+  private synchronized Handoff handOff(boolean last, Runnable consume) {
     if (state == State.ENDED && !last) return null;
+    consume.run();
     int number = ++handedOff;
     onTheWay.add(number);
     String request = sender.newRequest();

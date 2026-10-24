@@ -650,6 +650,55 @@ public class HandsFreeTest {
   }
 
   @Test
+  public void pastTwiceTheCapASoundThatNeverBecomesSpeechNoLongerHoldsAReply() throws Exception {
+    Fake f = new Fake("Book the hotel");
+    f.quiet(1000);
+    f.talk();
+    until(() -> f.session.pending().equals("Book the hotel"));
+    f.session.reply("r0", "Here's what I found.");
+    until(() -> f.log.stream().anyMatch(l -> l.startsWith("voice ready for r0")));
+    // In the car: a click again and again, gaps shorter than a pause, never speech.
+    f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS + 1000);
+    for (int i = 0; i < 6; i++) {
+      clatter(f.session, 2100, 3);
+      clatter(f.session, 50, 22);
+      f.session.tick();
+    }
+    Thread.sleep(100);
+    assertTrue("a sound just starting still holds it", f.spoken.isEmpty());
+    f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS);
+    for (int i = 0; i < 50 && f.spoken.isEmpty(); i++) {
+      clatter(f.session, 2100, 3);
+      clatter(f.session, 50, 22);
+      f.session.tick();
+      Thread.sleep(20);
+    }
+    assertEquals(String.join("\n", f.log), List.of("Here's what I found."), f.spoken);
+    assertEquals(0, f.transcriptions.get() - 1); // The clicks were never written down.
+  }
+
+  @Test
+  public void speechAReplyStartsOverPastItsCapIsKeptInYourTurn() throws Exception {
+    Fake f = new Fake("Book the hotel", "and the train");
+    f.quiet(1000);
+    f.talk();
+    until(() -> f.session.pending().equals("Book the hotel"));
+    f.session.reply("r0", "Here's what I found.");
+    until(() -> f.log.stream().anyMatch(l -> l.startsWith("voice ready for r0")));
+    f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS);
+    f.speak(); // Speech going on, then on past 20 s.
+    f.now.addAndGet(HandsFreeSession.LONG_STRETCH_MS);
+    f.speak();
+    for (int i = 0; i < 50 && f.spoken.isEmpty(); i++) {
+      f.session.tick();
+      Thread.sleep(20);
+    }
+    assertEquals(1, f.spoken.size());
+    // What was said up to the reply is a part of your turn, written down, not lost.
+    until(() -> f.session.pending().equals("Book the hotel and the train"));
+  }
+
+  @Test
   public void withATalkerAnUpdateWithoutARequestWhenNothingIsOnItsWayPlays() throws Exception {
     Fake f = new Fake("Is the table booked? Over.");
     f.session.dropsOutdated = true;
