@@ -323,6 +323,7 @@ public final class MainActivity extends Activity {
       case "handsfree" -> handsFreePage();
       case "hfsettings" -> handsFreeSettingsPage();
       case "voices" -> voicesPage();
+      case "live" -> livePage();
       case "try1" -> tryPage();
       case "bb1" -> bbPage(true);
       case "chief1" -> chiefPage(true);
@@ -3264,7 +3265,106 @@ public final class MainActivity extends Activity {
     sounds.setOnCheckedChangeListener((b, on) -> prefs.edit().putBoolean(HandsFree.SOUNDS, on).apply());
     ui.add(content, ui.row(tr("Quiet sounds"), tr("Heard you, sent, reply coming, something failed"), sounds, null), 8);
     secondsField(tr("Use Android's voice when the voice model takes longer than (seconds)"), HandsFree.VOICE_WAIT_MS, HandsFree.voiceWaitMs(prefs));
+    Switch open = ui.toggle(prefs.getBoolean(HandsFree.OPEN_AUDIO, true));
+    open.setOnCheckedChangeListener((b, on) -> prefs.edit().putBoolean(HandsFree.OPEN_AUDIO, on).apply());
+    ui.add(content, ui.row(tr("Keep the call audio open"), tr("A reply starts at once; the call's audio stays on, silent, for the whole call"), open, null), 8);
+    ui.add(content, ui.strong(tr("Live transcription"), 15), 24);
+    Switch live = ui.toggle(prefs.getBoolean(HandsFree.LIVE, true));
+    live.setOnCheckedChangeListener((b, on) -> prefs.edit().putBoolean(HandsFree.LIVE, on).apply());
+    ui.add(content, ui.row(tr("Live transcription"), tr("Your words are written down as you speak, and a send word sends at once. Off, or without a key: written down at each pause."), live, null), 8);
+    ui.add(content, ui.row(tr("Live transcription model"), liveLabel(), null, v -> open("live")), 8);
     recentEvents();
+  }
+
+  /** The live transcription model, and whether its key is there. */
+  private String liveLabel() {
+    StreamingSpeech.Choice c = StreamingSpeech.choice(prefs.getString(HandsFree.LIVE_MODEL, StreamingSpeech.DEFAULT.id()));
+    return c.name() + " · " + (hasKey(StreamingSpeech.keyName(c)) ? tr("key saved") : tr("no key yet"));
+  }
+
+  private boolean hasKey(String name) {
+    try {
+      String k = vault.get(name);
+      return k != null && !k.isEmpty();
+    } catch (Exception ex) {
+      return false;
+    }
+  }
+
+  /**
+   * Settings → Hands-free → Live transcription model: the streaming speech models, and the keys
+   * for their providers (your own; kept on this phone, encrypted).
+   */
+  private void livePage() {
+    heading(tr("Back"), tr("Live transcription model"), tr("Writes down what you say while you speak, so a send word sends at once. It runs with your own key for the provider, billed by them for the time it's listening (closed after a minute without speech)."));
+    String current = StreamingSpeech.choice(prefs.getString(HandsFree.LIVE_MODEL, StreamingSpeech.DEFAULT.id())).id();
+    LinearLayout card = ui.add(content, ui.card(Ui.BG, 0), 12);
+    card.setPadding(0, 0, 0, 0);
+    for (StreamingSpeech.Choice c : StreamingSpeech.CHOICES) {
+      if (card.getChildCount() > 0) card.addView(ui.divider());
+      String note =
+          switch (c.note()) {
+            case "most accurate" -> tr("most accurate");
+            case "second best" -> tr("second best");
+            default -> tr("fastest, cheapest, less accurate");
+          };
+      card.addView(
+          ui.row(
+              (c.id().equals(current) ? "✓  " : "") + c.name(),
+              note + " · " + (hasKey(StreamingSpeech.keyName(c)) ? tr("key saved") : tr("no key yet")),
+              null,
+              v -> {
+                prefs.edit().putString(HandsFree.LIVE_MODEL, c.id()).apply();
+                show(page);
+              }));
+    }
+    liveKey(tr("AssemblyAI key"), StreamingSpeech.ASSEMBLYAI_KEY, "https://www.assemblyai.com/dashboard/api-keys");
+    liveKey(tr("ElevenLabs key"), StreamingSpeech.ELEVENLABS_KEY, "https://elevenlabs.io/app/settings/api-keys");
+  }
+
+  /** A provider's key for live transcription: saved, replaced or removed. */
+  private void liveKey(String label, String name, String getAt) {
+    boolean saved = hasKey(name);
+    ui.add(content, ui.strong(label, 15), 24);
+    if (saved) ui.add(content, ui.text(tr("✓  A key is saved on this phone, encrypted."), 14, Ui.TEAL), 6);
+    EditText input = ui.input("", saved ? tr("Paste a new key to replace it") : tr("Paste your key"), false);
+    android.graphics.Typeface face = input.getTypeface();
+    input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+    input.setTypeface(face);
+    ui.add(content, input, 6);
+    ui.add(
+        content,
+        ui.button(
+            tr("Save key"),
+            Ui.Kind.OUTLINE,
+            v -> {
+              String key = input.getText().toString().trim();
+              if (key.isEmpty()) {
+                toast(tr("Paste your key first"));
+                return;
+              }
+              try {
+                vault.put(name, key);
+                toast(tr("Key saved"));
+              } catch (Exception ex) {
+                toast(String.valueOf(ex.getMessage()));
+              }
+              show(page);
+            }),
+        6);
+    ui.add(content, ui.button(tr("Get a key"), Ui.Kind.QUIET, v -> openUrl(getAt)), 0);
+    if (saved) {
+      Button remove =
+          ui.button(
+              tr("Remove key"),
+              Ui.Kind.QUIET,
+              v -> {
+                vault.remove(name);
+                show(page);
+              });
+      remove.setTextColor(Ui.WARN);
+      ui.add(content, remove, 0);
+    }
   }
 
   /**
@@ -3406,7 +3506,7 @@ public final class MainActivity extends Activity {
     new AlertDialog.Builder(this)
         .setTitle(tr("Delete local data?"))
         .setMessage(
-            tr("Dictate & Delegate has no server, so everything it keeps is on this phone. This deletes your notes, audio, templates, words, About you, your OpenRouter and Anthropic keys, your bb sign-in and settings. It can't be undone. Your accounts at OpenRouter, Anthropic and bb stay as they are."))
+            tr("Dictate & Delegate has no server, so everything it keeps is on this phone. This deletes your notes, audio, templates, words, About you, your OpenRouter, Anthropic and live transcription keys, your bb sign-in and settings. It can't be undone. Your accounts at OpenRouter, Anthropic and bb stay as they are."))
         .setPositiveButton(
             tr("Delete everything"),
             (d, w) -> {
@@ -3416,6 +3516,8 @@ public final class MainActivity extends Activity {
                 deleteDatabase("history.db");
                 vault.remove(OpenRouter.KEY);
                 vault.remove(Anthropic.KEY);
+                vault.remove(StreamingSpeech.ASSEMBLYAI_KEY);
+                vault.remove(StreamingSpeech.ELEVENLABS_KEY);
                 vault.remove("templates");
                 new Attachments(this).deleteAll();
                 HandsFreeService.logFile(this).delete();

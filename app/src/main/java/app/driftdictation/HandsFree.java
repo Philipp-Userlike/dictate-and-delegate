@@ -30,7 +30,7 @@ final class HandsFree {
       VOICE = "hfVoice";
 
   /** One English word per action by default; each setting may hold several, comma-separated. */
-  static final String DEFAULT_SEND = "over", DEFAULT_END = "end the call";
+  static final String DEFAULT_SEND = "over, that's all", DEFAULT_END = "end the call";
   /**
    * A pause this long ends a part of your turn: then the whole turn so far is written down and
    * Jev asked whether you're done (a new key: the old setting was the much shorter pause after
@@ -52,6 +52,12 @@ final class HandsFree {
 
   /** Prefs: quiet sounds for the key moments (on by default), and how long a voice model may take. */
   static final String SOUNDS = "hfSounds", VOICE_WAIT_MS = "hfVoiceWaitMs";
+
+  /**
+   * Prefs: live transcription (on by default; it needs the provider's key) and its model
+   * (StreamingSpeech's choices), and the call audio kept open for the whole call (on by default).
+   */
+  static final String LIVE = "hfLive", LIVE_MODEL = "hfLiveModel", OPEN_AUDIO = "hfOpenAudio";
 
   /**
    * A voice model slower than this to send a reply's audio is given up for Android's voice:

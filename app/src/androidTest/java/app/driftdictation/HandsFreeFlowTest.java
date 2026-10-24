@@ -47,7 +47,14 @@ public class HandsFreeFlowTest {
         .remove(HandsFree.SEND_WORDS)
         .remove(HandsFree.END_WORDS)
         .putString(HandsFree.VOICE, Voice.KOKORO.id())
+        .remove(HandsFree.LIVE)
+        .remove(HandsFree.LIVE_MODEL)
+        .remove(HandsFree.OPEN_AUDIO)
         .commit();
+    // Live transcription only where a test turns it on (with a key for the fake).
+    new Vault(context).remove(StreamingSpeech.ASSEMBLYAI_KEY);
+    new Vault(context).remove(StreamingSpeech.ELEVENLABS_KEY);
+    TestServer.liveReset();
     BbBridge bb = new BbBridge(context);
     bb.useCustom(TestServer.bbUrl(), "", LINKS);
     bb.setChief(new BbBridge.ThreadInfo(TestServer.CHIEF, "Chief of staff", "idle"));
@@ -524,6 +531,108 @@ public class HandsFreeFlowTest {
     assertFalse(log, log.contains("Voice failed") || log.contains("Android's voice reads it"));
   }
 
+  /** Live transcription with this model, and a key the fake takes. */
+  private void liveOn(String model) throws Exception {
+    prefs.edit().putBoolean(HandsFree.LIVE, true).putString(HandsFree.LIVE_MODEL, model).commit();
+    new Vault(context).put(StreamingSpeech.keyName(StreamingSpeech.choice(model)), "fake-key");
+  }
+
+  private static int count(JSONArray requests, String kind) throws Exception {
+    int n = 0;
+    for (int i = 0; i < requests.length(); i++) if (requests.getJSONObject(i).getString("kind").equals(kind)) n++;
+    return n;
+  }
+
+  /** A turn ending in a send phrase goes as soon as live transcription has it: no pause, no Jev. */
+  private void sendPhraseSendsAtOnce(String model, String path) throws Exception {
+    liveOn(model);
+    TestServer.liveTexts("Book a table for Friday. Over.");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    HandsFreeSession s = HandsFreeService.session();
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000)); // Speech, no pause after it.
+    until(() -> lastTell().contains("[hands-free]"), "the message sent");
+    String tell = lastTell(), log = HandsFreeService.log(context);
+    assertTrue(tell, tell.contains("Book a table for Friday."));
+    assertFalse(tell, tell.contains("Over"));
+    assertTrue(log, log.contains("live transcription " + StreamingSpeech.choice(model).model()));
+    assertTrue(log, log.contains("send phrase: final text in "));
+    assertTrue(log, log.contains("ms after the phrase was heard)"));
+    JSONArray r = TestServer.requests();
+    assertEquals("nothing written down from audio", 0, count(r, "transcribe"));
+    assertEquals("Jev not asked", 0, count(r, "decide"));
+    JSONArray live = TestServer.liveLog();
+    assertEquals(path, live.getJSONObject(0).getString("path"));
+    android.util.Log.i("HandsFreeTimings", model + ": " + log.replaceAll("(?s).*(send phrase: final text in [^\n]*).*", "$1"));
+  }
+
+  @Test
+  public void withAssemblyAiTheSendPhraseSendsAtOnce() throws Exception {
+    sendPhraseSendsAtOnce("aai-pro", "/v3/ws");
+  }
+
+  @Test
+  public void withElevenLabsTheSendPhraseSendsAtOnce() throws Exception {
+    sendPhraseSendsAtOnce("eleven", "/v1/speech-to-text/realtime");
+  }
+
+  @Test
+  public void whenLiveTranscriptionDropsMidCallYourWordsAreWrittenDownAndStillGo() throws Exception {
+    liveOn("aai-pro");
+    TestServer.liveTexts((String) null); // The connection drops as you start.
+    TestServer.transcripts("Book a table for Friday. Over.");
+    TestServer.turns("over");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> lastTell().contains("[hands-free]"), "the message sent");
+    assertTrue(lastTell(), lastTell().contains("Book a table for Friday."));
+    String log = HandsFreeService.log(context);
+    assertTrue(log, log.contains("live transcription failed ("));
+    assertTrue(log, log.contains("→ Live transcription failed ("));
+    assertEquals(1, count(TestServer.requests(), "transcribe"));
+  }
+
+  @Test
+  public void withoutAKeyLiveTranscriptionIsOffAndSaysWhy() throws Exception {
+    prefs.edit().putBoolean(HandsFree.LIVE, true).commit();
+    TestServer.transcripts("Book a table. Over.");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> lastTell().contains("[hands-free]"), "the message sent");
+    assertTrue(HandsFreeService.log(context).contains("live transcription on, but no AssemblyAI key: written down from audio"));
+    assertEquals(0, TestServer.liveLog().length());
+  }
+
+  /** How long after the floor was taken the reply's first sound came out (from the log). */
+  private static long firstSoundMs(String log) {
+    Matcher m = Pattern.compile("audio started \\([0-9.]+ s\\) after (\\d+) ms").matcher(log);
+    assertTrue(log, m.find());
+    return Long.parseLong(m.group(1));
+  }
+
+  @Test
+  public void withTheCallAudioKeptOpenAReplyStartsSooner() throws Exception {
+    prefs.edit().putBoolean(HandsFree.OPEN_AUDIO, false).commit();
+    String closed = callWithOneReply("The table is booked for Friday at eight.", 15_000, "reply played to the end");
+    TestServer.reset();
+    TestServer.bbReset();
+    prefs.edit().putBoolean(HandsFree.OPEN_AUDIO, true).commit();
+    String open = callWithOneReply("The table is booked for Friday at eight.", 15_000, "reply played to the end");
+    assertTrue(open, open.contains("audio: kept open for the call"));
+    assertFalse(closed, closed.contains("audio: kept open for the call"));
+    for (String log : List.of(open, closed)) {
+      assertTrue(log, log.contains("reply played to the end"));
+      assertFalse(log, log.contains("Android's voice reads it") || log.contains("trying again"));
+    }
+    long before = firstSoundMs(closed), after = firstSoundMs(open);
+    android.util.Log.i("HandsFreeTimings", "first sound: " + before + " ms with a track per reply, " + after + " ms with the call audio open");
+    for (String line : open.split("\n"))
+      if (line.contains("voice") || line.contains("audio") || line.contains("timing") || line.contains("reading")) android.util.Log.i("HandsFreeTimings", "open: " + line);
+    assertTrue(before + " → " + after, after < before);
+  }
+
   @Test
   public void aVoiceThatFailsSaysWhyAndTheReplyIsStillRead() throws Exception {
     for (int i = 0; i < 3; i++) TestServer.script("speech", new JSONObject().put("status", 503).put("message", "No provider available"));
@@ -708,6 +817,8 @@ public class HandsFreeFlowTest {
         new BbBridge(context).ntfyTopic(), m.group(1), "The flight leaves at nine in the morning from gate twelve, and the train costs about forty euros.");
     HandsFreeSession s = HandsFreeService.session();
     until(s::audioPlaying, "the reply playing");
+    // With the call audio open it starts at once: the reply's sound (CUE_MS) has to be over first.
+    Thread.sleep(HandsFreeSession.CUE_MS + 100);
     // What's left of its echo, then you over it: the reply stops, and what you said is your turn.
     for (int i = 0; i < 50; i++) s.frame(HandsFreeTestFrames.frame(300));
     assertTrue("its echo doesn't stop it", s.audioPlaying());

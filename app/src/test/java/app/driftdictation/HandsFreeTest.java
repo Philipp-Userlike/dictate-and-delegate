@@ -14,7 +14,7 @@ public class HandsFreeTest {
   @Test
   public void wordListsComeFromTheSetting() {
     // English, one word per action, by default.
-    assertEquals(List.of("over"), send);
+    assertEquals(List.of("over", "that's all"), send);
     assertEquals(List.of("end the call"), end);
     assertEquals(List.of("a", "b c"), HandsFree.list(" a ,, b c\n ,"));
     assertEquals(List.of(), HandsFree.list(""));
@@ -1076,6 +1076,217 @@ public class HandsFreeTest {
     assertEquals(1, HandsFreeSession.wordsChanged("Book that hotel", "Book the hotel"));
     assertEquals(2, HandsFreeSession.wordsChanged("Book the hotel", "Book the hotel for Friday"));
     assertEquals(3, HandsFreeSession.wordsChanged("", "one two three"));
+  }
+
+  // ------------------------------------------------------------------ live transcription
+
+  /** Live transcription that says what the test tells it to, and counts what it heard. */
+  static final class FakeLive implements HandsFreeSession.LiveText {
+    final HandsFreeSession session;
+    volatile String text = "";
+    /** What the model's final text of it will be (null: the live text as it is). */
+    volatile String finalText;
+    volatile boolean failed;
+    final List<String> taken = new CopyOnWriteArrayList<>();
+    final java.util.concurrent.atomic.AtomicInteger frames = new java.util.concurrent.atomic.AtomicInteger(),
+        loud = new java.util.concurrent.atomic.AtomicInteger(), discards = new java.util.concurrent.atomic.AtomicInteger();
+
+    FakeLive(Fake f) {
+      session = f.session;
+      session.live = this;
+    }
+
+    /** The model's live text is now this. */
+    void say(String t) {
+      text = t;
+      session.liveText(t);
+    }
+
+    void fail(String why) {
+      failed = true;
+      session.liveFailed(why);
+    }
+
+    public void audio(byte[] frame) {
+      frames.incrementAndGet();
+      if (HandsFree.Segmenter.level(frame, frame.length) > 250) loud.incrementAndGet();
+    }
+
+    public void speech() {}
+
+    public String text() {
+      return text;
+    }
+
+    public String take(long waitMs) throws Exception {
+      if (failed) throw new java.io.IOException("connection lost");
+      String t = finalText != null ? finalText : text;
+      finalText = null;
+      text = "";
+      taken.add(t);
+      return t;
+    }
+
+    public void discard() {
+      text = "";
+      discards.incrementAndGet();
+    }
+
+    public boolean working() {
+      return !failed;
+    }
+
+    public String failure() {
+      return failed ? "connection lost" : "";
+    }
+
+    public void close() {}
+  }
+
+  @Test
+  public void aSendPhraseAtTheEndOfTheLiveTextSendsAtOnceWithoutAPauseOrJev() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    List<String> asked = new CopyOnWriteArrayList<>();
+    f.session.judge = said -> {
+      asked.add(said);
+      return verdict("more", 0.1, 0);
+    };
+    f.quiet(1000);
+    f.speak(); // Still talking: no pause yet.
+    live.say("Book the table for Friday");
+    assertEquals("Book the table for Friday", f.session.pending());
+    live.finalText = "Book the table for Friday. Over.";
+    live.say("Book the table for Friday over");
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the table for Friday.", f.sent.get(0));
+    assertEquals("nothing written down from audio", 0, f.transcriptions.get());
+    assertEquals("Jev not asked", List.of(), asked);
+    String log = String.join("\n", f.log);
+    assertTrue(log, log.contains("live text ends with the send phrase: \"Book the table for Friday over\""));
+    assertTrue(log, log.contains("send phrase: final text in "));
+    assertTrue(log, log.contains("ms after the phrase was heard)"));
+    // The stretch it was said in ends at the pause: it went with the message, nothing more is checked.
+    f.quiet(1200);
+    Thread.sleep(150);
+    assertTrue(String.join("\n", f.log).contains("the rest of the stretch with the send phrase"));
+    assertEquals(1, f.sent.size());
+    assertFalse(reasons(f), reasons(f).contains("heard no words"));
+    assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
+  }
+
+  @Test
+  public void thatsAllSendsTooAndEndTheCallEndsIt() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    f.speak();
+    live.say("Remind me to call Jana. That's all.");
+    until(() -> f.sent.size() == 1);
+    assertEquals("Remind me to call Jana.", f.sent.get(0));
+    f.quiet(1200);
+    Thread.sleep(150);
+    f.speak();
+    live.say("Thanks, that was everything. End the call.");
+    until(() -> f.session.state() == HandsFreeSession.State.ENDED);
+    assertEquals("Thanks, that was everything.", f.sent.get(1));
+  }
+
+  @Test
+  public void aSendWordMidSentenceSendsNothing() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.session.judge = said -> verdict("more", 0.1, 0);
+    f.quiet(1000);
+    f.speak();
+    // The live text ended with "over" for a moment; the final text goes on.
+    live.finalText = "The game is over and then we left";
+    live.say("The game is over");
+    until(() -> String.join("\n", f.log).contains("doesn't end with the phrase"));
+    assertEquals(0, f.sent.size());
+    live.say("and the train was late. Over.");
+    until(() -> f.sent.size() == 1);
+    assertEquals("The game is over and then we left and the train was late.", f.sent.get(0));
+  }
+
+  @Test
+  public void atAPauseWithoutASendWordJevJudgesTheLiveText() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    List<String> asked = new CopyOnWriteArrayList<>();
+    f.session.judge = said -> {
+      asked.add(said);
+      return verdict("question", 0.95, 0);
+    };
+    f.quiet(1000);
+    f.speak();
+    live.say("can you check when the next train leaves");
+    live.finalText = "Can you check when the next train leaves?";
+    f.quiet(1200);
+    until(() -> f.sent.size() == 1);
+    assertEquals(List.of("can you check when the next train leaves"), asked);
+    assertEquals("the model's final text goes", "Can you check when the next train leaves?", f.sent.get(0));
+    assertEquals(0, f.transcriptions.get());
+    assertTrue(String.join("\n", f.log).contains("final live text in "));
+  }
+
+  @Test
+  public void whenLiveTranscriptionFailsItSaysSoAndYourWordsAreWrittenDownFromTheirAudio() throws Exception {
+    Fake f = new Fake("Book the table. Over.");
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    f.speak();
+    live.say("Book the");
+    live.fail("connection lost");
+    until(() -> reasons(f).contains("Live transcription failed (connection lost): your words are written down instead"));
+    f.quiet(1200);
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the table.", f.sent.get(0));
+    assertEquals(1, f.transcriptions.get());
+  }
+
+  @Test
+  public void aTurnWhoseLiveTextLooksStuckIsWrittenDownFromItsAudio() throws Exception {
+    // ElevenLabs once stayed on "Mm." for 30 s while Philipp talked.
+    Fake f = new Fake("Book the table for four tonight at eight. Over.");
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    for (int i = 0; i < 4; i++) f.speak(); // 4.8 s of speech.
+    live.say("Mm.");
+    f.quiet(1200);
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the table for four tonight at eight.", f.sent.get(0));
+    assertTrue(String.join("\n", f.log).contains("live text looks stuck (1 words for 5."));
+    assertTrue(reasons(f), reasons(f).contains("Live transcription looks stuck"));
+  }
+
+  @Test
+  public void wordsLiveTranscriptionHearsWhileNobodyHasTheFloorAreDropped() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    live.say("and now the weather"); // A radio: nobody took the floor.
+    assertEquals("", f.session.pending());
+    f.quiet(3200);
+    f.session.tick();
+    assertEquals(1, live.discards.get());
+    assertTrue(String.join("\n", f.log).contains("live text heard words while nobody had the floor: dropped (\"and now the weather\")"));
+  }
+
+  @Test
+  public void aReplyIsSilenceToLiveTranscriptionUntilYouTalkOverIt() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    f.session.reply("r1", LONG_REPLY);
+    until(() -> f.spoken.size() == 1);
+    int before = live.loud.get();
+    for (int i = 0; i < 100; i++) f.session.frame(frame(i % 7 == 0 ? 700 : 300)); // Its leftover echo.
+    assertEquals("its echo isn't sent", before, live.loud.get());
+    framesToStop(f, 8000, 40); // You, over it.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    // The half second before the stop goes to it (you, and what's left of the echo), then you.
+    assertTrue(String.valueOf(live.loud.get() - before), live.loud.get() - before >= 15);
   }
 
   // ------------------------------------------------------------------ Jev: is the turn done?

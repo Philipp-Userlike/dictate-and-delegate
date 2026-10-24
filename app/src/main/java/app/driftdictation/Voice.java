@@ -509,6 +509,11 @@ final class Voice {
     heardAtEnd = -1;
     playingStream = prepared.stream();
     focus(true);
+    CallTrack call = callTrack;
+    if (call != null && prepared.stream() != null) { // The call's audio is open: no warm-up.
+      call.play(prepared.stream(), text, playback);
+      return;
+    }
     new Thread(
             () -> {
               AudioTrack warm = warmUp();
@@ -671,6 +676,25 @@ final class Voice {
     int at = 0;
     boolean started = false, played = false;
     long stalled = -1;
+    // Its first sound: told when the track's head passes its first frame (or, should that not be
+    // said, when the position shows it).
+    java.util.concurrent.atomic.AtomicBoolean sounded = new java.util.concurrent.atomic.AtomicBoolean();
+    Runnable out =
+        () -> {
+          if (!sounded.compareAndSet(false, true) || !stillPlaying(playback)) return;
+          long ms = estimatedMs(s, text);
+          main.post(() -> playback.started(ms));
+        };
+    t.setPlaybackPositionUpdateListener(
+        new AudioTrack.OnPlaybackPositionUpdateListener() {
+          public void onMarkerReached(AudioTrack track) {
+            out.run();
+          }
+
+          public void onPeriodicNotification(AudioTrack track) {}
+        },
+        main);
+    t.setNotificationMarkerPosition(1);
     try {
       while (stillPlaying(playback)) {
         int n = s.read(at, buffer, 100);
@@ -678,6 +702,7 @@ final class Voice {
           played = s.failed() == null;
           break;
         }
+        if (started && t.getPlaybackHeadPosition() > 0) out.run();
         long now = android.os.SystemClock.elapsedRealtime();
         if (n == 0) {
           if (stalled < 0) stalled = now;
@@ -695,10 +720,9 @@ final class Voice {
         if (!started) {
           t.play();
           started = true;
-          long ms = estimatedMs(s, text);
-          main.post(() -> playback.started(ms));
         }
       }
+      if (started) out.run(); // Shorter than a write: out by now.
       // What was written plays to its end (stop lets the last of it out; the track's head reaches
       // it), unless it's stopped.
       if (started && stillPlaying(playback)) t.stop();
@@ -735,6 +759,217 @@ final class Voice {
     if (stillPlaying(playback)) finished(played);
   }
 
+  /**
+   * The call's audio kept open (Settings → Hands-free, on by default): one call-audio track for the
+   * whole call, playing silence while nothing else plays, so a reply's first words go straight out
+   * instead of waiting for a new track and the half second of warm-up silence (about 650 ms). Its
+   * replies are written into it as they come; rates differ between voices, so the track's rate is
+   * set to each reply's (the silence doesn't mind).
+   */
+  private final class CallTrack {
+    /** The idle rate, and the silence and reply chunks: short, so a stop is heard at once. */
+    static final int RATE = 24_000, CHUNK_MS = 20;
+    /** At most this much silence waits in the track before a reply. */
+    static final int QUEUED_MS = 60;
+
+    private final AudioTrack t;
+    private volatile boolean open = true;
+    /** The reply playing, and a stop asked for (done on the writer's thread). */
+    private volatile Reply reply;
+    private volatile boolean drop;
+    private int rate = RATE;
+    /** Frames written so far (in the track's frames, whatever its rate). */
+    private long written;
+
+    private final class Reply {
+      final VoiceStream stream;
+      final String text;
+      final Playback playback;
+      int at;
+      byte[] chunk;
+      long start = -1, end = -1, stalled = -1;
+      boolean sounded, allIn;
+
+      Reply(VoiceStream stream, String text, Playback playback) {
+        this.stream = stream;
+        this.text = text;
+        this.playback = playback;
+      }
+    }
+
+    CallTrack() {
+      AudioFormat format =
+          new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build();
+      t =
+          new AudioTrack.Builder()
+              .setAudioAttributes(attributes())
+              .setAudioFormat(format)
+              .setTransferMode(AudioTrack.MODE_STREAM)
+              .setBufferSizeInBytes(Math.max(AudioTrack.getMinBufferSize(RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT), RATE * 2 * 60 / 1000))
+              .build();
+      t.play();
+      new Thread(this::run, "voice-call-track").start();
+    }
+
+    void play(VoiceStream s, String text, Playback playback) {
+      reply = new Reply(s, text, playback);
+    }
+
+    /** Silent at once (its thread empties it and goes on with silence). */
+    void stopReply() {
+      if (reply == null) return;
+      reply = null;
+      drop = true;
+      try {
+        t.pause();
+        t.flush();
+      } catch (IllegalStateException ignored) {
+        /* Closed meanwhile. */
+      }
+    }
+
+    boolean playing() {
+      return reply != null;
+    }
+
+    /** How far the reply playing has got, in ms of it (-1: none plays). */
+    long playedMs() {
+      Reply r = reply;
+      if (r == null || r.start < 0) return r == null ? -1 : 0;
+      long head = t.getPlaybackHeadPosition() & 0xffffffffL;
+      return Math.max(0, head - r.start) * 1000 / Math.max(1, r.stream.rate());
+    }
+
+    VoiceStream stream() {
+      Reply r = reply;
+      return r == null ? null : r.stream;
+    }
+
+    void close() {
+      open = false;
+      reply = null;
+    }
+
+    private void write(byte[] b, int n) {
+      t.write(b, 0, n, AudioTrack.WRITE_BLOCKING);
+      written += n / 2;
+    }
+
+    private void run() {
+      byte[] buffer = new byte[192_000 * 2 * CHUNK_MS / 1000]; // Silence, at any rate a reply has.
+      try {
+        while (open) {
+          if (drop) { // A reply stopped: what's left of it is gone; silence goes on from here.
+            drop = false;
+            t.pause();
+            t.flush();
+            t.play();
+            written = t.getPlaybackHeadPosition() & 0xffffffffL;
+          }
+          Reply r = reply;
+          if (r != null && !r.allIn) {
+            int channels = Math.max(1, r.stream.channels());
+            if (r.chunk == null) r.chunk = new byte[r.stream.rate() * 2 * channels * CHUNK_MS / 1000];
+            byte[] chunk = r.chunk;
+            int n = r.stream.read(r.at, chunk, 0);
+            if (n < 0) {
+              r.allIn = true;
+              r.end = written;
+            } else if (n > 0) {
+              if (r.start < 0) {
+                if (rate != r.stream.rate()) {
+                  t.setPlaybackRate(r.stream.rate());
+                  rate = r.stream.rate();
+                }
+                r.start = written;
+              }
+              r.at += n;
+              r.stalled = -1;
+              if (channels == 2) { // Both sides into one.
+                for (int i = 0, o = 0; i + 3 < n; i += 4, o += 2) {
+                  int left = (short) ((chunk[i] & 0xff) | (chunk[i + 1] << 8)), right = (short) ((chunk[i + 2] & 0xff) | (chunk[i + 3] << 8));
+                  int m = (left + right) / 2;
+                  chunk[o] = (byte) m;
+                  chunk[o + 1] = (byte) (m >> 8);
+                }
+                n /= 2;
+              }
+              if (reply == r) write(chunk, n);
+              progress(r);
+              continue;
+            } else if (r.start >= 0) {
+              long now = android.os.SystemClock.elapsedRealtime();
+              if (r.stalled < 0) r.stalled = now;
+              else if (now - r.stalled >= STALL_MS) {
+                r.stream.cancel.run();
+                r.stream.fail("its audio stopped coming for " + STALL_MS / 1000 + " s", -1);
+                r.allIn = true;
+                r.end = written;
+              }
+            }
+          }
+          if (r != null) progress(r);
+          // Only a little silence waits in the track (whatever its buffer holds): a reply written
+          // next comes out after at most that much.
+          long head = t.getPlaybackHeadPosition() & 0xffffffffL;
+          if (written - head > (long) rate * QUEUED_MS / 1000) {
+            Thread.sleep(5);
+            continue;
+          }
+          java.util.Arrays.fill(buffer, 0, rate * 2 * CHUNK_MS / 1000, (byte) 0);
+          write(buffer, rate * 2 * CHUNK_MS / 1000);
+        }
+      } catch (Exception ex) {
+        android.util.Log.w("Voice", "the call's track failed", ex);
+        Reply r = reply;
+        if (r != null && stillPlaying(r.playback)) finished(false);
+        callTrack = null; // Replies get their own track from now on.
+      } finally {
+        try {
+          t.stop();
+        } catch (IllegalStateException ignored) {
+          /* Stopped. */
+        }
+        t.release();
+      }
+    }
+
+    /** Its first sound out: started; all of it out: ended. */
+    private void progress(Reply r) {
+      long head = t.getPlaybackHeadPosition() & 0xffffffffL;
+      if (!r.sounded && r.start >= 0 && head > r.start) {
+        r.sounded = true;
+        if (stillPlaying(r.playback)) {
+          long ms = estimatedMs(r.stream, r.text);
+          main.post(() -> r.playback.started(ms));
+        }
+      }
+      if (r.allIn && head >= r.end && reply == r) {
+        if (r.stream.failed() != null) heardAtEnd = heardChars(); // Ended early: how far it got stays known.
+        reply = null;
+        if (!r.sounded && stillPlaying(r.playback)) main.post(() -> r.playback.started(0));
+        if (stillPlaying(r.playback)) finished(r.stream.failed() == null);
+      }
+    }
+  }
+
+  private volatile CallTrack callTrack;
+
+  /** Opens the call's audio for the whole call (Settings → Hands-free); replies then start at once. */
+  void openCall() {
+    if (callTrack != null) return;
+    try {
+      callTrack = new CallTrack();
+    } catch (Exception ex) {
+      android.util.Log.w("Voice", "no call track", ex);
+    }
+  }
+
+  /** Is the call's audio kept open? */
+  boolean callOpen() {
+    return callTrack != null;
+  }
+
   /** Is this playback still the one going on (not stopped)? */
   private synchronized boolean stillPlaying(Playback playback) {
     return current == playback;
@@ -755,6 +990,9 @@ final class Voice {
       s = streamed;
     }
     try {
+      CallTrack call = callTrack;
+      VoiceStream inCall = call == null ? null : call.stream();
+      if (inCall != null) return VoiceStream.heardChars(text.length(), call.playedMs(), inCall.audioMs(), inCall.complete(), charsPerSecond);
       if (t != null && s != null) {
         long played = (t.getPlaybackHeadPosition() & 0xffffffffL) * 1000 / Math.max(1, s.rate());
         return VoiceStream.heardChars(text.length(), played, s.audioMs(), s.complete(), charsPerSecond);
@@ -780,6 +1018,8 @@ final class Voice {
   /** Is reply audio still coming out (the session's watchdog asks)? */
   boolean playing() {
     MediaPlayer p;
+    CallTrack call = callTrack;
+    if (call != null && call.playing()) return true;
     synchronized (this) {
       if (track != null) return true; // A streamed reply plays until its thread ends it.
       p = player;
@@ -1079,6 +1319,12 @@ final class Voice {
       streaming = track;
       s = streamed;
     }
+    CallTrack call = callTrack;
+    VoiceStream inCall = call == null ? null : call.stream();
+    if (inCall != null) {
+      call.stopReply();
+      inCall.cancel.run();
+    }
     if (streaming != null) {
       // Silent at once; its thread lets it go.
       try {
@@ -1115,6 +1361,9 @@ final class Voice {
 
   void shutdown() {
     stop();
+    CallTrack call = callTrack;
+    callTrack = null;
+    if (call != null) call.close();
     main.post(
         () -> {
           if (tts != null) tts.shutdown();

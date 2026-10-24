@@ -6,13 +6,16 @@ android {
         applicationId 'app.driftdictation'
         minSdk 34
         targetSdk 36
-        versionCode((project.findProperty('versionCode') ?: '48') as int)
-        versionName project.findProperty('versionName') ?: '3.2.13'
+        versionCode((project.findProperty('versionCode') ?: '49') as int)
+        versionName project.findProperty('versionName') ?: '3.2.14'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         // OpenRouter's API. Tests point debug builds at a local fake: -PopenrouterUrl=http://127.0.0.1:8797/api/v1
         buildConfigField 'String', 'OPENROUTER_URL', "\"${project.findProperty('openrouterUrl') ?: 'https://openrouter.ai/api/v1'}\""
         // Anthropic's API, for Refine with the user's own Anthropic key. Tests: -PanthropicUrl=http://127.0.0.1:8797
         buildConfigField 'String', 'ANTHROPIC_URL', "\"${project.findProperty('anthropicUrl') ?: 'https://api.anthropic.com'}\""
+        // Hands-free's live transcription. Tests: -PassemblyaiUrl=ws://127.0.0.1:8800/v3/ws -PelevenlabsUrl=ws://127.0.0.1:8800/v1/speech-to-text/realtime
+        buildConfigField 'String', 'ASSEMBLYAI_URL', "\"${project.findProperty('assemblyaiUrl') ?: 'wss://streaming.assemblyai.com/v3/ws'}\""
+        buildConfigField 'String', 'ELEVENLABS_URL', "\"${project.findProperty('elevenlabsUrl') ?: 'wss://api.elevenlabs.io/v1/speech-to-text/realtime'}\""
     }
     signingConfigs {
         release {

@@ -254,6 +254,32 @@ final class TestServer {
     postTo(root(), path, body);
   }
 
+  /** The fake streaming speech server (scripts/fakes/fake_streaming.py): its control API. */
+  private static String liveRoot() {
+    return BuildConfig.ASSEMBLYAI_URL.replaceFirst("^ws", "http").replaceFirst("/v3/ws/?$", "");
+  }
+
+  /** Queues what live transcription hears, a text per stretch of speech; null drops the connection then. */
+  static void liveTexts(String... texts) throws Exception {
+    JSONArray a = new JSONArray();
+    for (String t : texts) a.put(t == null ? new JSONObject().put("drop", true) : t);
+    postTo(liveRoot(), "/test/script", new JSONObject().put("texts", a));
+  }
+
+  static void liveReset() throws Exception {
+    postTo(liveRoot(), "/test/reset", new JSONObject());
+  }
+
+  /** What the fake streaming server saw: connections ("open", with its path), "force", "final", "closed". */
+  static JSONArray liveLog() throws Exception {
+    HttpURLConnection c = (HttpURLConnection) new URL(liveRoot() + "/test/log").openConnection();
+    try (InputStream in = c.getInputStream()) {
+      return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8)).getJSONArray("log");
+    } finally {
+      c.disconnect();
+    }
+  }
+
   private static void postTo(String root, String path, JSONObject body) throws Exception {
     HttpURLConnection c = (HttpURLConnection) new URL(root + path).openConnection();
     try {

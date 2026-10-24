@@ -153,6 +153,9 @@ public final class HandsFreeService extends Service {
     SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
     BbBridge bb = new BbBridge(this);
     voice = new Voice(this);
+    // The call's audio stays open (silent) for the whole call: a reply starts without a new track
+    // and its warm-up. Opened first, so even the first reply finds it.
+    if (prefs.getBoolean(HandsFree.OPEN_AUDIO, true)) voice.openCall();
     voice.androidStatus = status -> event("Android's voice: " + status);
     Voice.Choice choice = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id()));
     Profile profile = new Profile(prefs);
@@ -271,6 +274,7 @@ public final class HandsFreeService extends Service {
           return v;
         };
     session.cues = c -> prefs.getBoolean(HandsFree.SOUNDS, true) && cues.play(c);
+    String live = startLive(prefs, sendWords, endWords);
     if (!choice.model().isEmpty()) voice.warm();
     callCost = BigDecimal.ZERO;
     callId = UUID.randomUUID().toString();
@@ -278,10 +282,11 @@ public final class HandsFreeService extends Service {
     event(
         String.format(
             java.util.Locale.ROOT,
-            "started · send %s · end %s · voice %s · pause %d ms · take %d ms in %d ms · gate ×%.1f",
+            "started · send %s · end %s · voice %s · live transcription %s · pause %d ms · take %d ms in %d ms · gate ×%.1f",
             session.sendWords,
             session.endWords,
             choice.tag(),
+            live,
             HandsFree.pauseMs(prefs),
             HandsFree.takeMs(prefs),
             Math.max(HandsFree.Segmenter.WINDOW_MS, HandsFree.takeMs(prefs) * 3 / 2),
@@ -320,6 +325,8 @@ public final class HandsFreeService extends Service {
     } catch (RuntimeException ex) {
       event("audio: couldn't switch to call mode: " + ex.getMessage());
     }
+    if (prefs.getBoolean(HandsFree.OPEN_AUDIO, true))
+      event(voice.callOpen() ? "audio: kept open for the call" : "audio: couldn't be kept open: each reply opens its own");
     wake = getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Dictate & Delegate:hands-free");
     wake.setReferenceCounted(false);
     wake.acquire(4 * 60 * 60_000L);
@@ -465,6 +472,41 @@ public final class HandsFreeService extends Service {
    * What reading a reply cost, as OpenRouter reports it for its generation (looked up after it's
    * done), else at the model's price per character: added to the note of the message it answers.
    */
+  /**
+   * Live transcription for this call, if it's on and its provider's key is there: connected now,
+   * so your first words don't wait for it. Its text goes to the session as it comes. Returns what
+   * the call's start line says about it.
+   */
+  private String startLive(SharedPreferences prefs, java.util.List<String> sendWords, java.util.List<String> endWords) {
+    if (!prefs.getBoolean(HandsFree.LIVE, true)) return "off";
+    StreamingSpeech.Choice c = StreamingSpeech.choice(prefs.getString(HandsFree.LIVE_MODEL, StreamingSpeech.DEFAULT.id()));
+    String key;
+    try {
+      key = new Vault(this).get(StreamingSpeech.keyName(c));
+    } catch (Exception ex) {
+      key = null;
+    }
+    if (key == null || key.isEmpty()) return "on, but no " + (c.provider().equals(StreamingSpeech.ELEVENLABS) ? "ElevenLabs" : "AssemblyAI") + " key: written down from audio";
+    // The send and end words as key terms, so a short "over" is heard as that.
+    java.util.List<String> terms = new java.util.ArrayList<>(sendWords);
+    for (String w : endWords) if (!terms.contains(w)) terms.add(w);
+    StreamingSpeech s = StreamingSpeech.create(c, key, terms);
+    s.events = this::event;
+    s.changed =
+        text -> {
+          HandsFreeSession h = session;
+          if (h != null) h.liveText(text);
+        };
+    s.onFailure =
+        why -> {
+          HandsFreeSession h = session;
+          if (h != null) h.liveFailed(why);
+        };
+    session.live = s;
+    s.speech(); // Open now.
+    return c.model() + " (" + c.provider() + ")";
+  }
+
   private void chargeVoice(String request, Voice.Choice c, String text, String generation, long ms) {
     String call = callId;
     new Thread(
