@@ -96,6 +96,12 @@ final class HandsFreeSession {
    */
   static final long HOLD_MAX_MS = 60_000;
 
+  /**
+   * Past HOLD_MAX_MS a reply still never starts over a stretch of your speech younger than this:
+   * a sentence; a stretch this long without pause is a TV or the like.
+   */
+  static final long LONG_STRETCH_MS = 20_000;
+
   /** A silence send that failed is tried again after this, doubling each time, at most SILENCE_RETRY_MAX_MS. */
   static final long SILENCE_RETRY_MS = 15_000, SILENCE_RETRY_MAX_MS = 60_000;
 
@@ -214,8 +220,13 @@ final class HandsFreeSession {
   static final double SEND_AT = 0.7, END_AT = 0.8;
 
   interface Sender {
-    /** Sends a message to the chief (and the talker, with one); returns its request ID. */
-    String send(String said) throws Exception;
+    /** A new request ID, for a message about to go: it counts as ours from then on. */
+    default String newRequest() {
+      return ChiefText.requestId();
+    }
+
+    /** Sends a message to the chief (and the talker, with one) with this request ID. */
+    void send(String said, String request) throws Exception;
   }
 
   /**
@@ -422,7 +433,7 @@ final class HandsFreeSession {
   private final java.util.Map<String, Integer> requestNumber = new java.util.HashMap<>();
   /** The latest decisions with their reasons, oldest first (under its own lock). */
   private final ArrayDeque<Reason> reasons = new ArrayDeque<>();
-  /** What the call's end tells the chief: replies still waiting, or cut off by the end. */
+  /** What the call's end tells the chief: replies still waiting, or cut off by the end (see endNote()). */
   private volatile String endNote = "";
   private final List<String> requests = new ArrayList<>();
   /** Request → {replies so far, sent at}: for "Chief is working". */
@@ -683,7 +694,34 @@ final class HandsFreeSession {
    * (still waiting), or the one cut off by the end. "" when every reply was heard.
    */
   String endNote() {
-    return endNote;
+    StringBuilder note = new StringBuilder(endNote);
+    List<String> notNoted = new ArrayList<>();
+    synchronized (this) {
+      // Notes no message took (a reply you talked over or that was outdated), once the messages
+      // on their way are settled (a failed one frees its notes).
+      for (Note n : unheard) if (n.claimedBy == 0) note.append("\n\n").append(n.text);
+      for (Note n : outdated) if (n.claimedBy == 0) notNoted.add(n.text);
+    }
+    if (!notNoted.isEmpty()) note.append("\n\n").append(missed(notNoted));
+    return note.toString();
+  }
+
+  /**
+   * After the call's end, once the messages on their way are settled: words a message that
+   * failed left behind are sent now (with the notes it carried), so they aren't stranded.
+   */
+  void sendLeftover() {
+    if (state != State.ENDED) return;
+    String text;
+    synchronized (turnAudio) {
+      text = turnPrefix.trim();
+      turnPrefix = "";
+    }
+    if (text.isEmpty()) return;
+    log("words a message couldn't take before the end: sending them now");
+    outgoing.incrementAndGet();
+    Handoff h = handOff(true);
+    deliver(text + h.notes(), text, "end of the call", h, clock.getAsLong());
   }
 
   /** Chief messages that couldn't be read, not yet noted in a message. */
@@ -1052,15 +1090,7 @@ final class HandsFreeSession {
       }
       dropped = new ArrayList<>(held);
       waiting = held.size();
-      // Notes no message took (a reply you talked over or that was outdated): with the call's end.
-      // Your last words, if any, go without notes.
-      for (Note n : unheard) if (n.claimedBy == 0) note.append("\n\n").append(n.text);
-      List<String> notNoted = new ArrayList<>();
-      for (Note n : outdated) if (n.claimedBy == 0) notNoted.add(n.text);
-      if (!notNoted.isEmpty()) {
-        note.append("\n\n").append(missed(notNoted));
-        log("ended with " + notNoted.size() + " outdated reply(ies) not noted yet: the call's end says so");
-      }
+      // Notes no message takes are added by endNote(), once the messages on their way settled.
       held.clear();
       state = State.ENDED;
     }
@@ -1099,8 +1129,8 @@ final class HandsFreeSession {
   }
 
   /**
-   * As above; untagged: the talker's update without a request ID (request is then the latest
-   * delivered one): while a message of yours is on its way it answers that one.
+   * As above; untagged: the talker's update without a request ID. Its request is then the latest
+   * one handed over (lastRequest), also while that message is on its way: it answers that one.
    */
   void reply(String request, String text, long published, boolean untagged) {
     if (state == State.ENDED) return;
@@ -1108,11 +1138,12 @@ final class HandsFreeSession {
     long since;
     boolean old;
     synchronized (this) {
+      if (state == State.ENDED) return; // Ended meanwhile: end() took what was waiting.
       long[] w = working.get(request);
       if (w != null) w[0]++;
       since = w == null ? -1 : clock.getAsLong() - w[1];
       Integer n = requestNumber.get(request);
-      h.answers = untagged && !onTheWay.isEmpty() ? onTheWay.last() : n == null ? 0 : n;
+      h.answers = n == null ? 0 : n;
       old = outdated(h);
       if (old) outdated.add(new Note(text));
       else held.addLast(h);
@@ -1125,7 +1156,7 @@ final class HandsFreeSession {
     }
     // ntfy's time is in whole seconds (and the server's clock): about how long delivery took.
     long ntfy = published <= 0 ? -1 : Math.max(0, System.currentTimeMillis() - published);
-    log("chief message " + request + " (" + text.length() + " characters" + (since < 0 ? "" : ", " + since + " ms after your message went")
+    log("chief message " + request + (untagged ? " (untagged)" : "") + " (" + text.length() + " characters" + (since < 0 ? "" : ", " + since + " ms after your message went")
         + (ntfy < 0 ? "" : ", ntfy delivered it ~" + ntfy / 1000 + " s after it was posted") + ")");
     prepare(h);
     readNext(); // Says why it waits, if it does.
@@ -1275,9 +1306,14 @@ final class HandsFreeSession {
     return first.ready ? null : "voice";
   }
 
-  /** Has it waited HOLD_MAX_MS, once ready, without new words from live transcription? */
+  /**
+   * Has it waited HOLD_MAX_MS, once ready, without new words from live transcription, and isn't
+   * a stretch of your speech going on that started less than LONG_STRETCH_MS ago?
+   */
   private boolean heldTooLong(Held h, long now) {
-    return h.ready && now - Math.max(h.readyAt, liveWordsAt) >= HOLD_MAX_MS;
+    if (!h.ready || now - Math.max(h.readyAt, liveWordsAt) < HOLD_MAX_MS) return false;
+    if (segmenter.speaking()) return now - stretchAt >= LONG_STRETCH_MS;
+    return !segmenter.candidate(); // A sound just starting may be your next sentence.
   }
 
   /**
@@ -1459,12 +1495,8 @@ final class HandsFreeSession {
             outgoing.decrementAndGet();
             return;
           }
-          int number;
-          synchronized (HandsFreeSession.this) {
-            number = ++handedOff;
-            onTheWay.add(number);
-          }
-          deliver(text, text, "end of the call", number, queued);
+          Handoff h = handOff(true);
+          deliver(text + h.notes(), text, "end of the call", h, queued);
         };
     try {
       outbox.execute(last);
@@ -2101,24 +2133,10 @@ final class HandsFreeSession {
       giveUpTurn("empty");
       return;
     }
-    StringBuilder notes = new StringBuilder();
-    int number;
-    synchronized (this) {
-      number = ++handedOff;
-      onTheWay.add(number);
-      // The notes no message on its way carries yet.
-      for (Note n : unheard)
-        if (n.claimedBy == 0) {
-          n.claimedBy = number;
-          notes.append("\n\n").append(n.text);
-        }
-      List<String> missedNow = new ArrayList<>();
-      for (Note n : outdated)
-        if (n.claimedBy == 0) {
-          n.claimedBy = number;
-          missedNow.add(n.text);
-        }
-      if (!missedNow.isEmpty()) notes.append("\n\n").append(missed(missedNow));
+    Handoff h = handOff(false);
+    if (h == null) {
+      log("the call ended meanwhile: its end sends your words, not this check");
+      return;
     }
     // The turn is over: the parts written down go; what you said since starts your next turn.
     boolean more;
@@ -2135,8 +2153,7 @@ final class HandsFreeSession {
     sentAt = clock.getAsLong();
     listener.changed();
     long queued = clock.getAsLong();
-    String note = notes.toString();
-    Runnable delivery = () -> deliver(text.trim() + note, text, why, number, queued);
+    Runnable delivery = () -> deliver(text.trim() + h.notes(), text, why, h, queued);
     try {
       outbox.execute(delivery);
     } catch (java.util.concurrent.RejectedExecutionException ended) {
@@ -2148,25 +2165,65 @@ final class HandsFreeSession {
    * Delivers a message to the chief (on the outbox): in order, without holding up what you say
    * next. The log says how long it waited for earlier messages and how long bb took.
    */
-  private void deliver(String said, String text, String why, int number, long queued) {
+  /** A message handed over: its number, its request ID and the notes it carries ("" none). */
+  record Handoff(int number, String request, String notes) {}
+
+  /**
+   * Hands a message over (under the lock end() takes): numbers it, registers its request ID (a
+   * reply to it is ours from now on, also before bb is done), and claims the notes no message on
+   * its way carries yet. Null once the call ended, unless last (your last words, after the end).
+   */
+  private synchronized Handoff handOff(boolean last) {
+    if (state == State.ENDED && !last) return null;
+    int number = ++handedOff;
+    onTheWay.add(number);
+    String request = sender.newRequest();
+    requests.add(request);
+    requestNumber.put(request, number);
+    StringBuilder notes = new StringBuilder();
+    for (Note n : unheard)
+      if (n.claimedBy == 0) {
+        n.claimedBy = number;
+        notes.append("\n\n").append(n.text);
+      }
+    List<String> missedNow = new ArrayList<>();
+    for (Note n : outdated)
+      if (n.claimedBy == 0) {
+        n.claimedBy = number;
+        missedNow.add(n.text);
+      }
+    if (!missedNow.isEmpty()) notes.append("\n\n").append(missed(missedNow));
+    return new Handoff(number, request, notes.toString());
+  }
+
+  /** The notes message number carries are free again: for the next message or the call's end. */
+  private synchronized void unclaim(int number) {
+    for (Note n : unheard) if (n.claimedBy == number) n.claimedBy = 0;
+    for (Note n : outdated) if (n.claimedBy == number) n.claimedBy = 0;
+  }
+
+  private void deliver(String said, String text, String why, Handoff h, long queued) {
     long start = clock.getAsLong();
+    int number = h.number();
+    String request = h.request();
     try {
-      String request;
       PartlySent partly = null;
       try {
-        request = sender.send(said);
+        sender.send(said, request);
       } catch (PartlySent p) {
-        request = p.request;
         partly = p;
       }
       long done = clock.getAsLong();
       List<Held> old = new ArrayList<>();
+      boolean chiefMissed = partly != null && partly.chiefMissed;
       synchronized (this) {
-        requests.add(request);
         working.put(request, new long[] {0, done});
-        unheard.removeIf(n -> n.claimedBy == number);
-        outdated.removeIf(n -> n.claimedBy == number);
-        requestNumber.put(request, number);
+        // Its notes reached the chief: done. The chief missed it: they go again.
+        if (chiefMissed) unclaim(number);
+        else {
+          unheard.removeIf(n -> n.claimedBy == number);
+          outdated.removeIf(n -> n.claimedBy == number);
+        }
         onTheWay.remove(number);
         latestSent = Math.max(latestSent, number);
         silenceTries = 0;
@@ -2175,17 +2232,17 @@ final class HandsFreeSession {
         // played; your next message, or the call's end, says so.
         if (dropsOutdated)
           for (java.util.Iterator<Held> it = held.iterator(); it.hasNext(); ) {
-            Held h = it.next();
-            if (!outdated(h)) continue;
+            Held w = it.next();
+            if (!outdated(w)) continue;
             it.remove();
-            h.dropped = true;
-            old.add(h);
-            outdated.add(new Note(h.text));
+            w.dropped = true;
+            old.add(w);
+            outdated.add(new Note(w.text));
           }
       }
-      for (Held h : old) {
-        speaker.drop(h.prepared); // Its voice no longer fetched on (let go when it comes).
-        log("chief message " + h.request + " dropped (" + h.text.length() + " characters): it was waiting when your newer message " + request + " went; your next message says you didn't hear it");
+      for (Held w : old) {
+        speaker.drop(w.prepared); // Its voice no longer fetched on (let go when it comes).
+        log("chief message " + w.request + " dropped (" + w.text.length() + " characters): it was waiting when your newer message " + request + " went; your next message says you didn't hear it");
       }
       if (old.size() == 1) reason("An older reply wasn't played: you've said more since");
       else if (old.size() > 1) reason("%1$d older replies weren't played: you've said more since", old.size());
@@ -2207,11 +2264,11 @@ final class HandsFreeSession {
         default -> reason("Sent ✓ by the Send button");
       }
     } catch (Exception ex) {
+      // Its notes go with the next message (or the call's end). Its request stays ours: nobody
+      // got it, so no reply to it comes.
       synchronized (this) {
         onTheWay.remove(number);
-        // Its notes go with the next message (or the call's end).
-        for (Note n : unheard) if (n.claimedBy == number) n.claimedBy = 0;
-        for (Note n : outdated) if (n.claimedBy == number) n.claimedBy = 0;
+        unclaim(number);
       }
       // Kept, before whatever you said since, so the next check or Send tries again.
       synchronized (turnAudio) {

@@ -192,15 +192,13 @@ public final class HandsFreeService extends Service {
               event(String.format(java.util.Locale.ROOT, "speech model %s: %.1f s, %s", model, (wav.length - 44) / (double) AudioFiles.BYTES_PER_SECOND, r.cost() == null ? "cost unknown" : "$" + r.cost().stripTrailingZeros().toPlainString()));
               return r.text();
             },
-            said -> {
-              String request = ChiefText.requestId();
+            (said, request) -> {
               if (talker.isEmpty()) {
                 bb.sendHandsFree(bb.chiefId(), said, request);
                 keepNote(said, request, model);
-                return request;
+                return;
               }
               sendBoth(bb, said, request, model);
-              return request;
             },
             new HandsFreeSession.Speaker() {
               public Object prepare(String request, String text) {
@@ -607,13 +605,19 @@ public final class HandsFreeService extends Service {
   private Thread signal(BbBridge bb, String line, HandsFreeSession after) {
     String chief = bb.chiefId(), talker = this.talker;
     if (chief.isEmpty()) return null;
-    // The call start names the talker for the chief only; the talker gets the plain line.
-    String chiefLine = line.equals(HandsFree.CALL_STARTED) ? HandsFree.callStarted(talker) : line;
     Thread t =
         new Thread(
             () -> {
-              if (after != null && !after.awaitDelivered(25_000)) event("a message was still on its way when the call ended");
-              java.util.Map<String, String> to = bothTo(chief, talker, chiefLine, line);
+              String said = line;
+              if (after != null) {
+                if (!after.awaitDelivered(25_000)) event("a message was still on its way when the call ended");
+                // Settled: words a failed message left go now; the notes no message took, with the end.
+                after.sendLeftover();
+                said = line + after.endNote();
+              }
+              // The call start names the talker for the chief only; the talker gets the plain line.
+              String chiefLine = said.equals(HandsFree.CALL_STARTED) ? HandsFree.callStarted(talker) : said;
+              java.util.Map<String, String> to = bothTo(chief, talker, chiefLine, said);
               java.util.Map<String, String> failed = bb.tellEach(to);
               for (String id : to.keySet()) {
                 String who = id.equals(chief) ? "the chief" : "the talker (" + id + ")";
@@ -843,7 +847,8 @@ public final class HandsFreeService extends Service {
     }
     event("call ended · $" + callCost.stripTrailingZeros().toPlainString() + " on OpenRouter");
     // With the end, once: the replies that never reached you.
-    Thread ended = s == null ? null : signal(new BbBridge(this), HandsFree.CALL_ENDED + s.endNote(), s);
+    // After the messages on their way: words a failed one left go first, then the notes left.
+    Thread ended = s == null ? null : signal(new BbBridge(this), HandsFree.CALL_ENDED, s);
     if (replies != null) replies.finish();
     if (voice != null) voice.shutdown();
     if (cues != null) cues.release();
