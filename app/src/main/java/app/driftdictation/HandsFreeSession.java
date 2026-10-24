@@ -89,6 +89,16 @@ final class HandsFreeSession {
    */
   static final long WORDLESS_MS = 3000;
 
+  /**
+   * A reply whose voice is ready waits through your turn at most this long without new words from
+   * live transcription: a TV (without live transcription), a slow check or bb refusing your
+   * message can't hold it forever.
+   */
+  static final long HOLD_MAX_MS = 60_000;
+
+  /** A silence send that failed is tried again after this, doubling each time, at most SILENCE_RETRY_MAX_MS. */
+  static final long SILENCE_RETRY_MS = 15_000, SILENCE_RETRY_MAX_MS = 60_000;
+
   /** How long the screen says Sent ✓ after a message went. */
   static final long SENT_SHOWN_MS = 3000;
 
@@ -273,8 +283,10 @@ final class HandsFreeSession {
     /** When it arrived and when its voice was ready, for the timings in the log. */
     final long arrived;
     volatile long readyAt;
-    /** Not to be played (an outdated reply): its voice, when it comes, is let go. */
+    /** Not to be played (an outdated reply, or the call ended): its voice, when it comes, is let go. */
     volatile boolean dropped;
+    /** The number of the message it answers (0: none; see answers()). */
+    int answers;
 
     Held(String request, String text, long arrived) {
       this.request = request;
@@ -316,6 +328,13 @@ final class HandsFreeSession {
   private volatile boolean dropStretch;
   /** When you started speaking in this turn, and whether its first live words were logged. */
   private volatile long turnSpeechAt;
+  /** When the stretch of speech going on started (each one). */
+  private volatile long stretchAt;
+  /** When live transcription last gave you words: a reply waits HOLD_MAX_MS at most without them. */
+  private volatile long liveWordsAt;
+  /** Silence sends tried since you last spoke (each failure waits longer for the next). */
+  private volatile int silenceTries;
+  private volatile long silenceNextAt;
   private volatile boolean firstWordsLogged;
   private static final byte[] SILENCE = new byte[640];
 
@@ -371,22 +390,32 @@ final class HandsFreeSession {
   private final AtomicInteger outgoing = new AtomicInteger();
   /** Chief messages waiting to be read: at your next pause, or once the one playing ends. */
   private final ArrayDeque<Held> held = new ArrayDeque<>();
-  /** Notes for your next message about replies you didn't hear (their reading failed). */
-  private final List<String> unheard = new ArrayList<>();
-  /** The first this many of unheard are in messages on their way (removed once delivered). */
-  private int claimed;
+  /**
+   * A note for your next message; claimedBy is the number of the message on its way with it (0:
+   * none): removed once that one is delivered, free again if it couldn't be sent.
+   */
+  private static final class Note {
+    final String text;
+    int claimedBy;
+
+    Note(String text) {
+      this.text = text;
+    }
+  }
+
+  /** Notes about replies you didn't hear (their reading failed, or you talked over them). */
+  private final List<Note> unheard = new ArrayList<>();
   /**
    * A call with a talker: a reply to an older message than your latest isn't played (it no
    * longer fits what you said); your next message, or the call's end, says you didn't hear it.
    */
   volatile boolean dropsOutdated;
-  /** Outdated replies dropped, not yet noted in a message; the first outdatedClaimed are on their way. */
-  private final List<String> outdated = new ArrayList<>();
-  private int outdatedClaimed;
+  /** Outdated replies dropped (their texts), not yet noted in a delivered message. */
+  private final List<Note> outdated = new ArrayList<>();
   /**
    * Messages handed to the outbox so far (each one's number), the numbers on their way, the
-   * latest delivered, and each sent request's number. A message that couldn't be sent doesn't
-   * make the replies before it outdated.
+   * latest delivered, and each sent request's number. Only a delivered message makes the
+   * replies before it outdated.
    */
   private int handedOff, latestSent;
   private final java.util.TreeSet<Integer> onTheWay = new java.util.TreeSet<>();
@@ -486,6 +515,9 @@ final class HandsFreeSession {
               public void started(double level, double background) {
                 boolean taking = !takenByYou;
                 takenByYou = true;
+                stretchAt = clock.getAsLong();
+                silenceTries = 0;
+                silenceNextAt = 0;
                 if (taking) {
                   log(String.format(java.util.Locale.ROOT, "floor: you (level %.0f, background %.0f)", level, background));
                   cue(Cue.HEARD);
@@ -869,9 +901,14 @@ final class HandsFreeSession {
       finishReading(token, false, started ? tr("it played far too long") : tr("its audio didn't start"));
       return;
     }
-    if (state == State.LISTENING && hasTurn() && !segmenter.candidate() && transcribing.get() == 0
-        && segmenter.quietMs() >= silenceSendMs)
+    if (state == State.LISTENING && hasTurn() && !segmenter.candidate() && transcribing.get() == 0 && outgoing.get() == 0
+        && segmenter.quietMs() >= silenceSendMs && now >= silenceNextAt) {
+      // Tried again later if it fails (bb unreachable, nothing written down): not every second.
+      int tries = silenceTries++;
+      silenceNextAt = now + Math.min(SILENCE_RETRY_MAX_MS, SILENCE_RETRY_MS << Math.min(tries, 3));
+      if (tries > 0) log("silence send: trying again (" + (tries + 1) + ")");
       check("silence");
+    }
     // Words live transcription heard while nobody had the floor (noise, a TV, someone else) don't
     // start your next turn.
     LiveText l = live;
@@ -907,6 +944,7 @@ final class HandsFreeSession {
     if (now != null && !text.equals(now.text())) return; // Overtaken (its turn was just taken).
     String prefix = turnPrefix;
     pending = (prefix + " " + text).trim();
+    liveWordsAt = clock.getAsLong();
     if (!firstWordsLogged && turnSpeechAt > 0) {
       firstWordsLogged = true;
       log(String.format(java.util.Locale.ROOT, "live text: first words %d ms after you started speaking", clock.getAsLong() - turnSpeechAt));
@@ -1008,13 +1046,17 @@ final class HandsFreeSession {
       if (state == State.ENDED) return; // Ended once only (End and an end phrase at once).
       // The chief hears once, with the call's end, which replies never reached you.
       if (state == State.READING && current != null) note.append("\n\n").append(heardUpTo(current.text, at));
-      for (Held h : held) note.append("\n\n").append(missed(h.text));
+      for (Held h : held) {
+        note.append("\n\n").append(missed(h.text));
+        h.dropped = true; // A voice still being fetched is let go when it comes.
+      }
       dropped = new ArrayList<>(held);
       waiting = held.size();
       // Notes no message took (a reply you talked over or that was outdated): with the call's end.
       // Your last words, if any, go without notes.
-      for (String u : unheard.subList(Math.min(claimed, unheard.size()), unheard.size())) note.append("\n\n").append(u);
-      List<String> notNoted = outdated.subList(Math.min(outdatedClaimed, outdated.size()), outdated.size());
+      for (Note n : unheard) if (n.claimedBy == 0) note.append("\n\n").append(n.text);
+      List<String> notNoted = new ArrayList<>();
+      for (Note n : outdated) if (n.claimedBy == 0) notNoted.add(n.text);
       if (!notNoted.isEmpty()) {
         note.append("\n\n").append(missed(notNoted));
         log("ended with " + notNoted.size() + " outdated reply(ies) not noted yet: the call's end says so");
@@ -1053,6 +1095,14 @@ final class HandsFreeSession {
 
   /** As above; published is when ntfy got it (unix ms, 0 if unknown), for the log's timings. */
   void reply(String request, String text, long published) {
+    reply(request, text, published, false);
+  }
+
+  /**
+   * As above; untagged: the talker's update without a request ID (request is then the latest
+   * delivered one): while a message of yours is on its way it answers that one.
+   */
+  void reply(String request, String text, long published, boolean untagged) {
     if (state == State.ENDED) return;
     Held h = new Held(request, text, clock.getAsLong());
     long since;
@@ -1061,8 +1111,10 @@ final class HandsFreeSession {
       long[] w = working.get(request);
       if (w != null) w[0]++;
       since = w == null ? -1 : clock.getAsLong() - w[1];
-      old = outdated(request);
-      if (old) outdated.add(text);
+      Integer n = requestNumber.get(request);
+      h.answers = untagged && !onTheWay.isEmpty() ? onTheWay.last() : n == null ? 0 : n;
+      old = outdated(h);
+      if (old) outdated.add(new Note(text));
       else held.addLast(h);
     }
     if (old) {
@@ -1081,14 +1133,13 @@ final class HandsFreeSession {
   }
 
   /**
-   * Does a reply to this request answer an older message than your latest (one on its way
-   * counts)? Only in a call with a talker. A reply before your first message ("") is outdated
-   * once you've sent one.
+   * Does this reply answer an older message than your latest delivered one? Only in a call with a
+   * talker. A reply before your first message is outdated once one is delivered. One that comes
+   * while your message is on its way waits (it's your turn) until it's delivered: then it's
+   * outdated if it answers an older one.
    */
-  private synchronized boolean outdated(String request) {
-    if (!dropsOutdated) return false;
-    Integer n = requestNumber.get(request);
-    return (n == null ? 0 : n) < Math.max(latestSent, onTheWay.isEmpty() ? 0 : onTheWay.last());
+  private synchronized boolean outdated(Held h) {
+    return dropsOutdated && h.answers < latestSent;
   }
 
   /** Fetches a reply's audio (on the voices queue); once ready it plays when it may. */
@@ -1141,7 +1192,7 @@ final class HandsFreeSession {
         first.told = true;
         first.toldWhy = waits;
       } else if (first.told) {
-        plays = "silence";
+        plays = yourTurn(now) != null ? "capped" : "silence";
       }
     }
     if (waits != null) {
@@ -1158,7 +1209,8 @@ final class HandsFreeSession {
       readNext(); // It may play right away after all (it was told, so this doesn't repeat).
       return;
     }
-    if (plays != null) reason("Reply plays: your turn is over");
+    if ("capped".equals(plays)) reason("Reply plays: it waited %1$d s without new words from you", HOLD_MAX_MS / 1000);
+    else if (plays != null) reason("Reply plays: your turn is over");
     // A sound that hasn't counted as speech yet ends as noise (if it was you, talking on over the
     // reply interrupts it).
     if (!segmenter.speaking()) segmenter.flush(false);
@@ -1219,8 +1271,13 @@ final class HandsFreeSession {
    */
   private String holds(Held first, long now) {
     String yours = yourTurn(now);
-    if (yours != null) return yours;
+    if (yours != null && !heldTooLong(first, now)) return yours;
     return first.ready ? null : "voice";
+  }
+
+  /** Has it waited HOLD_MAX_MS, once ready, without new words from live transcription? */
+  private boolean heldTooLong(Held h, long now) {
+    return h.ready && now - Math.max(h.readyAt, liveWordsAt) >= HOLD_MAX_MS;
   }
 
   /**
@@ -1235,7 +1292,7 @@ final class HandsFreeSession {
   String yourTurn(long now) {
     if (streaming()) {
       boolean words = !pending.isEmpty() || !turnPrefix.isEmpty();
-      if (!words && segmenter.speaking() && now - turnSpeechAt < WORDLESS_MS) return "speaking";
+      if (!words && segmenter.speaking() && now - stretchAt < WORDLESS_MS) return "speaking";
       if (transcribing.get() > 0) return "writing down";
       if (words) return "unsent words";
     } else {
@@ -1332,7 +1389,7 @@ final class HandsFreeSession {
   private boolean endReading(int token, String note, boolean tail) {
     synchronized (this) {
       if (token != reading || state != State.READING) return false;
-      if (note != null) unheard.add(note);
+      if (note != null) unheard.add(new Note(note));
       // You started talking over its last words: they're kept, the microphone stays on.
       if (tail && segmenter.candidate()) tail = false;
       current = null;
@@ -1407,7 +1464,7 @@ final class HandsFreeSession {
             number = ++handedOff;
             onTheWay.add(number);
           }
-          deliver(text, text, "end of the call", 0, 0, number, queued);
+          deliver(text, text, "end of the call", number, queued);
         };
     try {
       outbox.execute(last);
@@ -2045,34 +2102,24 @@ final class HandsFreeSession {
       return;
     }
     StringBuilder notes = new StringBuilder();
-    int failed, number, noted;
-    List<Held> old = new ArrayList<>();
+    int number;
     synchronized (this) {
       number = ++handedOff;
       onTheWay.add(number);
-      // With a talker, replies still waiting answer an older message: not played, and this
-      // message says so.
-      if (dropsOutdated) {
-        old.addAll(held);
-        held.clear();
-        for (Held h : old) {
-          h.dropped = true;
-          outdated.add(h.text);
+      // The notes no message on its way carries yet.
+      for (Note n : unheard)
+        if (n.claimedBy == 0) {
+          n.claimedBy = number;
+          notes.append("\n\n").append(n.text);
         }
-      }
-      for (String u : unheard) notes.append("\n\n").append(u);
-      failed = unheard.size();
-      claimed = failed;
-      if (!outdated.isEmpty()) notes.append("\n\n").append(missed(outdated));
-      noted = outdated.size();
-      outdatedClaimed = noted;
+      List<String> missedNow = new ArrayList<>();
+      for (Note n : outdated)
+        if (n.claimedBy == 0) {
+          n.claimedBy = number;
+          missedNow.add(n.text);
+        }
+      if (!missedNow.isEmpty()) notes.append("\n\n").append(missed(missedNow));
     }
-    for (Held h : old) {
-      speaker.drop(h.prepared); // Its voice no longer fetched on.
-      log("chief message " + h.request + " dropped (" + h.text.length() + " characters): it was still waiting when you sent a newer message; this message says you didn't hear it");
-    }
-    if (old.size() == 1) reason("An older reply wasn't played: you've said more since");
-    else if (old.size() > 1) reason("%1$d older replies weren't played: you've said more since", old.size());
     // The turn is over: the parts written down go; what you said since starts your next turn.
     boolean more;
     synchronized (turnAudio) {
@@ -2089,7 +2136,7 @@ final class HandsFreeSession {
     listener.changed();
     long queued = clock.getAsLong();
     String note = notes.toString();
-    Runnable delivery = () -> deliver(text.trim() + note, text, why, failed, noted, number, queued);
+    Runnable delivery = () -> deliver(text.trim() + note, text, why, number, queued);
     try {
       outbox.execute(delivery);
     } catch (java.util.concurrent.RejectedExecutionException ended) {
@@ -2101,7 +2148,7 @@ final class HandsFreeSession {
    * Delivers a message to the chief (on the outbox): in order, without holding up what you say
    * next. The log says how long it waited for earlier messages and how long bb took.
    */
-  private void deliver(String said, String text, String why, int failed, int noted, int number, long queued) {
+  private void deliver(String said, String text, String why, int number, long queued) {
     long start = clock.getAsLong();
     try {
       String request;
@@ -2113,17 +2160,35 @@ final class HandsFreeSession {
         partly = p;
       }
       long done = clock.getAsLong();
+      List<Held> old = new ArrayList<>();
       synchronized (this) {
         requests.add(request);
         working.put(request, new long[] {0, done});
-        for (int i = 0; i < failed && !unheard.isEmpty(); i++) unheard.remove(0);
-        outdated.subList(0, Math.min(noted, outdated.size())).clear();
-        outdatedClaimed = Math.max(0, outdatedClaimed - noted);
+        unheard.removeIf(n -> n.claimedBy == number);
+        outdated.removeIf(n -> n.claimedBy == number);
         requestNumber.put(request, number);
         onTheWay.remove(number);
         latestSent = Math.max(latestSent, number);
-        claimed = Math.max(0, claimed - failed);
+        silenceTries = 0;
+        silenceNextAt = 0;
+        // With a talker, the replies waiting that answer an older message no longer fit: not
+        // played; your next message, or the call's end, says so.
+        if (dropsOutdated)
+          for (java.util.Iterator<Held> it = held.iterator(); it.hasNext(); ) {
+            Held h = it.next();
+            if (!outdated(h)) continue;
+            it.remove();
+            h.dropped = true;
+            old.add(h);
+            outdated.add(new Note(h.text));
+          }
       }
+      for (Held h : old) {
+        speaker.drop(h.prepared); // Its voice no longer fetched on (let go when it comes).
+        log("chief message " + h.request + " dropped (" + h.text.length() + " characters): it was waiting when your newer message " + request + " went; your next message says you didn't hear it");
+      }
+      if (old.size() == 1) reason("An older reply wasn't played: you've said more since");
+      else if (old.size() > 1) reason("%1$d older replies weren't played: you've said more since", old.size());
       sent++;
       sentAt = done;
       deliveredAt = done;
@@ -2144,6 +2209,9 @@ final class HandsFreeSession {
     } catch (Exception ex) {
       synchronized (this) {
         onTheWay.remove(number);
+        // Its notes go with the next message (or the call's end).
+        for (Note n : unheard) if (n.claimedBy == number) n.claimedBy = 0;
+        for (Note n : outdated) if (n.claimedBy == number) n.claimedBy = 0;
       }
       // Kept, before whatever you said since, so the next check or Send tries again.
       synchronized (turnAudio) {

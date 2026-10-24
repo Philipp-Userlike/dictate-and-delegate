@@ -237,6 +237,7 @@
     <string name="t_51a8b5d9" formatted="false">Thread und Skills in bb werden geprüft…</string>
     <string name="t_51bac044" formatted="false">Abbrechen</string>
     <string name="t_51eabb10" formatted="false">Warte auf den Chef · du kannst sprechen</string>
+    <string name="t_523849e4" formatted="false">Antwort spielt: hat %1$d s ohne neue Worte von dir gewartet</string>
     <string name="t_523a6999" formatted="false">Die Verbindung zu bb wurde unterbrochen. Versuche es erneut.</string>
     <string name="t_525e2e9d" formatted="false">Vorheriger Monat</string>
     <string name="t_5265d3ae" formatted="false">Am genauesten</string>

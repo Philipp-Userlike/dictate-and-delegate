@@ -238,6 +238,7 @@
     <string name="t_51a8b5d9" formatted="false">Comprobando el hilo y las habilidades en bb…</string>
     <string name="t_51bac044" formatted="false">Cancelar</string>
     <string name="t_51eabb10" formatted="false">Esperando al jefe · puedes hablar</string>
+    <string name="t_523849e4" formatted="false">Reproduciendo respuesta: esperó %1$d s sin nuevas palabras tuyas</string>
     <string name="t_523a6999" formatted="false">Se interrumpió la conexión con bb. Inténtalo de nuevo.</string>
     <string name="t_525e2e9d" formatted="false">Mes anterior</string>
     <string name="t_5265d3ae" formatted="false">El más preciso</string>

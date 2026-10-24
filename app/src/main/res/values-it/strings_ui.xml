@@ -238,6 +238,7 @@
     <string name="t_51a8b5d9" formatted="false">Controllo del thread e delle skill in bb…</string>
     <string name="t_51bac044" formatted="false">Annulla</string>
     <string name="t_51eabb10" formatted="false">In attesa del capo · puoi parlare</string>
+    <string name="t_523849e4" formatted="false">Riproduzione risposta: atteso %1$d s senza nuove parole da parte tua</string>
     <string name="t_523a6999" formatted="false">La connessione a bb si è interrotta. Riprova.</string>
     <string name="t_525e2e9d" formatted="false">Mese precedente</string>
     <string name="t_5265d3ae" formatted="false">Più accurato</string>

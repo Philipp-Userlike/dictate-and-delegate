@@ -238,6 +238,7 @@
     <string name="t_51a8b5d9" formatted="false">Vérification du fil et des compétences dans bb…</string>
     <string name="t_51bac044" formatted="false">Annuler</string>
     <string name="t_51eabb10" formatted="false">En attente du chef · tu peux parler</string>
+    <string name="t_523849e4" formatted="false">Lecture de la réponse : %1$d s d\'attente sans nouveaux mots de ta part</string>
     <string name="t_523a6999" formatted="false">La connexion à bb a été interrompue. Réessaie.</string>
     <string name="t_525e2e9d" formatted="false">Mois précédent</string>
     <string name="t_5265d3ae" formatted="false">Le plus précis</string>

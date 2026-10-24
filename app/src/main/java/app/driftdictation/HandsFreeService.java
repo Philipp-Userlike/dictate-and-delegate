@@ -325,9 +325,9 @@ public final class HandsFreeService extends Service {
                 HandsFreeSession s = session;
                 return talker.isEmpty() || s == null ? "" : s.lastRequest();
               },
-              (request, text, published) -> {
+              (request, text, published, untagged) -> {
                 HandsFreeSession s = session;
-                if (s != null) s.reply(request, text, published);
+                if (s != null) s.reply(request, text, published, untagged);
               });
       replies.start();
     } catch (Exception ex) {

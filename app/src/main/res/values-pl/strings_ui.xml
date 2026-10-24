@@ -239,6 +239,7 @@
     <string name="t_51a8b5d9" formatted="false">Sprawdzanie wątku i umiejętności w bb…</string>
     <string name="t_51bac044" formatted="false">Anuluj</string>
     <string name="t_51eabb10" formatted="false">Czekam na szefa · możesz mówić</string>
+    <string name="t_523849e4" formatted="false">Odtwarzanie odpowiedzi: minęło %1$d s bez nowych słów od Ciebie</string>
     <string name="t_523a6999" formatted="false">Połączenie z bb zostało przerwane. Spróbuj ponownie.</string>
     <string name="t_525e2e9d" formatted="false">Poprzedni miesiąc</string>
     <string name="t_5265d3ae" formatted="false">Najdokładniejszy</string>

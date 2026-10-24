@@ -181,8 +181,11 @@ final class ChiefText {
    */
   static final class Replies extends Thread {
     interface Callback {
-      /** A spoken reply for request; published: when ntfy got it (unix ms, whole seconds), 0 if unknown. */
-      void reply(String request, String text, long published);
+      /**
+       * A spoken reply for request; published: when ntfy got it (unix ms, whole seconds), 0 if
+       * unknown; untagged: it came without a request ID (request is then untagged's).
+       */
+      void reply(String request, String text, long published, boolean untagged);
     }
 
     private final String server, topic;
@@ -243,10 +246,11 @@ final class ChiefText {
               String id = m.optString("id");
               if (!id.isEmpty()) since = id; // Reconnect from here, not from the start.
               String request = spokenRequest(m);
-              if (request.isEmpty() && spoken(m)) request = untagged.get();
+              boolean noTag = request.isEmpty();
+              if (noTag && spoken(m)) request = untagged.get();
               if (request.isEmpty() || !seen.add(id) || !ours.test(request)) continue;
               String t = text(m, server);
-              if (!t.isEmpty()) callback.reply(request, t, m.optLong("time") * 1000);
+              if (!t.isEmpty()) callback.reply(request, t, m.optLong("time") * 1000, noTag);
             }
           } finally {
             c.disconnect();

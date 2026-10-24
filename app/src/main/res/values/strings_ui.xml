@@ -239,6 +239,7 @@
     <string name="t_51a8b5d9" formatted="false">Checking the thread and the skills in bb…</string>
     <string name="t_51bac044" formatted="false">Cancel</string>
     <string name="t_51eabb10" formatted="false">Waiting for the chief · you can talk</string>
+    <string name="t_523849e4" formatted="false">Reply plays: it waited %1$d s without new words from you</string>
     <string name="t_523a6999" formatted="false">The connection to bb broke off. Try again.</string>
     <string name="t_525e2e9d" formatted="false">Previous month</string>
     <string name="t_5265d3ae" formatted="false">Most accurate</string>
