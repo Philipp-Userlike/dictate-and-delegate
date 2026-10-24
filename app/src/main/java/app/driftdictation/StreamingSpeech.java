@@ -80,6 +80,10 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
    * are ignored when they come, up to and including this stretch (finalsSeen counts them).
    */
   private int dropThrough = -1;
+  /** A drop lasts at most until then: a final that never comes doesn't hide the next stretch. */
+  private long dropUntil;
+  /** How long a dropped stretch's late messages are waited for (tests shorten it). */
+  static volatile long DROP_MS = 2000;
   /** Closed for good (the call ended): a connection opening meanwhile is closed at once. */
   private boolean closed;
   private final java.util.ArrayDeque<byte[]> ring = new java.util.ArrayDeque<>();
@@ -118,7 +122,7 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
   final void live(String text) {
     String t;
     synchronized (this) {
-      if (finalsSeen <= dropThrough) return; // A dropped stretch's: not this turn's.
+      if (dropping()) return; // A dropped stretch's: not this turn's.
       live = text == null ? "" : text.trim();
       t = textLocked();
     }
@@ -130,7 +134,7 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
     String t;
     synchronized (this) {
       String f = text == null ? "" : text.trim();
-      boolean dropped = finalsSeen <= dropThrough; // Late, for a stretch already taken or dropped.
+      boolean dropped = dropping(); // Late, for a stretch already taken or dropped.
       if (!f.isEmpty() && !dropped) finals.add(f);
       if (!dropped) live = "";
       finalsSeen++;
@@ -142,17 +146,31 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
 
   /** The stretch going on is dropped: what still comes of it is ignored (under the lock). */
   private void drop() {
-    dropThrough = finalsSeen;
-    dropped();
+    boolean empty = live.isEmpty();
+    if (!byTurn()) {
+      dropThrough = finalsSeen;
+      dropUntil = clock.getAsLong() + DROP_MS;
+    }
+    dropped(empty);
   }
 
-  /** Told when a stretch is dropped (under the lock). */
-  void dropped() {}
-
-  /** A newer stretch came though the dropped one's final didn't: nothing is ignored any more. */
-  final synchronized void newerStretch() {
-    if (finalsSeen <= dropThrough) dropThrough = finalsSeen - 1;
+  /** Is what comes now a dropped stretch's (under the lock)? Not past its time. */
+  private boolean dropping() {
+    if (finalsSeen > dropThrough) return false;
+    if (clock.getAsLong() > dropUntil) {
+      dropThrough = finalsSeen - 1;
+      return false;
+    }
+    return true;
   }
+
+  /** Does the provider say which stretch a message is of (then it drops by that)? */
+  boolean byTurn() {
+    return false;
+  }
+
+  /** Told when the stretch going on is dropped, and whether nothing of it had come yet (under the lock). */
+  void dropped(boolean nothingYet) {}
 
   private String textLocked() {
     StringBuilder b = new StringBuilder();
@@ -184,6 +202,10 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
       failure = why;
       notifyAll();
     }
+    // Not used again this call: closed now (it's billed while open).
+    WebSocket ws = socket;
+    socket = null;
+    if (ws != null) ws.close();
     events.accept("streaming transcription failed: " + why);
     onFailure.accept(why);
   }
@@ -283,12 +305,14 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
                 }
               },
               10_000);
+      boolean late;
       synchronized (this) {
-        if (closed) { // The call ended while it connected.
-          ws.close();
-          return;
-        }
-        socket = ws;
+        late = closed;
+        if (!late) socket = ws;
+      }
+      if (late) { // The call ended while it connected.
+        ws.close();
+        return;
       }
       openedMs = clock.getAsLong() - start;
       openSince = clock.getAsLong();
@@ -358,7 +382,9 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
   public void discard() {
     WebSocket ws = socket;
     synchronized (this) {
-      if (!live.isEmpty() && ws != null && ws.open()) drop(); // Its final, when it comes (asked for below), too.
+      // What's in flight of this stretch (its words may not have come yet: its audio went out
+      // written down from the audio) is dropped when it comes, as its final (asked for below).
+      if (ws != null && ws.open()) drop();
       turnStart = finals.size();
       live = "";
     }
@@ -413,12 +439,26 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
    */
   static class AssemblyAi extends StreamingSpeech {
     private final List<String> keyterms;
-    /** The last turn that came final, the turn live now, and the one dropped (-1: none). */
-    private int lastTurn = -1, liveTurn = -1, droppedTurn = -1;
+    /**
+     * The last turn that came final, the turn live now, and the one dropped (-1: none); written on
+     * the caller's thread, read on the connection's.
+     */
+    private volatile int lastTurn = -1, liveTurn = -1, droppedTurn = -1;
+    /** The dropped turn hadn't shown up yet (a guess: the next one), and when it was dropped. */
+    private volatile boolean guessed;
+    private volatile long droppedAt;
 
     @Override
-    void dropped() {
-      droppedTurn = liveTurn;
+    boolean byTurn() {
+      return true;
+    }
+
+    @Override
+    void dropped(boolean nothingYet) {
+      // Nothing of it had come: it's the turn after the last one seen.
+      droppedTurn = nothingYet ? Math.max(liveTurn, lastTurn) + 1 : liveTurn;
+      guessed = nothingYet;
+      droppedAt = clock.getAsLong();
     }
 
     AssemblyAi(Choice c, String key, List<String> keyterms) {
@@ -458,11 +498,15 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
       String type = m.optString("type");
       if (type.equals("Turn")) {
         int order = m.optInt("turn_order", -1);
-        if (droppedTurn >= 0 && order > droppedTurn) { // The dropped turn's final never came.
-          droppedTurn = -1;
-          newerStretch();
-        }
+        int dropped = droppedTurn;
+        if (dropped >= 0 && order == dropped && guessed && order != liveTurn && clock.getAsLong() - droppedAt > DROP_MS)
+          dropped = droppedTurn = -1; // The guessed turn started long after: new speech, not the dropped audio.
+        if (dropped >= 0 && order > dropped) dropped = droppedTurn = -1; // Past it.
         if (order >= 0) liveTurn = order;
+        if (dropped >= 0 && order == dropped) { // The dropped turn's words, or its final: not this turn's.
+          if (m.optBoolean("end_of_turn")) lastTurn = Math.max(lastTurn, order);
+          return;
+        }
         boolean formatted = !choice.model().equals(AAI_EN.model()) || m.optBoolean("turn_is_formatted");
         if (m.optBoolean("end_of_turn") && formatted) {
           // One final per turn (Universal-3.6 Pro sent one each in Philipp's runs; a repeat is dropped).

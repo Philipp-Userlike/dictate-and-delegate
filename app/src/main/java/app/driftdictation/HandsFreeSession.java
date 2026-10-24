@@ -843,6 +843,8 @@ final class HandsFreeSession {
    */
   void liveText(String text) {
     if (state != State.LISTENING || !streaming() || text.isEmpty() || !floorIsYours()) return;
+    LiveText now = live;
+    if (now != null && !text.equals(now.text())) return; // Overtaken (its turn was just taken).
     String prefix = turnPrefix;
     pending = (prefix + " " + text).trim();
     if (!firstWordsLogged && turnSpeechAt > 0) {
@@ -1089,6 +1091,7 @@ final class HandsFreeSession {
       playing = false;
       // The microphone stays on: what it hears over the reply goes to the segmenter, afresh.
       segmenter.reset();
+      dropStretch = false; // Whatever stretch was going on is gone.
       segmenter.bursts = false;
       token = ++reading;
       readingSince = clock.getAsLong();
@@ -1212,7 +1215,10 @@ final class HandsFreeSession {
       current = null;
       mutedUntil = tail ? clock.getAsLong() + TAIL_MS : 0;
       tailHeard = false;
-      if (tail) segmenter.reset();
+      if (tail) {
+        segmenter.reset();
+        dropStretch = false;
+      }
       segmenter.bursts = true;
       reply = "";
       state = State.LISTENING;
@@ -1629,6 +1635,22 @@ final class HandsFreeSession {
       return;
     }
     long quiet = (System.nanoTime() - waited) / 1_000_000;
+    if (end) {
+      // Hanging up by mistake is the worst: only when Jev confirms it's a goodbye. Without that
+      // (no Jev, it failed, or not a goodbye) the turn goes on as it is, and your pause decides.
+      String why;
+      try {
+        if (judge == null) throw new IllegalStateException("no judge");
+        Verdict v = judge.judge((turnPrefix + " " + l.text()).trim());
+        why = v.end() >= END_AT ? null : String.format(java.util.Locale.ROOT, "Jev: not a goodbye (end the call %.2f)", v.end());
+      } catch (Exception ex) {
+        why = "Jev couldn't confirm the goodbye (" + ex.getMessage() + ")";
+      }
+      if (why != null) {
+        log(why + ": not ended, the turn goes on");
+        return;
+      }
+    }
     long start = clock.getAsLong();
     writingSince = start;
     checkStep = "writing";
@@ -1649,15 +1671,6 @@ final class HandsFreeSession {
       prefix = turnPrefix;
     }
     String notEnding = cut == null ? String.format(java.util.Locale.ROOT, "the final text in %d ms doesn't end with the phrase (\"%s\")", took, tail(text)) : null;
-    if (end && cut != null && judge != null) {
-      // Hanging up by mistake is the worst: Jev confirms it's a goodbye.
-      try {
-        Verdict v = judge.judge((prefix + " " + text).trim());
-        if (v.end() < END_AT) notEnding = String.format(java.util.Locale.ROOT, "Jev: not a goodbye (end the call %.2f)", v.end());
-      } catch (Exception ex) {
-        log("Jev couldn't be asked (" + ex.getMessage() + "): the end phrase decides");
-      }
-    }
     if (notEnding != null) {
       // Not an ending after all: the turn goes on. What was taken stays in it, as words: its
       // audio no longer needs writing down.

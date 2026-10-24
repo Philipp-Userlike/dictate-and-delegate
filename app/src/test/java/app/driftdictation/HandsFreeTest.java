@@ -1192,10 +1192,12 @@ public class HandsFreeTest {
     Thread.sleep(150);
     f.speak();
     live.say("Thanks, that was everything. End the call.");
-    f.quiet(400);
-    Thread.sleep(100);
-    assertEquals("hanging up waits longer", HandsFreeSession.State.LISTENING, f.session.state());
-    f.quiet(400);
+    f.quiet(800);
+    Thread.sleep(200);
+    // No Jev to confirm the goodbye: not at once; at the pause the end words still end it.
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    assertTrue(String.join("\n", f.log).contains("Jev couldn't confirm the goodbye (no judge): not ended"));
+    f.quiet(600);
     until(() -> f.session.state() == HandsFreeSession.State.ENDED);
     assertEquals("Thanks, that was everything.", f.sent.get(1));
   }
@@ -1254,10 +1256,33 @@ public class HandsFreeTest {
     until(() -> String.join("\n", f.log).contains("Jev: not a goodbye"));
     assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
     f.speak();
-    live.say("and tell her. Thanks, end the call.");
+    live.say("Ask Jana how to end the call and tell her. Thanks, end the call.");
     f.quiet(800);
     until(() -> f.session.state() == HandsFreeSession.State.ENDED);
     assertEquals("Ask Jana how to end the call and tell her. Thanks", f.sent.get(0));
+  }
+
+  @Test
+  public void aReplyAfterASendPhraseDoesntCostTheNextStretch() throws Exception {
+    Fake f = new Fake("Second.");
+    FakeLive live = new FakeLive(f);
+    f.session.judge = said -> verdict("more", 0.1, 0);
+    f.quiet(1000);
+    f.speak();
+    live.say("Book the table. Over.");
+    f.quiet(400); // Sent while the stretch goes on: its rest went with the message.
+    until(() -> f.sent.size() == 1);
+    f.session.reply("r1", "Done.");
+    f.quiet(1200);
+    until(() -> f.spoken.size() == 1);
+    f.done.run();
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    live.fail("connection lost");
+    f.talk(); // The next stretch is yours, written down.
+    f.now.addAndGet(HandsFreeSession.REPRESS_MS + 1);
+    f.session.sendNow();
+    for (int i = 0; i < 100 && f.sent.size() < 2; i++) Thread.sleep(20);
+    assertEquals(String.join("\n", f.log), List.of("Book the table.", "Second."), f.sent);
   }
 
   @Test

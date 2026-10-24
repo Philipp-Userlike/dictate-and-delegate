@@ -213,6 +213,91 @@ public class StreamingSpeechTest {
     }
   }
 
+  /** Connected to a server that takes what comes, with drops lasting 300 ms. */
+  private static void connected(String provider, Server server, java.util.concurrent.Callable<Void> test) throws Exception {
+    String aai = StreamingSpeech.assemblyAiUrl, el = StreamingSpeech.elevenLabsUrl;
+    long drop = StreamingSpeech.DROP_MS;
+    try {
+      StreamingSpeech.assemblyAiUrl = server.url();
+      StreamingSpeech.elevenLabsUrl = server.url();
+      StreamingSpeech.DROP_MS = 300;
+      test.call();
+    } finally {
+      StreamingSpeech.assemblyAiUrl = aai;
+      StreamingSpeech.elevenLabsUrl = el;
+      StreamingSpeech.DROP_MS = drop;
+    }
+  }
+
+  private static StreamingSpeech open(StreamingSpeech.Choice c) throws Exception {
+    StreamingSpeech s = StreamingSpeech.create(c, "k", List.of());
+    s.speech();
+    for (int i = 0; i < 100 && s.openedMs < 0; i++) Thread.sleep(20);
+    return s;
+  }
+
+  @Test
+  public void wordsStillComingOfAStretchWrittenDownFromItsAudioStayOutOfTheNextTurn() throws Exception {
+    // Send before its first live words: the turn went written down from its audio; then they come.
+    try (Server server = new Server(0, true)) {
+      connected("elevenlabs", server, () -> {
+        StreamingSpeech s = open(StreamingSpeech.ELEVEN);
+        assertEquals("", s.take(100));
+        s.discard();
+        s.message("{\"message_type\":\"partial_transcript\",\"text\":\"Book the table\"}");
+        s.message("{\"message_type\":\"committed_transcript\",\"text\":\"Book the table.\"}");
+        assertEquals("", s.text());
+        s.message("{\"message_type\":\"partial_transcript\",\"text\":\"Next\"}");
+        assertEquals("Next", s.text());
+        s.close();
+        return null;
+      });
+    }
+  }
+
+  @Test
+  public void anElevenLabsDropWhoseFinalNeverComesEndsAfterAWhile() throws Exception {
+    try (Server server = new Server(0, true)) {
+      connected("elevenlabs", server, () -> {
+        StreamingSpeech s = open(StreamingSpeech.ELEVEN);
+        s.message("{\"message_type\":\"partial_transcript\",\"text\":\"Mm\"}");
+        s.discard(); // Its final never comes.
+        s.message("{\"message_type\":\"partial_transcript\",\"text\":\"Mm\"}");
+        assertEquals("", s.text());
+        Thread.sleep(400);
+        s.message("{\"message_type\":\"partial_transcript\",\"text\":\"Book the table\"}");
+        assertEquals("the next stretch's words show", "Book the table", s.text());
+        s.close();
+        return null;
+      });
+    }
+  }
+
+  @Test
+  public void assemblyAiDropsTheTurnStillComingAndNotTheOneAfter() throws Exception {
+    try (Server server = new Server(0, true)) {
+      connected("assemblyai", server, () -> {
+        StreamingSpeech s = open(StreamingSpeech.AAI_PRO);
+        s.message("{\"type\":\"Turn\",\"turn_order\":0,\"end_of_turn\":true,\"transcript\":\"Hello.\"}");
+        assertEquals("Hello.", s.take(100));
+        s.discard(); // Turn 1's words haven't come yet.
+        s.message("{\"type\":\"Turn\",\"turn_order\":1,\"end_of_turn\":false,\"transcript\":\"Book the\"}");
+        s.message("{\"type\":\"Turn\",\"turn_order\":1,\"end_of_turn\":true,\"transcript\":\"Book the table.\"}");
+        assertEquals("", s.text());
+        s.message("{\"type\":\"Turn\",\"turn_order\":2,\"end_of_turn\":false,\"transcript\":\"Next\"}");
+        assertEquals("Next", s.text());
+        // Dropped with nothing coming after it: a turn starting much later is new speech.
+        s.take(100);
+        s.discard();
+        Thread.sleep(400);
+        s.message("{\"type\":\"Turn\",\"turn_order\":3,\"end_of_turn\":false,\"transcript\":\"Later\"}");
+        assertEquals("Later", s.text());
+        s.close();
+        return null;
+      });
+    }
+  }
+
   @Test
   public void closedWhileItConnectsTheNewConnectionIsClosedAtOnce() throws Exception {
     String was = StreamingSpeech.assemblyAiUrl;
@@ -253,6 +338,7 @@ public class StreamingSpeechTest {
       }
       assertTrue(System.currentTimeMillis() - start < 2000);
       assertFalse(s.working());
+      assertTrue("the stuck connection is closed (it's billed while open)", server.ended.await(2, java.util.concurrent.TimeUnit.SECONDS));
       s.close();
     } finally {
       StreamingSpeech.assemblyAiUrl = was;

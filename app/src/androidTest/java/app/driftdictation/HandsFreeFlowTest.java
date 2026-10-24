@@ -557,7 +557,7 @@ public class HandsFreeFlowTest {
     assertTrue(tell, tell.contains("Book a table for Friday."));
     assertFalse(tell, tell.contains("Over"));
     assertTrue(log, log.contains("live transcription " + StreamingSpeech.choice(model).model()));
-    assertTrue(log, log.contains("send phrase: final text in "));
+    assertTrue(log, log.contains("send phrase: quiet "));
     assertTrue(log, log.contains("ms after the phrase was heard)"));
     JSONArray r = TestServer.requests();
     assertEquals("nothing written down from audio", 0, count(r, "transcribe"));

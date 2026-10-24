@@ -264,19 +264,8 @@ final class WebSocket implements AutoCloseable {
   /** Closes it (a close frame, then the socket); the listener hears it ended. */
   @Override
   public void close() {
-    // A close frame if nothing else is being written; never waiting behind a write that hangs
-    // (a dead network): the socket is closed regardless.
-    if (writing.tryLock())
-      try {
-        if (!ended) {
-          out.write(encode(0x8, new byte[] {0x03, (byte) 0xe8}, randomMask())); // 1000: normal.
-          out.flush();
-        }
-      } catch (IOException ignored) {
-        /* Gone already. */
-      } finally {
-        writing.unlock();
-      }
+    // The socket closes at once (that ends the provider's session); no close frame, which could
+    // wait behind a hanging write or a full send buffer on a dead network.
     synchronized (this) {
       ended = true;
     }
@@ -286,4 +275,5 @@ final class WebSocket implements AutoCloseable {
       /* Closed. */
     }
   }
+
 }
