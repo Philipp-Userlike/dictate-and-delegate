@@ -203,6 +203,7 @@
     <string name="t_46783a6e" formatted="false">Crear jefe de gabinete</string>
     <string name="t_467f1c34" formatted="false">Detener grabación</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_477632ba" formatted="false">Reproduciendo respuesta: tu turno ha terminado</string>
     <string name="t_47eaeab4" formatted="false">Manos libres</string>
     <string name="t_47fbfb16" formatted="false">Cambiar</string>
     <string name="t_481510cc" formatted="false">Lo que OpenRouter cobró por cada llamada.</string>
@@ -323,6 +324,7 @@
     <string name="t_714149a6" formatted="false">Enviar al jefe si se le menciona</string>
     <string name="t_71cc04b4" formatted="false">bb no envió ningún código de inicio de sesión. Inícialo de nuevo.</string>
     <string name="t_721589c1" formatted="false">Hoy</string>
+    <string name="t_72f939f7" formatted="false">Respuesta en espera: enviando tu mensaje</string>
     <string name="t_7382e59f" formatted="false">Cerrando sesión…</string>
     <string name="t_73c2d986" formatted="false">Guardada, cifrada · Mejorar usa tus créditos de Anthropic</string>
     <string name="t_74350de7" formatted="false">Acerca de</string>
@@ -360,6 +362,7 @@
     <string name="t_8053d9fa" formatted="false">Habla y luego haz una pausa: cuando se entienda que has terminado (has hecho una pregunta, %1$s), se enviará; di %2$s para finalizar. Enviar y el botón del auricular envían al instante. Las respuestas esperan mientras hablas y se reproducen al pausar; habla por encima para detenerlas y volverán a sonar luego.</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Enviar de nuevo</string>
     <string name="t_8108fc2e" formatted="false">Sin conexión con Anthropic.</string>
+    <string name="t_816affe2" formatted="false">Respuesta en espera · se reproduce al terminar tu turno</string>
     <string name="t_81e2a271" formatted="false">Transcripción</string>
     <string name="t_821e233c" formatted="false">Con un permiso, Insertar coloca el texto justo en el cursor, y mantener pulsado un botón de volumen inicia el dictado. Sin él, Dictate &amp; Delegate copia el texto y tú lo pegas.</string>
     <string name="t_8250ae9b" formatted="false">Iniciando sesión en bb…</string>
@@ -416,7 +419,6 @@
     <string name="t_94476a26" formatted="false">bb no instaló las habilidades del jefe a tiempo. Inténtalo de nuevo.</string>
     <string name="t_94582eee" formatted="false">Clave de AssemblyAI</string>
     <string name="t_946ab421" formatted="false">Buscar modelos</string>
-    <string name="t_946be5c8" formatted="false">Suena la respuesta: dejaste de hablar</string>
     <string name="t_9486247d" formatted="false">Insertado</string>
     <string name="t_9493d3a2" formatted="false">No se envió a tu jefe de gabinete: %1$s A continuación está lo que dijiste.</string>
     <string name="t_9500493c" formatted="false">bb no indicó qué hilo creó.</string>
@@ -438,7 +440,6 @@
     <string name="t_9bb908f9" formatted="false">Texto</string>
     <string name="t_9bec7d3e" formatted="false">Modelos y proveedores</string>
     <string name="t_9bef8b14" formatted="false">Ideas y diario</string>
-    <string name="t_9c1df3f5" formatted="false">Respuesta en espera de tu pausa (%1$.1f s en silencio)</string>
     <string name="t_9c550f09" formatted="false">Botón o mantener bajar volumen</string>
     <string name="t_9c7b6819" formatted="false">Eliminar audio</string>
     <string name="t_9c9743f1" formatted="false">Necesario para rehacer una nota con un modelo mejor</string>
@@ -632,13 +633,12 @@
     <string name="t_d6c42080" formatted="false">Iniciando la llamada…</string>
     <string name="t_d6d7613f" formatted="false">Tu plantilla</string>
     <string name="t_d6dce050" formatted="false">No hay ningún jefe de gabinete configurado. Configura uno en Ajustes → bb.</string>
-    <string name="t_d7020b31" formatted="false">Suena la respuesta: pausaste %1$.1f s; tu turno sigue después</string>
     <string name="t_d79a087e" formatted="false">Ese hilo está archivado en bb. Desarchívalo o elige otro.</string>
-    <string name="t_d7e01719" formatted="false">Respuesta lista · suena cuando pares</string>
     <string name="t_d7e63cc4" formatted="false">Al dictar, un pequeño panel flotará sobre otras apps: toca ■ para parar, y luego Insertar, Mejorar o Jefe. Para permitirlo, Android mostrará una lista de apps: toca Dictate &amp; Delegate, actívalo y vuelve.</string>
     <string name="t_d8427f19" formatted="false">Tu clave de OpenRouter</string>
     <string name="t_d90fc528" formatted="false">Cambia el idioma en Ajustes de Android → Aplicaciones → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Palabras para terminar (envía lo anterior y finaliza el manos libres)</string>
+    <string name="t_da47d822" formatted="false">Respuesta en espera: es tu turno (palabras sin enviar)</string>
     <string name="t_db5195fa" formatted="false">texto pegado</string>
     <string name="t_dbde124f" formatted="false">El audio de esta nota no se conservó, no se puede rehacer.</string>
     <string name="t_dbe48d14" formatted="false">Nunca</string>
@@ -718,7 +718,6 @@
     <string name="t_f01db452" formatted="false">Crea una clave allí, cópiala y pégala arriba. Añade también unos pocos dólares de saldo en OpenRouter: una nota de un minuto suele costar mucho menos de un centavo.</string>
     <string name="t_f032e365" formatted="false">Consigue una clave en console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">El más económico</string>
-    <string name="t_f0ce4e3c" formatted="false">Reproduce respuesta: esperó %1$d s</string>
     <string name="t_f0d83244" formatted="false">El modelo de voz no devolvió ninguna transcripción. La grabación se conserva; prueba otra vez.</string>
     <string name="t_f13b16c1" formatted="false">Tu jefe de gabinete sigue dos habilidades en bb, chief-of-staff y dictate-and-delegate: cómo trabajar para ti y cómo notificarte y responderte con texto. Dictate &amp; Delegate las instala y actualiza en bb mediante un breve hilo.</string>
     <string name="t_f157fddc" formatted="false">Pega o escribe el texto tal como lo enviarías.</string>

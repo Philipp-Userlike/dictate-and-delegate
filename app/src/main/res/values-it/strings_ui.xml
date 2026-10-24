@@ -203,6 +203,7 @@
     <string name="t_46783a6e" formatted="false">Crea chief of staff</string>
     <string name="t_467f1c34" formatted="false">Ferma registrazione</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_477632ba" formatted="false">Riproduzione risposta: il tuo turno è terminato</string>
     <string name="t_47eaeab4" formatted="false">Vivavoce</string>
     <string name="t_47fbfb16" formatted="false">Modifica</string>
     <string name="t_481510cc" formatted="false">Costo addebitato da OpenRouter per ciascuna chiamata.</string>
@@ -323,6 +324,7 @@
     <string name="t_714149a6" formatted="false">Invia a chief se interpellato</string>
     <string name="t_71cc04b4" formatted="false">bb non ha inviato alcun codice di accesso. Riavvia la procedura.</string>
     <string name="t_721589c1" formatted="false">Oggi</string>
+    <string name="t_72f939f7" formatted="false">Risposta in attesa: invio del messaggio in corso</string>
     <string name="t_7382e59f" formatted="false">Disconnessione…</string>
     <string name="t_73c2d986" formatted="false">Salvata, crittografata · Perfeziona usa i tuoi crediti Anthropic</string>
     <string name="t_74350de7" formatted="false">Informazioni</string>
@@ -360,6 +362,7 @@
     <string name="t_8053d9fa" formatted="false">Parla, poi fai una pausa: quando hai chiaramente finito (hai fatto una domanda, %1$s), viene inviato; dì %2$s per terminare. Invia e il tasto delle cuffie inviano subito. La risposta aspetta mentre parli e parte quando ti fermi; parla sopra per interromperla, ripartirà più tardi.</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Invia di nuovo</string>
     <string name="t_8108fc2e" formatted="false">Nessuna connessione ad Anthropic.</string>
+    <string name="t_816affe2" formatted="false">Risposta in attesa · si avvia al termine del tuo turno</string>
     <string name="t_81e2a271" formatted="false">Trascrizione</string>
     <string name="t_821e233c" formatted="false">Con una sola autorizzazione, Inserisci posiziona il testo direttamente al cursore, e tenendo premuto un tasto del volume avvii la dettatura. Senza di essa, Dictate &amp; Delegate copia il testo e lo incolli tu.</string>
     <string name="t_8250ae9b" formatted="false">Accesso a bb…</string>
@@ -416,7 +419,6 @@
     <string name="t_94476a26" formatted="false">bb non ha installato le skill del chief in tempo. Riprova.</string>
     <string name="t_94582eee" formatted="false">Chiave AssemblyAI</string>
     <string name="t_946ab421" formatted="false">Cerca modelli</string>
-    <string name="t_946be5c8" formatted="false">Risposta in riproduzione: hai smesso di parlare</string>
     <string name="t_9486247d" formatted="false">Inserito</string>
     <string name="t_9493d3a2" formatted="false">Non inviato al tuo chief of staff: %1$s Qui sotto c\'è ciò che hai detto.</string>
     <string name="t_9500493c" formatted="false">bb non ha indicato quale thread ha creato.</string>
@@ -438,7 +440,6 @@
     <string name="t_9bb908f9" formatted="false">Testo</string>
     <string name="t_9bec7d3e" formatted="false">Modelli e provider</string>
     <string name="t_9bef8b14" formatted="false">Idee e diario</string>
-    <string name="t_9c1df3f5" formatted="false">Risposta in attesa della tua pausa (%1$.1f s di silenzio)</string>
     <string name="t_9c550f09" formatted="false">Riquadro o tieni premuto Volume giù</string>
     <string name="t_9c7b6819" formatted="false">Elimina audio</string>
     <string name="t_9c9743f1" formatted="false">Necessario per rifare una nota con un modello più intelligente</string>
@@ -632,13 +633,12 @@
     <string name="t_d6c42080" formatted="false">Avvio della chiamata…</string>
     <string name="t_d6d7613f" formatted="false">Il tuo modello</string>
     <string name="t_d6dce050" formatted="false">Nessun chief of staff configurato. Impostane uno in Impostazioni → bb.</string>
-    <string name="t_d7020b31" formatted="false">Risposta in riproduzione: pausa di %1$.1f s; potrai proseguire subito dopo</string>
     <string name="t_d79a087e" formatted="false">Questo thread è archiviato in bb. Ripristinalo o scegline un altro.</string>
-    <string name="t_d7e01719" formatted="false">Risposta in attesa · si avvia quando fai una pausa</string>
     <string name="t_d7e63cc4" formatted="false">Mentre detti, un piccolo pannello resta sopra le altre app: tocca ■ per fermare, poi Inserisci, Perfeziona o Chief. Per consentirlo, Android mostra un elenco di app: tocca Dictate &amp; Delegate, attivalo e torna qui.</string>
     <string name="t_d8427f19" formatted="false">La tua chiave OpenRouter</string>
     <string name="t_d90fc528" formatted="false">Cambia lingua in Impostazioni Android → App → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Parole di fine (invia il testo precedente, poi termina il vivavoce)</string>
+    <string name="t_da47d822" formatted="false">Risposta in attesa: tocca a te (parole non inviate)</string>
     <string name="t_db5195fa" formatted="false">testo incollato</string>
     <string name="t_dbde124f" formatted="false">L\'audio di questa nota non è stato conservato, quindi non può essere rifatta.</string>
     <string name="t_dbe48d14" formatted="false">Mai</string>
@@ -718,7 +718,6 @@
     <string name="t_f01db452" formatted="false">Crea una chiave lì, copiala e incollala qui sopra. Aggiungi anche qualche dollaro di credito su OpenRouter: una nota di un minuto costa solitamente molto meno di un centesimo.</string>
     <string name="t_f032e365" formatted="false">Ottieni una chiave su console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Più economico</string>
-    <string name="t_f0ce4e3c" formatted="false">Riproduzione risposta: atteso %1$d s</string>
     <string name="t_f0d83244" formatted="false">Il modello vocale non ha restituito alcuna trascrizione. La registrazione è conservata; riprova.</string>
     <string name="t_f13b16c1" formatted="false">Il tuo chief of staff segue due competenze in bb, chief-of-staff e dictate-and-delegate: come lavorare per te, e come inviarti notifiche e testo. Dictate &amp; Delegate le installa e le aggiorna in bb tramite un breve thread.</string>
     <string name="t_f157fddc" formatted="false">Incolla o digita il testo così come lo invieresti.</string>

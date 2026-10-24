@@ -962,6 +962,93 @@ public class HandsFreeFlowTest {
     until(() -> toldTo(TestServer.CHIEF, "[hands-free call ended]") && toldTo(TALKER, "[hands-free call ended]"), "both told the call ended");
   }
 
+  private static String requestOf(String message) {
+    Matcher m = Pattern.compile("\\[request: ([a-z0-9]+)\\]").matcher(message);
+    assertTrue(message, m.find());
+    return m.group(1);
+  }
+
+  @Test
+  public void withATalkerRepliesToAnOlderMessageArentPlayedAndTheTalkerIsToldWhichWerent() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();
+    TestServer.transcripts("Book a table for Friday. Over.", "And the train to Lisbon. Over.", "Anything else? Over.");
+    TestServer.turns("over", "over", "over");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    String topic = new BbBridge(context).ntfyTopic();
+    talk();
+    until(() -> messagesTo(TALKER).size() == 1, "the first message sent");
+    String first = requestOf(messagesTo(TALKER).get(0));
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
+    talk();
+    until(() -> messagesTo(TALKER).size() == 2, "the second message sent");
+    String second = requestOf(messagesTo(TALKER).get(1));
+    // The answer to the first message, after the second went: not played.
+    TestServer.ntfySpeak(topic, first, "Yes, the table is booked for eight.");
+    until(() -> HandsFreeService.log(context).contains("chief message " + first + " dropped"), "the outdated reply dropped");
+    // The answer to the second plays.
+    TestServer.ntfySpeak(topic, second, "The train leaves at nine.");
+    until(() -> spoken().contains("The train leaves at nine."), "the current reply read aloud");
+    until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again");
+    assertFalse(HandsFreeService.log(context).contains("floor: chief, reading " + first));
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
+    // The next message tells both which reply wasn't heard.
+    talk();
+    until(() -> messagesTo(TALKER).size() == 3, "the third message sent");
+    String note = "[didn't hear your reply: \\\"Yes, the table is booked for eight.\\\"]";
+    assertTrue(messagesTo(TALKER).get(2), messagesTo(TALKER).get(2).contains("Anything else?\\n\\n" + note));
+    assertTrue(messagesTo(TestServer.CHIEF).get(2), messagesTo(TestServer.CHIEF).get(2).contains(note));
+    // Two more answers to the second message come late; the call ends before another message.
+    TestServer.ntfySpeak(topic, second, "Also, the return train is at six.");
+    TestServer.ntfySpeak(topic, second, "And there's a dining car.");
+    until(() -> count(HandsFreeService.log(context), "chief message " + second + " dropped") == 2, "both dropped");
+    HandsFreeService.send(context, HandsFreeService.END);
+    until(() -> HandsFreeService.instance == null, "ended");
+    String end = "[hands-free call ended]\\n\\n[didn't hear 2 replies: \\\"Also, the return train is at six.\\\" and 1 more]";
+    until(() -> toldTo(TALKER, end) && toldTo(TestServer.CHIEF, end), "the call's end tells both");
+  }
+
+  @Test
+  public void withoutATalkerAReplyToAnOlderMessageStillPlays() throws Exception {
+    TestServer.transcripts("Book a table for Friday. Over.", "And the train to Lisbon. Over.");
+    TestServer.turns("over", "over");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> messagesTo(TestServer.CHIEF).size() == 1, "the first message sent");
+    String first = requestOf(messagesTo(TestServer.CHIEF).get(0));
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
+    talk();
+    until(() -> messagesTo(TestServer.CHIEF).size() == 2, "the second message sent");
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), first, "Yes, the table is booked for eight.");
+    until(() -> spoken().contains("Yes, the table is booked for eight."), "read aloud");
+    assertFalse(HandsFreeService.log(context).contains("dropped"));
+  }
+
+  @Test
+  public void aReplyWaitsThroughYourUnsentWordsAndPlaysOnceTheyreSent() throws Exception {
+    TestServer.transcripts("Book a table for Friday. Over.", "Hmm, and also");
+    TestServer.turns("over", "more");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    talk();
+    until(() -> messagesTo(TestServer.CHIEF).size() == 1, "the first message sent");
+    String first = requestOf(messagesTo(TestServer.CHIEF).get(0));
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
+    // Words not sent yet (Jev: more to say), then you think.
+    talk();
+    until(() -> HandsFreeService.session().pending().equals("Hmm, and also"), "your words, unsent");
+    TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), first, "The table is booked.");
+    until(() -> HandsFreeService.log(context).contains("Reply waits: your turn (unsent words)"), "it waits for your turn");
+    Thread.sleep(4000); // A long pause to think: still your turn.
+    assertFalse("not played", HandsFreeService.log(context).contains("floor: chief, reading " + first));
+    HandsFreeService.send(context, HandsFreeService.SEND);
+    until(() -> messagesTo(TestServer.CHIEF).size() == 2, "your words sent");
+    until(() -> HandsFreeService.log(context).contains("floor: chief, reading " + first), "then it plays");
+    String log = HandsFreeService.log(context);
+    assertTrue(log, log.contains("turn: yours (unsent words)") && log.contains("turn: silence (sent)") && log.contains("turn: ours (a reply plays)"));
+  }
+
   @Test
   public void theTalkerAndTheChiefGetEachMessageAtTheSameTime() throws Exception {
     prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();

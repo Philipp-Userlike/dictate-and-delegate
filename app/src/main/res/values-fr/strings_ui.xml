@@ -203,6 +203,7 @@
     <string name="t_46783a6e" formatted="false">Créer le chef de cabinet</string>
     <string name="t_467f1c34" formatted="false">Arrêter l\'enregistrement</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_477632ba" formatted="false">Lecture de la réponse : ton tour est terminé</string>
     <string name="t_47eaeab4" formatted="false">Mains libres</string>
     <string name="t_47fbfb16" formatted="false">Modifier</string>
     <string name="t_481510cc" formatted="false">Ce qu\'OpenRouter a facturé pour chaque appel.</string>
@@ -323,6 +324,7 @@
     <string name="t_714149a6" formatted="false">Envoyer au chef si interpellé</string>
     <string name="t_71cc04b4" formatted="false">bb n\'a envoyé aucun code de connexion. Recommence.</string>
     <string name="t_721589c1" formatted="false">Aujourd\'hui</string>
+    <string name="t_72f939f7" formatted="false">Réponse en attente : message en cours d\'envoi</string>
     <string name="t_7382e59f" formatted="false">Déconnexion…</string>
     <string name="t_73c2d986" formatted="false">Enregistré, chiffré · Affiner utilise tes crédits Anthropic</string>
     <string name="t_74350de7" formatted="false">À propos</string>
@@ -360,6 +362,7 @@
     <string name="t_8053d9fa" formatted="false">Parle, puis fais une pause : dès que tu as clairement fini (question posée, %1$s), c\'est envoyé ; dis %2$s pour terminer. Envoyer et le bouton du casque envoient directement. La réponse attend pendant que tu parles et démarre quand tu t\'arrêtes ; parle par-dessus pour l\'interrompre, elle reprendra plus tard.</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Renvoyer</string>
     <string name="t_8108fc2e" formatted="false">Pas de connexion à Anthropic.</string>
+    <string name="t_816affe2" formatted="false">Réponse en attente · lecture dès la fin de ton tour</string>
     <string name="t_81e2a271" formatted="false">Transcription</string>
     <string name="t_821e233c" formatted="false">Avec une autorisation, Insérer place ton texte directement sous le curseur, et maintenir une touche de volume lance la dictée. Sans elle, Dictate &amp; Delegate copie le texte et tu le colles.</string>
     <string name="t_8250ae9b" formatted="false">Connexion à bb…</string>
@@ -416,7 +419,6 @@
     <string name="t_94476a26" formatted="false">bb n\'a pas installé les compétences du chef à temps. Réessaie.</string>
     <string name="t_94582eee" formatted="false">Clé AssemblyAI</string>
     <string name="t_946ab421" formatted="false">Rechercher des modèles</string>
-    <string name="t_946be5c8" formatted="false">Lecture : tu as arrêté de parler</string>
     <string name="t_9486247d" formatted="false">Inséré</string>
     <string name="t_9493d3a2" formatted="false">Non envoyé à ton chef de cabinet : %1$s Voici ce que tu as dit ci-dessous.</string>
     <string name="t_9500493c" formatted="false">bb n\'a pas indiqué quel fil a été créé.</string>
@@ -438,7 +440,6 @@
     <string name="t_9bb908f9" formatted="false">Texte</string>
     <string name="t_9bec7d3e" formatted="false">Modèles et fournisseurs</string>
     <string name="t_9bef8b14" formatted="false">Idées et journal</string>
-    <string name="t_9c1df3f5" formatted="false">Réponse en attente d\'une pause (%1$.1f s de silence)</string>
     <string name="t_9c550f09" formatted="false">Tuile ou maintenir Volume bas</string>
     <string name="t_9c7b6819" formatted="false">Supprimer l\'audio</string>
     <string name="t_9c9743f1" formatted="false">Requis pour relancer une note avec un modèle plus performant</string>
@@ -632,13 +633,12 @@
     <string name="t_d6c42080" formatted="false">Démarrage de l\'appel…</string>
     <string name="t_d6d7613f" formatted="false">Ton modèle</string>
     <string name="t_d6dce050" formatted="false">Aucun chef de cabinet configuré. Configure-le dans Paramètres → bb.</string>
-    <string name="t_d7020b31" formatted="false">Lecture : pause de %1$.1f s détectée ; ton tour continue après</string>
     <string name="t_d79a087e" formatted="false">Ce fil est archivé dans bb. Désarchive-le ou choisis-en un autre.</string>
-    <string name="t_d7e01719" formatted="false">Réponse prête · lecture dès que tu fais une pause</string>
     <string name="t_d7e63cc4" formatted="false">Pendant que tu dictes, un petit volet reste au-dessus des autres applis : touche ■ pour arrêter, puis Insérer, Affiner ou Chef. Pour l\'autoriser, Android affiche une liste d\'applis : touche Dictate &amp; Delegate, active-le et reviens ici.</string>
     <string name="t_d8427f19" formatted="false">Ta clé OpenRouter</string>
     <string name="t_d90fc528" formatted="false">Change la langue dans Paramètres Android → Applis → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Mots de fin (envoie le texte précédent, puis quitte le mode mains libres)</string>
+    <string name="t_da47d822" formatted="false">Réponse en attente : à ton tour (mots non envoyés)</string>
     <string name="t_db5195fa" formatted="false">texte collé</string>
     <string name="t_dbde124f" formatted="false">L\'audio n\'a pas été conservé, impossible de refaire.</string>
     <string name="t_dbe48d14" formatted="false">Jamais</string>
@@ -718,7 +718,6 @@
     <string name="t_f01db452" formatted="false">Crée une clé là-bas et copie-la, puis colle-la ci-dessus. Ajoute aussi quelques dollars de crédits sur OpenRouter : une note d\'une minute coûte généralement bien moins d\'un centime.</string>
     <string name="t_f032e365" formatted="false">Obtenir une clé sur console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Le plus économique</string>
-    <string name="t_f0ce4e3c" formatted="false">Réponse en cours : %1$d s d\'attente</string>
     <string name="t_f0d83244" formatted="false">Le modèle vocal n\'a renvoyé aucune transcription. L\'enregistrement est conservé ; réessaie.</string>
     <string name="t_f13b16c1" formatted="false">Ton chef d\'état-major suit deux compétences dans bb, chief-of-staff et dictate-and-delegate : comment travailler pour toi, t\'alerter et renvoyer du texte. Dictate &amp; Delegate les installe et les met à jour dans bb via un court fil.</string>
     <string name="t_f157fddc" formatted="false">Colle ou écris le texte tel que tu l\'enverrais.</string>

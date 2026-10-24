@@ -204,6 +204,7 @@
     <string name="t_46783a6e" formatted="false">Create chief of staff</string>
     <string name="t_467f1c34" formatted="false">Stop recording</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_477632ba" formatted="false">Reply plays: your turn is over</string>
     <string name="t_47eaeab4" formatted="false">Hands-free</string>
     <string name="t_47fbfb16" formatted="false">Change</string>
     <string name="t_481510cc" formatted="false">What OpenRouter charged for each call.</string>
@@ -324,6 +325,7 @@
     <string name="t_714149a6" formatted="false">Send to chief when addressed</string>
     <string name="t_71cc04b4" formatted="false">bb sent no sign-in code. Start it again.</string>
     <string name="t_721589c1" formatted="false">Today</string>
+    <string name="t_72f939f7" formatted="false">Reply waits: your message is being sent</string>
     <string name="t_7382e59f" formatted="false">Signing out…</string>
     <string name="t_73c2d986" formatted="false">Saved, encrypted · Refine uses your Anthropic credits</string>
     <string name="t_74350de7" formatted="false">About</string>
@@ -362,6 +364,7 @@
     <string name="t_8053d9fa" formatted="false">Talk, then pause: when you\'re clearly done (a question asked, %1$s), it\'s sent; say %2$s to end. Send and the headset button send at once. A reply waits while you talk and plays when you pause; talk over it to stop it, and it plays again later.</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Send again</string>
     <string name="t_8108fc2e" formatted="false">No connection to Anthropic.</string>
+    <string name="t_816affe2" formatted="false">Reply waiting · plays when your turn is over</string>
     <string name="t_81e2a271" formatted="false">Transcription</string>
     <string name="t_821e233c" formatted="false">With one permission, Insert puts your text right at the cursor, and holding a volume key starts a dictation. Without it, Dictate &amp; Delegate copies the text and you paste it.</string>
     <string name="t_8250ae9b" formatted="false">Signing in to bb…</string>
@@ -418,7 +421,6 @@
     <string name="t_94476a26" formatted="false">bb didn\'t install the chief\'s skills in time. Try again.</string>
     <string name="t_94582eee" formatted="false">AssemblyAI key</string>
     <string name="t_946ab421" formatted="false">Search models</string>
-    <string name="t_946be5c8" formatted="false">Reply plays: you stopped talking</string>
     <string name="t_9486247d" formatted="false">Inserted</string>
     <string name="t_9493d3a2" formatted="false">Not sent to your chief of staff: %1$s Below is what you said.</string>
     <string name="t_9500493c" formatted="false">bb didn\'t say which thread it created.</string>
@@ -441,7 +443,6 @@
     <string name="t_9bb908f9" formatted="false">Text</string>
     <string name="t_9bec7d3e" formatted="false">Models &amp; providers</string>
     <string name="t_9bef8b14" formatted="false">Ideas &amp; journaling</string>
-    <string name="t_9c1df3f5" formatted="false">Reply waits for your pause (%1$.1f s quiet)</string>
     <string name="t_9c550f09" formatted="false">Tile or hold volume down</string>
     <string name="t_9c7b6819" formatted="false">Delete audio</string>
     <string name="t_9c9743f1" formatted="false">Needed to redo a note with a smarter model</string>
@@ -637,13 +638,12 @@
     <string name="t_d6c42080" formatted="false">Starting the call…</string>
     <string name="t_d6d7613f" formatted="false">Your template</string>
     <string name="t_d6dce050" formatted="false">No chief of staff is set up. Set one up in Settings → bb.</string>
-    <string name="t_d7020b31" formatted="false">Reply plays: you paused %1$.1f s; your turn goes on after it</string>
     <string name="t_d79a087e" formatted="false">That thread is archived in bb. Unarchive it or pick another.</string>
-    <string name="t_d7e01719" formatted="false">Reply waiting · plays when you pause</string>
     <string name="t_d7e63cc4" formatted="false">While you dictate, a small panel stays on top of other apps: tap ■ to stop, then Insert, Refine or Chief. To allow it, Android shows a list of apps: tap Dictate &amp; Delegate, switch it on, and come back.</string>
     <string name="t_d8427f19" formatted="false">Your OpenRouter key</string>
     <string name="t_d90fc528" formatted="false">Change the language in Android settings → Apps → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">End words (send what came before, then end hands-free)</string>
+    <string name="t_da47d822" formatted="false">Reply waits: your turn (unsent words)</string>
     <string name="t_db5195fa" formatted="false">pasted text</string>
     <string name="t_dbde124f" formatted="false">Audio for this note wasn\'t kept, so it can\'t be redone.</string>
     <string name="t_dbe48d14" formatted="false">Never</string>
@@ -723,7 +723,6 @@
     <string name="t_f01db452" formatted="false">Create a key there and copy it, then paste it above. Add a few dollars of credits on OpenRouter too: a one-minute note usually costs well under one cent.</string>
     <string name="t_f032e365" formatted="false">Get a key on console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Cheapest</string>
-    <string name="t_f0ce4e3c" formatted="false">Reply plays: waited %1$d s</string>
     <string name="t_f0d83244" formatted="false">The speech model returned no transcript. The recording is kept; try again.</string>
     <string name="t_f13b16c1" formatted="false">Your chief of staff follows two skills in bb, chief-of-staff and dictate-and-delegate: how to work for you, and how to notify you and send text back. Dictate &amp; Delegate installs and updates them in bb through a short thread.</string>
     <string name="t_f157fddc" formatted="false">Paste or type the text as you\'d send it.</string>

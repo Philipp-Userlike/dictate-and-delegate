@@ -202,6 +202,7 @@
     <string name="t_46783a6e" formatted="false">Stafchef aanmaken</string>
     <string name="t_467f1c34" formatted="false">Opname stoppen</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_477632ba" formatted="false">Antwoord speelt af: je bent klaar</string>
     <string name="t_47eaeab4" formatted="false">Handsfree</string>
     <string name="t_47fbfb16" formatted="false">Wijzigen</string>
     <string name="t_481510cc" formatted="false">Wat OpenRouter voor elke aanroep in rekening heeft gebracht.</string>
@@ -322,6 +323,7 @@
     <string name="t_714149a6" formatted="false">Naar stafchef sturen indien aangesproken</string>
     <string name="t_71cc04b4" formatted="false">bb stuurde geen aanmeldcode. Start opnieuw.</string>
     <string name="t_721589c1" formatted="false">Vandaag</string>
+    <string name="t_72f939f7" formatted="false">Antwoord wacht: je bericht wordt verzonden</string>
     <string name="t_7382e59f" formatted="false">Uitloggen…</string>
     <string name="t_73c2d986" formatted="false">Opgeslagen, versleuteld · Verfijnen gebruikt je Anthropic-tegoed</string>
     <string name="t_74350de7" formatted="false">Over</string>
@@ -358,6 +360,7 @@
     <string name="t_8053d9fa" formatted="false">Praat en pauzeer: zodra je duidelijk klaar bent (vraag gesteld, %1$s), wordt het verzonden; zeg %2$s om af te sluiten. Verzenden en de headsetknop verzenden direct. Een antwoord wacht zolang je praat en speelt af bij een pauze; praat erdoorheen om het te stoppen, het speelt later opnieuw.</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Opnieuw verzenden</string>
     <string name="t_8108fc2e" formatted="false">Geen verbinding met Anthropic.</string>
+    <string name="t_816affe2" formatted="false">Antwoord wacht · speelt af zodra je klaar bent</string>
     <string name="t_81e2a271" formatted="false">Transcriptie</string>
     <string name="t_821e233c" formatted="false">Met één toestemming plaatst Invoegen je tekst direct bij de cursor, en start je een opname door een volumeknop ingedrukt te houden. Zonder deze toestemming kopieert Dictate &amp; Delegate de tekst en plak je deze zelf.</string>
     <string name="t_8250ae9b" formatted="false">Aanmelden bij bb…</string>
@@ -414,7 +417,6 @@
     <string name="t_94476a26" formatted="false">bb heeft de skills van de stafchef niet op tijd geïnstalleerd. Probeer het opnieuw.</string>
     <string name="t_94582eee" formatted="false">AssemblyAI-sleutel</string>
     <string name="t_946ab421" formatted="false">Modellen zoeken</string>
-    <string name="t_946be5c8" formatted="false">Antwoord speelt: je bent gestopt met praten</string>
     <string name="t_9486247d" formatted="false">Ingevoegd</string>
     <string name="t_9493d3a2" formatted="false">Niet verzonden naar je stafchef: %1$s Hieronder staat wat je zei.</string>
     <string name="t_9500493c" formatted="false">bb heeft niet aangegeven welke thread is aangemaakt.</string>
@@ -435,7 +437,6 @@
     <string name="t_9bb908f9" formatted="false">Tekst</string>
     <string name="t_9bec7d3e" formatted="false">Modellen en aanbieders</string>
     <string name="t_9bef8b14" formatted="false">Ideeën &amp; dagboek</string>
-    <string name="t_9c1df3f5" formatted="false">Antwoord wacht op je pauze (%1$.1f s stilte)</string>
     <string name="t_9c550f09" formatted="false">Tegel of volume omlaag ingedrukt houden</string>
     <string name="t_9c7b6819" formatted="false">Audio verwijderen</string>
     <string name="t_9c9743f1" formatted="false">Nodig om een notitie opnieuw te doen met een slimmer model</string>
@@ -627,13 +628,12 @@
     <string name="t_d6c42080" formatted="false">Gesprek starten…</string>
     <string name="t_d6d7613f" formatted="false">Je sjabloon</string>
     <string name="t_d6dce050" formatted="false">Geen stafchef ingesteld. Stel er een in via Instellingen → bb.</string>
-    <string name="t_d7020b31" formatted="false">Antwoord speelt: je pauzeerde %1$.1f s; jouw beurt gaat erna door</string>
     <string name="t_d79a087e" formatted="false">Die thread is gearchiveerd in bb. Deactiveer het archiveren of kies een andere.</string>
-    <string name="t_d7e01719" formatted="false">Antwoord wacht · speelt bij pauze</string>
     <string name="t_d7e63cc4" formatted="false">Terwijl je dicteert, blijft een klein paneel bovenop andere apps zichtbaar: tik op ■ om te stoppen, daarna op Invoegen, Verfijnen of Stafchef. Om dit toe te staan, toont Android een lijst met apps: tik op Dictate &amp; Delegate, schakel het in en ga terug.</string>
     <string name="t_d8427f19" formatted="false">Je OpenRouter-sleutel</string>
     <string name="t_d90fc528" formatted="false">Wijzig de taal via Android-instellingen → Apps → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Stopwoorden (verzenden wat ervoor kwam, daarna handsfree beëindigen)</string>
+    <string name="t_da47d822" formatted="false">Antwoord wacht: jij bent aan de beurt (niet-verzonden woorden)</string>
     <string name="t_db5195fa" formatted="false">geplakte tekst</string>
     <string name="t_dbde124f" formatted="false">Audio voor deze notitie is niet bewaard, kan niet opnieuw.</string>
     <string name="t_dbe48d14" formatted="false">Nooit</string>
@@ -713,7 +713,6 @@
     <string name="t_f01db452" formatted="false">Maak daar een sleutel aan, kopieer hem en plak hem hierboven. Voeg ook een paar dollar tegoed toe op OpenRouter: een notitie van één minuut kost meestal ruim minder dan een cent.</string>
     <string name="t_f032e365" formatted="false">Haal een sleutel op via console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Goedkoopste</string>
-    <string name="t_f0ce4e3c" formatted="false">Antwoord speelt af: %1$d s gewacht</string>
     <string name="t_f0d83244" formatted="false">Het spraakmodel gaf geen transcriptie terug. De opname is bewaard; probeer het opnieuw.</string>
     <string name="t_f13b16c1" formatted="false">Je stafchef gebruikt twee vaardigheden in bb, chief-of-staff en dictate-and-delegate: hoe voor je te werken, en hoe je meldingen te sturen en tekst terug te zenden. Dictate &amp; Delegate installeert en updatet deze in bb via een korte thread.</string>
     <string name="t_f157fddc" formatted="false">Plak of typ de tekst zoals je deze zou versturen.</string>

@@ -334,7 +334,7 @@ public class HandsFreeTest {
     assertEquals(1, f.session.held());
     assertTrue(reasons(f), reasons(f).contains("Reply waits: you're talking"));
     assertEquals(HandsFreeSession.Live.HEARING, f.session.live());
-    f.quiet(1200); // A pause shorter than REPLY_PAUSE_MS: it still waits.
+    f.quiet(1200); // A pause, with your words unsent: still your turn, it waits.
     Thread.sleep(150);
     assertTrue(f.spoken.isEmpty());
     f.talk();
@@ -350,27 +350,76 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void aReplyPlaysAtYourPauseEvenWithUnsentWordsAndYourTurnGoesOnAfterIt() throws Exception {
-    Fake f = new Fake("Book the hotel", "for Friday. Over.");
+  public void aReplyNeverPlaysInALongThinkingPauseWithUnsentWordsOnlyOnceTheyreSent() throws Exception {
+    Fake f = new Fake("Book the hotel");
     f.quiet(1000);
     f.speak();
     f.session.reply("r0", "Here's what I found.");
     f.quiet(1200);
     until(() -> f.session.pending().equals("Book the hotel"));
+    // You think, quiet, your words unsent (no Jev here to say you're done): your turn goes on.
+    f.quiet(6000);
+    f.session.tick();
     Thread.sleep(100);
     assertTrue(f.spoken.isEmpty());
     assertEquals(HandsFreeSession.Live.REPLY_WAITING, f.session.live());
-    f.quiet(400); // Now quiet for REPLY_PAUSE_MS.
-    until(() -> f.spoken.size() == 1);
-    assertTrue(reasons(f), reasons(f).contains("Reply plays: you paused"));
-    assertEquals("Book the hotel", f.session.pending()); // Not sent, not lost.
-    f.done.run();
-    assertEquals(HandsFreeSession.Live.MUTED, f.session.live());
-    assertTrue(reasons(f), reasons(f).contains("Mic paused 0.8 s after the reply (echo)"));
-    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
-    f.talk();
+    assertTrue(reasons(f), reasons(f).contains("Reply waits: your turn (unsent words)"));
+    // The silence send (8 s here) ends your turn: your words go, then it plays.
+    f.quiet(2000);
+    f.session.tick();
     until(() -> f.sent.size() == 1);
-    assertEquals("Book the hotel for Friday.", f.sent.get(0));
+    assertEquals("Book the hotel", f.sent.get(0));
+    until(() -> f.spoken.size() == 1);
+    assertTrue(reasons(f), reasons(f).contains("Reply plays: your turn is over"));
+    String log = String.join("\n", f.log);
+    int yours = log.indexOf("turn: yours (unsent words)"), silence = log.indexOf("turn: silence (sent)"), ours = log.indexOf("turn: ours (a reply plays)");
+    assertTrue(log, yours >= 0 && silence > yours && ours > silence);
+  }
+
+  @Test
+  public void aReplyPlaysAtOnceInSilenceAndRightAfterYourMessageWent() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.");
+    f.quiet(1000);
+    // Silence: it plays as soon as its voice is ready.
+    f.session.reply("r0", "Good morning.");
+    until(() -> f.spoken.size() == 1);
+    assertFalse(reasons(f), reasons(f).contains("Reply waits"));
+    f.done.run();
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    sendTurn(f, 1);
+    until(() -> f.session.yourTurn(f.now.get()) == null);
+    // Right after your message went: silence again, no pause needed.
+    f.session.reply("r1", "Yes, for eight.");
+    until(() -> f.spoken.size() == 2);
+  }
+
+  @Test
+  public void aReplyArrivingWhileYourMessageIsWrittenDownOrSentWaitsUntilItsGone() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.");
+    java.util.concurrent.CountDownLatch slow = new java.util.concurrent.CountDownLatch(1);
+    f.slow = slow;
+    long timeout = HandsFreeSession.writeTimeoutMs;
+    HandsFreeSession.writeTimeoutMs = 60_000;
+    try {
+      f.quiet(1000);
+      f.talk();
+      f.session.reply("r0", "Here's what I found.");
+      until(() -> reasons(f).contains("Reply waits: checking whether you're done"));
+      f.quiet(3000);
+      f.session.tick();
+      assertTrue(f.spoken.isEmpty());
+      f.slowBb = new java.util.concurrent.CountDownLatch(1);
+      slow.countDown(); // Written down: now it's being sent.
+      until(() -> reasons(f).contains("Reply waits: your message is being sent"));
+      f.session.tick();
+      assertTrue(f.spoken.isEmpty());
+      f.slowBb.countDown();
+      until(() -> f.sent.size() == 1);
+      until(() -> f.spoken.size() == 1);
+    } finally {
+      slow.countDown();
+      HandsFreeSession.writeTimeoutMs = timeout;
+    }
   }
 
   /** Talks, then waits for the message to go out. */
@@ -882,17 +931,17 @@ public class HandsFreeTest {
     f.quiet(1000);
     f.talk();
     until(() -> !f.session.error().isEmpty());
-    // Your turn is kept; a reply still plays at your pause.
+    // Your turn is kept: a reply waits for it.
     assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
     f.session.reply("r0", "Read now.");
     f.quiet(400);
-    until(() -> f.spoken.size() == 1);
-    f.done.run();
-    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    Thread.sleep(100);
+    assertTrue(f.spoken.isEmpty());
     f.transcripts.add("Book the hotel. Over.");
     f.talk();
     until(() -> f.sent.size() == 1);
     assertEquals("Book the hotel.", f.sent.get(0));
+    until(() -> f.spoken.size() == 1); // Your turn is over.
   }
 
   @Test
@@ -959,7 +1008,7 @@ public class HandsFreeTest {
     assertEquals("Hold on, book the train instead.\n\n[heard up to: \"…the morning from gate twelve. The train to\"]", f.sent.get(0));
     // Nothing of it plays again.
     f.quiet(3000);
-    f.now.addAndGet(HandsFreeSession.REPLY_WAIT_MS + 1000);
+    f.now.addAndGet(30_000);
     f.session.tick();
     Thread.sleep(200);
     assertEquals(List.of(LONG_REPLY), f.spoken);
@@ -987,7 +1036,11 @@ public class HandsFreeTest {
     f.session.reply("r1", "Your table is booked.");
     Thread.sleep(150);
     assertTrue("it waits while you talk", f.spoken.isEmpty());
-    f.quiet(1600); // Your pause.
+    f.quiet(1600); // Your pause: your words unsent, still your turn.
+    Thread.sleep(150);
+    assertTrue("it waits through your turn", f.spoken.isEmpty());
+    f.session.sendNow();
+    until(() -> f.sent.size() == 1);
     until(() -> f.spoken.size() == 1);
     assertEquals("Your table is booked.", f.spoken.get(0));
     f.done.run();
@@ -1547,6 +1600,50 @@ public class HandsFreeTest {
   }
 
   @Test
+  public void wordsLiveTranscriptionHearsWhileNobodyHasTheFloorDontHoldAReply() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    live.say("and now the weather"); // A radio.
+    f.session.reply("r1", "Your table is booked.");
+    until(() -> f.spoken.size() == 1);
+    assertEquals("", f.session.pending());
+  }
+
+  @Test
+  public void withLiveTranscriptionYourTurnIsYourUnsentWordsNotLoudness() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    // Speech without words yet: your turn a moment (the live text's delay), then not.
+    f.speak();
+    assertEquals("speaking", f.session.yourTurn(f.now.get()));
+    f.session.reply("r1", "Your table is booked.");
+    Thread.sleep(100);
+    assertTrue(f.spoken.isEmpty());
+    f.now.addAndGet(HandsFreeSession.WORDLESS_MS);
+    assertNull("loud, but no words: not your turn", f.session.yourTurn(f.now.get()));
+    f.session.tick();
+    until(() -> f.spoken.size() == 1);
+    f.done.run();
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    f.quiet(1200);
+    Thread.sleep(150);
+    // Words: your turn, however quiet you are.
+    f.speak();
+    live.say("Book the hotel");
+    f.quiet(1500);
+    until(() -> "unsent words".equals(f.session.yourTurn(f.now.get()))); // Once its check is done.
+    f.session.reply("r2", "Anything else?");
+    f.quiet(5000);
+    f.session.tick();
+    Thread.sleep(100);
+    assertEquals(1, f.spoken.size());
+    assertTrue(reasons(f), reasons(f).contains("Reply waits: your turn (unsent words)"));
+    assertTrue(String.join("\n", f.log).contains("turn: yours (unsent words)"));
+  }
+
+  @Test
   public void aReplyIsSilenceToLiveTranscriptionUntilYouTalkOverIt() throws Exception {
     Fake f = new Fake();
     FakeLive live = new FakeLive(f);
@@ -1810,53 +1907,21 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void aReadyReplyWaitsTwelveSecondsAtMostWhileNoiseKeepsItsPauseAway() throws Exception {
+  public void aSoundThatNeverCountsAsSpeechDoesntHoldAReply() throws Exception {
     Fake f = new Fake();
     f.quiet(1000);
-    clatter(f.session, 2100, 3); // A sound that never counts as speech, again and again.
+    clatter(f.session, 2100, 3); // A sound that never counts as speech.
     f.session.reply("r1", "Your table is booked.");
-    until(() -> reasons(f).contains("Reply waits: you're talking"));
-    long start = f.now.get();
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < 5 && f.spoken.isEmpty(); i++) {
       clatter(f.session, 50, 22);
       clatter(f.session, 2100, 3);
-      f.now.addAndGet(500);
       f.session.tick();
-      if (f.now.get() - start < HandsFreeSession.REPLY_WAIT_MS) assertTrue("played after " + (f.now.get() - start) + " ms", f.spoken.isEmpty());
+      Thread.sleep(50);
     }
     assertEquals(List.of("Your table is booked."), f.spoken);
-    assertTrue(reasons(f), reasons(f).contains("Reply plays: waited 12 s"));
+    assertFalse(reasons(f), reasons(f).contains("Reply waits"));
     assertEquals("the noise never took the turn", "", f.session.pending());
     assertEquals(0, f.transcriptions.get());
-  }
-
-  @Test
-  public void pastTwelveSecondsOnlySpeechGoingOnHoldsAReply() throws Exception {
-    Fake f = new Fake("I was thinking about the trip");
-    java.util.concurrent.CountDownLatch slow = new java.util.concurrent.CountDownLatch(1);
-    f.slow = slow; // Writing down your turn takes long.
-    long timeout = HandsFreeSession.writeTimeoutMs;
-    HandsFreeSession.writeTimeoutMs = 60_000;
-    try {
-      f.quiet(1000);
-      f.talk();
-      f.session.reply("r1", "Your table is booked.");
-      until(() -> reasons(f).contains("Reply waits: checking whether you're done"));
-      f.speak(); // You go on talking.
-      f.now.addAndGet(HandsFreeSession.REPLY_WAIT_MS + 1000);
-      f.session.tick();
-      assertTrue("you're speaking: it waits", f.spoken.isEmpty());
-      f.quiet(100); // A little gap in your speech: still speaking.
-      f.session.tick();
-      assertTrue(f.spoken.isEmpty());
-      f.quiet(1100); // Your pause: your words still being written down, and it has waited enough.
-      f.session.tick();
-      until(() -> f.spoken.size() == 1);
-      assertTrue(reasons(f), reasons(f).contains("Reply plays: waited 12 s"));
-    } finally {
-      slow.countDown();
-      HandsFreeSession.writeTimeoutMs = timeout;
-    }
   }
 
   @Test

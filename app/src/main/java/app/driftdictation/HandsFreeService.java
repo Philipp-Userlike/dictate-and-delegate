@@ -722,7 +722,7 @@ public final class HandsFreeService extends Service {
       case SENDING -> tr("Sending…");
       case SENT -> tr("Sent ✓");
       case WAITING_CHIEF -> tr("Waiting for the chief · you can talk");
-      case REPLY_WAITING -> tr("Reply waiting · plays when you pause");
+      case REPLY_WAITING -> tr("Reply waiting · plays when your turn is over");
       case REPLY_COMING -> tr("Reply coming…");
       case PLAYING -> tr("Playing the reply");
       case MUTED -> tr("Mic paused after the reply");

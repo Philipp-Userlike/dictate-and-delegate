@@ -202,6 +202,7 @@
     <string name="t_46783a6e" formatted="false">Chief of Staff erstellen</string>
     <string name="t_467f1c34" formatted="false">Aufnahme stoppen</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_477632ba" formatted="false">Antwort spielt: du bist nicht mehr dran</string>
     <string name="t_47eaeab4" formatted="false">Freisprechen</string>
     <string name="t_47fbfb16" formatted="false">Ändern</string>
     <string name="t_481510cc" formatted="false">Was OpenRouter für jeden Aufruf berechnet hat.</string>
@@ -322,6 +323,7 @@
     <string name="t_714149a6" formatted="false">Bei Ansprache an Chief senden</string>
     <string name="t_71cc04b4" formatted="false">bb hat keinen Anmeldecode gesendet. Starte sie erneut.</string>
     <string name="t_721589c1" formatted="false">Heute</string>
+    <string name="t_72f939f7" formatted="false">Antwort wartet: deine Nachricht wird gesendet</string>
     <string name="t_7382e59f" formatted="false">Abmelden…</string>
     <string name="t_73c2d986" formatted="false">Gespeichert, verschlüsselt · Verfeinern nutzt dein Anthropic-Guthaben</string>
     <string name="t_74350de7" formatted="false">Über</string>
@@ -358,6 +360,7 @@
     <string name="t_8053d9fa" formatted="false">Sprich, dann mach eine Pause: Wenn du klar fertig bist (Frage gestellt, %1$s), wird gesendet; sag %2$s zum Beenden. Senden und die Headset-Taste senden sofort. Eine Antwort wartet, während du sprichst, und läuft, wenn du eine Pause machst; sprich dazwischen, um sie anzuhalten, dann läuft sie später erneut.</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Erneut senden</string>
     <string name="t_8108fc2e" formatted="false">Keine Verbindung zu Anthropic.</string>
+    <string name="t_816affe2" formatted="false">Antwort wartet · wird abgespielt, wenn du fertig bist</string>
     <string name="t_81e2a271" formatted="false">Transkription</string>
     <string name="t_821e233c" formatted="false">Mit einer Berechtigung fügt „Einfügen“ deinen Text direkt am Cursor ein, und das Halten einer Lautstärketaste startet das Diktieren. Ohne sie kopiert Dictate &amp; Delegate den Text, damit du ihn selbst einfügen kannst.</string>
     <string name="t_8250ae9b" formatted="false">Bei bb anmelden…</string>
@@ -414,7 +417,6 @@
     <string name="t_94476a26" formatted="false">bb hat die Skills des Chiefs nicht rechtzeitig installiert. Versuche es erneut.</string>
     <string name="t_94582eee" formatted="false">AssemblyAI-Schlüssel</string>
     <string name="t_946ab421" formatted="false">Modelle suchen</string>
-    <string name="t_946be5c8" formatted="false">Antwort spielt: du hast aufgehört zu sprechen</string>
     <string name="t_9486247d" formatted="false">Eingefügt</string>
     <string name="t_9493d3a2" formatted="false">Nicht an deinen Chief of Staff gesendet: %1$s Unten ist dein Diktat.</string>
     <string name="t_9500493c" formatted="false">bb hat nicht mitgeteilt, welcher Thread erstellt wurde.</string>
@@ -435,7 +437,6 @@
     <string name="t_9bb908f9" formatted="false">Text</string>
     <string name="t_9bec7d3e" formatted="false">Modelle &amp; Anbieter</string>
     <string name="t_9bef8b14" formatted="false">Ideen &amp; Tagebuch</string>
-    <string name="t_9c1df3f5" formatted="false">Antwort wartet auf Sprechpause (%1$.1f s Stille)</string>
     <string name="t_9c550f09" formatted="false">Kachel oder Lautstärke leiser halten</string>
     <string name="t_9c7b6819" formatted="false">Audio löschen</string>
     <string name="t_9c9743f1" formatted="false">Nötig zur Wiederholung mit klügerem Modell</string>
@@ -627,13 +628,12 @@
     <string name="t_d6c42080" formatted="false">Anruf wird gestartet…</string>
     <string name="t_d6d7613f" formatted="false">Deine Vorlage</string>
     <string name="t_d6dce050" formatted="false">Kein Chief of Staff eingerichtet. Richte einen unter Einstellungen → bb ein.</string>
-    <string name="t_d7020b31" formatted="false">Antwort spielt: du hast %1$.1f s pausiert; du bist danach wieder dran</string>
     <string name="t_d79a087e" formatted="false">Dieser Thread ist in bb archiviert. Dearchiviere ihn oder wähle einen anderen.</string>
-    <string name="t_d7e01719" formatted="false">Antwort wartet · wird bei Sprechpause abgespielt</string>
     <string name="t_d7e63cc4" formatted="false">Während des Diktierens bleibt ein kleines Panel über anderen Apps sichtbar: Tippe auf ■ zum Stoppen, danach auf Einfügen, Verfeinern oder Chief. Um dies zu erlauben, zeigt Android eine App-Liste: Tippe auf Dictate &amp; Delegate, aktiviere die Option und kehre zurück.</string>
     <string name="t_d8427f19" formatted="false">Dein OpenRouter-Schlüssel</string>
     <string name="t_d90fc528" formatted="false">Ändere die Sprache unter Android-Einstellungen → Apps → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Endwörter (senden, was davor kam, und beenden den Freisprechmodus)</string>
+    <string name="t_da47d822" formatted="false">Antwort wartet: du bist dran (noch nicht gesendete Worte)</string>
     <string name="t_db5195fa" formatted="false">eingefügter Text</string>
     <string name="t_dbde124f" formatted="false">Audio wurde nicht behalten und kann nicht neu verarbeitet werden.</string>
     <string name="t_dbe48d14" formatted="false">Nie</string>
@@ -713,7 +713,6 @@
     <string name="t_f01db452" formatted="false">Erstelle dort einen Schlüssel, kopiere ihn und füge ihn oben ein. Lade auch ein paar Dollar Guthaben auf OpenRouter auf: Eine einminütige Notiz kostet meist deutlich unter einem Cent.</string>
     <string name="t_f032e365" formatted="false">Schlüssel auf console.anthropic.com abrufen</string>
     <string name="t_f05beeb6" formatted="false">Am günstigsten</string>
-    <string name="t_f0ce4e3c" formatted="false">Antwort wird abgespielt: %1$d s gewartet</string>
     <string name="t_f0d83244" formatted="false">Das Sprachmodell hat kein Transkript zurückgegeben. Die Aufnahme bleibt erhalten; versuche es erneut.</string>
     <string name="t_f13b16c1" formatted="false">Dein Chief of Staff nutzt zwei Skills in bb (chief-of-staff und dictate-and-delegate): wie Aufgaben für dich erledigt werden und wie Benachrichtigungen sowie Text zurückgesendet werden. Dictate &amp; Delegate installiert und aktualisiert diese in bb über einen kurzen Thread.</string>
     <string name="t_f157fddc" formatted="false">Füge den Text so ein oder tippe ihn so, wie du ihn senden würdest.</string>

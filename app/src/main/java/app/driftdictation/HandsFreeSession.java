@@ -84,17 +84,10 @@ final class HandsFreeSession {
   record Reason(long at, String text, int times) {}
 
   /**
-   * A reply waiting while your turn goes on plays once you've been quiet this long (and nothing
-   * of yours is being written down).
+   * With live transcription, speech without words in the live text holds your turn this long at
+   * most (the live text's delay for the first words): noise or a cough doesn't hold a reply.
    */
-  static final long REPLY_PAUSE_MS = 1500;
-
-  /**
-   * A reply whose voice is ready waits at most this long: then it plays, unless you're speaking
-   * right then (speech the segmenter is in the middle of). Not for an open turn, a check of it,
-   * or a sound that hasn't counted as speech: noise kept replies waiting until the call ended.
-   */
-  static final long REPLY_WAIT_MS = 12_000;
+  static final long WORDLESS_MS = 3000;
 
   /** How long the screen says Sent ✓ after a message went. */
   static final long SENT_SHOWN_MS = 3000;
@@ -270,8 +263,9 @@ final class HandsFreeSession {
     final String request, text;
     volatile Object prepared;
     volatile boolean ready;
-    /** Why it waited was shown (once per reply). */
+    /** Why it waited was shown (once per reason): told, and the last reason shown. */
     boolean told;
+    String toldWhy;
     /** The seconds its voice has been fetched for, as last shown (0: not shown). */
     long voiceShown;
     /** Tries to play it that failed before (its voice fetched afresh each time). */
@@ -737,9 +731,10 @@ final class HandsFreeSession {
     // A sound of ours just played: it can't start a stretch of speech (one going on goes on).
     if (cue && !segmenter.candidate()) return;
     segmenter.frame(frame);
-    // A waiting reply plays at your pause: checked a few times a second.
+    // A waiting reply plays once your turn is over: checked a few times a second.
     if (++sinceCheck >= 10) {
       sinceCheck = 0;
+      noteTurn();
       if (held() > 0) readNext();
     }
   }
@@ -1122,13 +1117,12 @@ final class HandsFreeSession {
   }
 
   /**
-   * The next waiting reply plays, once its audio is ready, unless you're talking or what you said
-   * is being written down; while your turn goes on (unsent words) it waits for a pause of
-   * REPLY_PAUSE_MS. Once ready it waits REPLY_WAIT_MS at most: then only speech going on holds it.
-   * Why it waits is shown once per reply, and when it plays after waiting; while its voice is
-   * fetched the seconds count up on screen.
+   * The next waiting reply plays once its audio is ready and nobody has the turn (silence): never
+   * during your turn (yourTurn), however long it lasts. Why it waits is shown once per reason, and
+   * when it plays after waiting; while its voice is fetched the seconds count up on screen.
    */
   private void readNext() {
+    noteTurn();
     Held next;
     int token;
     String waits, plays = null;
@@ -1143,11 +1137,11 @@ final class HandsFreeSession {
         if (fetching < 1 || fetching == first.voiceShown) return;
         first.voiceShown = fetching;
       } else if (waits != null) {
-        if (first.told) return;
+        if (waits.equals(first.toldWhy)) return;
         first.told = true;
+        first.toldWhy = waits;
       } else if (first.told) {
-        boolean turn = takenByYou || hasTurn();
-        plays = now - first.readyAt >= REPLY_WAIT_MS && wouldWait(turn) ? "capped" : turn ? "pause" : "open";
+        plays = "silence";
       }
     }
     if (waits != null) {
@@ -1156,22 +1150,17 @@ final class HandsFreeSession {
           ongoing("Reply waits: its voice is being fetched (%1$d s)", fetching);
           return;
         }
-        case "talking" -> reason("Reply waits: you're talking");
-        case "writing" -> reason("Reply waits: checking whether you're done");
-        default -> reason("Reply waits for your pause (%1$.1f s quiet)", REPLY_PAUSE_MS / 1000.0);
+        case "speaking" -> reason("Reply waits: you're talking");
+        case "writing down" -> reason("Reply waits: checking whether you're done");
+        case "sending" -> reason("Reply waits: your message is being sent");
+        default -> reason("Reply waits: your turn (unsent words)");
       }
       readNext(); // It may play right away after all (it was told, so this doesn't repeat).
       return;
     }
-    if (plays != null) {
-      switch (plays) {
-        case "capped" -> reason("Reply plays: waited %1$d s", REPLY_WAIT_MS / 1000);
-        case "pause" -> reason("Reply plays: you paused %1$.1f s; your turn goes on after it", REPLY_PAUSE_MS / 1000.0);
-        default -> reason("Reply plays: you stopped talking");
-      }
-    }
-    // Played after waiting its most: a sound that hasn't counted as speech yet ends as noise (if
-    // it was you, talking on over the reply interrupts it).
+    if (plays != null) reason("Reply plays: your turn is over");
+    // A sound that hasn't counted as speech yet ends as noise (if it was you, talking on over the
+    // reply interrupts it).
     if (!segmenter.speaking()) segmenter.flush(false);
     synchronized (this) {
       if (state != State.LISTENING || held.isEmpty() || holds(held.peekFirst(), clock.getAsLong()) != null) return;
@@ -1190,6 +1179,7 @@ final class HandsFreeSession {
     }
     status = "reading";
     log("floor: chief, reading " + next.request);
+    noteTurn();
     cue(Cue.REPLY);
     listener.changed();
     try {
@@ -1224,23 +1214,65 @@ final class HandsFreeSession {
   }
 
   /**
-   * Why the first waiting reply can't play now: "talking", "writing", "pause" or "voice" (its
-   * audio isn't ready), null when it can. Having waited REPLY_WAIT_MS once ready, only speech
-   * going on holds it.
+   * Why the first waiting reply can't play now: it's your turn (yourTurn's why) or "voice" (its
+   * audio isn't ready); null when it can.
    */
   private String holds(Held first, long now) {
-    if (segmenter.speaking()) return "talking";
-    boolean capped = first.ready && now - first.readyAt >= REPLY_WAIT_MS;
-    if (!capped && wouldWait(takenByYou || hasTurn())) {
-      if (segmenter.candidate()) return "talking";
-      return transcribing.get() > 0 ? "writing" : "pause";
-    }
+    String yours = yourTurn(now);
+    if (yours != null) return yours;
     return first.ready ? null : "voice";
   }
 
-  /** A sound that may become speech, a check of your turn, or your turn without its pause yet. */
-  private boolean wouldWait(boolean turn) {
-    return segmenter.candidate() || transcribing.get() > 0 || turn && segmenter.quietMs() < REPLY_PAUSE_MS;
+  /**
+   * Is it your turn, and why: "unsent words", "speaking", "writing down" (a check of your turn)
+   * or "sending" (Send pressed, or a message on its way); null when it isn't. Unsent words come
+   * from live transcription while it works for this turn: words in the live text since your last
+   * message (or kept from before), so loudness alone doesn't give you the turn; speech without
+   * words yet holds it WORDLESS_MS at most. Without it (off, no key, failed) they come from your
+   * unsent audio parts (and their words written down), and speech holds the turn while it goes on.
+   * A sound that hasn't counted as speech (a cough, noise) never does.
+   */
+  String yourTurn(long now) {
+    if (streaming()) {
+      boolean words = !pending.isEmpty() || !turnPrefix.isEmpty();
+      if (!words && segmenter.speaking() && now - turnSpeechAt < WORDLESS_MS) return "speaking";
+      if (transcribing.get() > 0) return "writing down";
+      if (words) return "unsent words";
+    } else {
+      if (segmenter.speaking()) return "speaking";
+      if (transcribing.get() > 0) return "writing down";
+      if (hasTurn() || !pending.isEmpty()) return "unsent words";
+    }
+    if (outgoing.get() > 0 || sendPressed) return "sending";
+    return null;
+  }
+
+  /** Whose turn it was when last logged: "yours (why)", "ours (a reply plays)" or "silence". */
+  private String turnLogged = "silence";
+
+  /**
+   * Logs each change of turn, so the log shows why a reply waited: "turn: yours (unsent words)",
+   * "turn: ours (a reply plays)", "turn: silence (sent)".
+   */
+  private void noteTurn() {
+    if (state == State.ENDED) return;
+    String why = state == State.READING ? null : yourTurn(clock.getAsLong());
+    String now = state == State.READING ? "ours (a reply plays)" : why != null ? "yours (" + why + ")" : "silence";
+    String was;
+    synchronized (this) {
+      if (turnLogged.equals(now)) return;
+      was = turnLogged;
+      turnLogged = now;
+    }
+    if (!now.equals("silence")) log("turn: " + now);
+    else
+      log("turn: silence (" + switch (was) {
+            case "ours (a reply plays)" -> "the reply ended";
+            case "yours (sending)" -> "sent";
+            case "yours (writing down)" -> "nothing to send";
+            case "yours (speaking)" -> "no words";
+            default -> "your words were let go";
+          } + ")");
   }
 
   /**
@@ -1316,6 +1348,7 @@ final class HandsFreeSession {
     }
     status = "listening";
     log("floor: " + (tail ? "open" : "you"));
+    noteTurn();
     if (tail) reason("Mic paused %1$.1f s after the reply (echo)", TAIL_MS / 1000.0);
     listener.changed();
     return true;

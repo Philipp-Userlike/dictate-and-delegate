@@ -204,6 +204,7 @@
     <string name="t_46783a6e" formatted="false">Utwórz szefa sztabu</string>
     <string name="t_467f1c34" formatted="false">Zatrzymaj nagrywanie</string>
     <string name="t_46e4fba1" formatted="false">%1$d s</string>
+    <string name="t_477632ba" formatted="false">Odtwarzanie odpowiedzi: Twoja kolej minęła</string>
     <string name="t_47eaeab4" formatted="false">Głośnomówiący</string>
     <string name="t_47fbfb16" formatted="false">Zmień</string>
     <string name="t_481510cc" formatted="false">Opłaty pobrane przez OpenRouter za poszczególne wywołania.</string>
@@ -324,6 +325,7 @@
     <string name="t_714149a6" formatted="false">Wysyłaj do szefa po wywołaniu</string>
     <string name="t_71cc04b4" formatted="false">bb nie przesłało kodu logowania. Rozpocznij ponownie.</string>
     <string name="t_721589c1" formatted="false">Dzisiaj</string>
+    <string name="t_72f939f7" formatted="false">Odpowiedź oczekuje: trwa wysyłanie wiadomości</string>
     <string name="t_7382e59f" formatted="false">Wylogowywanie…</string>
     <string name="t_73c2d986" formatted="false">Zapisano, zaszyfrowano · Dopracuj używa Twoich środków w Anthropic</string>
     <string name="t_74350de7" formatted="false">Informacje</string>
@@ -362,6 +364,7 @@
     <string name="t_8053d9fa" formatted="false">Mów, a potem zrób przerwę: gdy skończysz (zadasz pytanie, %1$s), wiadomość zostanie wysłana; powiedz %2$s, aby zakończyć. Przycisk Wyślij i przycisk na słuchawkach wysyłają natychmiast. Odpowiedź czeka, gdy mówisz, i odtwarza się w trakcie przerwy; zacznij mówić, aby ją przerwać – zostanie odtworzona ponownie później.</string>
     <string name="t_80b095f9" formatted="false">🧑‍💼 Wyślij ponownie</string>
     <string name="t_8108fc2e" formatted="false">Brak połączenia z Anthropic.</string>
+    <string name="t_816affe2" formatted="false">Odpowiedź oczekuje · odtworzy się, gdy skończysz</string>
     <string name="t_81e2a271" formatted="false">Transkrypcja</string>
     <string name="t_821e233c" formatted="false">Dzięki jednemu uprawnieniu opcja Wstaw umieszcza tekst bezpośrednio przy kursorze, a przytrzymanie przycisku głośności rozpoczyna dyktowanie. Bez niego Dictate &amp; Delegate kopiuje tekst do schowka, a Ty go wklejasz.</string>
     <string name="t_8250ae9b" formatted="false">Logowanie do bb…</string>
@@ -418,7 +421,6 @@
     <string name="t_94476a26" formatted="false">bb nie zainstalowało umiejętności asystenta na czas. Spróbuj ponownie.</string>
     <string name="t_94582eee" formatted="false">Klucz AssemblyAI</string>
     <string name="t_946ab421" formatted="false">Szukaj modeli</string>
-    <string name="t_946be5c8" formatted="false">Odpowiedź gra: przestajesz mówić</string>
     <string name="t_9486247d" formatted="false">Wstawiono</string>
     <string name="t_9493d3a2" formatted="false">Nie wysłano do szefa sztabu: %1$s Poniżej znajduje się Twoja wypowiedź.</string>
     <string name="t_9500493c" formatted="false">bb nie zwróciło informacji o utworzonym wątku.</string>
@@ -441,7 +443,6 @@
     <string name="t_9bb908f9" formatted="false">Tekst</string>
     <string name="t_9bec7d3e" formatted="false">Modele i dostawcy</string>
     <string name="t_9bef8b14" formatted="false">Pomysły i dziennik</string>
-    <string name="t_9c1df3f5" formatted="false">Odpowiedź czeka na pauzę (%1$.1f s ciszy)</string>
     <string name="t_9c550f09" formatted="false">Kafelek lub przytrzymanie ciszej</string>
     <string name="t_9c7b6819" formatted="false">Usuń dźwięk</string>
     <string name="t_9c9743f1" formatted="false">Wymagane do ponownego przetworzenia notatki inteligentniejszym modelem</string>
@@ -637,13 +638,12 @@
     <string name="t_d6c42080" formatted="false">Rozpoczynanie połączenia…</string>
     <string name="t_d6d7613f" formatted="false">Twój szablon</string>
     <string name="t_d6dce050" formatted="false">Szef sztabu nie jest skonfigurowany. Skonfiguruj go w Ustawienia → bb.</string>
-    <string name="t_d7020b31" formatted="false">Odpowiedź gra: pauza %1$.1f s; potem mówisz dalej</string>
     <string name="t_d79a087e" formatted="false">Ten wątek jest zarchiwizowany w bb. Przywróć go lub wybierz inny.</string>
-    <string name="t_d7e01719" formatted="false">Odpowiedź czeka · odtworzy się po pauzie</string>
     <string name="t_d7e63cc4" formatted="false">Podczas dyktowania mały panel wyświetla się nad innymi aplikacjami: dotknij ■, aby zatrzymać, a potem Wstaw, Udoskonal lub Szef. Aby zezwolić, wybierz Dictate &amp; Delegate z listy aplikacji, włącz przełącznik i wróć tutaj.</string>
     <string name="t_d8427f19" formatted="false">Twój klucz OpenRouter</string>
     <string name="t_d90fc528" formatted="false">Zmień język w Ustawienia Androida → Aplikacje → Dictate &amp; Delegate.</string>
     <string name="t_d9cfe004" formatted="false">Słowa kończące (wysyłają wcześniejszą treść, a potem wyłączają tryb głośnomówiący)</string>
+    <string name="t_da47d822" formatted="false">Odpowiedź oczekuje: Twoja kolej (niewysłane słowa)</string>
     <string name="t_db5195fa" formatted="false">wklejony tekst</string>
     <string name="t_dbde124f" formatted="false">Dźwięk dla tej notatki nie został zachowany, więc nie można jej poprawić.</string>
     <string name="t_dbe48d14" formatted="false">Nigdy</string>
@@ -723,7 +723,6 @@
     <string name="t_f01db452" formatted="false">Utwórz tam klucz, skopiuj go i wklej powyżej. Doładuj też konto kwotą kilku dolarów na OpenRouter: minuta notatki kosztuje zwykle znacznie poniżej jednego centa.</string>
     <string name="t_f032e365" formatted="false">Pobierz klucz na console.anthropic.com</string>
     <string name="t_f05beeb6" formatted="false">Najtańszy</string>
-    <string name="t_f0ce4e3c" formatted="false">Odtwarzanie odpowiedzi: oczekiwano %1$d s</string>
     <string name="t_f0d83244" formatted="false">Model mowy nie zwrócił transkrypcji. Nagranie zostało zachowane; spróbuj ponownie.</string>
     <string name="t_f13b16c1" formatted="false">Twój szef sztabu korzysta z dwóch umiejętności w bb: chief-of-staff i dictate-and-delegate (jak pracować dla Ciebie oraz jak wysyłać powiadomienia i tekst z powrotem). Dictate &amp; Delegate instaluje je i aktualizuje w bb w krótkim wątku.</string>
     <string name="t_f157fddc" formatted="false">Wklej lub wpisz tekst tak, jak chcesz go wysłać.</string>

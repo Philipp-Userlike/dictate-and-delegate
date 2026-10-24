@@ -41,7 +41,7 @@ final class HandsFree {
    * Jev asked whether you're done (a new key: the old setting was the much shorter pause after
    * which each part was written down on its own).
    */
-  static final int DEFAULT_PAUSE_MS = 1800, DEFAULT_SILENCE_SEND_MS = 30_000;
+  static final int DEFAULT_PAUSE_MS = 1800, DEFAULT_SILENCE_SEND_MS = 15_000;
 
   static List<String> words(SharedPreferences prefs, String key, String fallback) {
     return list(prefs.getString(key, fallback));
