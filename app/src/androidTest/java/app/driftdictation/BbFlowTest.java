@@ -797,7 +797,9 @@ public class BbFlowTest {
         new Intent(context, MainActivity.class)
             .putExtra("open", "handsfree")
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    find("Hands-free settings");
     tap("Hands-free settings");
+    find("Send words"); // The settings page, before scrolling it.
     scrollTo(new UiSelector().text("Use the talker"));
     // Off, and none, until you set it.
     assertEquals("", bb.talkerId());

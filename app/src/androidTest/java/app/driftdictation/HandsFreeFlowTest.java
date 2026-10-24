@@ -901,6 +901,10 @@ public class HandsFreeFlowTest {
     TestServer.ntfySpeak(new BbBridge(context).ntfyTopic(), "", "The table is booked for eight.");
     until(() -> spoken().contains("The table is booked for eight."), "the talker's update read aloud");
     until(() -> HandsFreeService.session().state() == HandsFreeSession.State.LISTENING, "listening again after the update");
+    // Both played on the call's audio kept open (on by default), to the end.
+    String played = HandsFreeLog.lastCalls(HandsFreeService.log(context), 1);
+    assertTrue(played, played.contains("audio: kept open for the call"));
+    assertEquals(played, 2, count(played, "reply played to the end"));
     Thread.sleep(HandsFreeSession.TAIL_MS + 300);
     talk();
     until(() -> HandsFreeService.instance == null, "hands-free ended by the end word");
@@ -1032,5 +1036,24 @@ public class HandsFreeFlowTest {
     } finally {
       for (String line : HandsFreeService.log(context).split("\n")) android.util.Log.i("TalkRouterReal", line);
     }
+  }
+
+  @Test
+  public void withATalkerASendPhraseHeardLiveGoesToBoth() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();
+    liveOn("aai-pro");
+    TestServer.liveTexts("Book a table for Friday. Over.");
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    HandsFreeSession s = HandsFreeService.session();
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000)); // Speech, no pause after it.
+    until(() -> messagesTo(TestServer.CHIEF).size() == 1 && messagesTo(TALKER).size() == 1, "the message sent to both");
+    String toChief = messagesTo(TestServer.CHIEF).get(0), toTalker = messagesTo(TALKER).get(0);
+    assertTrue(toChief, toChief.contains("Book a table for Friday."));
+    assertEquals(toChief.replace(TestServer.CHIEF, TALKER), toTalker);
+    until(() -> HandsFreeService.log(context).contains("to the talker too"), "the log says the talker got it");
+    String log = HandsFreeService.log(context);
+    assertTrue(log, log.contains("send phrase: final text in "));
+    assertEquals("Jev not asked", 0, count(TestServer.requests(), "decide"));
   }
 }
