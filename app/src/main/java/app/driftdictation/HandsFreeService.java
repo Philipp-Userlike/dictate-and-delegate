@@ -500,7 +500,11 @@ public final class HandsFreeService extends Service {
     } catch (Exception ex) {
       key = null;
     }
-    if (key == null || key.isEmpty()) return "on, but no " + (c.provider().equals(StreamingSpeech.ELEVENLABS) ? "ElevenLabs" : "AssemblyAI") + " key: written down from audio";
+    if (key == null || key.isEmpty()) {
+      String provider = c.provider().equals(StreamingSpeech.ELEVENLABS) ? "ElevenLabs" : "AssemblyAI";
+      session.liveKeyMissing(provider);
+      return "on, but no " + provider + " key: written down from audio";
+    }
     // The send and end words as key terms, so a short "over" is heard as that.
     java.util.List<String> terms = new java.util.ArrayList<>(sendWords);
     for (String w : endWords) if (!terms.contains(w)) terms.add(w);
@@ -565,10 +569,8 @@ public final class HandsFreeService extends Service {
    */
   private void sendBoth(BbBridge bb, String said, String request, String model) throws Exception {
     String chief = bb.chiefId(), message = BbBridge.handsFreeMessage(said, request);
-    java.util.Map<String, String> to = new java.util.LinkedHashMap<>();
-    to.put(chief, message);
-    to.put(talker, message);
-    java.util.Map<String, String> failed = bb.tellEach(to);
+    java.util.Map<String, Long> took = new java.util.HashMap<>();
+    java.util.Map<String, String> failed = bb.tellEach(bothTo(chief, talker, message, message), took);
     String chiefWhy = failed.get(chief), talkerWhy = failed.get(talker);
     if (chiefWhy != null) event("the chief didn't get " + request + ": " + chiefWhy);
     if (talkerWhy != null) event("the talker (" + talker + ") didn't get " + request + ": " + talkerWhy);
@@ -577,7 +579,18 @@ public final class HandsFreeService extends Service {
     keepNote(said, request, model);
     if (chiefWhy != null) throw new HandsFreeSession.PartlySent(request, true, chiefWhy);
     if (talkerWhy != null) throw new HandsFreeSession.PartlySent(request, false, talkerWhy);
-    event("sent " + request + " to the talker too");
+    event(String.format(java.util.Locale.ROOT, "sent %s to the talker too (bb took %d ms for the talker, %d ms for the chief)", request, took.get(talker), took.get(chief)));
+  }
+
+  /**
+   * The talker's and the chief's messages, the talker's first: tellEach sends the first on the
+   * calling thread, which a real bb took first more often (it takes the two about 25 ms apart).
+   */
+  static java.util.Map<String, String> bothTo(String chief, String talker, String toChief, String toTalker) {
+    java.util.Map<String, String> to = new java.util.LinkedHashMap<>();
+    if (!talker.isEmpty()) to.put(talker, toTalker);
+    to.put(chief, toChief);
+    return to;
   }
 
   /**
@@ -598,9 +611,7 @@ public final class HandsFreeService extends Service {
         new Thread(
             () -> {
               if (after != null && !after.awaitDelivered(25_000)) event("a message was still on its way when the call ended");
-              java.util.Map<String, String> to = new java.util.LinkedHashMap<>();
-              to.put(chief, chiefLine);
-              if (!talker.isEmpty()) to.put(talker, line);
+              java.util.Map<String, String> to = bothTo(chief, talker, chiefLine, line);
               java.util.Map<String, String> failed = bb.tellEach(to);
               for (String id : to.keySet()) {
                 String who = id.equals(chief) ? "the chief" : "the talker (" + id + ")";
@@ -722,6 +733,7 @@ public final class HandsFreeService extends Service {
   static String shortLabel(HandsFreeSession s) {
     String failed = voiceFailure(s);
     if (failed != null) return tr("Voice failed · %1$s", brief(failed));
+    if (liveOffShown(s)) return tr("Live off · no %1$s key", s.liveKeyMissing());
     return switch (s.live()) {
       case HEARING -> tr("Hearing you");
       case WRITING ->
@@ -737,6 +749,23 @@ public final class HandsFreeService extends Service {
       case ENDED -> tr("Ended");
       default -> tr("Listening");
     };
+  }
+
+  /**
+   * The call bar says live transcription is off for a missing key: in the call's first minute,
+   * while nothing more important is going on (as a voice failure, which goes first).
+   */
+  static boolean liveOffShown(HandsFreeSession s) {
+    if (!s.liveOffRecent()) return false;
+    return switch (s.live()) {
+      case LISTENING, WAITING_CHIEF, REPLY_WAITING, REPLY_COMING, SENT -> true;
+      default -> false;
+    };
+  }
+
+  /** In full, for TalkBack and the call bar's tooltip. */
+  static String liveOffText(HandsFreeSession s) {
+    return tr("Live transcription is off: no %1$s key (Settings → Hands-free)", s.liveKeyMissing());
   }
 
   /**

@@ -206,6 +206,7 @@
     <string name="t_47fbfb16" formatted="false">Zmień</string>
     <string name="t_481510cc" formatted="false">Opłaty pobrane przez OpenRouter za poszczególne wywołania.</string>
     <string name="t_487286f2" formatted="false">Wysłano: zadałeś pytanie (%1$d%%)</string>
+    <string name="t_49db38fb" formatted="false">Na żywo wył. · brak klucza %1$s</string>
     <string name="t_4a473e6c" formatted="false">Nie udało się wczytać zapisanych danych. Twoje dane nie zostały usunięte.</string>
     <string name="t_4a881de5" formatted="false">Najpierw dokończ nagrywanie lub przesyłanie</string>
     <string name="t_4ae2821e" formatted="false">w toku</string>
@@ -595,6 +596,7 @@
     <string name="t_c96b1a45" formatted="false">Uruchamianie…</string>
     <string name="t_c997df74" formatted="false">bb odrzuciło logowanie: %1$s</string>
     <string name="t_c998a38e" formatted="false">Dźwięk wygasł lub został usunięty. Tekst jest nadal zapisany.</string>
+    <string name="t_c9e76ec6" formatted="false">Transkrypcja na żywo jest wyłączona: brak klucza %1$s (Ustawienia → Tryb głośnomówiący)</string>
     <string name="t_ca00a779" formatted="false">Zapisz klucz</string>
     <string name="t_ca4b7d63" formatted="false">Odpowiedź czeka: sprawdzam, czy to koniec</string>
     <string name="t_ca513a47" formatted="false">Od następnego połączenia w trybie głośnomówiącym</string>

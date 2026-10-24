@@ -205,6 +205,7 @@
     <string name="t_47fbfb16" formatted="false">Modifier</string>
     <string name="t_481510cc" formatted="false">Ce qu\'OpenRouter a facturé pour chaque appel.</string>
     <string name="t_487286f2" formatted="false">Envoyé : tu as posé ta question (%1$d%%)</string>
+    <string name="t_49db38fb" formatted="false">Direct désactivé · pas de clé %1$s</string>
     <string name="t_4a473e6c" formatted="false">Impossible de charger les données. Tes données n\'ont pas été supprimées.</string>
     <string name="t_4a881de5" formatted="false">Termine d\'abord l\'enregistrement ou l\'envoi</string>
     <string name="t_4ae2821e" formatted="false">en cours</string>
@@ -590,6 +591,7 @@
     <string name="t_c96b1a45" formatted="false">Démarrage…</string>
     <string name="t_c997df74" formatted="false">bb a refusé la connexion : %1$s</string>
     <string name="t_c998a38e" formatted="false">L\'audio a expiré ou a été supprimé. Le texte reste enregistré.</string>
+    <string name="t_c9e76ec6" formatted="false">Transcription en direct désactivée : pas de clé %1$s (Paramètres → Mains libres)</string>
     <string name="t_ca00a779" formatted="false">Enregistrer la clé</string>
     <string name="t_ca4b7d63" formatted="false">Réponse en attente : vérification si tu as fini</string>
     <string name="t_ca513a47" formatted="false">Dès ton prochain appel mains libres</string>

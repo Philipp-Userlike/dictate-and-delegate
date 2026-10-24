@@ -32,7 +32,8 @@ Test control (not part of bb):
                       JSON-RPC error; with "thread": "thr_…", only a call for that thread
                       (a tell to the talker, not the chief)
   POST /test/config   {"token": "secret"} requires "Authorization: Bearer secret" (401 otherwise);
-                      {"token": ""} turns that off
+                      {"token": ""} turns that off; {"tellDelayMs": 1500} makes each tell take that
+                      long (as over a slow connection), 0 turns it off
   POST /test/skills   {"installed": {"dictate-and-delegate": "abc", ...}} sets what bb has ("" missing,
                       "old" unmarked); {"stall": true} makes the install thread never install
   GET  /test/uploads  every upload: {"name", "mimeType", "size", "sha256", "via": "rest"|"mcp", "path"}
@@ -50,6 +51,7 @@ import json
 import re
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 CHIEF_ID = "thr_fakechief"
@@ -64,7 +66,7 @@ TOOLS = [
 
 lock = threading.Lock()
 failures = []
-config = {"token": "", "uploadStatus": 200}
+config = {"token": "", "uploadStatus": 200, "tellDelayMs": 0}
 uploads = []
 skills = {"installed": {}, "files": {}, "stall": False}
 requests = []
@@ -152,6 +154,7 @@ class Handler(BaseHTTPRequestHandler):
                 requests.clear()
                 config["token"] = ""
                 config["uploadStatus"] = 200
+                config["tellDelayMs"] = 0
                 uploads.clear()
                 skills.update({"installed": {}, "files": {}, "stall": False})
             return self.send_json(200, {})
@@ -279,6 +282,10 @@ class Handler(BaseHTTPRequestHandler):
         elif kind == "spawn":
             value = {"id": CHIEF_ID, "title": "Chief of staff", "status": "starting"}
         elif kind == "tell":
+            with lock:
+                delay = config["tellDelayMs"]
+            if delay:
+                time.sleep(delay / 1000)
             value = {"threadId": thread_arg(code, "tell"), "delivery": "sent"}
         elif kind == "show":
             value = {"id": thread_arg(code, "show"), "title": "Chief of staff", "status": "idle", "archived": False}

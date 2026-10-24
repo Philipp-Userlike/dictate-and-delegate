@@ -204,6 +204,7 @@
     <string name="t_47fbfb16" formatted="false">Wijzigen</string>
     <string name="t_481510cc" formatted="false">Wat OpenRouter voor elke aanroep in rekening heeft gebracht.</string>
     <string name="t_487286f2" formatted="false">Verzonden: je hebt je vraag gesteld (%1$d%%)</string>
+    <string name="t_49db38fb" formatted="false">Live uit · geen %1$s-sleutel</string>
     <string name="t_4a473e6c" formatted="false">Kon opgeslagen gegevens niet laden. Je gegevens zijn niet verwijderd.</string>
     <string name="t_4a881de5" formatted="false">Rond eerst opname of upload af</string>
     <string name="t_4ae2821e" formatted="false">bezig</string>
@@ -585,6 +586,7 @@
     <string name="t_c96b1a45" formatted="false">Starten…</string>
     <string name="t_c997df74" formatted="false">bb weigerde de aanmelding: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio is verlopen of verwijderd. Tekst is nog bewaard.</string>
+    <string name="t_c9e76ec6" formatted="false">Live transcriptie staat uit: geen %1$s-sleutel (Instellingen → Handsfree)</string>
     <string name="t_ca00a779" formatted="false">Sleutel opslaan</string>
     <string name="t_ca4b7d63" formatted="false">Antwoord wacht: controleren of je klaar bent</string>
     <string name="t_ca513a47" formatted="false">Vanaf je volgende handsfree oproep</string>

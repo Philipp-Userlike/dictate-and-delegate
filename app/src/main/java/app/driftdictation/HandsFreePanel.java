@@ -157,8 +157,10 @@ final class HandsFreePanel extends LinearLayout {
     HandsFreeSession.Phase phase = s.phase();
     HandsFreeSession.Live live = s.live();
     state.setText(HandsFreeService.shortLabel(s));
-    state.setContentDescription(HandsFreeService.liveLabel(s));
-    state.setTooltipText(HandsFreeService.liveLabel(s));
+    String full =
+        HandsFreeService.voiceFailure(s) == null && HandsFreeService.liveOffShown(s) ? HandsFreeService.liveOffText(s) : HandsFreeService.liveLabel(s);
+    state.setContentDescription(full);
+    state.setTooltipText(full);
     // Green: you can talk; amber: you can talk, something's on its way or waiting; violet: a
     // reply plays; grey: the microphone is paused a moment.
     dot.setColor(

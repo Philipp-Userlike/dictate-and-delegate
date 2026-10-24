@@ -205,6 +205,7 @@
     <string name="t_47fbfb16" formatted="false">Cambiar</string>
     <string name="t_481510cc" formatted="false">Lo que OpenRouter cobró por cada llamada.</string>
     <string name="t_487286f2" formatted="false">Enviado: has hecho tu pregunta (%1$d%%)</string>
+    <string name="t_49db38fb" formatted="false">En vivo desc. · falta clave de %1$s</string>
     <string name="t_4a473e6c" formatted="false">No se pudieron cargar los datos guardados. Tus datos no se han eliminado.</string>
     <string name="t_4a881de5" formatted="false">Termina la grabación o la subida primero</string>
     <string name="t_4ae2821e" formatted="false">en curso</string>
@@ -590,6 +591,7 @@
     <string name="t_c96b1a45" formatted="false">Iniciando…</string>
     <string name="t_c997df74" formatted="false">bb rechazó el inicio de sesión: %1$s</string>
     <string name="t_c998a38e" formatted="false">El audio ha caducado o se ha eliminado. El texto sigue guardado.</string>
+    <string name="t_c9e76ec6" formatted="false">Transcripción en vivo desactivada: falta la clave de %1$s (Ajustes → Manos libres)</string>
     <string name="t_ca00a779" formatted="false">Guardar clave</string>
     <string name="t_ca4b7d63" formatted="false">Respuesta en espera: comprobando si has terminado</string>
     <string name="t_ca513a47" formatted="false">A partir de tu próxima llamada con manos libres</string>

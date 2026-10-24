@@ -128,6 +128,11 @@ final class TestServer {
     }
   }
 
+  /** Each tell to the fake takes this long (0: at once). */
+  static void bbTellDelay(int ms) throws Exception {
+    postTo(bbRoot(), "/test/config", new JSONObject().put("tellDelayMs", ms));
+  }
+
   /** The fake requires this bearer token from now on ("" turns that off). */
   static void bbToken(String token) throws Exception {
     postTo(bbRoot(), "/test/config", new JSONObject().put("token", token));

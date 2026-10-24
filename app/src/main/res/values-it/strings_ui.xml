@@ -205,6 +205,7 @@
     <string name="t_47fbfb16" formatted="false">Modifica</string>
     <string name="t_481510cc" formatted="false">Costo addebitato da OpenRouter per ciascuna chiamata.</string>
     <string name="t_487286f2" formatted="false">Inviato: hai fatto la tua domanda (%1$d%%)</string>
+    <string name="t_49db38fb" formatted="false">Live non attiva · chiave %1$s assente</string>
     <string name="t_4a473e6c" formatted="false">Impossibile caricare i dati salvati. I tuoi dati non sono stati rimossi.</string>
     <string name="t_4a881de5" formatted="false">Prima termina la registrazione o il caricamento</string>
     <string name="t_4ae2821e" formatted="false">in corso</string>
@@ -590,6 +591,7 @@
     <string name="t_c96b1a45" formatted="false">Avvio…</string>
     <string name="t_c997df74" formatted="false">bb ha rifiutato l\'accesso: %1$s</string>
     <string name="t_c998a38e" formatted="false">L\'audio è scaduto o è stato eliminato. Il testo è ancora salvato.</string>
+    <string name="t_c9e76ec6" formatted="false">Trascrizione live non attiva: chiave %1$s assente (Impostazioni → Vivavoce)</string>
     <string name="t_ca00a779" formatted="false">Salva chiave</string>
     <string name="t_ca4b7d63" formatted="false">Risposta in attesa: controllo se hai finito</string>
     <string name="t_ca513a47" formatted="false">Dalla tua prossima chiamata in vivavoce in poi</string>

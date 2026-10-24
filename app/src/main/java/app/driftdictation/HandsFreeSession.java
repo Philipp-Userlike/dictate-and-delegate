@@ -804,6 +804,33 @@ final class HandsFreeSession {
     return clock.getAsLong() - voiceErrorAt < VOICE_ERROR_MS ? voiceError : "";
   }
 
+  /** How long the call bar says live transcription is off for a missing key. */
+  static final long LIVE_OFF_MS = 60_000;
+
+  private volatile String liveOff = "";
+  private volatile long liveOffAt;
+
+  /**
+   * Live transcription is on, but its provider (AssemblyAI, ElevenLabs) has no key: your words
+   * are written down from their audio at each pause, and a send word doesn't send at once. Said
+   * at the call's start: in the reasons, on the screen for the whole call, on the call bar a while.
+   */
+  void liveKeyMissing(String provider) {
+    liveOff = provider;
+    liveOffAt = clock.getAsLong();
+    reason("Live transcription is off: no %1$s key (Settings → Hands-free)", provider);
+  }
+
+  /** The provider whose key live transcription is missing this call, "" when it isn't. */
+  String liveKeyMissing() {
+    return liveOff;
+  }
+
+  /** Is the call bar still to say so? */
+  boolean liveOffRecent() {
+    return !liveOff.isEmpty() && clock.getAsLong() - liveOffAt < LIVE_OFF_MS;
+  }
+
   /** Once a second: a long silence sends anyway, a held reply may start, a hung voice is let go. */
   void tick() {
     if (state == State.ENDED) return;

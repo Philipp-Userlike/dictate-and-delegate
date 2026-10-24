@@ -47,7 +47,7 @@ public class HandsFreeFlowTest {
         .remove(HandsFree.SEND_WORDS)
         .remove(HandsFree.END_WORDS)
         .putString(HandsFree.VOICE, Voice.KOKORO.id())
-        .remove(HandsFree.LIVE)
+        .putBoolean(HandsFree.LIVE, false)
         .remove(HandsFree.LIVE_MODEL)
         .remove(HandsFree.OPEN_AUDIO)
         .remove(BbBridge.TALKER_ID)
@@ -345,6 +345,42 @@ public class HandsFreeFlowTest {
     }
   }
 
+  /**
+   * Opt-in, against a real bb (-e realMcp, and two test threads: -e realChief, -e realTalker; never
+   * real ones, as each round sends them messages): how long until each thread has a message, sent
+   * to one after the other and to both at once (BbBridge.tellEach), -e realRounds times (5).
+   * Logged with tag TalkRouterTiming: each send's start (epoch ms) and when bb took it per thread,
+   * to set against the threads' own event times in bb.
+   */
+  @Test
+  public void realTalkerAndChiefSendTimings() throws Exception {
+    android.os.Bundle args = InstrumentationRegistry.getArguments();
+    Assume.assumeTrue(args.getString("realMcp") != null && args.getString("realChief") != null && args.getString("realTalker") != null);
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(args.getString("realMcp"), "", "");
+    String chief = args.getString("realChief"), talker = args.getString("realTalker");
+    int rounds = Integer.parseInt(args.getString("realRounds", "5"));
+    bb.test(); // Warm: the first connection isn't one of the measured.
+    for (int r = 1; r <= rounds; r++) {
+      String tag = "timing-" + r + "-" + System.currentTimeMillis();
+      long start = System.currentTimeMillis(), t0 = SystemClock.elapsedRealtime();
+      bb.send(chief, tag + " one after the other");
+      long chiefMs = SystemClock.elapsedRealtime() - t0;
+      bb.send(talker, tag + " one after the other");
+      long talkerMs = SystemClock.elapsedRealtime() - t0;
+      android.util.Log.i("TalkRouterTiming", String.format(java.util.Locale.ROOT, "sequential %s start %d chief %d ms talker %d ms", tag, start, chiefMs, talkerMs));
+      Thread.sleep(2000);
+      // As a call sends them (HandsFreeService.sendBoth).
+      java.util.Map<String, String> to = HandsFreeService.bothTo(chief, talker, tag + " at once", tag + " at once");
+      java.util.Map<String, Long> took = new java.util.HashMap<>();
+      start = System.currentTimeMillis();
+      java.util.Map<String, String> failed = bb.tellEach(to, took);
+      assertTrue(failed.toString(), failed.isEmpty());
+      android.util.Log.i("TalkRouterTiming", String.format(java.util.Locale.ROOT, "parallel %s start %d chief %d ms talker %d ms", tag, start, took.get(chief), took.get(talker)));
+      Thread.sleep(2000);
+    }
+  }
+
   private static int count(String log, String what) {
     return log.split(java.util.regex.Pattern.quote(what), -1).length - 1;
   }
@@ -626,14 +662,29 @@ public class HandsFreeFlowTest {
 
   @Test
   public void withoutAKeyLiveTranscriptionIsOffAndSaysWhy() throws Exception {
-    prefs.edit().putBoolean(HandsFree.LIVE, true).commit();
+    prefs.edit().putBoolean(HandsFree.LIVE, true).putInt(HandsFreePanel.X, 40).putInt(HandsFreePanel.Y, 1500).commit();
+    device.executeShellCommand("appops set app.driftdictation SYSTEM_ALERT_WINDOW allow");
     TestServer.transcripts("Book a table. Over.");
+    context.startActivity(
+        new Intent(context, MainActivity.class).putExtra("open", "handsfree").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    assertNotNull(device.wait(Until.findObject(By.text("Start hands-free")), 8000));
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
+    String off = "Live transcription is off: no AssemblyAI key (Settings → Hands-free)";
+    // On the screen, in its own line and as the latest reason; on the call bar, short.
+    assertNotNull("the screen's line", device.wait(Until.findObject(By.text(off)), 8000));
+    assertNotNull("the reason", device.findObject(By.textContains("  " + off)));
+    assertNotNull("the call bar", device.wait(Until.findObject(By.text("Live off · no AssemblyAI key")), 5000));
+    assertNotNull("in full for TalkBack", device.findObject(By.desc(off)));
+    shot("hf-live-off");
+    // The call works as before: written down from the audio.
     talk();
     until(() -> lastTell().contains("[hands-free]"), "the message sent");
     assertTrue(HandsFreeService.log(context).contains("live transcription on, but no AssemblyAI key: written down from audio"));
+    assertTrue(HandsFreeService.log(context).contains("→ " + off));
     assertEquals(0, TestServer.liveLog().length());
+    // Still on the screen after the message went.
+    assertNotNull(device.wait(Until.findObject(By.text(off)), 5000));
   }
 
   /** How long after the floor was taken the reply's first sound came out (from the log). */
@@ -909,6 +960,32 @@ public class HandsFreeFlowTest {
     talk();
     until(() -> HandsFreeService.instance == null, "hands-free ended by the end word");
     until(() -> toldTo(TestServer.CHIEF, "[hands-free call ended]") && toldTo(TALKER, "[hands-free call ended]"), "both told the call ended");
+  }
+
+  @Test
+  public void theTalkerAndTheChiefGetEachMessageAtTheSameTime() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();
+    TestServer.transcripts("Book a table for Friday. Over.", "End the call.");
+    TestServer.turns("over", "end");
+    // Each tell takes 1.5 s: one after the other, a message to both would take 3 s or more.
+    TestServer.bbTellDelay(1500);
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    until(() -> HandsFreeService.log(context).contains("told the talker (" + TALKER + "): [hands-free call started]")
+        && HandsFreeService.log(context).contains("told the chief: [hands-free call started]"), "both told the call started");
+    talk();
+    until(() -> HandsFreeService.log(context).contains("to the talker too"), "the message sent to both");
+    String log = HandsFreeService.log(context);
+    Matcher m = Pattern.compile("sent \\S+ \\([^,]+, \\d+ characters; bb took (\\d+) ms").matcher(log);
+    assertTrue(log, m.find());
+    assertTrue("at the same time: " + m.group(1) + " ms", Long.parseLong(m.group(1)) < 2800);
+    Matcher each = Pattern.compile("bb took (\\d+) ms for the talker, (\\d+) ms for the chief").matcher(log);
+    assertTrue(log, each.find());
+    assertTrue(log, Long.parseLong(each.group(1)) >= 1500 && Long.parseLong(each.group(2)) >= 1500);
+    TestServer.bbTellDelay(0);
+    Thread.sleep(HandsFreeSession.TAIL_MS + 300);
+    talk();
+    until(() -> HandsFreeService.instance == null, "hands-free ended by the end word");
   }
 
   @Test

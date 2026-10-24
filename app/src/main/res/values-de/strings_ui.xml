@@ -204,6 +204,7 @@
     <string name="t_47fbfb16" formatted="false">Ändern</string>
     <string name="t_481510cc" formatted="false">Was OpenRouter für jeden Aufruf berechnet hat.</string>
     <string name="t_487286f2" formatted="false">Gesendet: du hast deine Frage gestellt (%1$d%%)</string>
+    <string name="t_49db38fb" formatted="false">Live aus · kein %1$s-Schlüssel</string>
     <string name="t_4a473e6c" formatted="false">Gespeicherte Daten konnten nicht geladen werden. Deine Daten wurden nicht gelöscht.</string>
     <string name="t_4a881de5" formatted="false">Beende erst Aufnahme oder Upload</string>
     <string name="t_4ae2821e" formatted="false">in Bearbeitung</string>
@@ -585,6 +586,7 @@
     <string name="t_c96b1a45" formatted="false">Startet…</string>
     <string name="t_c997df74" formatted="false">bb hat die Anmeldung abgelehnt: %1$s</string>
     <string name="t_c998a38e" formatted="false">Audio ist abgelaufen oder wurde gelöscht. Text ist weiterhin gespeichert.</string>
+    <string name="t_c9e76ec6" formatted="false">Live-Transkription ist aus: kein %1$s-Schlüssel (Einstellungen → Freisprechen)</string>
     <string name="t_ca00a779" formatted="false">Schlüssel speichern</string>
     <string name="t_ca4b7d63" formatted="false">Antwort wartet: prüfe, ob du fertig bist</string>
     <string name="t_ca513a47" formatted="false">Ab deinem nächsten Freisprechanruf</string>

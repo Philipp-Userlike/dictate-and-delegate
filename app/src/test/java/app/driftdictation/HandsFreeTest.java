@@ -1838,6 +1838,38 @@ public class HandsFreeTest {
   }
 
   @Test
+  public void liveTranscriptionWithoutItsKeySaysSoForAWhileOnTheCallBarAndAllCallOnScreen() throws Exception {
+    Fake f = new Fake();
+    assertEquals("", f.session.liveKeyMissing());
+    assertFalse(HandsFreeService.liveOffShown(f.session));
+    f.session.liveKeyMissing("AssemblyAI");
+    String off = "Live transcription is off: no AssemblyAI key (Settings → Hands-free)";
+    assertTrue(reasons(f), reasons(f).startsWith(off));
+    assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("→ " + off));
+    assertEquals(off, HandsFreeService.liveOffText(f.session));
+    assertEquals("Live off · no AssemblyAI key", HandsFreeService.shortLabel(f.session));
+    // A voice failure goes first.
+    f.session.voiceFailed("Kokoro: HTTP 503: No provider available", true);
+    assertEquals("Voice failed · Kokoro: HTTP 503", HandsFreeService.shortLabel(f.session));
+    f.now.addAndGet(HandsFreeSession.VOICE_ERROR_MS);
+    assertEquals("Live off · no AssemblyAI key", HandsFreeService.shortLabel(f.session));
+    // A minute on the call bar; on the screen the whole call.
+    f.now.addAndGet(HandsFreeSession.LIVE_OFF_MS - HandsFreeSession.VOICE_ERROR_MS);
+    assertFalse(HandsFreeService.liveOffShown(f.session));
+    assertEquals("Listening", HandsFreeService.shortLabel(f.session));
+    assertEquals("AssemblyAI", f.session.liveKeyMissing());
+  }
+
+  @Test
+  public void aMessageToTheTalkerAndTheChiefNamesTheTalkerFirst() {
+    assertEquals(
+        List.of("thr_talker", "thr_chief"),
+        List.copyOf(HandsFreeService.bothTo("thr_chief", "thr_talker", "to the chief", "to the talker").keySet()));
+    assertEquals("to the talker", HandsFreeService.bothTo("thr_chief", "thr_talker", "to the chief", "to the talker").get("thr_talker"));
+    assertEquals(java.util.Map.of("thr_chief", "to the chief"), HandsFreeService.bothTo("thr_chief", "", "to the chief", "to the talker"));
+  }
+
+  @Test
   public void aHangingVoiceNeverHoldsUpTheNextReply() throws Exception {
     Fake f = new Fake();
     java.util.concurrent.CountDownLatch hang = new java.util.concurrent.CountDownLatch(1);

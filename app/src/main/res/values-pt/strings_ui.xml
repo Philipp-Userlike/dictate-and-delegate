@@ -205,6 +205,7 @@
     <string name="t_47fbfb16" formatted="false">Alterar</string>
     <string name="t_481510cc" formatted="false">O que o OpenRouter cobrou por chamada.</string>
     <string name="t_487286f2" formatted="false">Enviado: fizeste a tua pergunta (%1$d%%)</string>
+    <string name="t_49db38fb" formatted="false">Ao vivo desativado · sem chave %1$s</string>
     <string name="t_4a473e6c" formatted="false">Não foi possível carregar os dados guardados. Os teus dados não foram apagados.</string>
     <string name="t_4a881de5" formatted="false">Termina a gravação ou envio primeiro</string>
     <string name="t_4ae2821e" formatted="false">em curso</string>
@@ -590,6 +591,7 @@
     <string name="t_c96b1a45" formatted="false">A iniciar…</string>
     <string name="t_c997df74" formatted="false">O bb recusou o início de sessão: %1$s</string>
     <string name="t_c998a38e" formatted="false">O áudio expirou ou foi apagado. O texto continua guardado.</string>
+    <string name="t_c9e76ec6" formatted="false">Transcrição ao vivo desativada: sem chave %1$s (Definições → Mãos livres)</string>
     <string name="t_ca00a779" formatted="false">Guardar chave</string>
     <string name="t_ca4b7d63" formatted="false">Resposta em espera: a verificar se terminaste</string>
     <string name="t_ca513a47" formatted="false">A partir da tua próxima chamada mãos-livres</string>

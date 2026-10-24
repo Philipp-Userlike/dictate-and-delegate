@@ -68,7 +68,7 @@ public final class MainActivity extends Activity {
 
   private String bbNotice = "";
   private boolean bbNoticeOk, changingChief;
-  private TextView skillsLine, hfStatus, hfPending, hfCost, hfReasons;
+  private TextView skillsLine, hfStatus, hfLiveOff, hfPending, hfCost, hfReasons;
   private Button hfSend;
   /** The name field waits for a pause in typing before the skills are updated in bb. */
   private final Runnable skillsAfterName = () -> ChiefSkills.sync(this, false);
@@ -287,7 +287,7 @@ public final class MainActivity extends Activity {
     record = null;
     status = null;
     noteStatus = null;
-    skillsLine = hfStatus = hfPending = hfCost = hfReasons = null;
+    skillsLine = hfStatus = hfLiveOff = hfPending = hfCost = hfReasons = null;
     hfSend = null;
     recovery = recentBox = monthBox = wordsBox = modelList = refineList = null;
     notesList = null;
@@ -3149,6 +3149,9 @@ public final class MainActivity extends Activity {
       hfStatus.setTypeface(Ui.BOLD);
       hfStatus.setGravity(Gravity.CENTER);
       hfStatus.setPadding(ui.dp(16), ui.dp(28), ui.dp(16), ui.dp(28));
+      // Live transcription missing its key: for the whole call, as it lasts that long.
+      hfLiveOff = ui.add(content, ui.text("", 15, Ui.WARN), 10);
+      hfLiveOff.setVisibility(View.GONE);
       hfPending = ui.add(content, ui.text("", 15, Ui.MUTED), 10);
       // What it decided lately, and why, newest first: readable at a glance.
       ui.add(content, ui.strong(tr("What it decided, and why"), 13), 14);
@@ -3221,6 +3224,10 @@ public final class MainActivity extends Activity {
             },
             0,
             20));
+    if (hfLiveOff != null) {
+      hfLiveOff.setText(s.liveKeyMissing().isEmpty() ? "" : HandsFreeService.liveOffText(s));
+      hfLiveOff.setVisibility(s.liveKeyMissing().isEmpty() ? View.GONE : View.VISIBLE);
+    }
     StringBuilder why = new StringBuilder();
     java.text.SimpleDateFormat time = new java.text.SimpleDateFormat("HH:mm:ss", Locale.getDefault());
     for (HandsFreeSession.Reason r : s.reasons().subList(0, Math.min(5, s.reasons().size())))

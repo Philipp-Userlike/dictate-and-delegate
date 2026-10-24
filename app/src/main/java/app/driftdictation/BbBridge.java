@@ -447,7 +447,13 @@ final class BbBridge {
    * the others. Returns the failures, thread ID → why; empty when every thread got its message.
    */
   java.util.Map<String, String> tellEach(java.util.Map<String, String> messages) {
+    return tellEach(messages, new java.util.HashMap<>());
+  }
+
+  /** The same; took gets how long each thread's send took, thread ID → ms. */
+  java.util.Map<String, String> tellEach(java.util.Map<String, String> messages, java.util.Map<String, Long> took) {
     java.util.Map<String, String> failed = new java.util.concurrent.ConcurrentHashMap<>();
+    java.util.Map<String, Long> ms = new java.util.concurrent.ConcurrentHashMap<>();
     List<java.lang.Thread> others = new java.util.ArrayList<>();
     String first = null;
     for (String id : messages.keySet()) {
@@ -455,11 +461,11 @@ final class BbBridge {
         first = id;
         continue;
       }
-      java.lang.Thread t = new java.lang.Thread(() -> tellOne(id, messages.get(id), failed), "bb-tell");
+      java.lang.Thread t = new java.lang.Thread(() -> tellOne(id, messages.get(id), failed, ms), "bb-tell");
       t.start();
       others.add(t);
     }
-    if (first != null) tellOne(first, messages.get(first), failed);
+    if (first != null) tellOne(first, messages.get(first), failed, ms);
     for (java.lang.Thread t : others) {
       try {
         t.join();
@@ -467,14 +473,18 @@ final class BbBridge {
         java.lang.Thread.currentThread().interrupt();
       }
     }
+    took.putAll(ms);
     return new java.util.LinkedHashMap<>(failed);
   }
 
-  private void tellOne(String id, String message, java.util.Map<String, String> failed) {
+  private void tellOne(String id, String message, java.util.Map<String, String> failed, java.util.Map<String, Long> took) {
+    long start = System.nanoTime();
     try {
       run(tellSnippet(id, message));
     } catch (Exception ex) {
       failed.put(id, ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
+    } finally {
+      took.put(id, (System.nanoTime() - start) / 1_000_000);
     }
   }
 
