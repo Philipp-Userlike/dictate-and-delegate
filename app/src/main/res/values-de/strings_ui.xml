@@ -369,6 +369,7 @@
     <string name="t_874caa6a" formatted="false">Mikrofon nicht verfügbar.</string>
     <string name="t_87747dc3" formatted="false">Über Kachel oder Lautstärketaste starten; Einfügen setzt den Text an die Cursorposition.</string>
     <string name="t_8831703d" formatted="false">Chief: %1$s</string>
+    <string name="t_883b0385" formatted="false">Antwort mittendrin abgebrochen (%1$s): Deine nächste Nachricht sagt dem Chef, wie weit du sie gehört hast</string>
     <string name="t_886029f0" formatted="false">Skills deines Chiefs</string>
     <string name="t_8860ef62" formatted="false">%1$s konnte nicht erreicht werden. Prüfe die Adresse und deine Verbindung.</string>
     <string name="t_88ea76d0" formatted="false">Schließe zuerst die ausstehende Aufnahme ab oder verwerfe sie.</string>
@@ -669,6 +670,7 @@
     <string name="t_eb89173a" formatted="false">Bedienungshilfen öffnen</string>
     <string name="t_ec054ecf" formatted="false">Senden ignoriert: wird bereits gesendet</string>
     <string name="t_ec8fbe93" formatted="false">Text, Versionen, Kosten und Audio werden unwiderruflich gelöscht.</string>
+    <string name="t_ecb6c206" formatted="false">Letzten Anruf kopieren</string>
     <string name="t_ed4646d0" formatted="false">Schließe ausstehende Aufnahme erst ab oder verwerfe sie</string>
     <string name="t_ed783112" formatted="false">✓  Verwendet %1$s (%2$s). Wurde angewiesen, die Skills zu nutzen.</string>
     <string name="t_ed8814bc" formatted="false">Kopieren</string>
@@ -701,6 +703,7 @@
     <string name="t_f55495e0" formatted="false">Speichern</string>
     <string name="t_f5e73ad1" formatted="false">Die Verbindung zu OpenRouter ist abgebrochen. Prüfe deine Internetverbindung und versuche es erneut.</string>
     <string name="t_f5efdb60" formatted="false">Sprich mit deinem Chief beim Fahren oder Kochen. Pausiere so lange du willst; Antworten werden vorgelesen.</string>
+    <string name="t_f6604f22" formatted="false">Letzte 3 Anrufe kopieren</string>
     <string name="t_f6a5c392" formatted="false">Freisprechmodus</string>
     <string name="t_f6a8c847" formatted="false">Alles gespeicherte Audio löschen?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter hat für diese Notiz noch keine Kosten gemeldet.</string>
@@ -730,6 +733,4 @@
     <string name="t_ff38152f" formatted="false">Speicher fast voll. Aufnahme gestoppt; Audio kann wiederholt werden.</string>
     <string name="t_ff770e18" formatted="false">Kosten und Aktivität</string>
     <string name="t_ffd9a681" formatted="false">Wird mit klügerem Modell wiederholt… Du kannst diesen Bereich verlassen.</string>
-    <string name="t_ecb6c206" formatted="false">Letzten Anruf kopieren</string>
-    <string name="t_f6604f22" formatted="false">Letzte 3 Anrufe kopieren</string>
 </resources>

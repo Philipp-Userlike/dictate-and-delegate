@@ -371,6 +371,7 @@
     <string name="t_874caa6a" formatted="false">Microfono non disponibile.</string>
     <string name="t_87747dc3" formatted="false">Avvia dal riquadro o con un tasto volume; Inserisci mette il testo dove digiti.</string>
     <string name="t_8831703d" formatted="false">Capo: %1$s</string>
+    <string name="t_883b0385" formatted="false">Risposta interrotta a metà (%1$s): con il prossimo messaggio farai sapere al capo fin dove hai ascoltato</string>
     <string name="t_886029f0" formatted="false">Le skill del tuo chief</string>
     <string name="t_8860ef62" formatted="false">Impossibile raggiungere %1$s. Controlla l\'indirizzo e la connessione.</string>
     <string name="t_88ea76d0" formatted="false">Prima completa o elimina la registrazione in sospeso.</string>
@@ -674,6 +675,7 @@
     <string name="t_eb89173a" formatted="false">Apri impostazioni Accessibilità</string>
     <string name="t_ec054ecf" formatted="false">Invio ignorato: già in corso</string>
     <string name="t_ec8fbe93" formatted="false">Il suo testo, le versioni, i costi e l\'audio verranno rimossi. L\'azione non può essere annullata.</string>
+    <string name="t_ecb6c206" formatted="false">Copia l\'ultima chiamata</string>
     <string name="t_ed4646d0" formatted="false">Prima completa o elimina la registrazione in sospeso</string>
     <string name="t_ed783112" formatted="false">✓  In uso %1$s (%2$s). Istruito a usare le skill.</string>
     <string name="t_ed8814bc" formatted="false">Copia</string>
@@ -706,6 +708,7 @@
     <string name="t_f55495e0" formatted="false">Salva</string>
     <string name="t_f5e73ad1" formatted="false">Connessione a OpenRouter persa. Controlla la connessione internet e riprova.</string>
     <string name="t_f5efdb60" formatted="false">Parla con il tuo chief mentre guidi o cucini. Fai tutte le pause che vuoi; le risposte vengono lette ad alta voce.</string>
+    <string name="t_f6604f22" formatted="false">Copia le ultime 3 chiamate</string>
     <string name="t_f6a5c392" formatted="false">Modalità vivavoce</string>
     <string name="t_f6a8c847" formatted="false">Eliminare tutto l\'audio salvato?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter non ha ancora segnalato costi per questa nota.</string>
@@ -735,6 +738,4 @@
     <string name="t_ff38152f" formatted="false">Spazio di archiviazione quasi esaurito. Registrazione interrotta; puoi riprovare con l\'audio salvato.</string>
     <string name="t_ff770e18" formatted="false">Costi e attività</string>
     <string name="t_ffd9a681" formatted="false">Rifacimento con un modello più intelligente… Puoi lasciare questa schermata.</string>
-    <string name="t_ecb6c206" formatted="false">Copia l\'ultima chiamata</string>
-    <string name="t_f6604f22" formatted="false">Copia le ultime 3 chiamate</string>
 </resources>

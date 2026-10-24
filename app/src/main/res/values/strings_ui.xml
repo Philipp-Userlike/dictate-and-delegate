@@ -373,6 +373,7 @@
     <string name="t_874caa6a" formatted="false">Microphone is unavailable.</string>
     <string name="t_87747dc3" formatted="false">Start with the tile or a volume key; Insert puts the text where you type.</string>
     <string name="t_8831703d" formatted="false">Chief: %1$s</string>
+    <string name="t_883b0385" formatted="false">Reply stopped part-way (%1$s): your next message tells the chief how far you heard</string>
     <string name="t_886029f0" formatted="false">Your chief\'s skills</string>
     <string name="t_8860ef62" formatted="false">Could not reach %1$s. Check the address and your connection.</string>
     <string name="t_88ea76d0" formatted="false">Finish or discard the pending recording first.</string>

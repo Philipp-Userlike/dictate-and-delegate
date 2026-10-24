@@ -13,7 +13,8 @@ Serves the OpenRouter endpoints Dictate & Delegate uses, under /api/v1 and /api/
   POST /api/v1/audio/speech           hands-free replies: a short MP3 (scripts/fakes/reply.mp3), or PCM when asked
                                       for; a voice is required. Streamed like the real one: no length, sent in
                                       4 parts 0.1 s apart (queued {"parts": n, "every": seconds} to change that,
-                                      {"stall": seconds} to stop that long after the first part)
+                                      {"stall": seconds} to stop that long after the first part, {"first": bytes}
+                                      to send only that many bytes first)
   GET  /api/v1/generation?id=…        its cost: $0.0001
   POST /api/alpha/decisions           Jev: queued answers, or refine 0, chief 0, template none;
                                       only the questions asked are answered
@@ -253,11 +254,16 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.close_connection = True
         size = -(-len(data) // parts)
+        cuts = list(range(0, len(data), size))
+        if item.get("first"):  # A first piece smaller than an MP3 frame, say.
+            cuts = [0] + [c for c in cuts if c > int(item["first"])]
+            cuts.insert(1, int(item["first"]))
         try:
-            for i in range(0, len(data), size):
-                if i:
-                    time.sleep(float(item["stall"]) if item.get("stall") and i == size else every)
-                self.wfile.write(data[i:i + size])
+            for n, i in enumerate(cuts):
+                if n:
+                    time.sleep(float(item["stall"]) if item.get("stall") and n == 1 else every)
+                end = cuts[n + 1] if n + 1 < len(cuts) else len(data)
+                self.wfile.write(data[i:end])
                 self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError):
             pass  # The app gave it up (a second request won, or you talked over it).

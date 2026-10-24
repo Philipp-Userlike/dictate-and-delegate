@@ -504,14 +504,24 @@ public class HandsFreeFlowTest {
   }
 
   @Test
-  public void aReplyWhoseAudioStopsComingIsTriedAgain() throws Exception {
-    // Its first part plays, then nothing comes for longer than Voice.STALL_MS: it's given up and
-    // fetched again (the next answer comes whole), not left silent.
+  public void aReplyWhoseAudioStopsComingPartWayIsNotPlayedAgain() throws Exception {
+    // Its first part plays, then nothing comes for longer than Voice.STALL_MS: it's given up, not
+    // played again from its start (you heard that already); your next message says how far.
     TestServer.script("speech", new JSONObject().put("parts", 4).put("stall", 12));
-    String log = callWithOneReply("The table is booked for Friday at eight.", 30_000, "reply played to the end");
+    String log = callWithOneReply("The table is booked for Friday at eight.", 30_000, "reply stopped part-way");
     assertTrue(log, log.contains("its audio stopped coming for 5 s"));
-    assertTrue(log, log.contains("trying again"));
+    assertTrue(log, log.contains("reply stopped part-way"));
+    assertFalse(log, log.contains("trying again"));
+  }
+
+  @Test
+  public void anMp3WhoseFirstPieceIsLessThanAFrameStillPlays() throws Exception {
+    // The decoder was used before it existed when the first bytes held no whole frame.
+    TestServer.script("speech", new JSONObject().put("first", 50).put("every", 0.3));
+    String log = callWithOneReply("The table is booked for Friday at eight.", 20_000, "reply played to the end");
+    assertTrue(log, log.contains("playable after"));
     assertTrue(log, log.contains("reply played to the end"));
+    assertFalse(log, log.contains("Voice failed") || log.contains("Android's voice reads it"));
   }
 
   @Test

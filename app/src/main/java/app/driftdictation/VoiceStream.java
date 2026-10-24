@@ -17,7 +17,7 @@ final class VoiceStream {
   private String failed;
   /** When it ended, ms after it was asked for (-1 while it's still coming). */
   private long allMs = -1;
-  private java.util.function.Consumer<VoiceStream> whenDone;
+  private final java.util.List<java.util.function.Consumer<VoiceStream>> whenDone = new java.util.ArrayList<>();
   /** Stops the download (a reply you talked over isn't fetched on). */
   volatile Runnable cancel = () -> {};
 
@@ -54,24 +54,24 @@ final class VoiceStream {
   }
 
   private void done(String why, long ms) {
-    java.util.function.Consumer<VoiceStream> then;
+    java.util.List<java.util.function.Consumer<VoiceStream>> then;
     synchronized (this) {
       if (complete) return;
       complete = true;
       failed = why;
       allMs = ms;
-      then = whenDone;
-      whenDone = null;
+      then = new java.util.ArrayList<>(whenDone);
+      whenDone.clear();
       notifyAll();
     }
-    if (then != null) then.accept(this);
+    for (java.util.function.Consumer<VoiceStream> t : then) t.accept(this);
   }
 
-  /** Hears once when it's complete (at once if it is). */
+  /** Hears once when it's complete (at once if it is); any number may listen. */
   void whenDone(java.util.function.Consumer<VoiceStream> then) {
     synchronized (this) {
       if (!complete) {
-        whenDone = then;
+        whenDone.add(then);
         return;
       }
     }

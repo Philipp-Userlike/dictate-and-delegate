@@ -113,6 +113,8 @@ public class HandsFreeTest {
     volatile java.util.function.UnaryOperator<String> wholeAs = t -> t;
     /** The whole turn's pass fails. */
     volatile boolean wholeFails;
+    /** While set, the whole turn's pass waits for it (a slow one). */
+    volatile java.util.concurrent.CountDownLatch slowWhole;
     /** What preparing a reply does (fetching its audio); by default nothing. */
     volatile java.util.function.Function<String, Object> prepare = text -> text;
     final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
@@ -145,6 +147,8 @@ public class HandsFreeTest {
                   }
                   if (known) {
                     wholes.incrementAndGet();
+                    java.util.concurrent.CountDownLatch w = slowWhole;
+                    if (w != null) w.await();
                     if (wholeFails) throw new java.io.IOException("Fake provider error");
                     return wholeAs.apply(all.toString());
                   }
@@ -662,6 +666,7 @@ public class HandsFreeTest {
   @Test
   public void aVoiceThatFailsReturnsToListeningAtOnce() throws Exception {
     Fake f = new Fake();
+    f.audioStarts = false;
     f.quiet(1000);
     f.session.reply("r0", "Can't be played.");
     for (int i = 1; i <= 1 + HandsFreeSession.RETRIES; i++) {
@@ -676,9 +681,11 @@ public class HandsFreeTest {
   @Test
   public void aReplyWhoseVoiceFailsIsTriedAgainAndHeard() throws Exception {
     Fake f = new Fake();
+    f.audioStarts = false;
     f.quiet(1000);
     f.session.reply("r0", "The table is booked.");
     until(() -> f.spoken.size() == 1);
+    f.audioStarts = true; // Played the second time.
     f.fail.run(); // Android's voice couldn't play it.
     until(() -> f.spoken.size() == 2); // Its voice fetched again, and played.
     f.done.run();
@@ -984,6 +991,86 @@ public class HandsFreeTest {
   }
 
   @Test
+  public void endingTheCallWhileTheWholePassIsWaitedForSendsYourWordsOnce() throws Exception {
+    Fake f = new Fake("Book the hotel", "for Friday. Over.");
+    f.talk();
+    until(() -> f.session.pending().equals("Book the hotel"));
+    f.slowWhole = new java.util.concurrent.CountDownLatch(1);
+    f.talk(); // Jev (none: the send word) says done; sending waits for the whole pass.
+    until(() -> f.wholes.get() >= 1);
+    f.session.end();
+    f.slowWhole.countDown();
+    Thread.sleep(500);
+    assertEquals(String.join("\n", f.log), 1, f.sent.size());
+    assertTrue(f.sent.get(0), f.sent.get(0).startsWith("Book the hotel for Friday"));
+  }
+
+  @Test
+  public void talkingOnWhileTheWholePassIsWaitedForMeansNoSendYet() throws Exception {
+    Fake f = new Fake("Book the hotel", "for Friday. Over.", "and the car. Over.");
+    f.talk();
+    until(() -> f.session.pending().equals("Book the hotel"));
+    f.slowWhole = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    until(() -> f.wholes.get() >= 1);
+    f.speak(); // On you go, mid-sentence.
+    f.slowWhole.countDown();
+    Thread.sleep(300);
+    assertEquals(0, f.sent.size());
+    f.slowWhole = null;
+    f.quiet(1200);
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the hotel for Friday. Over. and the car.", f.sent.get(0));
+  }
+
+  @Test
+  public void whenThePartsHaveNoWordsButTheWholePassHasThemTheyGo() throws Exception {
+    // Each part alone came out empty (the first kept: you talked on while it was checked); in one
+    // pass the words are there.
+    Fake f = new Fake("", "");
+    f.wholeAs = t -> "Book the table.";
+    f.session.judge = said -> verdict("request", 0.95, 0);
+    f.slow = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    until(() -> f.session.checkStep().equals("writing"));
+    f.speak(); // On you go while it's written down.
+    f.slow.countDown();
+    f.quiet(1200);
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the table.", f.sent.get(0));
+  }
+
+  @Test
+  public void yourLastWordsGoAsFarAsTheyWereWrittenDownWhenThRestFails() throws Exception {
+    Fake f = new Fake("Book the hotel"); // The next part's transcription fails.
+    f.session.judge = said -> verdict("more", 0.1, 0);
+    f.talk();
+    until(() -> f.session.pending().equals("Book the hotel"));
+    f.speak();
+    f.session.end();
+    for (int i = 0; i < 250 && f.sent.isEmpty(); i++) Thread.sleep(20); // The fake waits 2 s for the part's text.
+    assertEquals(String.join("\n", f.log), List.of("Book the hotel"), f.sent);
+    assertTrue(String.join("\n", f.log).contains("some of your last words couldn't be written down"));
+  }
+
+  @Test
+  public void aReplyThatStopsPartWayIsNotPlayedAgainAndYourNextMessageSaysHowFar() throws Exception {
+    Fake f = new Fake("Thanks. Over.");
+    f.quiet(1000);
+    f.session.reply("r1", LONG_REPLY);
+    until(() -> f.spoken.size() == 1);
+    f.heardChars = LONG_REPLY.indexOf("Lisbon");
+    f.fail.run(); // Its audio stopped coming part-way.
+    Thread.sleep(300);
+    assertEquals("not played again", 1, f.spoken.size());
+    assertTrue(reasons(f), reasons(f).contains("Reply stopped part-way"));
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Thanks.\n\n[heard up to: \"…the morning from gate twelve. The train to\"]", f.sent.get(0));
+  }
+
+  @Test
   public void wordsChangedCountsWordsAddedDroppedOrChanged() {
     assertEquals(0, HandsFreeSession.wordsChanged("Book the hotel.", "book the  hotel"));
     assertEquals(1, HandsFreeSession.wordsChanged("Book that hotel", "Book the hotel"));
@@ -1156,6 +1243,7 @@ public class HandsFreeTest {
     for (int i = 0; i < 15; i++) f.session.frame(frame(8000));
     assertFalse(f.session.speaking());
     assertEquals(HandsFreeSession.Live.SENT, f.session.live());
+    f.audioStarts = false; // Its voice fails before any audio.
     f.session.reply("r1", "Done.");
     until(() -> cues.size() == 3);
     assertEquals(HandsFreeSession.Cue.REPLY, cues.get(2));

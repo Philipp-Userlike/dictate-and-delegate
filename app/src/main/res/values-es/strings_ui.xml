@@ -371,6 +371,7 @@
     <string name="t_874caa6a" formatted="false">El micrófono no está disponible.</string>
     <string name="t_87747dc3" formatted="false">Inicia con el botón de ajustes rápidos o una tecla de volumen; Insertar coloca el texto donde escribes.</string>
     <string name="t_8831703d" formatted="false">Jefe: %1$s</string>
+    <string name="t_883b0385" formatted="false">Respuesta interrumpida a medias (%1$s): tu siguiente mensaje le indicará al jefe hasta dónde escuchaste</string>
     <string name="t_886029f0" formatted="false">Habilidades de tu jefe</string>
     <string name="t_8860ef62" formatted="false">No se pudo conectar con %1$s. Comprueba la dirección y tu conexión.</string>
     <string name="t_88ea76d0" formatted="false">Termina o descarta primero la grabación pendiente.</string>
@@ -674,6 +675,7 @@
     <string name="t_eb89173a" formatted="false">Abrir ajustes de accesibilidad</string>
     <string name="t_ec054ecf" formatted="false">Envío ignorado: ya se está enviando</string>
     <string name="t_ec8fbe93" formatted="false">Se eliminarán su texto, versiones, costes y audio. Esto no se puede deshacer.</string>
+    <string name="t_ecb6c206" formatted="false">Copiar la última llamada</string>
     <string name="t_ed4646d0" formatted="false">Termina o descarta primero la grabación pendiente</string>
     <string name="t_ed783112" formatted="false">✓  Usando %1$s (%2$s). Se le indicó que use las habilidades.</string>
     <string name="t_ed8814bc" formatted="false">Copiar</string>
@@ -706,6 +708,7 @@
     <string name="t_f55495e0" formatted="false">Guardar</string>
     <string name="t_f5e73ad1" formatted="false">Se perdió la conexión con OpenRouter. Comprueba tu conexión a internet y reinténtalo.</string>
     <string name="t_f5efdb60" formatted="false">Habla con tu jefe mientras conduces o cocinas. Pausa todo el tiempo que quieras; las respuestas se leen en voz alta.</string>
+    <string name="t_f6604f22" formatted="false">Copiar las 3 últimas llamadas</string>
     <string name="t_f6a5c392" formatted="false">Modo manos libres</string>
     <string name="t_f6a8c847" formatted="false">¿Eliminar todo el audio guardado?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter aún no ha registrado ningún coste para esta nota.</string>
@@ -735,6 +738,4 @@
     <string name="t_ff38152f" formatted="false">Almacenamiento casi lleno. Grabación detenida; puedes reintentar con el audio guardado.</string>
     <string name="t_ff770e18" formatted="false">Costes y actividad</string>
     <string name="t_ffd9a681" formatted="false">Rehaciendo con un modelo mejor… Puedes salir de esta pantalla.</string>
-    <string name="t_ecb6c206" formatted="false">Copiar la última llamada</string>
-    <string name="t_f6604f22" formatted="false">Copiar las 3 últimas llamadas</string>
 </resources>

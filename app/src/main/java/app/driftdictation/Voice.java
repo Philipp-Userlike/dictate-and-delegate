@@ -193,10 +193,17 @@ final class Voice {
   private AudioTrack track;
   private VoiceStream streamed;
   /**
-   * How fast the replies are read, in characters a second: 15 until a whole reply came in, then
-   * what that one took (the voices measured 15 to 20).
+   * How fast the replies are read, in characters a second: what the last whole reply took (the
+   * voices measured 15 to 20), and until one came in a rate below any of them, so [heard up to]
+   * never quotes words not heard yet.
    */
-  private volatile double charsPerSecond = 15;
+  static final double SLOWEST_CHARS_PER_SECOND = 10;
+
+  private volatile double charsPerSecond = SLOWEST_CHARS_PER_SECOND;
+  /** The stream being played or about to be (cancelled when the reading stops). */
+  private volatile VoiceStream playingStream;
+  /** How far a streamed reply got when it ended early (-1: it didn't): heardChars says it after. */
+  private volatile int heardAtEnd = -1;
   private volatile TextToSpeech tts;
   private Playback current;
   /** The reply being read; for Android's voice, how far it got. */
@@ -499,6 +506,8 @@ final class Voice {
     }
     this.text = text;
     ttsAt = 0;
+    heardAtEnd = -1;
+    playingStream = prepared.stream();
     focus(true);
     new Thread(
             () -> {
@@ -506,6 +515,7 @@ final class Voice {
               synchronized (this) {
                 if (current != playback) { // Stopped meanwhile.
                   if (warm != null) warm.release();
+                  if (prepared.stream() != null) prepared.stream().cancel.run();
                   return;
                 }
               }
@@ -651,6 +661,7 @@ final class Voice {
     synchronized (this) {
       if (current != playback) { // Stopped meanwhile.
         t.release();
+        s.cancel.run();
         return;
       }
       track = t;
@@ -708,6 +719,7 @@ final class Voice {
       android.util.Log.w("Voice", "the reply's track failed", ex);
       played = false;
     }
+    if (!played && started) heardAtEnd = heardChars(); // Ended early: how far it got stays known.
     synchronized (this) {
       if (track == t) {
         track = null;
@@ -756,7 +768,13 @@ final class Voice {
     } catch (IllegalStateException ignored) {
       return 0;
     }
+    if (heardAtEnd >= 0) return heardAtEnd;
     return Math.min(text.length(), ttsAt);
+  }
+
+  /** A prepared reply that won't be played (the call ended): its audio isn't fetched on. */
+  static void drop(Object prepared) {
+    if (prepared instanceof Prepared p && p.stream() != null) p.stream().cancel.run();
   }
 
   /** Is reply audio still coming out (the session's watchdog asks)? */
@@ -967,6 +985,7 @@ final class Voice {
 
     /** Takes what the decoder has ready into the stream; true at its end. */
     private boolean drain(long waitUs) {
+      if (codec == null) return false; // No whole frame yet.
       while (true) {
         int o = codec.dequeueOutputBuffer(info, waitUs);
         if (o == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
@@ -1061,15 +1080,18 @@ final class Voice {
       s = streamed;
     }
     if (streaming != null) {
-      // Silent at once; its thread lets it go. The rest of its audio isn't fetched on.
+      // Silent at once; its thread lets it go.
       try {
         streaming.pause();
         streaming.flush();
       } catch (IllegalStateException ignored) {
         /* Released meanwhile. */
       }
-      s.cancel.run();
     }
+    // The rest of its audio isn't fetched on (also while it was still warming up).
+    VoiceStream fetching = playingStream;
+    if (fetching != null) fetching.cancel.run();
+    if (s != null) s.cancel.run();
     if (p != null) {
       try {
         p.stop();

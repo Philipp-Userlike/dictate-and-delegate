@@ -373,6 +373,7 @@
     <string name="t_874caa6a" formatted="false">Mikrofon jest niedostępny.</string>
     <string name="t_87747dc3" formatted="false">Uruchamiaj kafelkiem lub klawiszem głośności; opcja Wstaw umieszcza tekst tam, gdzie piszesz.</string>
     <string name="t_8831703d" formatted="false">Szef: %1$s</string>
+    <string name="t_883b0385" formatted="false">Odpowiedź przerwana w trakcie (%1$s): twoja kolejna wiadomość poinformuje szefa, co udało ci się usłyszeć</string>
     <string name="t_886029f0" formatted="false">Umiejętności asystenta</string>
     <string name="t_8860ef62" formatted="false">Nie udało się połączyć z %1$s. Sprawdź adres i połączenie z siecią.</string>
     <string name="t_88ea76d0" formatted="false">Najpierw dokończ lub odrzuć oczekujące nagranie.</string>
@@ -679,6 +680,7 @@
     <string name="t_eb89173a" formatted="false">Otwórz ustawienia dostępności</string>
     <string name="t_ec054ecf" formatted="false">Zignorowano Wyślij: już wysyłam</string>
     <string name="t_ec8fbe93" formatted="false">Jej tekst, wersje, koszty i dźwięk zostaną usunięte. Tego nie można cofnąć.</string>
+    <string name="t_ecb6c206" formatted="false">Kopiuj ostatnią rozmowę</string>
     <string name="t_ed4646d0" formatted="false">Najpierw dokończ lub odrzuć oczekujące nagranie</string>
     <string name="t_ed783112" formatted="false">✓  Używa %1$s (%2$s). Poinstruowano o użyciu umiejętności.</string>
     <string name="t_ed8814bc" formatted="false">Kopiuj</string>
@@ -711,6 +713,7 @@
     <string name="t_f55495e0" formatted="false">Zapisz</string>
     <string name="t_f5e73ad1" formatted="false">Utracono połączenie z OpenRouter. Sprawdź połączenie z internetem i spróbuj ponownie.</string>
     <string name="t_f5efdb60" formatted="false">Rozmawiaj ze swoim szefem podczas jazdy lub gotowania. Rób przerwy, jak długie chcesz; odpowiedzi są czytane na głos.</string>
+    <string name="t_f6604f22" formatted="false">Kopiuj 3 ostatnie rozmowy</string>
     <string name="t_f6a5c392" formatted="false">Tryb głośnomówiący</string>
     <string name="t_f6a8c847" formatted="false">Usunąć cały zapisany dźwięk?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter nie zgłosił jeszcze kosztu dla tej notatki.</string>
@@ -740,6 +743,4 @@
     <string name="t_ff38152f" formatted="false">Pamięć niemal pełna. Nagrywanie zatrzymane; zapisany dźwięk można ponowić.</string>
     <string name="t_ff770e18" formatted="false">Koszty i aktywność</string>
     <string name="t_ffd9a681" formatted="false">Poprawianie inteligentniejszym modelem… Możesz opuścić ten ekran.</string>
-    <string name="t_ecb6c206" formatted="false">Kopiuj ostatnią rozmowę</string>
-    <string name="t_f6604f22" formatted="false">Kopiuj 3 ostatnie rozmowy</string>
 </resources>

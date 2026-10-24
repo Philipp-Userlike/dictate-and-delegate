@@ -184,6 +184,9 @@ final class HandsFreeSession {
       return 0;
     }
 
+    /** A prepared reply that won't be played (the call ended): whatever it still fetches stops. */
+    default void drop(Object prepared) {}
+
     void stop();
   }
 
@@ -809,11 +812,13 @@ final class HandsFreeSession {
     int at = state == State.READING ? speaker.heardChars() : 0;
     StringBuilder note = new StringBuilder();
     int waiting;
+    List<Held> dropped;
     synchronized (this) {
       if (state == State.ENDED) return; // Ended once only (End and an end phrase at once).
       // The chief hears once, with the call's end, which replies never reached you.
       if (state == State.READING && current != null) note.append("\n\n").append(heardUpTo(current.text, at));
       for (Held h : held) note.append("\n\n").append(missed(h.text));
+      dropped = new ArrayList<>(held);
       waiting = held.size();
       // Notes no message took (a reply you talked over, then no word sent): with the call's end.
       boolean unsent;
@@ -824,6 +829,7 @@ final class HandsFreeSession {
       held.clear();
       state = State.ENDED;
     }
+    for (Held h : dropped) speaker.drop(h.prepared); // Not played: not fetched on.
     endNote = note.toString();
     if (waiting > 0) log("ended with " + waiting + " reply(ies) still waiting: the chief is told");
     sendUnsent();
@@ -1012,17 +1018,25 @@ final class HandsFreeSession {
    * play is noted in your next message as not heard.
    */
   private void finishReading(int token, boolean played, String why) {
-    boolean heard;
+    boolean heard, started;
     Held failed;
     synchronized (this) {
       if (token != reading || state != State.READING) return;
+      started = playing;
       heard = played && playing;
       failed = heard ? null : current;
     }
     String note = null;
     Held again = null;
     if (heard) log("reply played to the end");
-    else if (failed != null && failed.failures < RETRIES) {
+    else if (failed != null && started) {
+      // Part of it was heard: not played again from its start; your next message says how far.
+      int at = speaker.heardChars();
+      note = heardUpTo(failed.text, at);
+      log("reply stopped part-way (" + why + ", at character " + at + " of " + failed.text.length() + "): not played again; your next message says " + note);
+      cue(Cue.FAILED);
+      reason("Reply stopped part-way (%1$s): your next message tells the chief how far you heard", why);
+    } else if (failed != null && failed.failures < RETRIES) {
       // Never given up at once: its voice is fetched again (the voice model, else Android's).
       again = new Held(failed.request, failed.text, clock.getAsLong());
       again.failures = failed.failures + 1;
@@ -1094,20 +1108,22 @@ final class HandsFreeSession {
     long queued = clock.getAsLong();
     Runnable last =
         () -> {
-          String text;
+          Whole all = startWhole(audio);
+          String parts;
+          boolean missing = false;
           try {
-            Whole all = startWhole(audio);
             Written w = writeTurn(audio, "end");
-            text = (prefix + " " + w.text()).trim();
+            parts = (prefix + " " + w.text()).trim();
             if (w.parts() > 0) log(String.format(java.util.Locale.ROOT, "your last words: %d new part(s), %.1f s, written down in %d ms", w.parts(), w.seconds(), w.ms()));
-            text = toSend(text, all, prefix);
           } catch (Exception ex) {
-            log("your last words couldn't be written down (" + ex.getMessage() + "): not sent");
-            outgoing.decrementAndGet();
-            return;
+            // What was written down before still goes (and all of it, if the whole pass works).
+            missing = true;
+            parts = (prefix + " " + partsText(audio)).trim();
+            log("some of your last words couldn't be written down (" + ex.getMessage() + "): what was goes");
           }
+          String text = toSend(parts, all, prefix);
           if (text.isEmpty()) {
-            log("your last words had no words in them: nothing sent");
+            log(missing ? "your last words couldn't be written down: not sent" : "your last words had no words in them: nothing sent");
             outgoing.decrementAndGet();
             return;
           }
@@ -1281,6 +1297,11 @@ final class HandsFreeSession {
         written.put(fresh.get(fresh.size() - 1), t);
       }
     }
+    return new Written(partsText(audio), fresh.size(), bytes / (double) AudioFiles.BYTES_PER_SECOND, ms);
+  }
+
+  /** What these parts said, those written down so far, joined. */
+  private String partsText(List<byte[]> audio) {
     StringBuilder text = new StringBuilder();
     synchronized (turnAudio) {
       for (byte[] p : audio) {
@@ -1288,7 +1309,7 @@ final class HandsFreeSession {
         if (!t.isEmpty()) text.append(text.length() == 0 ? "" : " ").append(t);
       }
     }
-    return new Written(text.toString(), fresh.size(), bytes / (double) AudioFiles.BYTES_PER_SECOND, ms);
+    return text.toString();
   }
 
   private void checkNow(String why) {
@@ -1352,6 +1373,7 @@ final class HandsFreeSession {
           w.parts() == 0 ? "written down already" : String.format(java.util.Locale.ROOT, "%d new (%.1f s) written down in %d ms", w.parts(), w.seconds(), w.ms()), text));
       if (took >= SLOW_WRITING_MS) reason("Writing down took %1$.1f s (the speech model was slow)", took / 1000.0);
       if (why.equals("seed")) return;
+      if (text.isEmpty() && all != null) text = toSend(text, all, prefix); // The parts had no words; the whole pass may.
       if (text.isEmpty()) {
         if (stale(version) && !button) return;
         reason("The speech model heard no words: your turn ends");
@@ -1451,7 +1473,13 @@ final class HandsFreeSession {
     }
     int pct = v == null ? 0 : (int) Math.round(100 * v.send());
     if (done) {
-      String rest = over != null ? over : text;
+      // What goes is the whole pass's text: it decides what's left once the send word is off.
+      String sent = toSend(text, all, prefix), cut = HandsFree.endsWith(sent, sendWords);
+      String rest = sent.equals(text) ? (over != null ? over : text) : cut != null ? cut : sent;
+      if (stale(version)) { // You went on while it was written down whole: checked at your next pause.
+        log("you went on talking: checked again at your next pause");
+        return;
+      }
       if (rest.isEmpty() && clock.getAsLong() - sentAt < 10_000) { // "Over" just after Send.
         log("the send word came after your message went: nothing more to send");
         reason("Send word heard: your message had already gone");
@@ -1470,9 +1498,6 @@ final class HandsFreeSession {
           case "request" -> reason("Sent: you finished what you were saying (%1$d%%)", pct);
           default -> reason("Sent: you said you're done (%1$d%%)", pct);
         }
-      String sent = toSend(text, all, prefix), cut = HandsFree.endsWith(sent, sendWords);
-      // The whole pass's words go, without the send word if it heard one there too.
-      if (!sent.equals(text)) rest = cut == null ? sent : cut.isEmpty() ? rest : cut;
       send(rest, "jev", parts, prefix);
       return;
     }
@@ -1522,6 +1547,10 @@ final class HandsFreeSession {
   private void send(String text, String why, int parts, String prefix) {
     sendAfterFlush = false;
     sendPressed = false;
+    if (state == State.ENDED) { // Ended while this was written down: the call's end sent these words.
+      log("the call ended meanwhile: its end sends your words, not this check");
+      return;
+    }
     if (text.trim().isEmpty()) {
       reason("Nothing to send: no words were written down");
       giveUpTurn("empty");

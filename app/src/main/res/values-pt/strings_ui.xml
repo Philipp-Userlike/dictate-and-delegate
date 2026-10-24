@@ -371,6 +371,7 @@
     <string name="t_874caa6a" formatted="false">Microfone indisponível.</string>
     <string name="t_87747dc3" formatted="false">Inicia com o mosaico ou uma tecla de volume; Inserir coloca o texto onde escreves.</string>
     <string name="t_8831703d" formatted="false">Chefe: %1$s</string>
+    <string name="t_883b0385" formatted="false">A resposta parou a meio (%1$s): a tua próxima mensagem diz ao chefe até onde ouviste</string>
     <string name="t_886029f0" formatted="false">As habilidades do teu chefe</string>
     <string name="t_8860ef62" formatted="false">Não foi possível alcançar %1$s. Verifica o endereço e a tua ligação.</string>
     <string name="t_88ea76d0" formatted="false">Termina ou descarta a gravação pendente primeiro.</string>
@@ -674,6 +675,7 @@
     <string name="t_eb89173a" formatted="false">Abrir definições de Acessibilidade</string>
     <string name="t_ec054ecf" formatted="false">Envio ignorado: já a enviar</string>
     <string name="t_ec8fbe93" formatted="false">O texto, versões, custos e áudio serão removidos. Não pode ser anulado.</string>
+    <string name="t_ecb6c206" formatted="false">Copiar a última chamada</string>
     <string name="t_ed4646d0" formatted="false">Termina ou descarta a gravação pendente primeiro</string>
     <string name="t_ed783112" formatted="false">✓  A utilizar %1$s (%2$s). Foi configurado para usar as habilidades.</string>
     <string name="t_ed8814bc" formatted="false">Copiar</string>
@@ -706,6 +708,7 @@
     <string name="t_f55495e0" formatted="false">Guardar</string>
     <string name="t_f5e73ad1" formatted="false">A ligação ao OpenRouter perdeu-se. Verifica a ligação à internet e tenta novamente.</string>
     <string name="t_f5efdb60" formatted="false">Conversa com o teu chefe enquanto diriges ou cozinhas. Faz pausas o quanto quiseres; as respostas são lidas em voz alta.</string>
+    <string name="t_f6604f22" formatted="false">Copiar as 3 últimas chamadas</string>
     <string name="t_f6a5c392" formatted="false">Modo mãos livres</string>
     <string name="t_f6a8c847" formatted="false">Apagar todo o áudio guardado?</string>
     <string name="t_f703e6b3" formatted="false">O OpenRouter ainda não indicou custos para esta nota.</string>
@@ -735,6 +738,4 @@
     <string name="t_ff38152f" formatted="false">Armazenamento quase cheio. Gravação parada; podes tentar de novo com o áudio guardado.</string>
     <string name="t_ff770e18" formatted="false">Custos e atividade</string>
     <string name="t_ffd9a681" formatted="false">A refazer com um modelo melhor… Podes sair deste ecrã.</string>
-    <string name="t_ecb6c206" formatted="false">Copiar a última chamada</string>
-    <string name="t_f6604f22" formatted="false">Copiar as 3 últimas chamadas</string>
 </resources>

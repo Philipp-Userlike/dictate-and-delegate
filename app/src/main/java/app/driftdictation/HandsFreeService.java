@@ -248,6 +248,10 @@ public final class HandsFreeService extends Service {
                 return voice.heardChars();
               }
 
+              public void drop(Object prepared) {
+                Voice.drop(prepared);
+              }
+
               public void stop() {
                 voice.stop();
               }

@@ -369,6 +369,7 @@
     <string name="t_874caa6a" formatted="false">Microfoon is niet beschikbaar.</string>
     <string name="t_87747dc3" formatted="false">Start met de tegel of een volumeknop; Invoegen plaatst de tekst waar je typt.</string>
     <string name="t_8831703d" formatted="false">Chef: %1$s</string>
+    <string name="t_883b0385" formatted="false">Antwoord halverwege gestopt (%1$s): je volgende bericht laat de chef weten wat je hebt gehoord</string>
     <string name="t_886029f0" formatted="false">Skills van je stafchef</string>
     <string name="t_8860ef62" formatted="false">Kon %1$s niet bereiken. Controleer het adres en je verbinding.</string>
     <string name="t_88ea76d0" formatted="false">Rond eerst de openstaande opname af of verwijder deze.</string>
@@ -669,6 +670,7 @@
     <string name="t_eb89173a" formatted="false">Open Toegankelijkheidsinstellingen</string>
     <string name="t_ec054ecf" formatted="false">Verzenden genegeerd: al bezig met verzenden</string>
     <string name="t_ec8fbe93" formatted="false">De tekst, versies, kosten en audio worden verwijderd. Dit kan niet ongedaan worden gemaakt.</string>
+    <string name="t_ecb6c206" formatted="false">Laatste gesprek kopiëren</string>
     <string name="t_ed4646d0" formatted="false">Rond eerst de openstaande opname af of verwijder deze</string>
     <string name="t_ed783112" formatted="false">✓  Gebruikt %1$s (%2$s). Geïnstrueerd om de skills te gebruiken.</string>
     <string name="t_ed8814bc" formatted="false">Kopiëren</string>
@@ -701,6 +703,7 @@
     <string name="t_f55495e0" formatted="false">Opslaan</string>
     <string name="t_f5e73ad1" formatted="false">De verbinding met OpenRouter is verbroken. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="t_f5efdb60" formatted="false">Praat met je chief terwijl je rijdt of kookt. Pauzeer zolang je wilt; antwoorden worden voorgelezen.</string>
+    <string name="t_f6604f22" formatted="false">Laatste 3 gesprekken kopiëren</string>
     <string name="t_f6a5c392" formatted="false">Handsfree-modus</string>
     <string name="t_f6a8c847" formatted="false">Alle opgeslagen audio verwijderen?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter heeft nog geen kosten gemeld voor deze notitie.</string>
@@ -730,6 +733,4 @@
     <string name="t_ff38152f" formatted="false">Opslag is bijna vol. Opname gestopt; opgeslagen audio kan opnieuw worden geprobeerd.</string>
     <string name="t_ff770e18" formatted="false">Kosten en activiteit</string>
     <string name="t_ffd9a681" formatted="false">Opnieuw doen met een slimmer model… Je kunt dit scherm verlaten.</string>
-    <string name="t_ecb6c206" formatted="false">Laatste gesprek kopiëren</string>
-    <string name="t_f6604f22" formatted="false">Laatste 3 gesprekken kopiëren</string>
 </resources>

@@ -371,6 +371,7 @@
     <string name="t_874caa6a" formatted="false">Microphone indisponible.</string>
     <string name="t_87747dc3" formatted="false">Démarre via la tuile ou une touche de volume ; Insérer place le texte là où tu écris.</string>
     <string name="t_8831703d" formatted="false">Chef : %1$s</string>
+    <string name="t_883b0385" formatted="false">Réponse interrompue (%1$s) : ton prochain message indiquera au chef ce que tu as entendu</string>
     <string name="t_886029f0" formatted="false">Compétences de ton chef</string>
     <string name="t_8860ef62" formatted="false">Impossible de joindre %1$s. Vérifie l\'adresse et ta connexion.</string>
     <string name="t_88ea76d0" formatted="false">Termine ou supprime d\'abord l\'enregistrement en attente.</string>
@@ -674,6 +675,7 @@
     <string name="t_eb89173a" formatted="false">Ouvrir les paramètres d\'accessibilité</string>
     <string name="t_ec054ecf" formatted="false">Envoi ignoré : déjà en cours</string>
     <string name="t_ec8fbe93" formatted="false">Son texte, ses versions, ses coûts et son audio seront supprimés. Action irréversible.</string>
+    <string name="t_ecb6c206" formatted="false">Copier le dernier appel</string>
     <string name="t_ed4646d0" formatted="false">Termine ou supprime d\'abord l\'enregistrement en attente</string>
     <string name="t_ed783112" formatted="false">✓  Utilise %1$s (%2$s). Consigne donnée d\'utiliser les compétences.</string>
     <string name="t_ed8814bc" formatted="false">Copier</string>
@@ -706,6 +708,7 @@
     <string name="t_f55495e0" formatted="false">Enregistrer</string>
     <string name="t_f5e73ad1" formatted="false">La connexion à OpenRouter a été perdue. Vérifie ta connexion Internet, puis réessaie.</string>
     <string name="t_f5efdb60" formatted="false">Parle avec ton chief pendant que tu conduis ou cuisines. Fais des pauses aussi longues que tu veux ; les réponses sont lues à voix haute.</string>
+    <string name="t_f6604f22" formatted="false">Copier les 3 derniers appels</string>
     <string name="t_f6a5c392" formatted="false">Mode mains libres</string>
     <string name="t_f6a8c847" formatted="false">Supprimer tous les fichiers audio ?</string>
     <string name="t_f703e6b3" formatted="false">OpenRouter n\'a pas encore indiqué de coût pour cette note.</string>
@@ -735,6 +738,4 @@
     <string name="t_ff38152f" formatted="false">Espace de stockage presque plein. Enregistrement arrêté ; réessai possible.</string>
     <string name="t_ff770e18" formatted="false">Coûts et activité</string>
     <string name="t_ffd9a681" formatted="false">Traitement avec un modèle plus performant… Tu peux quitter cet écran.</string>
-    <string name="t_ecb6c206" formatted="false">Copier le dernier appel</string>
-    <string name="t_f6604f22" formatted="false">Copier les 3 derniers appels</string>
 </resources>

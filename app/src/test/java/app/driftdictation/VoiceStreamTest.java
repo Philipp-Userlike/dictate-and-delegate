@@ -141,6 +141,25 @@ public class VoiceStreamTest {
   }
 
   @Test
+  public void severalHearWhenItsComplete() {
+    VoiceStream s = new VoiceStream();
+    List<String> told = new ArrayList<>();
+    s.whenDone(d -> told.add("log"));
+    s.whenDone(d -> told.add("learn"));
+    s.end(100);
+    s.whenDone(d -> told.add("late"));
+    assertEquals(List.of("log", "learn", "late"), told);
+  }
+
+  @Test
+  public void untilARateIsLearnedHowFarYouHeardNeverRunsAheadOfASlowVoice() {
+    // A voice reading 11 characters a second, talked over 6 s in, its length not known yet:
+    // about 63 characters were heard; the guess stays below.
+    int heard = VoiceStream.heardChars(400, 6000, 8000, false, Voice.SLOWEST_CHARS_PER_SECOND);
+    assertTrue(String.valueOf(heard), heard <= 6 * 11 - 300 * 11 / 1000);
+  }
+
+  @Test
   public void howFarYouHeardIsInProportionOnceItsAllInAndAtMostAGuessBefore() {
     String text = "x".repeat(400);
     // All in: 26 s of audio for 400 characters; 13.3 s played is half (less the 0.3 s on its way).
