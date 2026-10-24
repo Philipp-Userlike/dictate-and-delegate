@@ -93,6 +93,8 @@ public class HandsFreeTest {
   static final class Fake {
     final List<String> transcripts = new CopyOnWriteArrayList<>(), sent = new CopyOnWriteArrayList<>(),
         spoken = new CopyOnWriteArrayList<>(), log = new CopyOnWriteArrayList<>();
+    /** The prepared voices let go of (not played). */
+    final List<Object> dropped = new CopyOnWriteArrayList<>();
     /** Ends the reply being read, played to the end. */
     volatile Runnable done, fail;
     /** The voice: its audio starts at once (as long as this is true), or never. */
@@ -115,6 +117,8 @@ public class HandsFreeTest {
     volatile boolean wholeFails;
     /** While set, the whole turn's pass waits for it (a slow one). */
     volatile java.util.concurrent.CountDownLatch slowWhole;
+    /** While set, bb can't be reached: nothing is delivered. */
+    volatile boolean bbDown;
     /** While set, deliveries reach only one of the chief and the talker: "chief" or "talker" misses them. */
     volatile String missedBy;
     /** What preparing a reply does (fetching its audio); by default nothing. */
@@ -172,6 +176,7 @@ public class HandsFreeTest {
               said -> {
                 java.util.concurrent.CountDownLatch l = slowBb;
                 if (l != null) l.await();
+                if (bbDown) throw new java.io.IOException("bb isn't reachable");
                 sent.add(said);
                 String missed = missedBy;
                 if (missed != null) throw new HandsFreeSession.PartlySent("r" + sent.size(), missed.equals("chief"), "thread not found");
@@ -198,6 +203,10 @@ public class HandsFreeTest {
 
                 public int heardChars() {
                   return heardChars;
+                }
+
+                public void drop(Object prepared) {
+                  if (prepared != null) dropped.add(prepared);
                 }
 
                 public void stop() {
@@ -362,6 +371,126 @@ public class HandsFreeTest {
     f.talk();
     until(() -> f.sent.size() == 1);
     assertEquals("Book the hotel for Friday.", f.sent.get(0));
+  }
+
+  /** Talks, then waits for the message to go out. */
+  private static void sendTurn(Fake f, int n) throws Exception {
+    f.talk();
+    until(() -> f.sent.size() == n);
+  }
+
+  /** A reply played to the end, and the microphone open again after it. */
+  private static void hear(Fake f, int spoken) throws Exception {
+    until(() -> f.spoken.size() == spoken);
+    f.done.run();
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+  }
+
+  @Test
+  public void withATalkerAReplyToAnOlderMessageIsntPlayedAndTheNextMessageSaysSo() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    f.session.dropsOutdated = true;
+    f.quiet(1000);
+    sendTurn(f, 1);
+    sendTurn(f, 2);
+    // The answer to the first message comes after the second went: it no longer fits.
+    f.session.reply("r1", "Yes, it's booked for eight.");
+    f.session.reply("r2", "The train leaves at nine.");
+    hear(f, 1);
+    assertEquals(List.of("The train leaves at nine."), f.spoken);
+    String log = String.join("\n", f.log);
+    assertTrue(log, log.contains("chief message r1 dropped (27 characters): it answers an older message than your latest"));
+    assertTrue(reasons(f), reasons(f).contains("An older reply wasn't played: you've said more since. Your next message says so"));
+    sendTurn(f, 3);
+    assertEquals("Anything else?\n\n[didn't hear your reply: \"Yes, it's booked for eight.\"]", f.sent.get(2));
+    // Noted once.
+    f.session.end();
+    assertEquals("", f.session.endNote());
+  }
+
+  @Test
+  public void withATalkerRepliesStillWaitingWhenYouSendArentPlayedAndThatMessageSaysSo() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    f.session.dropsOutdated = true;
+    f.quiet(1000);
+    sendTurn(f, 1);
+    // You talk on; three answers to the first message (one an update without a request) wait.
+    f.speak();
+    f.session.reply("r1", "One moment, I'm checking the booking for you now.");
+    f.session.reply("r1", "It's booked for eight.");
+    f.session.reply(f.session.lastRequest(), "The chief says the window table is free.");
+    assertEquals(3, f.session.held());
+    f.quiet(1200);
+    until(() -> f.sent.size() == 2);
+    assertEquals("And the train?\n\n[didn't hear 3 replies: \"One moment, I'm checking the booking for you…\" and 2 more]", f.sent.get(1));
+    assertEquals(0, f.session.held());
+    Thread.sleep(200);
+    assertTrue(f.spoken.toString(), f.spoken.isEmpty());
+    assertEquals("their voices let go", 3, f.dropped.size());
+    assertTrue(reasons(f), reasons(f).contains("3 older replies weren't played: you've said more since"));
+    String log = String.join("\n", f.log);
+    assertTrue(log, log.contains("chief message r1 dropped (22 characters): it was still waiting when you sent a newer message"));
+    f.session.end();
+    assertEquals("", f.session.endNote());
+  }
+
+  @Test
+  public void withATalkerACallEndingWithDroppedRepliesNotYetNotedSaysSoAtItsEnd() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    f.session.dropsOutdated = true;
+    f.quiet(1000);
+    sendTurn(f, 1);
+    sendTurn(f, 2);
+    f.session.reply("r1", "Yes, it's booked for eight.");
+    f.session.reply("r1", "The window table, as you asked.");
+    f.session.end();
+    assertEquals("\n\n[didn't hear 2 replies: \"Yes, it's booked for eight.\" and 1 more]", f.session.endNote());
+    assertTrue(f.spoken.isEmpty());
+  }
+
+  @Test
+  public void withoutATalkerAReplyToAnOlderMessageStillPlays() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    f.quiet(1000);
+    sendTurn(f, 1);
+    sendTurn(f, 2);
+    f.session.reply("r1", "Yes, it's booked for eight.");
+    hear(f, 1);
+    sendTurn(f, 3);
+    assertEquals("Anything else?", f.sent.get(2));
+    assertFalse(String.join("\n", f.log).contains("dropped"));
+  }
+
+  @Test
+  public void withATalkerAReplyArrivingWhileYourNewMessageIsOnItsWayIsOutdated() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    f.session.dropsOutdated = true;
+    f.quiet(1000);
+    sendTurn(f, 1);
+    f.slowBb = new java.util.concurrent.CountDownLatch(1);
+    f.talk();
+    until(() -> f.session.phase() == HandsFreeSession.Phase.SENDING);
+    f.session.reply("r1", "Yes, it's booked for eight.");
+    assertEquals(0, f.session.held());
+    f.slowBb.countDown();
+    until(() -> f.sent.size() == 2);
+    assertTrue(f.spoken.isEmpty());
+  }
+
+  @Test
+  public void withATalkerAMessageThatCouldntBeSentDoesntMakeTheRepliesBeforeItOutdated() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    f.session.dropsOutdated = true;
+    f.quiet(1000);
+    sendTurn(f, 1);
+    f.bbDown = true;
+    f.talk();
+    for (int i = 0; i < 100 && !f.session.error().startsWith("Not sent"); i++) Thread.sleep(20);
+    assertTrue(String.join("\n", f.log), f.session.error().startsWith("Not sent"));
+    // Your words are kept (your turn): the reply waits, but isn't dropped.
+    f.session.reply("r1", "Yes, it's booked for eight.");
+    assertEquals(1, f.session.held());
+    assertFalse(String.join("\n", f.log).contains("dropped"));
   }
 
   @Test
@@ -1210,6 +1339,7 @@ public class HandsFreeTest {
     assertTrue(String.join("\n", f.log).contains("Jev couldn't confirm the goodbye (no judge): not ended"));
     f.quiet(600);
     until(() -> f.session.state() == HandsFreeSession.State.ENDED);
+    until(() -> f.sent.size() == 2); // The last words go after the end.
     assertEquals("Thanks, that was everything.", f.sent.get(1));
   }
 

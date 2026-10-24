@@ -5,6 +5,7 @@
     <string name="t_009d9bd2" formatted="false">Démarrer mains libres</string>
     <string name="t_00a11af1" formatted="false">Sur GitHub</string>
     <string name="t_00f987b3" formatted="false">Le texte de ton chef n\'est plus sur ton sujet ntfy.</string>
+    <string name="t_016a6b6f" formatted="false">Une ancienne réponse n\'a pas été lue : tu en as dit plus depuis. Ton prochain message le précise</string>
     <string name="t_0174ec90" formatted="false">Quiconque connaît le sujet peut lire ces notifications, c\'est pourquoi il est long et aléatoire. Garde-le pour toi.</string>
     <string name="t_01e4f1a8" formatted="false">Tout supprimer</string>
     <string name="t_01f8e246" formatted="false">Tuile ou maintenir Volume haut</string>
@@ -191,6 +192,7 @@
     <string name="t_41c5ed6f" formatted="false">Microphone autorisé</string>
     <string name="t_421f0793" formatted="false">Impossible de supprimer l\'audio. Réessaie après avoir redémarré Dictate &amp; Delegate.</string>
     <string name="t_42463e69" formatted="false">Impossible de lire la réponse (%1$s) : nouvel essai</string>
+    <string name="t_4329f69c" formatted="false">Une ancienne réponse n\'a pas été lue : tu en as dit plus depuis</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Supprimer %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Affiné via OpenRouter au lieu d\'Anthropic : %1$s</string>
@@ -646,6 +648,7 @@
     <string name="t_dcd686af" formatted="false">Lance Dictate &amp; Delegate, puis continue d\'utiliser n\'importe quelle appli : lis, cherche, change d\'appli. Quand tu arrêtes, tes mots sont transcrits, prêts à être insérés où tu écris. Puis choisis : ✨ Affiner transforme le texte selon tes besoins, et ton chef d\'état-major prend en charge tes tâches.</string>
     <string name="t_dce1cb9b" formatted="false">Seul le mot d\'envoi a été entendu : rien à envoyer</string>
     <string name="t_dcf39d20" formatted="false">Transmet la tâche à ton chef de cabinet dans bb, si configuré. Puis Ouvrir le chat ↗.</string>
+    <string name="t_dd368805" formatted="false">%1$d anciennes réponses n\'ont pas été lues : tu en as dit plus depuis</string>
     <string name="t_dd6fa894" formatted="false">Le texte et les coûts restent. Les notes ne pourront plus être refaites.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">chef de cabinet</string>

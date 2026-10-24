@@ -5,6 +5,7 @@
     <string name="t_009d9bd2" formatted="false">Freisprechen starten</string>
     <string name="t_00a11af1" formatted="false">Auf GitHub</string>
     <string name="t_00f987b3" formatted="false">Der Text deines Chiefs ist nicht mehr in deinem ntfy-Topic.</string>
+    <string name="t_016a6b6f" formatted="false">Eine ältere Antwort wurde nicht abgespielt: Du hast danach noch mehr gesagt. Deine nächste Nachricht weist darauf hin</string>
     <string name="t_0174ec90" formatted="false">Wer das Thema kennt, kann diese Benachrichtigungen lesen, deshalb ist es lang und zufällig. Behalte es für dich.</string>
     <string name="t_01e4f1a8" formatted="false">Alles löschen</string>
     <string name="t_01f8e246" formatted="false">Kachel oder Lautstärke lauter halten</string>
@@ -190,6 +191,7 @@
     <string name="t_41c5ed6f" formatted="false">Mikrofon erlaubt</string>
     <string name="t_421f0793" formatted="false">Gespeichertes Audio konnte nicht gelöscht werden. Starte Dictate &amp; Delegate neu und versuche es erneut.</string>
     <string name="t_42463e69" formatted="false">Antwort konnte nicht abgespielt werden (%1$s): erneuter Versuch</string>
+    <string name="t_4329f69c" formatted="false">Eine ältere Antwort wurde nicht abgespielt: Du hast danach noch mehr gesagt</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">%1$s entfernen</string>
     <string name="t_45a0c8fa" formatted="false">Über OpenRouter statt Anthropic verfeinert: %1$s</string>
@@ -641,6 +643,7 @@
     <string name="t_dcd686af" formatted="false">Starte Dictate &amp; Delegate und nutze beliebige Apps weiter: lesen, nachschlagen, wechseln. Beim Stoppen werden deine Worte aufgeschrieben – bereit zum Einfügen. Entscheide dann: ✨ Verfeinern formuliert deinen Text perfekt, und dein Chief of Staff übernimmt Aufgaben.</string>
     <string name="t_dce1cb9b" formatted="false">Nur das Sende-Wort gehört: nichts zu senden</string>
     <string name="t_dcf39d20" formatted="false">Übergibt es an deinen Chief of Staff in bb, falls eingerichtet. Dann: Chat öffnen ↗.</string>
+    <string name="t_dd368805" formatted="false">%1$d ältere Antworten wurden nicht abgespielt: Du hast danach noch mehr gesagt</string>
     <string name="t_dd6fa894" formatted="false">Texte und Kosten bleiben. Notizen können nicht mehr neu verarbeitet werden.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">Chief of Staff</string>

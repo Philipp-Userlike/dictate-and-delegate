@@ -282,6 +282,8 @@ public final class HandsFreeService extends Service {
           return v;
         };
     session.cues = c -> prefs.getBoolean(HandsFree.SOUNDS, true) && cues.play(c);
+    // With a talker, a reply to an older message than your latest isn't played: it no longer fits.
+    session.dropsOutdated = !talker.isEmpty();
     String live = startLive(prefs, sendWords, endWords);
     if (!choice.model().isEmpty()) voice.warm();
     callCost = BigDecimal.ZERO;

@@ -5,6 +5,7 @@
     <string name="t_009d9bd2" formatted="false">Start hands-free</string>
     <string name="t_00a11af1" formatted="false">On GitHub</string>
     <string name="t_00f987b3" formatted="false">Your chief\'s text isn\'t on your ntfy topic anymore.</string>
+    <string name="t_016a6b6f" formatted="false">An older reply wasn\'t played: you\'ve said more since. Your next message says so</string>
     <string name="t_0174ec90" formatted="false">Anyone who knows the topic can read these notifications, so it\'s long and random. Keep it to yourself.</string>
     <string name="t_01e4f1a8" formatted="false">Delete everything</string>
     <string name="t_01f8e246" formatted="false">Tile or hold volume up</string>
@@ -192,6 +193,7 @@
     <string name="t_41c5ed6f" formatted="false">Microphone allowed</string>
     <string name="t_421f0793" formatted="false">Could not delete saved audio. Try again after restarting Dictate &amp; Delegate.</string>
     <string name="t_42463e69" formatted="false">Reply couldn\'t be played (%1$s): trying again</string>
+    <string name="t_4329f69c" formatted="false">An older reply wasn\'t played: you\'ve said more since</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Remove %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Refined through OpenRouter instead of Anthropic: %1$s</string>
@@ -651,6 +653,7 @@
     <string name="t_dcd686af" formatted="false">Start Dictate &amp; Delegate, then keep using any app: read, look things up, switch. When you stop, your words are written down, ready to insert where you type. Then decide: ✨ Refine makes them the text you need, and your chief of staff takes on tasks.</string>
     <string name="t_dce1cb9b" formatted="false">Only the send word was heard: nothing to send</string>
     <string name="t_dcf39d20" formatted="false">Hands it to your chief of staff in bb, if you set one up. Then Open chat ↗.</string>
+    <string name="t_dd368805" formatted="false">%1$d older replies weren\'t played: you\'ve said more since</string>
     <string name="t_dd6fa894" formatted="false">Text and costs stay. Notes can no longer be redone.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">chief of staff</string>

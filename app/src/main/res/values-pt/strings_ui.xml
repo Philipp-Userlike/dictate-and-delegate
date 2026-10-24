@@ -5,6 +5,7 @@
     <string name="t_009d9bd2" formatted="false">Iniciar mãos livres</string>
     <string name="t_00a11af1" formatted="false">No GitHub</string>
     <string name="t_00f987b3" formatted="false">O texto do teu chief já não está no teu tópico ntfy.</string>
+    <string name="t_016a6b6f" formatted="false">Uma resposta anterior não foi reproduzida: falaste mais entretanto. A tua próxima mensagem avisa disso</string>
     <string name="t_0174ec90" formatted="false">Qualquer pessoa que conheça o canal pode ler estas notificações, por isso ele é longo e aleatório. Mantém-no privado.</string>
     <string name="t_01e4f1a8" formatted="false">Apagar tudo</string>
     <string name="t_01f8e246" formatted="false">Mosaico ou manter premido aumentar volume</string>
@@ -191,6 +192,7 @@
     <string name="t_41c5ed6f" formatted="false">Microfone permitido</string>
     <string name="t_421f0793" formatted="false">Não foi possível eliminar o áudio guardado. Tenta novamente após reiniciar o Dictate &amp; Delegate.</string>
     <string name="t_42463e69" formatted="false">Não foi possível reproduzir a resposta (%1$s): a tentar novamente</string>
+    <string name="t_4329f69c" formatted="false">Uma resposta anterior não foi reproduzida: falaste mais entretanto</string>
     <string name="t_446b3ccc" formatted="false">%1$d h %2$d min</string>
     <string name="t_449d8bae" formatted="false">Remover %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Refinado via OpenRouter em vez da Anthropic: %1$s</string>
@@ -646,6 +648,7 @@
     <string name="t_dcd686af" formatted="false">Inicia o Dictate &amp; Delegate e continua a usar qualquer app: lê, pesquisa, muda de app. Ao parar, as tuas palavras são transcritas, prontas a colar. Depois decide: ✨ Aperfeiçoar melhora o texto e o teu chefe de gabinete assume tarefas.</string>
     <string name="t_dce1cb9b" formatted="false">Apenas a palavra de envio foi ouvida: nada para enviar</string>
     <string name="t_dcf39d20" formatted="false">Passa-o ao teu chief of staff no bb, se tiveres configurado um. Depois toca em Abrir chat ↗.</string>
+    <string name="t_dd368805" formatted="false">%1$d respostas anteriores não foram reproduzidas: falaste mais entretanto</string>
     <string name="t_dd6fa894" formatted="false">O texto e custos mantêm-se. As notas já não poderão ser refeitas.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">chefe de gabinete</string>

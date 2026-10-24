@@ -5,6 +5,7 @@
     <string name="t_009d9bd2" formatted="false">Włącz tryb głośnomówiący</string>
     <string name="t_00a11af1" formatted="false">Na GitHubie</string>
     <string name="t_00f987b3" formatted="false">Tekstu od szefa nie ma już w twoim kanale ntfy.</string>
+    <string name="t_016a6b6f" formatted="false">Starsza odpowiedź nie została odtworzona: od tego czasu powiedziano więcej. Twoja kolejna wiadomość o tym wspomina</string>
     <string name="t_0174ec90" formatted="false">Każdy, kto zna ten temat, może odczytać powiadomienia, dlatego jest długi i losowy. Nie udostępniaj go nikomu.</string>
     <string name="t_01e4f1a8" formatted="false">Usuń wszystko</string>
     <string name="t_01f8e246" formatted="false">Kafelek lub przytrzymanie głośniej</string>
@@ -192,6 +193,7 @@
     <string name="t_41c5ed6f" formatted="false">Mikrofon dozwolony</string>
     <string name="t_421f0793" formatted="false">Nie udało się usunąć zapisanego dźwięku. Spróbuj ponownie po zrestartowaniu Dictate &amp; Delegate.</string>
     <string name="t_42463e69" formatted="false">Nie udało się odtworzyć odpowiedzi (%1$s): ponawiam próbę</string>
+    <string name="t_4329f69c" formatted="false">Starsza odpowiedź nie została odtworzona: od tego czasu powiedziano więcej</string>
     <string name="t_446b3ccc" formatted="false">%1$d godz. %2$d min</string>
     <string name="t_449d8bae" formatted="false">Usuń %1$s</string>
     <string name="t_45a0c8fa" formatted="false">Dopracowano przez OpenRouter zamiast Anthropic: %1$s</string>
@@ -651,6 +653,7 @@
     <string name="t_dcd686af" formatted="false">Uruchom Dictate &amp; Delegate i korzystaj dalej z dowolnej aplikacji: czytaj, sprawdzaj, przełączaj. Gdy skończysz, Twoje słowa zostaną spisane i gotowe do wklejenia tam, gdzie piszesz. Potem zdecyduj: ✨ Udoskonal przekształci je w potrzebny tekst, a Twój szef sztabu zajmie się zadaniami.</string>
     <string name="t_dce1cb9b" formatted="false">Usłyszano tylko słowo wysyłające: brak treści do wysłania</string>
     <string name="t_dcf39d20" formatted="false">Przekazuje go twojemu szefowi sztabu w bb, jeśli został skonfigurowany. Następnie wybierz Otwórz czat ↗.</string>
+    <string name="t_dd368805" formatted="false">%1$d starszych odpowiedzi nie zostało odtworzonych: od tego czasu powiedziano więcej</string>
     <string name="t_dd6fa894" formatted="false">Tekst i koszty pozostaną. Notatek nie będzie można już poprawić.</string>
     <string name="t_ddbd4754" formatted="false">bb Connect · %1$s.getbb.app</string>
     <string name="t_ddca8a00" formatted="false">szef sztabu</string>
