@@ -346,6 +346,42 @@ public class HandsFreeFlowTest {
   }
 
   /**
+   * Opt-in, against a real bb: the three skills installed through an install thread, then a test
+   * talker (-e realTalker, never a real one) told once to use its skill. -e realName, realNtfy,
+   * realTopic and realLinks fill the skills as the user's phone does, so what's installed is what
+   * that phone would install. Logged with tag TalkRouterSkills.
+   */
+  @Test
+  public void realSkillsInstallAndATestTalkerIsToldToUseItsSkill() throws Exception {
+    android.os.Bundle args = InstrumentationRegistry.getArguments();
+    Assume.assumeTrue(args.getString("realMcp") != null && args.getString("realTalker") != null && args.getString("realTopic") != null);
+    BbBridge bb = new BbBridge(context);
+    bb.useCustom(args.getString("realMcp"), "", args.getString("realLinks", ""));
+    bb.setNtfyServer(args.getString("realNtfy", "https://ntfy.sh"));
+    new Vault(context).put(BbBridge.NTFY_TOPIC, args.getString("realTopic"));
+    prefs.edit()
+        .putString(ChiefSkills.USER_NAME, args.getString("realName", ""))
+        .putString(BbBridge.TALKER_ID, args.getString("realTalker"))
+        .putBoolean(BbBridge.TALKER_ON, true)
+        .remove(ChiefSkills.TALKER_TOLD)
+        .remove(ChiefSkills.INSTALLED)
+        .commit();
+    java.util.Map<String, String> files = ChiefSkills.filled(context);
+    long start = SystemClock.elapsedRealtime();
+    ChiefSkills.ensure(context, files);
+    android.util.Log.i("TalkRouterSkills", "installed and checked in " + (SystemClock.elapsedRealtime() - start) + " ms");
+    JSONObject installed = bb.read(ChiefSkills.checkSnippet()).getJSONObject("skills");
+    for (String name : ChiefSkills.NAMES) {
+      android.util.Log.i("TalkRouterSkills", name + ": " + installed.optString(name) + " (wanted " + ChiefSkills.marker(files.get(name)) + ")");
+      assertEquals(name, ChiefSkills.marker(files.get(name)), installed.optString(name));
+    }
+    prefs.edit().putString(ChiefSkills.INSTALLED, ChiefSkills.summary(files)).commit();
+    ChiefSkills.tellTalker(context);
+    assertEquals(ChiefSkills.talkerToldValue(args.getString("realTalker"), files), prefs.getString(ChiefSkills.TALKER_TOLD, ""));
+    android.util.Log.i("TalkRouterSkills", "talker told: " + prefs.getString(ChiefSkills.TALKER_TOLD, ""));
+  }
+
+  /**
    * Opt-in, against a real bb (-e realMcp, and two test threads: -e realChief, -e realTalker; never
    * real ones, as each round sends them messages): how long until each thread has a message, sent
    * to one after the other and to both at once (BbBridge.tellEach), -e realRounds times (5).
@@ -1050,6 +1086,31 @@ public class HandsFreeFlowTest {
   }
 
   @Test
+  public void aTalkerIsToldOnceToUseItsSkillAndLearnsItIsTheTalkerAtEachCallStart() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).remove(ChiefSkills.TALKER_TOLD).commit();
+    for (int call = 1; call <= 2; call++) {
+      int n = call;
+      HandsFreeService.send(context, HandsFreeService.START);
+      until(() -> HandsFreeService.session() != null, "hands-free started");
+      until(() -> count(String.join("\n", tellsTo(TALKER)), "[hands-free call started] [you are the talker]") == n, "call " + n + " started for the talker");
+      HandsFreeService.send(context, HandsFreeService.END);
+      until(() -> HandsFreeService.instance == null, "ended");
+    }
+    List<String> told = tellsTo(TALKER);
+    assertEquals(told.toString(), 1, count(String.join("\n", told), "Use the dictate-and-delegate-talker skill"));
+    // Told before the first call start.
+    int skill = -1, start = -1;
+    for (int i = 0; i < told.size(); i++) {
+      if (skill < 0 && told.get(i).contains("Use the dictate-and-delegate-talker skill")) skill = i;
+      if (start < 0 && told.get(i).contains("[hands-free call started]")) start = i;
+    }
+    assertTrue(told.toString(), skill >= 0 && skill < start);
+    assertEquals(ChiefSkills.talkerToldValue(TALKER, ChiefSkills.filled(context)), prefs.getString(ChiefSkills.TALKER_TOLD, ""));
+    // The chief isn't told it.
+    assertFalse(String.join("\n", tellsTo(TestServer.CHIEF)).contains("dictate-and-delegate-talker"));
+  }
+
+  @Test
   public void theTalkerAndTheChiefGetEachMessageAtTheSameTime() throws Exception {
     prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();
     TestServer.transcripts("Book a table for Friday. Over.", "End the call.");
@@ -1199,6 +1260,39 @@ public class HandsFreeFlowTest {
       Thread.sleep(5000);
     } finally {
       for (String line : HandsFreeService.log(context).split("\n")) android.util.Log.i("TalkRouterReal", line);
+    }
+  }
+
+  @Test
+  public void withATalkerAndLiveTranscriptionEveryOverSendsWithRepliesInBetween() throws Exception {
+    prefs.edit().putString(BbBridge.TALKER_ID, TALKER).putBoolean(BbBridge.TALKER_ON, true).commit();
+    liveOn("aai-pro");
+    String[] said = {"Book a table for Friday. Over.", "And the train to Lisbon. Over.", "Thanks, that's all. Over."};
+    TestServer.liveTexts(said);
+    HandsFreeService.logFile(context).delete(); // Only this call's events count.
+    HandsFreeService.send(context, HandsFreeService.START);
+    until(() -> HandsFreeService.session() != null, "hands-free started");
+    String topic = new BbBridge(context).ntfyTopic();
+    try {
+      for (int i = 0; i < said.length; i++) {
+        int n = i + 1;
+        HandsFreeSession s = HandsFreeService.session();
+        for (int k = 0; k < 60; k++) s.frame(HandsFreeTestFrames.frame(6000 + 10 * k)); // Speech,
+        for (int k = 0; k < 25; k++) s.frame(HandsFreeTestFrames.frame(50)); // then a moment of quiet.
+        until(() -> messagesTo(TALKER).size() == n && messagesTo(TestServer.CHIEF).size() == n, "message " + n + " sent by its over");
+        assertTrue(messagesTo(TALKER).get(i), messagesTo(TALKER).get(i).contains(said[i].replace(" Over.", "")));
+        // The talker answers; the reply plays before the next turn.
+        TestServer.ntfySpeak(topic, requestOf(messagesTo(TALKER).get(i)), "Reply number " + n + ".");
+        until(() -> count(HandsFreeService.log(context), "reply played to the end") == n, "reply " + n + " played");
+        Thread.sleep(HandsFreeSession.TAIL_MS + 500);
+      }
+      String log = HandsFreeService.log(context);
+      assertEquals(log, 3, count(log, "send phrase: quiet "));
+      // No phrase skipped for a reason that would lose it (repeats of one being checked are fine).
+      assertFalse(log, log.contains("not acted on: nobody had the floor") || log.contains("not acted on: a reply is playing")
+          || log.contains("isn't working") || log.contains("phrase isn't checked"));
+    } finally {
+      for (String line : HandsFreeService.log(context).split("\n")) android.util.Log.i("TalkRouterTurns", line);
     }
   }
 

@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 /**
- * The chief's instructions as two bb user skills, chief-of-staff and dictate-and-delegate. Their templates
+ * The instructions as three bb user skills: chief-of-staff and dictate-and-delegate for the chief,
+ * dictate-and-delegate-talker for the talker of hands-free calls. Their templates
  * ship in assets/skills; Dictate & Delegate fills in the user's name, the ntfy server and topic and the bb
  * link base. Each filled file ends with a marker holding a hash of its content, e.g.
  * {@code <!-- dictate-and-delegate-skill: 3f2a9c1b04de -->}: a changed template (an app update) or a changed
@@ -26,22 +27,30 @@ import org.json.JSONObject;
  * the current version.
  *
  * <p>Dictate & Delegate reads the installed markers through bb's MCP "read" tool. When one is missing or
- * different, a short-lived bb thread writes both files to ~/.bb/skills (MCP snippets can't write
+ * different, a short-lived bb thread writes the files to ~/.bb/skills (MCP snippets can't write
  * files), Dictate & Delegate waits until bb lists the new versions, then archives that thread.
  */
 final class ChiefSkills {
   private ChiefSkills() {}
 
-  static final String CHIEF = "chief-of-staff", ROUTER = "dictate-and-delegate";
+  static final String CHIEF = "chief-of-staff", ROUTER = "dictate-and-delegate", TALKER = "dictate-and-delegate-talker";
 
   /** The second skill's name before the rename (3.1.0): the install removes it. */
   static final String OLD_ROUTER = "talk-router";
-  static final String[] NAMES = {CHIEF, ROUTER};
+  static final String[] NAMES = {CHIEF, ROUTER, TALKER};
 
   static final String INSTALL_TITLE = "Dictate & Delegate: install skills";
 
   /** The line a chief gets when it's created or adopted, and an older chief once. */
   static final String START = "You're my chief of staff. Use the chief-of-staff and dictate-and-delegate skills.";
+
+  /** The line a talker gets once, when it's set and whenever its skill changed. */
+  static final String TALKER_START =
+      "You're the talker in my hands-free calls from Dictate & Delegate: you do the talking while my chief of staff"
+          + " does the work. Use the " + TALKER + " skill for every call.";
+
+  /** Prefs: which talker was told, with which version of its skill: "<thread id>:<hash>". */
+  static final String TALKER_TOLD = "talkerToldSkill";
 
   /** Prefs: the user's name; the hashes installed last time; the app version that checked. */
   static final String USER_NAME = "bbUserName", INSTALLED = "skillsInstalled", CHECKED_VERSION = "skillsCheckedVersion";
@@ -123,7 +132,7 @@ final class ChiefSkills {
   static String checkSnippet() {
     return "const l = await bb.json([\"skill\",\"list\"]);\n"
         + "const out = {};\n"
-        + "for (const name of [\"" + CHIEF + "\",\"" + ROUTER + "\",\"" + OLD_ROUTER + "\"]) {\n"
+        + "for (const name of [\"" + CHIEF + "\",\"" + ROUTER + "\",\"" + TALKER + "\",\"" + OLD_ROUTER + "\"]) {\n"
         + "  const s = (l.skills || []).find(x => x.name === name && x.scope === \"bb-user\");\n"
         + "  if (!s) { out[name] = \"\"; continue; }\n"
         + "  const f = await bb.json([\"skill\",\"show\",s.id]);\n"
@@ -143,10 +152,11 @@ final class ChiefSkills {
   static String installPrompt(Map<String, String> files) {
     StringBuilder s =
         new StringBuilder(
-            "Please install or update two bb user skills for the user's chief of staff. They come from"
-                + " Dictate & Delegate, the voice app on the user's phone: `chief-of-staff` describes the"
-                + " chief's role, and `dictate-and-delegate` explains the messages the app sends and how"
-                + " to notify the user or send text back through ntfy.\n\n"
+            "Please install or update three bb user skills. They come from Dictate & Delegate, the voice"
+                + " app on the user's phone: `chief-of-staff` describes the role of the user's chief of"
+                + " staff, `dictate-and-delegate` explains the messages the app sends and how to notify the"
+                + " user or send text back through ntfy, and `dictate-and-delegate-talker` is for the"
+                + " talker, the thread that does the talking in the user's hands-free calls.\n\n"
                 + "bb reads user skills from `~/.bb/skills/<name>/SKILL.md`. Put each file below there,"
                 + " replacing what's there now. Each file ends with a line like"
                 + " `<!-- dictate-and-delegate-skill: 3f2a9c1b04de -->`: the app reads that line to tell"
@@ -158,8 +168,8 @@ final class ChiefSkills {
                 + "`; remove `~/.bb/skills/"
                 + OLD_ROUTER
                 + "` if it's there.\n\n"
-                + "You're done when `bb skill list` shows `chief-of-staff` and `dictate-and-delegate` as"
-                + " user skills and no `"
+                + "You're done when `bb skill list` shows `chief-of-staff`, `dictate-and-delegate` and"
+                + " `dictate-and-delegate-talker` as user skills and no `"
                 + OLD_ROUTER
                 + "`. Then reply with one short line saying so. This is housekeeping, so no"
                 + " notification.\n");
@@ -235,6 +245,7 @@ final class ChiefSkills {
             && prefs.getInt(CHECKED_VERSION, 0) == BuildConfig.VERSION_CODE;
     if (same && !force) {
       state = State.INSTALLED;
+      if (!talkerTold(app, files)) new Thread(() -> safelyTellTalker(app), "talker-skill").start();
       return;
     }
     running = true;
@@ -246,6 +257,7 @@ final class ChiefSkills {
                 state = State.INSTALLED;
                 problem = "";
                 tellOlderChief(app);
+                tellTalker(app);
               } catch (Exception ex) {
                 problem = DictationService.friendly(ex);
                 state = State.FAILED;
@@ -282,6 +294,39 @@ final class ChiefSkills {
       } catch (Exception ignored) {
         /* The thread stays; it did its job or failed. */
       }
+    }
+  }
+
+  /** What TALKER_TOLD holds once this talker was told about this version of its skill; "" without a talker. */
+  static String talkerToldValue(String talker, Map<String, String> files) {
+    return talker.isEmpty() ? "" : talker + ":" + marker(files.get(TALKER));
+  }
+
+  static boolean talkerTold(Context app, Map<String, String> files) {
+    String value = talkerToldValue(new BbBridge(app).talkerId(), files);
+    return value.isEmpty() || value.equals(app.getSharedPreferences("settings", Context.MODE_PRIVATE).getString(TALKER_TOLD, ""));
+  }
+
+  /**
+   * The talker (set and on) gets TALKER_START once: when it's set or changed, and whenever its
+   * skill changed. Only once bb has the current skills, so it finds the one it's told to use.
+   */
+  static void tellTalker(Context app) throws Exception {
+    SharedPreferences prefs = app.getSharedPreferences("settings", Context.MODE_PRIVATE);
+    Map<String, String> files = filled(app);
+    if (talkerTold(app, files) || !summary(files).equals(prefs.getString(INSTALLED, ""))) return;
+    BbBridge bb = new BbBridge(app);
+    String talker = bb.talkerId();
+    bb.send(talker, TALKER_START);
+    prefs.edit().putString(TALKER_TOLD, talkerToldValue(talker, files)).apply();
+  }
+
+  /** The same, for a background thread: a failure is tried again at the next call or sync. */
+  static void safelyTellTalker(Context app) {
+    try {
+      tellTalker(app);
+    } catch (Exception ignored) {
+      /* Not told: tried again at the next call's start or sync. */
     }
   }
 

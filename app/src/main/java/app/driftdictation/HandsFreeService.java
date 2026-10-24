@@ -153,6 +153,7 @@ public final class HandsFreeService extends Service {
         notification(),
         ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE | ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
     if (session != null) return;
+    callEnded = false;
     SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
     BbBridge bb = new BbBridge(this);
     talker = bb.talkerId();
@@ -610,14 +611,20 @@ public final class HandsFreeService extends Service {
             () -> {
               String said = line;
               if (after != null) {
-                if (!after.awaitDelivered(25_000)) event("a message was still on its way when the call ended");
-                // Settled: words a failed message left go now; the notes no message took, with the end.
-                after.sendLeftover();
+                // Within END_BUDGET_MS: the messages on their way, the words a failed one left
+                // (tried a few times), then the end itself.
+                long start = android.os.SystemClock.elapsedRealtime();
+                if (!after.awaitDelivered(SETTLE_MS)) event("a message was still on its way when the call ended");
+                after.sendLeftover(after.clock.getAsLong() + LEFTOVER_MS - (android.os.SystemClock.elapsedRealtime() - start));
                 said = line + after.endNote();
               }
-              // The call start names the talker for the chief only; the talker gets the plain line.
-              String chiefLine = said.equals(HandsFree.CALL_STARTED) ? HandsFree.callStarted(talker) : said;
-              java.util.Map<String, String> to = bothTo(chief, talker, chiefLine, said);
+              // The call start names the talker for the chief; the talker learns it's the talker
+              // (told to use its skill first, if it wasn't told yet).
+              boolean starting = said.equals(HandsFree.CALL_STARTED);
+              String chiefLine = starting ? HandsFree.callStarted(talker) : said;
+              String talkerLine = starting ? HandsFree.TALKER_CALL_STARTED : said;
+              if (starting && !talker.isEmpty()) ChiefSkills.safelyTellTalker(this);
+              java.util.Map<String, String> to = bothTo(chief, talker, chiefLine, talkerLine);
               java.util.Map<String, String> failed = bb.tellEach(to);
               for (String id : to.keySet()) {
                 String who = id.equals(chief) ? "the chief" : "the talker (" + id + ")";
@@ -698,6 +705,7 @@ public final class HandsFreeService extends Service {
       finish();
       return;
     }
+    if (callEnded) return; // What still goes on after the end (its messages) mustn't post the call again.
     getSystemService(NotificationManager.class).notify(4, notification());
     if (panel != null && s != null) panel.render(s);
   }
@@ -831,7 +839,18 @@ public final class HandsFreeService extends Service {
     return b.build();
   }
 
+  /**
+   * The call's end: messages on their way get SETTLE_MS, words a failed one left are tried until
+   * LEFTOVER_MS from the end, and the service stays in the foreground END_BUDGET_MS at most, so
+   * the end line itself (a bb call of a second or two) fits too.
+   */
+  static final long SETTLE_MS = 20_000, LEFTOVER_MS = 30_000, END_BUDGET_MS = 45_000;
+
+  /** The call ended (finish), until the next one starts. */
+  private volatile boolean callEnded;
+
   private void finish() {
+    callEnded = true;
     running = false;
     HandsFreeSession s = session;
     session = null;
@@ -873,11 +892,11 @@ public final class HandsFreeService extends Service {
       return;
     }
     // Stays a foreground service until the chief knows the call ended, so the process isn't
-    // frozen or killed with the message unsent (at most 30 s, messages still on their way first).
+    // frozen or killed with the message unsent (at most END_BUDGET_MS, messages still on their way first).
     new Thread(
             () -> {
               try {
-                ended.join(30_000); // Your last words written down and sent first.
+                ended.join(END_BUDGET_MS); // Your last words written down and sent first.
               } catch (InterruptedException ignored) {
                 /* Stop now. */
               }

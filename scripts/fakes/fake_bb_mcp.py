@@ -263,7 +263,7 @@ class Handler(BaseHTTPRequestHandler):
         elif kind == "skills":
             with lock:
                 value = {"skills": {n: skills["installed"].get(n, "")
-                                    for n in ("chief-of-staff", "dictate-and-delegate", "talk-router")}}
+                                    for n in ("chief-of-staff", "dictate-and-delegate", "dictate-and-delegate-talker", "talk-router")}}
         elif kind == "archive":
             value = {"archived": True}
         elif kind == "spawn" and "Dictate & Delegate: install skills" in code:

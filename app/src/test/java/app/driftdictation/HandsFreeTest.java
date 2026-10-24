@@ -619,9 +619,74 @@ public class HandsFreeTest {
     // Settled: its words go now, with the note; the end then has nothing left to say.
     f.bbDown = false;
     f.slowBb = null;
-    f.session.sendLeftover();
+    assertTrue(f.session.sendLeftover(f.now.get() + 30_000));
     assertEquals("Anything else?\n\n" + note, f.sent.get(2));
     assertEquals("", f.session.endNote());
+  }
+
+  @Test
+  public void aMessageThatFailsAfterTheEndSettledSendsItsWordsItselfTryingAgain() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    f.session.dropsOutdated = true;
+    long retry = HandsFreeSession.leftoverRetryMs;
+    HandsFreeSession.leftoverRetryMs = 300;
+    try {
+      f.quiet(1000);
+      sendTurn(f, 1);
+      sendTurn(f, 2);
+      f.session.reply("r1", "Yes, it's booked for eight.");
+      f.slowBb = new java.util.concurrent.CountDownLatch(1);
+      f.talk(); // Still in bb when the end has waited long enough.
+      until(() -> f.session.phase() == HandsFreeSession.Phase.SENDING);
+      f.session.end();
+      assertFalse(f.session.awaitDelivered(100));
+      assertTrue("nothing left yet", f.session.sendLeftover(f.now.get() + 30_000));
+      String end = f.session.endNote(); // The end goes now, without the message's note: it still carries it.
+      assertFalse(end, end.contains("didn't hear"));
+      // Then it fails: its words and note go by themselves, tried again until bb takes them.
+      f.bbDown = true;
+      f.slowBb.countDown();
+      until(() -> String.join("\n", f.log).contains("a message failed after the call's end: its words are sent now"));
+      Thread.sleep(100);
+      f.bbDown = false;
+      for (int i = 0; i < 100 && f.sent.size() < 3; i++) Thread.sleep(20);
+      assertEquals(String.join("\n", f.log), "Anything else?\n\n[didn't hear your reply: \"Yes, it's booked for eight.\"]", f.sent.get(2));
+    } finally {
+      HandsFreeSession.leftoverRetryMs = retry;
+    }
+  }
+
+  @Test
+  public void wordsLeftAtTheEndAreTriedAFewTimesThenGivenUp() throws Exception {
+    Fake f = new Fake("Is the table booked? Over.");
+    long retry = HandsFreeSession.leftoverRetryMs;
+    HandsFreeSession.leftoverRetryMs = 50;
+    try {
+      f.quiet(1000);
+      f.bbDown = true;
+      f.talk();
+      for (int i = 0; i < 100 && !f.session.error().startsWith("Not sent"); i++) Thread.sleep(20);
+      f.session.end(); // Your kept words go as your last words, and fail too.
+      assertTrue(f.session.awaitDelivered(5000));
+      assertFalse(f.session.sendLeftover(f.now.get() + 30_000));
+      String log = String.join("\n", f.log);
+      assertEquals(log, HandsFreeSession.LEFTOVER_TRIES, count(log, "words a message couldn't take before the end: sending them now"));
+      assertTrue(log, log.contains("words left at the call's end couldn't be sent: given up"));
+    } finally {
+      HandsFreeSession.leftoverRetryMs = retry;
+    }
+  }
+
+  @Test
+  public void aReplyAfterTheEndIsNotedWithTheEndWhileItsStillToGo() throws Exception {
+    Fake f = new Fake();
+    f.quiet(1000);
+    f.session.end();
+    f.session.reply("r1", "The table is booked.");
+    assertEquals("\n\n[didn't hear your reply: \"The table is booked.\"]", f.session.endNote());
+    f.session.reply("r1", "And the train too.");
+    assertTrue(String.join("\n", f.log).contains("chief message r1 after the call's end (18 characters): not played, and the end was already sent"));
+    assertTrue(f.spoken.isEmpty());
   }
 
   @Test
@@ -1895,6 +1960,47 @@ public class HandsFreeTest {
     f.session.tick();
     assertEquals(1, live.discards.get());
     assertTrue(String.join("\n", f.log).contains("live text heard words while nobody had the floor: dropped (\"and now the weather\")"));
+  }
+
+  @Test
+  public void aSendPhraseThatDoesntActAlwaysSaysWhyInTheLog() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.quiet(1000);
+    // Nobody took the floor: the phrase is only noise's words.
+    live.say("game over");
+    String log = String.join("\n", f.log);
+    assertTrue(log, log.contains("live text ends with the send phrase, not acted on: nobody had the floor (no speech heard) (\"game over\")"));
+    live.say("game over"); // Repeats aren't logged again.
+    assertEquals(1, count(String.join("\n", f.log), "not acted on: nobody had the floor"));
+    // A reply playing.
+    f.session.reply("r0", "Here's what I found.");
+    until(() -> f.spoken.size() == 1);
+    live.say("thanks over");
+    assertTrue(String.join("\n", f.log).contains("not acted on: a reply is playing (\"thanks over\")"));
+    f.done.run();
+    // Live transcription failed: written down from audio, and the log says so.
+    live.fail("connection lost");
+    f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+    f.speak();
+    live.say("book it over");
+    assertTrue(String.join("\n", f.log).contains("not acted on: live transcription isn't working (\"book it over\")"));
+  }
+
+  @Test
+  public void tenSecondsIntoACallTheLogSaysWhetherLiveTranscriptionWorks() throws Exception {
+    Fake f = new Fake();
+    new FakeLive(f);
+    f.session.tick();
+    f.now.addAndGet(HandsFreeSession.LIVE_CHECK_MS);
+    f.session.tick();
+    f.session.tick();
+    assertEquals(1, count(String.join("\n", f.log), "live transcription 10 s into the call: working"));
+    Fake off = new Fake();
+    off.session.tick();
+    off.now.addAndGet(HandsFreeSession.LIVE_CHECK_MS);
+    off.session.tick();
+    assertTrue(String.join("\n", off.log).contains("live transcription 10 s into the call: not used (off, or no key)"));
   }
 
   @Test

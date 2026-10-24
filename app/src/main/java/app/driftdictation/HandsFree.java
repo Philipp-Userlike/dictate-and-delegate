@@ -23,6 +23,9 @@ final class HandsFree {
   static final String CALL_STARTED = "[hands-free call started]", CALL_ENDED = "[hands-free call ended]";
 
   /** The chief's call start: it names the talker, if there is one, so the chief sends it its results. */
+  /** The call start as the talker gets it: marked, so its skill is used. */
+  static final String TALKER_CALL_STARTED = CALL_STARTED + " [you are the talker]";
+
   static String callStarted(String talker) {
     return talker.isEmpty() ? CALL_STARTED : CALL_STARTED + " [talker: " + talker + "]";
   }

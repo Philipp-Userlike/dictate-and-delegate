@@ -697,6 +697,7 @@ final class HandsFreeSession {
     StringBuilder note = new StringBuilder(endNote);
     List<String> notNoted = new ArrayList<>();
     synchronized (this) {
+      endNoted = true; // A reply after this can't be noted any more.
       // Notes no message took (a reply you talked over or that was outdated), once the messages
       // on their way are settled (a failed one frees its notes).
       for (Note n : unheard) if (n.claimedBy == 0) note.append("\n\n").append(n.text);
@@ -706,22 +707,48 @@ final class HandsFreeSession {
     return note.toString();
   }
 
+  /** The call's end built its note (endNote); a message still in bb failing after this sends its words itself. */
+  private volatile boolean endNoted, settled;
+  private final java.util.concurrent.atomic.AtomicBoolean leftoverRunning = new java.util.concurrent.atomic.AtomicBoolean();
+
+  /** Tries of sendLeftover, LEFTOVER_RETRY_MS apart. */
+  static final int LEFTOVER_TRIES = 3;
+  static volatile long leftoverRetryMs = 2000;
+
   /**
    * After the call's end, once the messages on their way are settled: words a message that
-   * failed left behind are sent now (with the notes it carried), so they aren't stranded.
+   * failed left behind are sent now (with the notes it carried), so they aren't stranded. Tried
+   * LEFTOVER_TRIES times, not past until (the clock's time). True when nothing is left.
    */
-  void sendLeftover() {
-    if (state != State.ENDED) return;
-    String text;
-    synchronized (turnAudio) {
-      text = turnPrefix.trim();
-      turnPrefix = "";
+  boolean sendLeftover(long until) {
+    if (state != State.ENDED) return true;
+    settled = true;
+    if (!leftoverRunning.compareAndSet(false, true)) return false; // Another thread is at it.
+    try {
+      for (int tries = 0; ; tries++) {
+        String text;
+        synchronized (turnAudio) {
+          text = turnPrefix.trim();
+          turnPrefix = "";
+        }
+        if (text.isEmpty()) return true;
+        log("words a message couldn't take before the end: sending them now" + (tries > 0 ? " (try " + (tries + 1) + ")" : ""));
+        outgoing.incrementAndGet();
+        Handoff h = handOff(true);
+        if (deliver(text + h.notes(), text, "end of the call", h, clock.getAsLong())) return true;
+        if (tries + 1 >= LEFTOVER_TRIES || clock.getAsLong() + leftoverRetryMs > until) {
+          log("words left at the call's end couldn't be sent: given up");
+          return false;
+        }
+        try {
+          Thread.sleep(leftoverRetryMs);
+        } catch (InterruptedException ex) {
+          return false;
+        }
+      }
+    } finally {
+      leftoverRunning.set(false);
     }
-    if (text.isEmpty()) return;
-    log("words a message couldn't take before the end: sending them now");
-    outgoing.incrementAndGet();
-    Handoff h = handOff(true);
-    deliver(text + h.notes(), text, "end of the call", h, clock.getAsLong());
   }
 
   /** Chief messages that couldn't be read, not yet noted in a message. */
@@ -920,6 +947,7 @@ final class HandsFreeSession {
     int token;
     boolean late;
     long now = clock.getAsLong();
+    liveCheck(now);
     synchronized (this) {
       token = reading;
       late = state == State.READING && now > readingDeadline;
@@ -977,9 +1005,20 @@ final class HandsFreeSession {
    * phrase at its end acts at once (checked on the work queue: the model's final text decides).
    */
   void liveText(String text) {
-    if (state != State.LISTENING || !streaming() || text.isEmpty() || !floorIsYours()) return;
+    String ending = text.isEmpty() ? null : HandsFree.endsWith(text, endWords) != null ? "end" : HandsFree.endsWith(text, sendWords) != null ? "send" : null;
+    if (state != State.LISTENING || !streaming() || text.isEmpty() || !floorIsYours()) {
+      if (ending != null)
+        phraseSkipped(ending, text,
+            state == State.READING ? "a reply is playing" : state != State.LISTENING ? "the call ended"
+                : !streaming() ? (batchTurn ? "this turn is written down from its audio" : "live transcription isn't working")
+                : "nobody had the floor (no speech heard)");
+      return;
+    }
     LiveText now = live;
-    if (now != null && !text.equals(now.text())) return; // Overtaken (its turn was just taken).
+    if (now != null && !text.equals(now.text())) { // Overtaken (its turn was just taken).
+      if (ending != null) phraseSkipped(ending, text, "the live text moved on (its turn was just taken)");
+      return;
+    }
     String prefix = turnPrefix;
     pending = (prefix + " " + text).trim();
     liveWordsAt = clock.getAsLong();
@@ -988,12 +1027,46 @@ final class HandsFreeSession {
       log(String.format(java.util.Locale.ROOT, "live text: first words %d ms after you started speaking", clock.getAsLong() - turnSpeechAt));
     }
     listener.changed();
-    String phrase = HandsFree.endsWith(text, endWords) != null ? "end" : HandsFree.endsWith(text, sendWords) != null ? "send" : null;
-    if (phrase == null || keyword) return;
+    String phrase = ending;
+    if (phrase == null) return;
+    if (keyword) {
+      phraseSkipped(phrase, text, "a phrase is being checked already");
+      return;
+    }
     keyword = true;
     keywordAt = clock.getAsLong();
     log("live text ends with the " + phrase + " phrase: \"" + tail(text) + "\"");
     check(phrase.equals("end") ? "end phrase" : "send phrase");
+  }
+
+  /** When the first tick came; whether live transcription's state was logged (LIVE_CHECK_MS in). */
+  private long firstTick;
+  private boolean liveChecked;
+
+  static final long LIVE_CHECK_MS = 10_000;
+
+  /** Once, LIVE_CHECK_MS into the call: is live transcription running, so a log says why "over" didn't act. */
+  private void liveCheck(long now) {
+    if (liveChecked) return;
+    if (firstTick == 0) firstTick = now;
+    if (now - firstTick < LIVE_CHECK_MS) return;
+    liveChecked = true;
+    LiveText l = live;
+    log("live transcription " + (LIVE_CHECK_MS / 1000) + " s into the call: "
+        + (l == null ? "not used (off, or no key)" : !l.working() ? "failed (" + l.failure() + "): send words act at your pauses only" : "working"));
+  }
+
+  /** The phrase skip logged last, so the live text's repeats don't fill the log. */
+  private String lastSkip = "";
+
+  /** Logs why a send or end phrase at the end of the live text didn't act: every one says why. */
+  private void phraseSkipped(String phrase, String text, String why) {
+    String line = "live text ends with the " + phrase + " phrase, not acted on: " + why + " (\"" + tail(text) + "\")";
+    synchronized (this) {
+      if (line.equals(lastSkip)) return;
+      lastSkip = line;
+    }
+    log(line);
   }
 
   /** The last few words, for the log. */
@@ -1133,12 +1206,18 @@ final class HandsFreeSession {
    * one handed over (lastRequest), also while that message is on its way: it answers that one.
    */
   void reply(String request, String text, long published, boolean untagged) {
-    if (state == State.ENDED) return;
+    if (state == State.ENDED) {
+      replyAfterEnd(request, text);
+      return;
+    }
     Held h = new Held(request, text, clock.getAsLong());
     long since;
     boolean old;
     synchronized (this) {
-      if (state == State.ENDED) return; // Ended meanwhile: end() took what was waiting.
+      if (state == State.ENDED) { // Ended meanwhile: end() took what was waiting.
+        replyAfterEnd(request, text);
+        return;
+      }
       long[] w = working.get(request);
       if (w != null) w[0]++;
       since = w == null ? -1 : clock.getAsLong() - w[1];
@@ -1171,6 +1250,20 @@ final class HandsFreeSession {
    */
   private synchronized boolean outdated(Held h) {
     return dropsOutdated && h.answers < latestSent;
+  }
+
+  /**
+   * A reply after the call's end isn't played: noted with the end, while its note is still to be
+   * built; else only logged.
+   */
+  private void replyAfterEnd(String request, String text) {
+    boolean noted;
+    synchronized (this) {
+      noted = !endNoted;
+      if (noted) unheard.add(new Note(missed(text)));
+    }
+    log("chief message " + request + " after the call's end (" + text.length() + " characters): "
+        + (noted ? "noted with the end" : "not played, and the end was already sent"));
   }
 
   /** Fetches a reply's audio (on the voices queue); once ready it plays when it may. */
@@ -1833,7 +1926,13 @@ final class HandsFreeSession {
    */
   private void phrase(boolean end) {
     LiveText l = live;
-    if (!streaming() || state != State.LISTENING) return;
+    if (!streaming() || state != State.LISTENING) {
+      log("the " + (end ? "end" : "send") + " phrase isn't checked: "
+          + (state == State.READING ? "a reply started playing" : state != State.LISTENING ? "the call ended"
+              : batchTurn ? "this turn is written down from its audio" : "live transcription stopped working")
+          + "; your next pause decides");
+      return;
+    }
     List<String> words = end ? endWords : sendWords;
     long need = end ? END_QUIET_MS : SEND_QUIET_MS, waited = System.nanoTime(), until = waited + PHRASE_WAIT_MS * 1_000_000;
     while (segmenter.silentMs() < need) {
@@ -2217,7 +2316,8 @@ final class HandsFreeSession {
     for (Note n : outdated) if (n.claimedBy == number) n.claimedBy = 0;
   }
 
-  private void deliver(String said, String text, String why, Handoff h, long queued) {
+  /** True when it reached bb (the chief, or only the talker). */
+  private boolean deliver(String said, String text, String why, Handoff h, long queued) {
     long start = clock.getAsLong();
     int number = h.number();
     String request = h.request();
@@ -2278,6 +2378,7 @@ final class HandsFreeSession {
         case "end phrase", "end of the call" -> reason("Sent ✓ before the call ended");
         default -> reason("Sent ✓ by the Send button");
       }
+      return true;
     } catch (Exception ex) {
       // Its notes go with the next message (or the call's end). Its request stays ours: nobody
       // got it, so no reply to it comes.
@@ -2297,6 +2398,12 @@ final class HandsFreeSession {
       log(String.format(java.util.Locale.ROOT, "not sent (%s) after %d ms: %s", why, clock.getAsLong() - start, ex.getMessage()));
       cue(Cue.FAILED);
       reason("Not sent: %1$s. Your words are kept; send again", ex.getMessage());
+      // After the call's end settled (a message still in bb then failed): its words go now.
+      if (state == State.ENDED && settled && !leftoverRunning.get()) {
+        log("a message failed after the call's end: its words are sent now");
+        new Thread(() -> sendLeftover(clock.getAsLong() + 20_000), "leftover").start();
+      }
+      return false;
     } finally {
       outgoing.decrementAndGet();
       listener.changed();

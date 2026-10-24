@@ -619,6 +619,8 @@ public class BbFlowTest {
     java.util.Map<String, String> files = ChiefSkills.filled(context);
     assertEquals(ChiefSkills.marker(files.get("chief-of-staff")), installed.getString("chief-of-staff"));
     assertEquals(ChiefSkills.marker(files.get("dictate-and-delegate")), installed.getString("dictate-and-delegate"));
+    assertEquals(ChiefSkills.marker(files.get("dictate-and-delegate-talker")), installed.getString("dictate-and-delegate-talker"));
+    assertTrue(TestServer.bbSkills().getJSONObject("files").getString("dictate-and-delegate-talker").contains("the voice app on Alex's phone"));
     assertTrue(TestServer.bbSkills().getJSONObject("files").getString("chief-of-staff").contains("You're Alex's chief of staff."));
     // The install thread was archived, and the older chief got the one line, once.
     List<String> snippets = TestServer.bbSnippets();
@@ -647,6 +649,7 @@ public class BbFlowTest {
         new JSONObject()
             .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
             .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate")))
+            .put("dictate-and-delegate-talker", ChiefSkills.marker(files.get("dictate-and-delegate-talker")))
             .put("talk-router", "0ld0ld0ld0ld"),
         false);
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
@@ -657,7 +660,8 @@ public class BbFlowTest {
     TestServer.bbSetSkills(
         new JSONObject()
             .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
-            .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate"))),
+            .put("dictate-and-delegate", ChiefSkills.marker(files.get("dictate-and-delegate")))
+            .put("dictate-and-delegate-talker", ChiefSkills.marker(files.get("dictate-and-delegate-talker"))),
         false);
     // An app update with current skills in bb: checked, nothing installed.
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
@@ -666,7 +670,10 @@ public class BbFlowTest {
     assertTrue(TestServer.bbSnippets().isEmpty());
     // An old dictate-and-delegate in bb, found after the next update: reinstalled.
     TestServer.bbSetSkills(
-        new JSONObject().put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff"))).put("dictate-and-delegate", "0ld0ld0ld0ld"),
+        new JSONObject()
+            .put("chief-of-staff", ChiefSkills.marker(files.get("chief-of-staff")))
+            .put("dictate-and-delegate", "0ld0ld0ld0ld")
+            .put("dictate-and-delegate-talker", ChiefSkills.marker(files.get("dictate-and-delegate-talker"))),
         false);
     prefs.edit().putInt(ChiefSkills.CHECKED_VERSION, BuildConfig.VERSION_CODE - 1).commit();
     launch();

@@ -37,6 +37,65 @@ public class ChiefSkillsTest {
     assertFalse(c.contains("{{"));
   }
 
+  String talker(String name, String server, String topic) throws Exception {
+    return ChiefSkills.fill(ChiefSkills.TALKER, template(ChiefSkills.TALKER), name, server, topic, "https://x.getbb.app");
+  }
+
+  @Test
+  public void theTalkerSkillIsFilledInWithTheAppsNtfyAndNothingPersonal() throws Exception {
+    String t = talker("Alex", "https://ntfy.example.org", "talkrouter-abc");
+    assertFalse(t, t.contains("{{"));
+    assertTrue(t.startsWith("---\nname: dictate-and-delegate-talker\n"));
+    assertTrue(t.contains("the voice app on Alex's phone"));
+    assertTrue(t.contains("--data-binary @- https://ntfy.example.org/talkrouter-abc <<'TEXT'"));
+    assertTrue(t.contains("Tags: talkrouter-speak,req-<id>"));
+    assertTrue(t.contains("use `Tags: talkrouter-speak` without `req-`"));
+    // The rules it carries.
+    assertTrue(t.contains("you never pass anything on, and you never say you will"));
+    assertTrue(t.contains("use no tools except speaking"));
+    assertTrue(t.contains("A briefing, background the chief sends you"));
+    assertTrue(t.contains("Answer their new message first."));
+    assertTrue(t.contains("`[didn't hear your reply: \"…\"]`"));
+    assertTrue(t.contains("`[heard up to: \"…\"]`"));
+    assertTrue(t.contains("Never invent them"));
+    assertTrue(t.contains("[you are the talker]"));
+    // Open source: no thread IDs, no topic, no person of its own.
+    String template = template(ChiefSkills.TALKER);
+    assertFalse(template.contains("thr_"));
+    assertFalse(template.contains("talkrouter-I"));
+    assertFalse(template.contains("Philipp"));
+    assertFalse(template.contains("Alex"));
+    String hash = ChiefSkills.marker(t);
+    assertTrue(t.endsWith("\n<!-- dictate-and-delegate-talker-skill: " + hash + " -->\n"));
+    assertNotEquals(hash, ChiefSkills.marker(talker("Alex", "https://ntfy.example.org", "talkrouter-new")));
+    assertNotEquals(hash, ChiefSkills.marker(talker("Alex", "https://ntfy.sh", "talkrouter-abc")));
+    assertTrue(talker(" ", "https://ntfy.sh", "t").contains("the voice app on the user's phone"));
+  }
+
+  @Test
+  public void aTalkerIsToldAgainOnlyWhenItOrItsSkillChanged() throws Exception {
+    Map<String, String> files = Map.of(ChiefSkills.TALKER, talker("Alex", "https://ntfy.sh", "a"));
+    String told = ChiefSkills.talkerToldValue("thr_talk", files);
+    assertEquals("thr_talk:" + ChiefSkills.marker(files.get(ChiefSkills.TALKER)), told);
+    assertEquals(told, ChiefSkills.talkerToldValue("thr_talk", Map.of(ChiefSkills.TALKER, talker("Alex", "https://ntfy.sh", "a"))));
+    assertNotEquals(told, ChiefSkills.talkerToldValue("thr_other", files));
+    assertNotEquals(told, ChiefSkills.talkerToldValue("thr_talk", Map.of(ChiefSkills.TALKER, talker("Alex", "https://ntfy.sh", "b"))));
+    assertEquals("no talker, nothing to tell", "", ChiefSkills.talkerToldValue("", files));
+    assertTrue(ChiefSkills.TALKER_START.contains("Use the dictate-and-delegate-talker skill"));
+    assertEquals("[hands-free call started] [you are the talker]", HandsFree.TALKER_CALL_STARTED);
+  }
+
+  @Test
+  public void theChiefSkillStatesTheTalkerContractAndTheTurnRule() throws Exception {
+    String r = router("Alex", "t", "");
+    assertTrue(r.contains("from the call start until `[hands-free call ended]` you post nothing to ntfy: no spoken replies and no notifications"));
+    assertTrue(r.contains("bb thread tell <talker thread id> --mode queue --message-file -"));
+    assertTrue(r.contains("[chief] <what Alex needs to know or decide"));
+    assertTrue(r.contains("A reply never plays while it's Alex's turn"));
+    assertFalse("the old pause rule is gone", r.contains("plays at their next pause, even if they haven't sent"));
+    assertTrue(r.contains("it was dropped because Alex had already sent a newer message"));
+  }
+
   @Test
   public void withoutANameItSaysTheUser() throws Exception {
     String c = ChiefSkills.fill(ChiefSkills.CHIEF, template(ChiefSkills.CHIEF), "  ", "https://ntfy.sh", "t", "");
@@ -86,13 +145,17 @@ public class ChiefSkillsTest {
   }
 
   @Test
-  public void theInstallThreadGetsBothFilesVerbatim() throws Exception {
+  public void theInstallThreadGetsTheFilesVerbatim() throws Exception {
     Map<String, String> files = new LinkedHashMap<>();
     files.put(ChiefSkills.CHIEF, "chief file\n");
     files.put(ChiefSkills.ROUTER, "router file\n");
+    files.put(ChiefSkills.TALKER, "talker file\n");
     String p = ChiefSkills.installPrompt(files);
-    assertTrue(p.contains("`chief-of-staff` describes the chief's role"));
-    assertTrue(p.contains("shows `chief-of-staff` and `dictate-and-delegate` as user skills and no `talk-router`"));
+    assertTrue(p.contains("`chief-of-staff` describes the role of the user's chief of staff"));
+    assertTrue(p.contains("`dictate-and-delegate-talker` is for the talker"));
+    assertTrue(p.contains("shows `chief-of-staff`, `dictate-and-delegate` and `dictate-and-delegate-talker` as user skills and no `talk-router`"));
+    assertTrue(p.contains("===== ~/.bb/skills/dictate-and-delegate-talker/SKILL.md (begins on the next line) =====\ntalker file\n"));
+    assertTrue(ChiefSkills.checkSnippet().contains("\"dictate-and-delegate-talker\""));
     assertTrue(
         p.contains(
             "===== ~/.bb/skills/dictate-and-delegate/SKILL.md (begins on the next line) =====\nrouter file\n===== end of dictate-and-delegate ====="));

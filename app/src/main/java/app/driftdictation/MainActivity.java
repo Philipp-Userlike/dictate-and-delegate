@@ -3386,7 +3386,13 @@ public final class MainActivity extends Activity {
         ui.text(tr("A second bb thread that answers you quickly by voice while your chief of staff does the work. When it's on, each hands-free message goes to both, and your chief sends its results to the talker."), 13, Ui.MUTED),
         4);
     Switch on = ui.toggle(prefs.getBoolean(BbBridge.TALKER_ON, false));
-    on.setOnCheckedChangeListener((b, checked) -> prefs.edit().putBoolean(BbBridge.TALKER_ON, checked).apply());
+    on.setOnCheckedChangeListener(
+        (b, checked) -> {
+          prefs.edit().putBoolean(BbBridge.TALKER_ON, checked).apply();
+          // A talker switched on is told once to use its skill (after a pause, like the field).
+          main.removeCallbacks(skillsAfterName);
+          main.postDelayed(skillsAfterName, 1500);
+        });
     ui.add(content, ui.row(tr("Use the talker"), tr("From your next hands-free call on"), on, null), 8);
     EditText field = ui.input(prefs.getString(BbBridge.TALKER_ID, ""), tr("Talker thread link or id (thr_…)"), false);
     ui.add(content, field, 6);
@@ -3396,6 +3402,9 @@ public final class MainActivity extends Activity {
         t -> {
           String id = BbBridge.threadId(t);
           prefs.edit().putString(BbBridge.TALKER_ID, id).apply();
+          // Told once to use its skill, when the typing paused: not each half-typed id.
+          main.removeCallbacks(skillsAfterName);
+          main.postDelayed(skillsAfterName, 1500);
           String chief = new BbBridge(this).chiefId();
           problem.setText(
               !t.isBlank() && id.isEmpty()
