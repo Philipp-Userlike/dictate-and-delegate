@@ -1046,14 +1046,15 @@ public class HandsFreeFlowTest {
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
     HandsFreeSession s = HandsFreeService.session();
-    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000)); // Speech, no pause after it.
+    for (int i = 0; i < 60; i++) s.frame(HandsFreeTestFrames.frame(6000)); // Speech,
+    for (int i = 0; i < 25; i++) s.frame(HandsFreeTestFrames.frame(50)); // then half a second of quiet: not yet a pause.
     until(() -> messagesTo(TestServer.CHIEF).size() == 1 && messagesTo(TALKER).size() == 1, "the message sent to both");
     String toChief = messagesTo(TestServer.CHIEF).get(0), toTalker = messagesTo(TALKER).get(0);
     assertTrue(toChief, toChief.contains("Book a table for Friday."));
     assertEquals(toChief.replace(TestServer.CHIEF, TALKER), toTalker);
     until(() -> HandsFreeService.log(context).contains("to the talker too"), "the log says the talker got it");
     String log = HandsFreeService.log(context);
-    assertTrue(log, log.contains("send phrase: final text in "));
+    assertTrue(log, log.contains("send phrase: quiet "));
     assertEquals("Jev not asked", 0, count(TestServer.requests(), "decide"));
   }
 }
