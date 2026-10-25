@@ -279,7 +279,7 @@ public class HandsFreeTest {
   @Test
   public void partsAddUpAndGoOnTheSendWord() throws Exception {
     // Each check writes down only the part that's new; the turn is the parts' texts joined.
-    Fake f = new Fake("I was thinking about the trip.", "Let's book the hotel. Over.");
+    Fake f = new Fake("I was thinking about the trip.", "Let's book the hotel. Over and out.");
     f.talk();
     until(() -> f.session.pending().equals("I was thinking about the trip."));
     assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
@@ -302,7 +302,7 @@ public class HandsFreeTest {
 
   @Test
   public void chiefFirstOnAnOpenFloorIsReadAndItsEchoIsNeverYourTurn() throws Exception {
-    Fake f = new Fake("Next question. Over.");
+    Fake f = new Fake("Next question. Over and out.");
     f.quiet(1000);
     f.session.reply("r1", "First answer from what I know.");
     f.session.reply("r1", "The final answer.");
@@ -338,7 +338,7 @@ public class HandsFreeTest {
 
   @Test
   public void aReplyWaitsWhileYouTalkIsNotDroppedBySendingAndPlaysAtThePause() throws Exception {
-    Fake f = new Fake("Also check the train", "to Lisbon. Over.");
+    Fake f = new Fake("Also check the train", "to Lisbon. Over and out.");
     f.quiet(1000);
     f.speak(); // You take the floor.
     assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
@@ -392,7 +392,7 @@ public class HandsFreeTest {
 
   @Test
   public void aReplyPlaysAtOnceInSilenceAndRightAfterYourMessageWent() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.");
     f.quiet(1000);
     // Silence: it plays as soon as its voice is ready.
     f.session.reply("r0", "Good morning.");
@@ -409,7 +409,7 @@ public class HandsFreeTest {
 
   @Test
   public void aReplyArrivingWhileYourMessageIsWrittenDownOrSentWaitsUntilItsGone() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.");
     java.util.concurrent.CountDownLatch slow = new java.util.concurrent.CountDownLatch(1);
     f.slow = slow;
     long timeout = HandsFreeSession.writeTimeoutMs;
@@ -455,7 +455,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerAReplyToAnOlderMessageIsntPlayedAndTheNextMessageSaysSo() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -477,7 +477,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerRepliesStillWaitingWhenYourMessageGoesArentPlayedAndTheNextMessageSaysSo() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -507,7 +507,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerACallEndingWithDroppedRepliesNotYetNotedSaysSoAtItsEnd() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -521,7 +521,7 @@ public class HandsFreeTest {
 
   @Test
   public void withoutATalkerAReplyToAnOlderMessageStillPlays() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.");
     f.quiet(1000);
     sendTurn(f, 1);
     sendTurn(f, 2);
@@ -534,7 +534,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerAReplyArrivingWhileYourNewMessageIsOnItsWayWaitsAndIsOutdatedOnceItsDelivered() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -556,7 +556,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerAReplyToTheMessageOnItsWayIsOursAndPlaysOnceItsDelivered() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     // The first message of the call: the talker answers before bb is done with the chief.
@@ -585,7 +585,7 @@ public class HandsFreeTest {
 
   @Test
   public void notesOfAMessageTheChiefMissedGoAgainButNotWhenOnlyTheTalkerMissedIt() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.", "Thanks. Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.", "Thanks. Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -607,7 +607,7 @@ public class HandsFreeTest {
 
   @Test
   public void aMessageThatFailsAfterTheEndLeavesItsWordsAndNotesForTheEnd() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -633,7 +633,7 @@ public class HandsFreeTest {
 
   @Test
   public void aMessageThatFailsAfterTheEndSettledSendsItsWordsItselfTryingAgain() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.");
     f.session.dropsOutdated = true;
     long retry = HandsFreeSession.leftoverRetryMs;
     HandsFreeSession.leftoverRetryMs = 300;
@@ -665,7 +665,7 @@ public class HandsFreeTest {
 
   @Test
   public void wordsLeftAtTheEndAreTriedAFewTimesThenGivenUp() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.");
     long retry = HandsFreeSession.leftoverRetryMs;
     HandsFreeSession.leftoverRetryMs = 50;
     try {
@@ -688,7 +688,7 @@ public class HandsFreeTest {
 
   @Test
   public void lastWordsOnlyTheTalkerGotGoWithTheChiefsEndLineOnly() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.");
     f.quiet(1000);
     f.bbDown = true;
     f.talk();
@@ -790,7 +790,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerAnUpdateWithoutARequestWhenNothingIsOnItsWayPlays() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -801,7 +801,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerASendThatFailsDropsNoWaitingReply() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -821,7 +821,7 @@ public class HandsFreeTest {
 
   @Test
   public void notesOfAMessageThatCouldntBeSentGoWithTheCallsEnd() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -838,7 +838,7 @@ public class HandsFreeTest {
 
   @Test
   public void aNoteGoesWithOneMessageOnlyWhenTheNextGoesBeforeItsDelivered() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.", "Anything else? Over.", "Thanks. Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.", "Anything else? Over and out.", "Thanks. Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -916,7 +916,7 @@ public class HandsFreeTest {
 
   @Test
   public void withATalkerAMessageThatCouldntBeSentDoesntMakeTheRepliesBeforeItOutdated() throws Exception {
-    Fake f = new Fake("Is the table booked? Over.", "And the train? Over.");
+    Fake f = new Fake("Is the table booked? Over and out.", "And the train? Over and out.");
     f.session.dropsOutdated = true;
     f.quiet(1000);
     sendTurn(f, 1);
@@ -977,7 +977,7 @@ public class HandsFreeTest {
     Fake f = new Fake("Book the hotel", "over and out");
     f.talk();
     until(() -> f.session.pending().equals("Book the hotel"));
-    for (int i = 0; i < 20; i++) f.session.frame(frame(6000)); // 0.4 s: "Over."
+    for (int i = 0; i < 20; i++) f.session.frame(frame(6000)); // 0.4 s: "Over and out."
     f.quiet(1200);
     until(() -> f.sent.size() == 1);
     assertEquals("Book the hotel", f.sent.get(0));
@@ -985,7 +985,7 @@ public class HandsFreeTest {
 
   @Test
   public void aDictationSwitchedToHandsFreeStartsTheFirstTurn() throws Exception {
-    Fake f = new Fake("I was dictating about the trip", "and the budget. Over.");
+    Fake f = new Fake("I was dictating about the trip", "and the budget. Over and out.");
     java.io.ByteArrayOutputStream dictated = new java.io.ByteArrayOutputStream();
     for (int i = 0; i < 50; i++) dictated.writeBytes(frame(3000)); // A second of what was dictated.
     f.session.seed(dictated.toByteArray());
@@ -997,7 +997,7 @@ public class HandsFreeTest {
 
   @Test
   public void thePhaseIsListeningWorkingOrReading() throws Exception {
-    Fake f = new Fake("Book the hotel. Over.");
+    Fake f = new Fake("Book the hotel. Over and out.");
     assertEquals(HandsFreeSession.Phase.LISTENING, f.session.phase());
     f.talk();
     until(() -> f.sent.size() == 1);
@@ -1097,7 +1097,7 @@ public class HandsFreeTest {
   @Test
   public void whatYouSayNextIsWrittenDownWhileBbIsSlow() throws Exception {
     // Delivering a message must not hold up writing down the next turn, and messages keep their order.
-    Fake f = new Fake("First message. Over.", "Second message. Over.");
+    Fake f = new Fake("First message. Over and out.", "Second message. Over and out.");
     f.slowBb = new java.util.concurrent.CountDownLatch(1);
     f.talk();
     until(() -> f.session.phase() == HandsFreeSession.Phase.SENDING);
@@ -1170,7 +1170,7 @@ public class HandsFreeTest {
 
   @Test
   public void whileAReplysAudioIsFetchedTheFloorStaysOpenAndYouCanTalk() throws Exception {
-    Fake f = new Fake("Wait, one more thing. Over.");
+    Fake f = new Fake("Wait, one more thing. Over and out.");
     java.util.concurrent.CountDownLatch fetched = new java.util.concurrent.CountDownLatch(1);
     f.prepare =
         text -> {
@@ -1200,7 +1200,7 @@ public class HandsFreeTest {
 
   @Test
   public void audioThatNeverStartsIsGivenUpSoonAndNotedAsNotHeard() throws Exception {
-    Fake f = new Fake("What did you say? Over.");
+    Fake f = new Fake("What did you say? Over and out.");
     f.audioStarts = false;
     f.quiet(1000);
     f.session.reply("r0", "The meeting moved to three.");
@@ -1325,7 +1325,7 @@ public class HandsFreeTest {
     f.quiet(400);
     Thread.sleep(100);
     assertTrue(f.spoken.isEmpty());
-    f.transcripts.add("Book the hotel. Over.");
+    f.transcripts.add("Book the hotel. Over and out.");
     f.talk();
     until(() -> f.sent.size() == 1);
     assertEquals("Book the hotel.", f.sent.get(0));
@@ -1377,7 +1377,7 @@ public class HandsFreeTest {
 
   @Test
   public void talkingOverAReplyStopsItDropsTheRestAndYourNextMessageSaysHowFarYouHeard() throws Exception {
-    Fake f = playingReply("Hold on, book the train instead.", "Over.");
+    Fake f = playingReply("Hold on, book the train instead.", "Over and out.");
     f.heardChars = LONG_REPLY.indexOf("Lisbon");
     int frames = framesToStop(f, 8000, 40); // You, over the reply.
     assertEquals("stopped after 300 ms of your speech", HandsFreeSession.BARGE_MS / 20, frames);
@@ -1538,7 +1538,7 @@ public class HandsFreeTest {
   @Test
   public void onlyTheNewPartIsWrittenDownAtAPauseButTheWholeTurnInOnePassIsWhatGoes() throws Exception {
     // On its own, a part's first word came out wrong; in one pass with the rest it's right.
-    Fake f = new Fake("Book that", "hotel for Friday. Over.");
+    Fake f = new Fake("Book that", "hotel for Friday. Over and out.");
     f.wholeAs = t -> t.replace("Book that", "Book the");
     List<String> asked = new CopyOnWriteArrayList<>();
     f.session.judge = said -> {
@@ -1551,17 +1551,17 @@ public class HandsFreeTest {
     until(() -> f.sent.size() == 1);
     assertEquals("Book the hotel for Friday.", f.sent.get(0));
     assertEquals("each part written down once, on its own", 2, f.transcriptions.get());
-    assertEquals("Jev judges the parts' text, whole", List.of("Book that", "Book that hotel for Friday. Over."), asked);
+    assertEquals("Jev judges the parts' text, whole", List.of("Book that", "Book that hotel for Friday. Over and out."), asked);
     String log = String.join("\n", f.log);
     assertTrue(log, log.contains("check (pause): 2 part(s), "));
     assertTrue(log, log.contains("1 new (1.") && log.contains(" s) written down in "));
     assertTrue(log, log.contains("whole turn (2 parts) written down in "));
-    assertTrue(log, log.contains("it changed 1 of 6 words of the parts' text"));
+    assertTrue(log, log.contains("it changed 1 of 8 words of the parts' text"));
   }
 
   @Test
   public void whenTheWholeTurnsPassFailsThePartsTextGoes() throws Exception {
-    Fake f = new Fake("Book the hotel", "for Friday. Over.");
+    Fake f = new Fake("Book the hotel", "for Friday. Over and out.");
     f.wholeFails = true;
     f.talk();
     until(() -> f.session.pending().equals("Book the hotel"));
@@ -1573,7 +1573,7 @@ public class HandsFreeTest {
 
   @Test
   public void endingTheCallWhileTheWholePassIsWaitedForSendsYourWordsOnce() throws Exception {
-    Fake f = new Fake("Book the hotel", "for Friday. Over.");
+    Fake f = new Fake("Book the hotel", "for Friday. Over and out.");
     f.talk();
     until(() -> f.session.pending().equals("Book the hotel"));
     f.slowWhole = new java.util.concurrent.CountDownLatch(1);
@@ -1588,7 +1588,7 @@ public class HandsFreeTest {
 
   @Test
   public void talkingOnWhileTheWholePassIsWaitedForMeansNoSendYet() throws Exception {
-    Fake f = new Fake("Book the hotel", "for Friday. Over.", "and the car. Over.");
+    Fake f = new Fake("Book the hotel", "for Friday. Over and out.", "and the car. Over and out.");
     f.talk();
     until(() -> f.session.pending().equals("Book the hotel"));
     f.slowWhole = new java.util.concurrent.CountDownLatch(1);
@@ -1601,7 +1601,7 @@ public class HandsFreeTest {
     f.slowWhole = null;
     f.quiet(1200);
     until(() -> f.sent.size() == 1);
-    assertEquals("Book the hotel for Friday. Over. and the car.", f.sent.get(0));
+    assertEquals("Book the hotel for Friday. Over and out. and the car.", f.sent.get(0));
   }
 
   @Test
@@ -1636,7 +1636,7 @@ public class HandsFreeTest {
 
   @Test
   public void aReplyThatStopsPartWayIsNotPlayedAgainAndYourNextMessageSaysHowFar() throws Exception {
-    Fake f = new Fake("Thanks. Over.");
+    Fake f = new Fake("Thanks. Over and out.");
     f.quiet(1000);
     f.session.reply("r1", LONG_REPLY);
     until(() -> f.spoken.size() == 1);
@@ -1747,7 +1747,7 @@ public class HandsFreeTest {
     assertEquals("nothing written down from audio", 0, f.transcriptions.get());
     assertEquals("Jev not asked", List.of(), asked);
     String log = String.join("\n", f.log);
-    assertTrue(log, log.contains("live text ends with the send phrase: \"Book the table for Friday over and out\""));
+    assertTrue(log, log.contains("live text ends with the send phrase: \"…table for Friday over and out\""));
     assertTrue(log, log.contains("send phrase: quiet "));
     assertTrue(log, log.contains("ms after the phrase was heard)"));
     // The stretch it was said in ends at the pause: it went with the message, nothing more is checked.
@@ -1760,12 +1760,12 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void thatsAllSendsTooAndEndTheCallEndsIt() throws Exception {
+  public void overAndOutSendsTooAndEndTheCallEndsIt() throws Exception {
     Fake f = new Fake();
     FakeLive live = new FakeLive(f);
     f.quiet(1000);
     f.speak();
-    live.say("Remind me to call Jana. That's all.");
+    live.say("Remind me to call Jana. Over and out.");
     f.quiet(400);
     until(() -> f.sent.size() == 1);
     assertEquals("Remind me to call Jana.", f.sent.get(0));
@@ -1851,7 +1851,7 @@ public class HandsFreeTest {
     f.session.judge = said -> verdict("more", 0.1, 0);
     f.quiet(1000);
     f.speak();
-    live.say("Book the table. Over.");
+    live.say("Book the table. Over and out.");
     f.quiet(400); // Sent while the stretch goes on: its rest went with the message.
     until(() -> f.sent.size() == 1);
     f.session.reply("r1", "Done.");
@@ -1883,7 +1883,7 @@ public class HandsFreeTest {
 
   @Test
   public void wordsTakenForAPhraseMidSentenceAreNotWrittenDownAgainAfterAFailure() throws Exception {
-    Fake f = new Fake("and the train was late. Over.");
+    Fake f = new Fake("and the train was late. Over and out.");
     FakeLive live = new FakeLive(f);
     f.quiet(1000);
     f.speak();
@@ -1907,9 +1907,9 @@ public class HandsFreeTest {
     f.quiet(1000);
     f.talk(); // No live words came: written down from its audio, not done yet.
     until(() -> f.session.pending().equals("Book the table."));
-    // A click going on (too short to count) as the live words "… Over." come late and are acted on.
+    // A click going on (too short to count) as the live words "… Over and out." come late and are acted on.
     for (int i = 0; i < 3; i++) f.session.frame(frame(7000));
-    live.say("Book the table. Over.");
+    live.say("Book the table. Over and out.");
     f.quiet(400);
     until(() -> f.sent.size() == 1);
     assertEquals("Book the table.", f.sent.get(0));
@@ -1946,7 +1946,7 @@ public class HandsFreeTest {
 
   @Test
   public void whenLiveTranscriptionFailsItSaysSoAndYourWordsAreWrittenDownFromTheirAudio() throws Exception {
-    Fake f = new Fake("Book the table. Over.");
+    Fake f = new Fake("Book the table. Over and out.");
     FakeLive live = new FakeLive(f);
     f.quiet(1000);
     f.speak();
@@ -1962,7 +1962,7 @@ public class HandsFreeTest {
   @Test
   public void aTurnWhoseLiveTextLooksStuckIsWrittenDownFromItsAudio() throws Exception {
     // ElevenLabs once stayed on "Mm." for 30 s while Philipp talked.
-    Fake f = new Fake("Book the table for four tonight at eight. Over.");
+    Fake f = new Fake("Book the table for four tonight at eight. Over and out.");
     FakeLive live = new FakeLive(f);
     f.quiet(1000);
     for (int i = 0; i < 4; i++) f.speak(); // 4.8 s of speech.
@@ -2172,7 +2172,7 @@ public class HandsFreeTest {
 
   @Test
   public void whenJevCantBeAskedTheSendWordStillWorks() throws Exception {
-    Fake f = new Fake("Book the table.", "Over.");
+    Fake f = new Fake("Book the table.", "Over and out.");
     f.session.judge = said -> {
       throw new java.io.IOException("timeout");
     };
@@ -2247,7 +2247,7 @@ public class HandsFreeTest {
 
   @Test
   public void soundsMarkTheMomentsAndNeverStartYourSpeech() throws Exception {
-    Fake f = new Fake("Book the table. Over.");
+    Fake f = new Fake("Book the table. Over and out.");
     List<HandsFreeSession.Cue> cues = new CopyOnWriteArrayList<>();
     f.session.cues = cues::add; // Each plays.
     f.quiet(1000);
@@ -2584,7 +2584,7 @@ public class HandsFreeTest {
 
   @Test
   public void aMessageOnlyTheTalkerOrOnlyTheChiefGotCountsAsSentAndSaysWhoMissedIt() throws Exception {
-    Fake f = new Fake("Book the hotel. Over.", "And the train. Over.");
+    Fake f = new Fake("Book the hotel. Over and out.", "And the train. Over and out.");
     f.missedBy = "talker";
     f.talk();
     until(() -> f.session.sent() == 1);
