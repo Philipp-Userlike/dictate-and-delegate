@@ -13,8 +13,8 @@ public class HandsFreeTest {
 
   @Test
   public void wordListsComeFromTheSetting() {
-    // English, one word per action, by default.
-    assertEquals(List.of("over", "that's all"), send);
+    // English, one phrase per action, by default.
+    assertEquals(List.of("over and out"), send);
     assertEquals(List.of("end the call"), end);
     assertEquals(List.of("a", "b c"), HandsFree.list(" a ,, b c\n ,"));
     assertEquals(List.of(), HandsFree.list(""));
@@ -22,12 +22,19 @@ public class HandsFreeTest {
 
   @Test
   public void aSendWordCountsOnlyAtTheEnd() {
-    assertEquals("Book a table for Friday.", HandsFree.endsWith("Book a table for Friday. Over.", send));
-    assertEquals("book a table", HandsFree.endsWith("book a table, over!", send));
+    assertEquals("Book a table for Friday.", HandsFree.endsWith("Book a table for Friday. Over and out.", send));
+    assertEquals("book a table", HandsFree.endsWith("book a table, over and out!", send));
+    assertEquals("book a table", HandsFree.endsWith("book a table, over-and-out", send));
     assertEquals("Buch einen Tisch.", HandsFree.endsWith("Buch einen Tisch. Schick ab.", HandsFree.list("over, schick ab")));
-    assertEquals("", HandsFree.endsWith("Over.", send));
+    assertEquals("", HandsFree.endsWith("Over and out.", send));
     // Not at the end, or only part of a word: keep listening.
+    assertNull(HandsFree.endsWith("Over and out, I'm going to the shop.", send));
     assertNull(HandsFree.endsWith("Over the weekend I want to rest.", send));
+    // "over" alone is ordinary speech ("until the period is over"): it never sends.
+    assertNull(HandsFree.endsWith("Let someone live there for 3 months until the period is over.", send));
+    assertNull(HandsFree.endsWith("Book it over.", send));
+    assertNull(HandsFree.endsWith("Over.", send));
+    assertNull(HandsFree.endsWith("We went to Hanover and out", send));
     assertNull(HandsFree.endsWith("We went to Hanover", send));
     assertNull(HandsFree.endsWith("I'll hand it over to her soon", send));
     // Apostrophes, accents and case don't matter.
@@ -967,7 +974,7 @@ public class HandsFreeTest {
 
   @Test
   public void onceYouHaveTheFloorAShortOverStillCounts() throws Exception {
-    Fake f = new Fake("Book the hotel", "over");
+    Fake f = new Fake("Book the hotel", "over and out");
     f.talk();
     until(() -> f.session.pending().equals("Book the hotel"));
     for (int i = 0; i < 20; i++) f.session.frame(frame(6000)); // 0.4 s: "Over."
@@ -1502,8 +1509,8 @@ public class HandsFreeTest {
 
   @Test
   public void theSendWordOnItsOwnAfterSendIsntAnEmptyTurn() throws Exception {
-    // 22:37: Send pressed while the part was written down, then "over." came as a part of its own.
-    Fake f = new Fake("Maybe it's also not needed", "over.");
+    // 22:37: Send pressed while the part was written down, then "over and out." came as a part of its own.
+    Fake f = new Fake("Maybe it's also not needed", "over and out.");
     f.talk();
     until(() -> !f.session.pending().isEmpty());
     f.session.sendNow();
@@ -1536,7 +1543,7 @@ public class HandsFreeTest {
     List<String> asked = new CopyOnWriteArrayList<>();
     f.session.judge = said -> {
       asked.add(said);
-      return said.endsWith("Over.") ? verdict("over", 0.95, 0) : verdict("unfinished", 0.1, 0);
+      return said.endsWith("Over and out.") ? verdict("over", 0.95, 0) : verdict("unfinished", 0.1, 0);
     };
     f.talk();
     until(() -> f.session.pending().equals("Book that"));
@@ -1730,8 +1737,8 @@ public class HandsFreeTest {
     f.speak(); // Still talking: no pause yet.
     live.say("Book the table for Friday");
     assertEquals("Book the table for Friday", f.session.pending());
-    live.finalText = "Book the table for Friday. Over.";
-    live.say("Book the table for Friday over");
+    live.finalText = "Book the table for Friday. Over and out.";
+    live.say("Book the table for Friday over and out");
     Thread.sleep(100);
     assertEquals("not before you're quiet a moment after it", 0, f.sent.size());
     f.quiet(400);
@@ -1740,7 +1747,7 @@ public class HandsFreeTest {
     assertEquals("nothing written down from audio", 0, f.transcriptions.get());
     assertEquals("Jev not asked", List.of(), asked);
     String log = String.join("\n", f.log);
-    assertTrue(log, log.contains("live text ends with the send phrase: \"Book the table for Friday over\""));
+    assertTrue(log, log.contains("live text ends with the send phrase: \"Book the table for Friday over and out\""));
     assertTrue(log, log.contains("send phrase: quiet "));
     assertTrue(log, log.contains("ms after the phrase was heard)"));
     // The stretch it was said in ends at the pause: it went with the message, nothing more is checked.
@@ -1784,16 +1791,16 @@ public class HandsFreeTest {
     f.session.judge = said -> verdict("more", 0.1, 0);
     f.quiet(1000);
     f.speak();
-    // The live text ended with "over" for a moment; the final text goes on.
-    live.finalText = "The game is over and then we left";
-    live.say("The game is over");
+    // The live text ended with "over and out" for a moment; the final text goes on.
+    live.finalText = "The game is over and out and then we left";
+    live.say("The game is over and out");
     f.quiet(400);
     until(() -> String.join("\n", f.log).contains("doesn't end with the phrase"));
     assertEquals(0, f.sent.size());
-    live.say("and the train was late. Over.");
+    live.say("and the train was late. Over and out.");
     f.quiet(400);
     until(() -> f.sent.size() == 1);
-    assertEquals("The game is over and then we left and the train was late.", f.sent.get(0));
+    assertEquals("The game is over and out and then we left and the train was late.", f.sent.get(0));
   }
 
   @Test
@@ -1880,15 +1887,15 @@ public class HandsFreeTest {
     FakeLive live = new FakeLive(f);
     f.quiet(1000);
     f.speak();
-    live.finalText = "The game is over and then we left";
-    live.say("The game is over");
+    live.finalText = "The game is over and out and then we left";
+    live.say("The game is over and out");
     f.quiet(400);
     until(() -> String.join("\n", f.log).contains("doesn't end with the phrase"));
     f.quiet(1200); // That stretch ends: its words are in the turn already.
     live.fail("connection lost");
     f.talk();
     until(() -> f.sent.size() == 1);
-    assertEquals("The game is over and then we left and the train was late.", f.sent.get(0));
+    assertEquals("The game is over and out and then we left and the train was late.", f.sent.get(0));
     assertEquals("only the new part written down", 1, f.transcriptions.get());
   }
 
@@ -1986,23 +1993,23 @@ public class HandsFreeTest {
     FakeLive live = new FakeLive(f);
     f.quiet(1000);
     // Nobody took the floor: the phrase is only noise's words.
-    live.say("game over");
+    live.say("game over and out");
     String log = String.join("\n", f.log);
-    assertTrue(log, log.contains("live text ends with the send phrase, not acted on: nobody had the floor (no speech heard) (\"game over\")"));
-    live.say("game over"); // Repeats aren't logged again.
+    assertTrue(log, log.contains("live text ends with the send phrase, not acted on: nobody had the floor (no speech heard) (\"game over and out\")"));
+    live.say("game over and out"); // Repeats aren't logged again.
     assertEquals(1, count(String.join("\n", f.log), "not acted on: nobody had the floor"));
     // A reply playing.
     f.session.reply("r0", "Here's what I found.");
     until(() -> f.spoken.size() == 1);
-    live.say("thanks over");
-    assertTrue(String.join("\n", f.log).contains("not acted on: a reply is playing (\"thanks over\")"));
+    live.say("thanks over and out");
+    assertTrue(String.join("\n", f.log).contains("not acted on: a reply is playing (\"thanks over and out\")"));
     f.done.run();
     // Live transcription failed: written down from audio, and the log says so.
     live.fail("connection lost");
     f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
     f.speak();
-    live.say("book it over");
-    assertTrue(String.join("\n", f.log).contains("not acted on: live transcription isn't working (\"book it over\")"));
+    live.say("book it over and out");
+    assertTrue(String.join("\n", f.log).contains("not acted on: live transcription isn't working (\"book it over and out\")"));
   }
 
   @Test
