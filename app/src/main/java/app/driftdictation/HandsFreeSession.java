@@ -518,8 +518,7 @@ final class HandsFreeSession {
                   log(String.format(java.util.Locale.ROOT, "the rest of the stretch with the phrase (%.1f s) was taken from live transcription already", pcm.length / (double) AudioFiles.BYTES_PER_SECOND));
                   // What you said after the phrase in the same breath ("Over. Build it.") is in the
                   // live text only: it's your turn's, and this is a pause like any other.
-                  LiveText l = live;
-                  if (streaming() && (!l.text().isEmpty() || hasTurn())) check("rest");
+                  if (streaming()) check("rest");
                   return;
                 }
                 addPart(pcm);
@@ -1841,7 +1840,7 @@ final class HandsFreeSession {
   }
 
   private void checkNow(String why) {
-    boolean button = why.equals("button");
+    boolean button = why.equals("button") || why.equals("rest") && sendAfterFlush;
     try {
       if (state == State.ENDED) return;
       if (why.endsWith(" phrase")) {
@@ -1850,7 +1849,7 @@ final class HandsFreeSession {
       }
       if (why.equals("rest")) {
         takeRest();
-        why = "pause";
+        why = sendAfterFlush ? "button" : "pause"; // Send pressed during the stretch: it goes.
       }
       List<byte[]> audio;
       String prefix;
@@ -1893,6 +1892,7 @@ final class HandsFreeSession {
       }
       String liveText = null;
       boolean offLive = false;
+      int liveWas = 0; // How much live text there was before writing down (offLive).
       if (streamed) {
         try {
           checkStep = "writing";
@@ -1907,6 +1907,7 @@ final class HandsFreeSession {
           log(String.format(java.util.Locale.ROOT, "no live text for %.1f s of your speech: written down from its audio", seconds));
           streamed = false;
           offLive = why.equals("pause");
+          liveWas = l.text().length();
           text = prefix;
         }
       }
@@ -1978,10 +1979,16 @@ final class HandsFreeSession {
           prefix = turnPrefix;
           version = turnVersion;
         }
-        // Its words still coming late would be there twice: dropped. Not when you went on: what
-        // it has now may be your new words.
-        if (!wentOn) forgetLive();
+        // Its words that came late while they were written down would be there twice: dropped
+        // (with what's still in flight of them). Not when nothing came: a drop then guesses the
+        // next stretch, and would swallow what you say next. Not when you went on: what it has
+        // now may be your new words.
+        if (!wentOn && l.text().length() > liveWas) forgetLive();
         log("these words start your turn: live transcription didn't hear them" + (wentOn ? " (you went on: what it hears next follows them)" : ""));
+        if (wentOn) { // The check queued for what you said since decides, about all of it.
+          log("you went on talking: checked again at your next pause");
+          return;
+        }
         audio = List.of();
         streamed = true;
       }
@@ -2359,7 +2366,8 @@ final class HandsFreeSession {
     }
     String ended = HandsFree.endsWith(text, endWords), over = HandsFree.endsWith(text, sendWords);
     boolean end = v != null ? v.end() >= END_AT : ended != null;
-    boolean done = v != null ? v.send() >= SEND_AT : over != null;
+    // Jev held this send word back a moment ago: Jev failing now doesn't make it the send word.
+    boolean done = v != null ? v.send() >= SEND_AT : over != null && !HandsFree.normalize(text).equals(heldPhrase);
     if (failed != null) reason("Couldn't ask whether you're done (%1$s): say %2$s or press Send", failed, sendWords.isEmpty() ? "Send" : "\"" + sendWords.get(0) + "\"");
     if (end) {
       log("end of the call");

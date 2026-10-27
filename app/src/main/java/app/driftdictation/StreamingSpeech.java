@@ -295,6 +295,7 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
                 }
 
                 public void ended(int code, String why) {
+                  if (session != sessions) return; // An earlier connection's: the new one is open.
                   closed(clock.getAsLong());
                   if (why.equals("closed")) return; // We closed it.
                   if (code == 1000) { // Ended normally by the provider (its session limit): opened again when you speak.

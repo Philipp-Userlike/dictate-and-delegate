@@ -282,9 +282,16 @@ public class StreamingSpeechTest {
   /** Open, a minute without speech (closed: it's billed while open), then speech again: open anew. */
   static void reconnect(StreamingSpeech s, java.util.concurrent.atomic.AtomicLong now, Provider p) throws Exception {
     int before = p.connections.get();
+    List<String> events = new CopyOnWriteArrayList<>();
+    java.util.function.Consumer<String> was = s.events;
+    s.events = e -> {
+      events.add(e);
+      was.accept(e);
+    };
     now.addAndGet(StreamingSpeech.IDLE_MS);
     chunk(s);
-    Thread.sleep(200);
+    until(() -> String.join("\n", events).contains("closed: no speech"));
+    s.events = was;
     s.speech();
     until(() -> p.connections.get() == before + 1);
     Thread.sleep(100);

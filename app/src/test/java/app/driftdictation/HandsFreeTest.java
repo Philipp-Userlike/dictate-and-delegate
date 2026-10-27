@@ -2284,7 +2284,7 @@ public class HandsFreeTest {
     String log = String.join("\n", f.log);
     assertTrue(log, log.contains("no live text for 1."));
     assertTrue(log, log.contains("these words start your turn: live transcription didn't hear them"));
-    assertEquals("what may still come of it late is dropped", 1, live.discards.get());
+    assertEquals("nothing came of it late: nothing dropped (a drop would guess at your next words)", 0, live.discards.get());
     f.speak();
     live.say("Over.");
     f.quiet(400);
@@ -2293,6 +2293,98 @@ public class HandsFreeTest {
     assertEquals(List.of("So it seems to be stuck right over", "So it seems to be stuck right over Over."), asked);
     assertEquals("written down once", 1, f.transcriptions.get());
     assertFalse(reasons(f), reasons(f).contains("Only the send word"));
+  }
+
+  @Test
+  public void liveWordsOfAPartWrittenDownFromAudioThatComeLateAreDroppedNotSentTwice() throws Exception {
+    Fake f = new Fake("So it seems to be stuck right over");
+    FakeLive live = new FakeLive(f);
+    f.session.judge = said -> said.equals("So it seems to be stuck right over") ? verdict("unfinished", 0.07, 0) : verdict("over", 0.9, 0);
+    java.util.concurrent.CountDownLatch slow = new java.util.concurrent.CountDownLatch(1);
+    f.slow = slow;
+    f.quiet(1000);
+    f.talk(); // No live text yet: written down from its audio (slowly).
+    until(() -> String.join("\n", f.log).contains("no live text for 1."));
+    live.say("to be stuck right over"); // Its words, late, while it's written down.
+    slow.countDown();
+    until(() -> reasons(f).contains("Not sent: you seem mid-sentence (7% done)"));
+    assertEquals(1, live.discards.get());
+    f.speak();
+    live.say("Over.");
+    f.quiet(400);
+    until(() -> f.sent.size() == 1);
+    assertEquals("So it seems to be stuck right over", f.sent.get(0));
+  }
+
+  @Test
+  public void wordsSaidWhileAPartIsWrittenDownFromAudioAreJudgedWithItAndSentOnce() throws Exception {
+    // You went on while live transcription's missing part was written down: the next check, with
+    // your new words, decides, not the one about the part alone.
+    Fake f = new Fake("So it seems to be stuck");
+    FakeLive live = new FakeLive(f);
+    List<String> asked = new CopyOnWriteArrayList<>();
+    f.session.judge = said -> {
+      asked.add(said);
+      return verdict("request", 0.9, 0);
+    };
+    java.util.concurrent.CountDownLatch slow = new java.util.concurrent.CountDownLatch(1);
+    f.slow = slow;
+    f.quiet(1000);
+    f.talk();
+    until(() -> String.join("\n", f.log).contains("no live text for 1."));
+    f.speak();
+    live.say("Okay.");
+    f.quiet(1200); // That stretch ends too: its check waits behind the first.
+    Thread.sleep(100);
+    slow.countDown();
+    until(() -> f.sent.size() == 1);
+    assertEquals("So it seems to be stuck Okay.", f.sent.get(0));
+    assertEquals(List.of("So it seems to be stuck Okay."), asked);
+    f.quiet(1200);
+    f.now.addAndGet(9000);
+    f.session.tick();
+    Thread.sleep(200);
+    assertEquals(String.join("\n", f.log), 1, f.sent.size());
+  }
+
+  @Test
+  public void aSendWordJevHeldBackDoesntSendWhenJevFailsAtThePause() throws Exception {
+    String sentence = "Let someone live there for 3 months until the period is over.";
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+    f.session.judge = said -> {
+      if (calls.incrementAndGet() == 1) return verdict("unfinished", 0.2, 0);
+      throw new java.io.IOException("HTTP 502");
+    };
+    f.quiet(1000);
+    f.speak();
+    live.say(sentence);
+    f.quiet(400);
+    until(() -> reasons(f).contains("Not sent: you seem mid-sentence (20% done)"));
+    f.quiet(1200); // The pause: Jev fails.
+    until(() -> calls.get() == 2);
+    Thread.sleep(200);
+    assertEquals(String.join("\n", f.log), 0, f.sent.size());
+  }
+
+  @Test
+  public void sendPressedRightAfterASendWordWhileYouGoOnSendsWhatYouSaidSince() throws Exception {
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    f.session.judge = said -> said.endsWith("Over.") ? verdict("over", 0.95, 0) : verdict("more", 0.1, 0);
+    f.quiet(1000);
+    f.speak();
+    live.say("Book the table. Over.");
+    f.quiet(400);
+    until(() -> f.sent.size() == 1);
+    f.speak(); // The same stretch goes on.
+    live.say("And the car");
+    f.now.addAndGet(HandsFreeSession.REPRESS_MS + 1);
+    f.session.sendNow(); // Send goes, without asking Jev.
+    until(() -> f.sent.size() == 2);
+    assertEquals("And the car", f.sent.get(1));
+    until(() -> f.session.live() != HandsFreeSession.Live.SENDING);
   }
 
   @Test

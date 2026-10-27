@@ -645,10 +645,11 @@ public class HandsFreeFlowTest {
     return n;
   }
 
-  /** A turn ending in a send phrase goes as soon as live transcription has it: no pause, no Jev. */
+  /** A turn ending in a send phrase goes as soon as live transcription has it and Jev agrees: no pause. */
   private void sendPhraseSendsAtOnce(String model, String path) throws Exception {
     liveOn(model);
     TestServer.liveTexts("Book a table for Friday. Over.");
+    TestServer.turns("over");
     HandsFreeService.send(context, HandsFreeService.START);
     until(() -> HandsFreeService.session() != null, "hands-free started");
     HandsFreeSession s = HandsFreeService.session();
@@ -663,7 +664,8 @@ public class HandsFreeFlowTest {
     assertTrue(log, log.contains("ms after the phrase was heard)"));
     JSONArray r = TestServer.requests();
     assertEquals("nothing written down from audio", 0, count(r, "transcribe"));
-    assertEquals("Jev not asked", 0, count(r, "decide"));
+    assertEquals("Jev asked once, on the send word", 1, count(r, "decide"));
+    assertTrue(log, log.contains("Jev on the send phrase in "));
     JSONArray live = TestServer.liveLog();
     assertEquals(path, live.getJSONObject(0).getString("path"));
     android.util.Log.i("HandsFreeTimings", model + ": " + log.replaceAll("(?s).*(send phrase: final text in [^\n]*).*", "$1"));
@@ -1314,6 +1316,6 @@ public class HandsFreeFlowTest {
     until(() -> HandsFreeService.log(context).contains("to the talker too"), "the log says the talker got it");
     String log = HandsFreeService.log(context);
     assertTrue(log, log.contains("send phrase: quiet "));
-    assertEquals("Jev not asked", 0, count(TestServer.requests(), "decide"));
+    assertEquals("Jev asked once, on the send word", 1, count(TestServer.requests(), "decide"));
   }
 }
