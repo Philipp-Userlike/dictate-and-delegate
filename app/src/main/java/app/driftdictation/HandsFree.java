@@ -9,7 +9,7 @@ import java.util.Locale;
 /**
  * Hands-free mode: talking with the chief of staff without touching the phone. The phone listens
  * (voice activity, no model), transcribes each stretch of speech once when you pause, and sends the
- * message when it ends with one of your send words ("over and out"), or after a long silence; an end word
+ * message when it ends with one of your send words ("over") and Jev agrees you're done, or after a long silence; an end word
  * ends the mode. The chief's spoken replies are read aloud as call audio; talking over one stops it. These are the
  * settings and the pure parts: keyword matching and the voice activity segmenter.
  */
@@ -38,11 +38,12 @@ final class HandsFree {
       VOICE = "hfVoice";
 
   /**
-   * One English phrase per action by default; each setting may hold several, comma-separated. "over"
-   * alone is ordinary speech ("until the period is over") and sent mid-sentence, so the send phrase is
-   * one nobody says in a sentence. "That's all" went the same way.
+   * One English word or phrase per action by default; each setting may hold several,
+   * comma-separated. "over" is also ordinary speech ("until the period is over"), so a send word
+   * only sends once Jev says you're done (HandsFreeSession.phrase): a phrase nobody says in a
+   * sentence ("over and out") took as long to say as asking Jev.
    */
-  static final String DEFAULT_SEND = "over and out", DEFAULT_END = "end the call";
+  static final String DEFAULT_SEND = "over", DEFAULT_END = "end the call";
   /**
    * A pause this long ends a part of your turn: then the whole turn so far is written down and
    * Jev asked whether you're done (a new key: the old setting was the much shorter pause after

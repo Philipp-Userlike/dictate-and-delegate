@@ -165,7 +165,7 @@ public final class HandsFreeService extends Service {
     Voice.Choice choice = Voice.choice(prefs.getString(HandsFree.VOICE, Voice.DEFAULT.id()));
     Profile profile = new Profile(prefs);
     String model = profile.fixedModel();
-    // The send and end words are hints for the speech model, so a short "over and out" isn't dropped.
+    // The send and end words are hints for the speech model, so a short "over" isn't dropped.
     java.util.List<String> hints = new java.util.ArrayList<>(profile.hintWords());
     for (String w : HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND)) if (!hints.contains(w)) hints.add(w);
     for (String w : HandsFree.list(HandsFree.endSetting(prefs))) if (!hints.contains(w)) hints.add(w);
@@ -506,7 +506,7 @@ public final class HandsFreeService extends Service {
       session.liveKeyMissing(provider);
       return "on, but no " + provider + " key: written down from audio";
     }
-    // The send and end words as key terms, so a short "over and out" is heard as that.
+    // The send and end words as key terms, so a short "over" is heard as that.
     java.util.List<String> terms = new java.util.ArrayList<>(sendWords);
     for (String w : endWords) if (!terms.contains(w)) terms.add(w);
     StreamingSpeech s = StreamingSpeech.create(c, key, terms);
