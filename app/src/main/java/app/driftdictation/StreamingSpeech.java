@@ -278,6 +278,7 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
     if (failed || connecting || closedForGood() || socket != null && socket.open()) return;
     connecting = true;
     long start = clock.getAsLong();
+    int session = newSession();
     try {
       WebSocket ws =
           WebSocket.open(
@@ -285,6 +286,7 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
               headers(),
               new WebSocket.Listener() {
                 public void message(String text) {
+                  if (session != sessions) return; // An earlier connection's, late: not this session's.
                   try {
                     StreamingSpeech.this.message(text);
                   } catch (Exception ex) {
@@ -324,6 +326,27 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
       connecting = false;
     }
   }
+
+  /** Connections opened so far: each is a session of its own at the provider. */
+  private volatile int sessions;
+
+  /**
+   * A new connection is a new session at the provider: it counts its stretches from the start
+   * again (AssemblyAI's turn_order from 0), and nothing more comes of the last one's. What was
+   * still live of it is kept as final; a drop waiting for its late messages is over.
+   */
+  private int newSession() {
+    synchronized (this) {
+      if (!live.isEmpty()) finals.add(live);
+      live = "";
+      dropThrough = finalsSeen - 1;
+      opened();
+      return ++sessions;
+    }
+  }
+
+  /** A new session starts (under the lock): what the provider counts starts again. */
+  void opened() {}
 
   @Override
   public String take(long waitMs) throws Exception {
@@ -451,6 +474,15 @@ abstract class StreamingSpeech implements HandsFreeSession.LiveText {
     @Override
     boolean byTurn() {
       return true;
+    }
+
+    @Override
+    void opened() {
+      // Each session's turn_order starts at 0. Kept from the last session, its turns would count
+      // as repeats of turns already final and be ignored: words lost after every reconnect
+      // (Philipp's call, 27 October 2026: "Okay." and then "Over." sent nothing).
+      lastTurn = liveTurn = droppedTurn = -1;
+      guessed = false;
     }
 
     @Override

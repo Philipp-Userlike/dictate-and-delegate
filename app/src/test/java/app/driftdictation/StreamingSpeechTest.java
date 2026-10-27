@@ -170,6 +170,194 @@ public class StreamingSpeechTest {
     assertEquals("Book it.", a.text());
   }
 
+  /**
+   * A provider for several connections in turn: it answers each upgrade, sends what the test tells
+   * it to on the latest connection, can end its session (close 1000, as AssemblyAI does at its
+   * limit), and counts the connections and the ForceEndpoints it got.
+   */
+  static final class Provider implements AutoCloseable {
+    final ServerSocket socket = new ServerSocket(0);
+    final java.util.concurrent.atomic.AtomicInteger connections = new java.util.concurrent.atomic.AtomicInteger(),
+        forces = new java.util.concurrent.atomic.AtomicInteger();
+    private volatile OutputStream out;
+
+    Provider() throws Exception {
+      Thread t =
+          new Thread(
+              () -> {
+                while (!socket.isClosed())
+                  try {
+                    Socket c = socket.accept();
+                    InputStream in = c.getInputStream();
+                    StringBuilder head = new StringBuilder();
+                    while (!head.toString().endsWith("\r\n\r\n")) head.append((char) in.read());
+                    String key = head.toString().replaceAll("(?s).*Sec-WebSocket-Key: ([^\r]+).*", "$1");
+                    OutputStream o = c.getOutputStream();
+                    o.write(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + WebSocket.expectedAccept(key) + "\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
+                    o.flush();
+                    out = o;
+                    connections.incrementAndGet();
+                    Thread reader = new Thread(() -> read(c, in));
+                    reader.setDaemon(true);
+                    reader.start();
+                  } catch (Exception closed) {
+                    return;
+                  }
+              });
+      t.setDaemon(true);
+      t.start();
+    }
+
+    /** The client's frames (masked): text ones are looked at, the rest is audio. */
+    private void read(Socket c, InputStream in) {
+      try (c) {
+        while (true) {
+          int b0 = in.read(), b1 = in.read();
+          if (b0 < 0 || b1 < 0) return;
+          long n = b1 & 0x7f;
+          if (n == 126) n = ((in.read() & 0xff) << 8) | (in.read() & 0xff);
+          else if (n == 127) n = java.nio.ByteBuffer.wrap(in.readNBytes(8)).getLong();
+          byte[] mask = in.readNBytes(4), payload = in.readNBytes((int) n);
+          for (int i = 0; i < payload.length; i++) payload[i] ^= mask[i & 3];
+          if ((b0 & 0x0f) == 0x8) return;
+          if ((b0 & 0x0f) == 0x1 && new String(payload, StandardCharsets.UTF_8).contains("ForceEndpoint")) forces.incrementAndGet();
+        }
+      } catch (Exception gone) {
+        /* Closed. */
+      }
+    }
+
+    /** A text message on the latest connection. */
+    void send(String text) throws Exception {
+      byte[] b = text.getBytes(StandardCharsets.UTF_8);
+      java.io.ByteArrayOutputStream f = new java.io.ByteArrayOutputStream();
+      f.write(0x81);
+      if (b.length < 126) f.write(b.length);
+      else {
+        f.write(126);
+        f.write(b.length >> 8);
+        f.write(b.length & 0xff);
+      }
+      f.write(b);
+      synchronized (this) {
+        out.write(f.toByteArray());
+        out.flush();
+      }
+    }
+
+    /** The provider ends the session (its time limit): close 1000. */
+    void endSession() throws Exception {
+      synchronized (this) {
+        out.write(new byte[] {(byte) 0x88, 2, 0x03, (byte) 0xe8});
+        out.flush();
+      }
+    }
+
+    String url() {
+      return "ws://127.0.0.1:" + socket.getLocalPort() + "/v3/ws";
+    }
+
+    @Override
+    public void close() throws Exception {
+      socket.close();
+    }
+  }
+
+  /** Waits until the condition holds (at most 2 s). */
+  static void until(java.util.function.BooleanSupplier c) throws Exception {
+    for (int i = 0; i < 100 && !c.getAsBoolean(); i++) Thread.sleep(20);
+    assertTrue(c.getAsBoolean());
+  }
+
+  /** An AssemblyAI turn message. */
+  static String turn(int order, boolean end, String transcript) {
+    return "{\"type\":\"Turn\",\"turn_order\":" + order + ",\"end_of_turn\":" + end + ",\"transcript\":\"" + transcript + "\"}";
+  }
+
+  /** 100 ms of audio (one chunk): what makes it check whether to close after a minute. */
+  static void chunk(StreamingSpeech s) {
+    for (int i = 0; i < StreamingSpeech.CHUNK_MS / HandsFree.Segmenter.FRAME_MS; i++) s.audio(new byte[640]);
+  }
+
+  /** Open, a minute without speech (closed: it's billed while open), then speech again: open anew. */
+  static void reconnect(StreamingSpeech s, java.util.concurrent.atomic.AtomicLong now, Provider p) throws Exception {
+    int before = p.connections.get();
+    now.addAndGet(StreamingSpeech.IDLE_MS);
+    chunk(s);
+    Thread.sleep(200);
+    s.speech();
+    until(() -> p.connections.get() == before + 1);
+    Thread.sleep(100);
+  }
+
+  @Test
+  public void assemblyAiCountsTurnsAfreshOnANewConnection() throws Exception {
+    // Philipp's call, 27 October 2026, 09:17:52: the connection closed after a minute without
+    // speech and opened again; the new session's turns counted from 0 again and were taken for
+    // repeats of the last session's: "Okay." never came, so "Over." alone sent nothing.
+    String was = StreamingSpeech.assemblyAiUrl;
+    try (Provider p = new Provider()) {
+      StreamingSpeech.assemblyAiUrl = p.url();
+      java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1_000_000);
+      StreamingSpeech s = StreamingSpeech.create(StreamingSpeech.AAI_PRO, "k", List.of());
+      s.clock = now::get;
+      s.speech();
+      until(() -> p.connections.get() == 1);
+      for (int i = 0; i <= 3; i++) {
+        p.send(turn(i, true, "Message " + i + ". Over."));
+        int n = i;
+        until(() -> s.text().equals("Message " + n + ". Over."));
+        s.take(100);
+      }
+      reconnect(s, now, p);
+      p.send(turn(0, false, "Okay"));
+      until(() -> s.text().equals("Okay"));
+      p.send(turn(0, true, "Okay."));
+      until(() -> s.text().equals("Okay."));
+      p.send(turn(1, false, "Over."));
+      until(() -> s.text().equals("Okay. Over."));
+      p.send(turn(1, true, "Over."));
+      assertEquals("Okay. Over.", s.take(1000));
+      // And again after the next reconnect, also with a turn dropped just before it.
+      p.send(turn(2, false, "Mm"));
+      until(() -> s.text().equals("Mm"));
+      s.discard();
+      reconnect(s, now, p);
+      p.send(turn(0, true, "So it seems to be stuck."));
+      until(() -> s.text().equals("So it seems to be stuck."));
+      s.close();
+    } finally {
+      StreamingSpeech.assemblyAiUrl = was;
+    }
+  }
+
+  @Test
+  public void whatsLiveWhenTheProviderEndsTheSessionIsKept() throws Exception {
+    String was = StreamingSpeech.assemblyAiUrl;
+    try (Provider p = new Provider()) {
+      StreamingSpeech.assemblyAiUrl = p.url();
+      List<String> events = new CopyOnWriteArrayList<>();
+      StreamingSpeech s = StreamingSpeech.create(StreamingSpeech.AAI_PRO, "k", List.of());
+      s.events = events::add;
+      s.speech();
+      until(() -> p.connections.get() == 1);
+      p.send(turn(5, false, "Book the table"));
+      until(() -> s.text().equals("Book the table"));
+      p.endSession(); // Its final never comes.
+      until(() -> String.join("\n", events).contains("the provider ended the session"));
+      s.speech();
+      until(() -> p.connections.get() == 2);
+      Thread.sleep(100);
+      p.send(turn(0, false, "for Friday"));
+      until(() -> s.text().equals("Book the table for Friday"));
+      p.send(turn(0, true, "for Friday."));
+      until(() -> s.text().equals("Book the table for Friday."));
+      s.close();
+    } finally {
+      StreamingSpeech.assemblyAiUrl = was;
+    }
+  }
+
   /** A server that answers the upgrade (after delayMs), then reads what comes and reports when it ends. */
   static final class Server implements AutoCloseable {
     final ServerSocket socket = new ServerSocket(0);
