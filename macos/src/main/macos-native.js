@@ -146,14 +146,18 @@ function bind(koffi) {
   return {
     trusted: () => ax.trusted(),
 
-    /** What has the keyboard focus: {role, editable, value, selection} or {error}. */
-    focus() {
+    /**
+     * What has the keyboard focus: {role, editable, value, selection} or {error}. full false: role
+     * and editable only (a terminal's or editor's whole text is slow to read).
+     */
+    focus(full = true) {
       const f = focused();
       if (f.error !== undefined) return { error: f.error };
       try {
         const role = stringAttr(f.element, 'AXRole');
         const out = [false];
         const editable = ax.settable(f.element, A('AXValue'), out) === 0 && out[0];
+        if (!full) return { role, editable };
         return { role, editable, value: stringAttr(f.element, 'AXValue'), selection: rangeAttr(f.element, 'AXSelectedTextRange') };
       } finally {
         cf.release(f.element);

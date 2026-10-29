@@ -33,13 +33,13 @@ certificate, so macOS keeps the microphone and Accessibility permissions and the
 
 ## Use
 
-- **⌥Space** (Settings → Start) starts dictating, **⌥Space** again stops: like the Android volume
-  key. The floating panel then offers 📥 Insert, ✨ Refine, 🧑‍💼 Chief and ✕; tap ✨ or 🧑‍💼 while
+- **⌃⇧Space** (Settings → Start) starts dictating, **⌃⇧Space** again stops: like the Android
+  volume key. (Not ⌥Space: macOS 15 refuses global shortcuts with only ⌥ or ⌥⇧.) The floating panel then offers 📥 Insert, ✨ Refine, 🧑‍💼 Chief and ✕; tap ✨ or 🧑‍💼 while
   still talking to queue them. The panel never takes the focus, so Insert goes to the app you were
   typing in. **Insert automatically** (Settings → Start) inserts as soon as the text is ready.
-- **⇧⌥Space** starts or ends a **hands-free call** (or 📞 on the panel while dictating). The call
-  bar shows the state, Send now and the red hang-up; during a call ⌥Space and the headset button
-  send.
+- **⌃⌥⇧Space** starts or ends a **hands-free call** (or 📞 on the panel while dictating; pressed
+  while dictating, the call takes the dictation over). The call bar shows the state, Send now and
+  the red hang-up; during a call ⌃⇧Space and the headset's play/pause button send.
 - The menu-bar icon has everything else: notes, settings, and the call.
 
 ## Differences from Android
@@ -63,6 +63,8 @@ certificate, so macOS keeps the microphone and Accessibility permissions and the
   output.
 - **Echo cancelling** during calls is Chromium's (the same engine as in browsers' calls), plus the
   app's own echo check, instead of Android's call audio mode.
+- Insert presses the key in the ⌘V position of a US layout (fine for QWERTY and QWERTZ; Dvorak
+  needs the "Dvorak – QWERTY ⌘" layout).
 - English UI only for now (Android has eight languages); speech in any language as before.
 - Not ported (Android only): the Quick Settings tile, the volume-key service.
 

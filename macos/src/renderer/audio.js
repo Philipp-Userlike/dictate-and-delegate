@@ -13,8 +13,9 @@ let mic = null;
 let micTurn = 0;
 
 async function micStart({ call = false, deviceId = '' } = {}) {
-  await micStop();
-  const turn = ++micTurn;
+  const stopping = micStop();
+  const turn = ++micTurn; // Taken before waiting: a stop that comes meanwhile wins.
+  await stopping;
   const constraints = {
     channelCount: 1,
     // A call is like Android's VOICE_COMMUNICATION: echo cancelling, noise suppression and gain
@@ -24,7 +25,16 @@ async function micStart({ call = false, deviceId = '' } = {}) {
     autoGainControl: call,
   };
   if (deviceId) constraints.deviceId = { exact: deviceId };
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
+  } catch (e) {
+    // The chosen microphone isn't there (AirPods away): the default one rather than nothing.
+    if (!deviceId || !['OverconstrainedError', 'NotFoundError'].includes(e && e.name)) throw e;
+    console.warn('microphone ' + deviceId + ' unavailable (' + e.name + '): using the default one');
+    delete constraints.deviceId;
+    stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
+  }
   if (turn !== micTurn) {
     stream.getTracks().forEach((t) => t.stop());
     throw new Error('stopped');
@@ -98,6 +108,45 @@ function output() {
 }
 
 /** Keeps the audio output open (silent) for the whole call, so a reply's first sound comes out at once. */
+/**
+ * The headset's play/pause button during a call: AirPods and car buttons go to the app that's
+ * "now playing", so a silent looping track makes the call that app, and its media session's
+ * play/pause sends (Android: the call's media session).
+ */
+let nowPlaying = null;
+function silentWav(seconds) {
+  const rate = 8000, n = rate * seconds, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const str = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  str(36, 'data'); v.setUint32(40, n * 2, true);
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+function mediaButtonsOn() {
+  if (nowPlaying || !('mediaSession' in navigator)) return;
+  nowPlaying = new Audio(silentWav(5));
+  nowPlaying.loop = true;
+  nowPlaying.play().catch(() => {});
+  navigator.mediaSession.metadata = new MediaMetadata({ title: 'Hands-free call', artist: 'Dictate & Delegate' });
+  for (const action of ['play', 'pause', 'stop'])
+    navigator.mediaSession.setActionHandler(action, () => {
+      dd.send('media:button', action);
+      if (nowPlaying && nowPlaying.paused) nowPlaying.play().catch(() => {}); // Stays "now playing".
+    });
+  navigator.mediaSession.playbackState = 'playing';
+}
+function mediaButtonsOff() {
+  if (!nowPlaying) return;
+  nowPlaying.pause();
+  URL.revokeObjectURL(nowPlaying.src);
+  nowPlaying = null;
+  for (const action of ['play', 'pause', 'stop']) navigator.mediaSession.setActionHandler(action, null);
+  navigator.mediaSession.playbackState = 'none';
+}
+dd.on('media:on', () => mediaButtonsOn());
+dd.on('media:off', () => mediaButtonsOff());
+
 dd.on('audio:open', () => {
   const ctx = output();
   if (keepOpen) return;
@@ -356,6 +405,7 @@ dd.on('speak:start', (id, text, voiceName) => {
   speechSynthesis.speak(u);
 });
 dd.on('speak:stop', () => speechSynthesis.cancel());
+speechSynthesis.getVoices(); // Loads the list, which is empty on first use.
 dd.on('speak:voices', (id) => dd.send('speak:voices', id, speechSynthesis.getVoices().map((v) => ({ name: v.name, lang: v.lang }))));
 
 // ------------------------------------------------------------------ sounds

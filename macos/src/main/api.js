@@ -40,8 +40,8 @@ const LEGACY_CHECK = 'deepseek/deepseek-v4.1-flash';
 const LEGACY_CHECK_NAME = 'DeepSeek V4.1 Flash';
 
 /** Mac settings (main.js reads the same keys). */
-const HOTKEY_DEFAULT = 'Alt+Space';
-const CALL_HOTKEY_DEFAULT = 'Alt+Shift+Space';
+const HOTKEY_DEFAULT = 'Control+Shift+Space';
+const CALL_HOTKEY_DEFAULT = 'Control+Alt+Shift+Space';
 /** Mac: which of the Mac's voices reads replies when "The Mac's voice" is chosen ("" = the default English one). */
 const MAC_VOICE = 'macVoice';
 

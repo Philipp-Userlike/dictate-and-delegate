@@ -36,7 +36,8 @@ const PRELOAD = path.join(RENDERER, 'preload.js');
 
 /** Settings of the Mac app (Android keeps these keys for its own start options). */
 const HOTKEY = 'hotkey', CALL_HOTKEY = 'callHotkey', INSERT_METHOD = 'insertMethod', MIC = 'micDevice';
-const DEFAULT_HOTKEY = 'Alt+Space', DEFAULT_CALL_HOTKEY = 'Alt+Shift+Space';
+// Not ⌥ or ⌥⇧ alone: macOS 15 refuses global shortcuts with only those modifiers.
+const DEFAULT_HOTKEY = 'Control+Shift+Space', DEFAULT_CALL_HOTKEY = 'Control+Alt+Shift+Space';
 
 // End-to-end tests on Linux (scripts/e2e.js): their own data folder, a WAV file as the microphone.
 if (process.env.DD_E2E) {
@@ -67,6 +68,7 @@ function start() {
     else pendingUrls.push(url);
   });
   app.on('second-instance', () => openMain());
+  app.on('activate', () => ctx && openMain());
   app.on('window-all-closed', () => {
     /* A menu-bar app keeps running without windows. */
   });
@@ -84,13 +86,19 @@ function start() {
     }
     // Then the microphone and the audio window: a renderer holding the microphone can hold up quitting.
     try {
-      if (dictation && dictation.busy()) dictation.cancel();
+      // A recording stays on disk: the next start offers to retry or discard it.
+      if (dictation && dictation.busy()) dictation.stopMicrophone();
       audio.micStop();
       audio.win.destroy();
     } catch {}
   });
 
-  app.whenReady().then(async () => {
+  app.whenReady().then(() => ready().catch((e) => {
+    dialog.showErrorBox('Dictate & Delegate could not start', String((e && e.stack) || e));
+    app.exit(1);
+  }));
+
+  async function ready() {
     if (app.dock) app.dock.hide();
     ctx = await createContext({ log: (line) => process.env.DD_TRACE && fs.appendFileSync(process.env.DD_TRACE, line + '\n') });
     ctx.log(`app: Dictate & Delegate ${app.getVersion()} started (Electron ${process.versions.electron}, macOS ${process.getSystemVersion ? process.getSystemVersion() : ''})`);
@@ -106,18 +114,13 @@ function start() {
     });
     try {
       call = require('./call').createCall({ ctx, audio, shell: callShell() });
-      let mediaKey = false;
+      let wasActive = false;
       call.onChange((snap) => {
         for (const fn of callListeners) fn(snap);
         updateTray();
-        // The headset's play/pause button sends, as on Android (macOS needs Accessibility for it).
-        const want = !!snap.active && insertion.accessibility(false);
-        if (want !== mediaKey) {
-          mediaKey = want;
-          try {
-            if (want) globalShortcut.register('MediaPlayPause', () => call.sendNow());
-            else globalShortcut.unregister('MediaPlayPause');
-          } catch {}
+        if (!!snap.active !== wasActive) {
+          wasActive = !!snap.active;
+          registerHotkeys(); // The headset's play/pause key sends only during a call.
         }
       });
     } catch (e) {
@@ -164,7 +167,7 @@ function start() {
         ctx.archive.prune();
       } catch {}
     }, 6 * 3600_000);
-  });
+  }
 
   // ---------------------------------------------------------------- dictation
 
@@ -257,6 +260,7 @@ function start() {
       {
         label: 'Attach a file…',
         click: async () => {
+          app.focus({ steal: true });
           const r = await dialog.showOpenDialog({
             properties: ['openFile', 'multiSelections'],
             filters: [{ name: 'Images, PDFs, text', extensions: ['png', 'jpg', 'jpeg', 'heic', 'gif', 'webp', 'pdf', 'txt', 'md', 'csv', 'json'] }, { name: 'All files', extensions: ['*'] }],
@@ -268,11 +272,12 @@ function start() {
               dialog.showMessageBox({ type: 'warning', message: e.message });
             }
           }
+          if (!mainWindow || !mainWindow.isVisible()) app.hide(); // Back to the app you dictate into.
           dictation.touch && dictation.touch();
         },
       },
     ]);
-    menu.popup();
+    menu.popup({ window: panel });
   }
 
   // ---------------------------------------------------------------- the floating panel
@@ -296,7 +301,7 @@ function start() {
       webPreferences: { preload: PRELOAD, contextIsolation: true, sandbox: true },
     });
     win.setAlwaysOnTop(true, 'floating');
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
     win.loadFile(path.join(RENDERER, 'panel.html'));
     win.on('moved', () => {
       const [x, y] = win.getPosition();
@@ -366,6 +371,9 @@ function start() {
 
   function startCall({ seed = null } = {}) {
     if (!call) return dialog.showMessageBox({ type: 'warning', message: 'Hands-free is not available in this build.' });
+    // While dictating, the call takes the dictation over (as 📞 does), so they never share the microphone.
+    if (!seed && dictation.snapshot().state === 'recording') return dictation.call();
+    if (call.active()) return;
     if (!ctx.bb.ready()) {
       openMain('chief');
       return;
@@ -391,18 +399,32 @@ function start() {
       const accel = ctx.prefs.get(key, fallback);
       if (!accel) return;
       try {
-        if (!globalShortcut.register(accel, fn)) problems[key] = `${accel} is taken by another app`;
+        if (optionOnly(accel)) problems[key] = `macOS doesn't allow a shortcut with only ⌥ or ⌥⇧: add ⌃ or ⌘`;
+        else if (!globalShortcut.register(accel, fn)) problems[key] = `${accel} couldn't be set: another app uses it, or macOS doesn't allow it`;
       } catch (e) {
         problems[key] = `${accel}: ${e.message}`;
       }
     };
     add(HOTKEY, DEFAULT_HOTKEY, () => toggleDictation());
     add(CALL_HOTKEY, DEFAULT_CALL_HOTKEY, () => (call && call.active() ? call.end() : startCall()));
+    // The headset's play/pause key sends during a call, as on Android (macOS needs Accessibility).
+    if (call && call.active() && insertion.accessibility(false)) {
+      try {
+        globalShortcut.register('MediaPlayPause', () => call.sendNow());
+      } catch {}
+    }
     for (const [k, v] of Object.entries(problems)) ctx.log(`hotkey: ${v}`);
     hotkeyProblems = problems;
     return problems;
   }
   let hotkeyProblems = {};
+
+  /** ⌥ or ⌥⇧ as the only modifiers: macOS 15 refuses such global shortcuts. */
+  function optionOnly(accel) {
+    const parts = String(accel).split('+').slice(0, -1).map((p) => p.toLowerCase());
+    const mods = parts.filter((p) => !['alt', 'option', 'shift'].includes(p));
+    return parts.some((p) => p === 'alt' || p === 'option') && mods.length === 0;
+  }
 
   function setHotkey(key, fallback, accel) {
     const before = ctx.prefs.get(key, fallback);
@@ -514,7 +536,11 @@ function start() {
       e.preventDefault();
       if (!url.startsWith('file:')) openExternal(url);
     });
-    mainWindow.on('closed', () => (mainWindow = null));
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+      registerHotkeys(); // In case the shortcut recorder was still listening.
+    });
+    mainWindow.webContents.on('did-start-navigation', (e) => e.isMainFrame && !e.isSameDocument && registerHotkeys());
     return mainWindow;
   }
 
@@ -564,7 +590,7 @@ function start() {
 
   function appShell() {
     return {
-      startDictation: () => dictation.start(),
+      startDictation: () => (call && call.active() ? null : dictation.start()),
       toggleDictation: () => toggleDictation(),
       startCall: () => startCall(),
       callAvailable: () => !!call,

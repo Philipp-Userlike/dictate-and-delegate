@@ -3,7 +3,7 @@
 // a stream of 20 ms PCM frames, and playback the core's voice code can drive.
 
 const path = require('path');
-const { BrowserWindow, ipcMain } = require('electron');
+const { BrowserWindow, ipcMain, systemPreferences } = require('electron');
 const { deferred, withTimeout } = require('../core/util');
 
 class AudioBridge {
@@ -32,7 +32,16 @@ class AudioBridge {
       const level = e.level !== undefined ? e.level : 'info';
       if (level === 'warning' || level === 'error' || level === 2 || level === 3) log(`audio window: ${e.message}`);
     });
-    this.win.webContents.on('render-process-gone', (_e, d) => log(`audio window gone: ${d.reason}`));
+    this.win.webContents.on('render-process-gone', (_e, d) => {
+      log(`audio window gone: ${d.reason}; reloading it`);
+      this.readyGate = deferred();
+      for (const [id, p] of this.players) {
+        this.players.delete(id);
+        if (p.callbacks.onEnded) p.callbacks.onEnded(false, 'the audio window stopped');
+      }
+      if (this.onMicError) this.onMicError('the audio window stopped');
+      if (!this.win.isDestroyed()) this.win.webContents.reload();
+    });
     const mine = (e) => e.sender === this.win.webContents;
     ipcMain.on('audio:ready', (e) => mine(e) && this.readyGate.resolve());
     ipcMain.on('mic:frame', (e, bytes) => {
@@ -40,6 +49,7 @@ class AudioBridge {
       this.onFrame(Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength));
     });
     ipcMain.on('mic:error', (e, why) => mine(e) && this.onMicError && this.onMicError(why));
+    ipcMain.on('media:button', (e, action) => mine(e) && this.onMediaButton && this.onMediaButton(action));
     for (const ch of ['mic:started', 'mic:devices', 'speak:voices'])
       ipcMain.on(ch, (e, id, value) => {
         if (!mine(e)) return;
@@ -90,9 +100,18 @@ class AudioBridge {
    * call: echo cancelling, noise suppression and gain control on (hands-free); off for dictation.
    */
   async micStart({ call = false, deviceId = '' }, onFrame, onError) {
+    // Asked first, so the first recording doesn't get silence while macOS's prompt is up.
+    if (process.platform === 'darwin' && systemPreferences.getMediaAccessStatus('microphone') === 'not-determined')
+      await systemPreferences.askForMediaAccess('microphone');
     this.onFrame = onFrame;
     this.onMicError = onError;
-    const r = await this.ask('mic:start', { call, deviceId });
+    let r;
+    try {
+      r = await this.ask('mic:start', { call, deviceId });
+    } catch (e) {
+      this.micStop(); // It may still open late: closed again.
+      throw e;
+    }
     if (r && r.error) {
       this.onFrame = null;
       const err = new Error(r.error === 'microphone-denied' ? 'Dictate & Delegate may not use the microphone. Allow it in System Settings → Privacy & Security → Microphone.' : r.error);
@@ -115,6 +134,12 @@ class AudioBridge {
 
   voices() {
     return this.ask('speak:voices').catch(() => []);
+  }
+
+  /** The headset's play/pause button goes to fn while on (during a call), through Now Playing. */
+  mediaButtons(fn) {
+    this.onMediaButton = fn;
+    if (!this.win.isDestroyed()) this.win.webContents.send(fn ? 'media:on' : 'media:off');
   }
 
   /** Keeps the output awake, silently, for a call (Settings → Hands-free → Keep the call audio open). */

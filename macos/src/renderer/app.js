@@ -619,7 +619,7 @@ function pageHow(root) {
 /** The global shortcut: shown, and a field that records the next key combination. */
 function recorder(kind) {
   const current = kind === 'call' ? S.callHotkey : S.hotkey;
-  const fallback = kind === 'call' ? 'Alt+Shift+Space' : 'Alt+Space';
+  const fallback = kind === 'call' ? 'Control+Alt+Shift+Space' : 'Control+Shift+Space';
   const problem = (S.hotkeyProblems || {})[kind === 'call' ? 'callHotkey' : 'hotkey'];
   const msg = h('div', { class: 'small gap-4 ' + (problem ? 'warn' : 'muted') }, problem || '');
   const cap = h('button', { class: 'keycap', 'aria-label': 'Shortcut, click to change' }, accelLabel(current));

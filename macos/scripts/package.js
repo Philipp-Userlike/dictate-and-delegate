@@ -89,6 +89,8 @@ async function wrap(dir, arch) {
       NSMicrophoneUsageDescription:
         'Dictate & Delegate records your voice while you dictate or are in a hands-free call, and sends it to the speech model you chose.',
       NSHumanReadableCopyright: 'MIT License',
+      // Alerts (not banners): notifications with buttons (Insert / Copy) need this.
+      NSUserNotificationAlertStyle: 'alert',
     },
   });
   return path.join(appPath, NAME + '.app');

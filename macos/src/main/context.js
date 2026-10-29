@@ -22,14 +22,36 @@ const { BbBridge } = require('../core/bb-bridge');
 const { ChiefSkills } = require('../core/chief-skills');
 const handsFreeLog = require('../core/handsfree-log');
 
-/** Images as JPEG (what Android stores), at most IMAGE_MAX_WIDTH × IMAGE_MAX_HEIGHT, through Electron. */
-function toJpeg(buffer) {
+/**
+ * Images as JPEG (what Android stores), at most IMAGE_MAX_WIDTH × IMAGE_MAX_HEIGHT. Electron reads
+ * PNG and JPEG itself; HEIC (iPhone photos), GIF, WebP, TIFF and the rest go through macOS's sips.
+ */
+async function toJpeg(buffer) {
   let img = nativeImage.createFromBuffer(buffer);
-  if (img.isEmpty()) return null;
+  if (img.isEmpty() && process.platform === 'darwin') img = await throughSips(buffer);
+  if (!img || img.isEmpty()) return null;
   const { width, height } = img.getSize();
   const scale = Math.min(1, IMAGE_MAX_WIDTH / width, IMAGE_MAX_HEIGHT / height);
   if (scale < 1) img = img.resize({ width: Math.round(width * scale), height: Math.round(height * scale), quality: 'best' });
   return img.toJPEG(JPEG_QUALITY);
+}
+
+function throughSips(buffer) {
+  const os = require('os');
+  const { execFile } = require('child_process');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dd-img-'));
+  const input = path.join(dir, 'in'), output = path.join(dir, 'out.jpg');
+  fs.writeFileSync(input, buffer);
+  return new Promise((resolve) => {
+    execFile('/usr/bin/sips', ['-s', 'format', 'jpeg', input, '--out', output], { timeout: 20_000 }, (err) => {
+      let img = null;
+      try {
+        if (!err) img = nativeImage.createFromBuffer(fs.readFileSync(output));
+      } catch {}
+      fs.rm(dir, { recursive: true, force: true }, () => {});
+      resolve(img);
+    });
+  });
 }
 
 async function createContext({ log: baseLog } = {}) {

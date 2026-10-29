@@ -181,7 +181,7 @@ function createCall({ ctx, audio, shell }) {
     if (bar && !bar.isDestroyed()) bar.webContents.send('call', snap);
   };
 
-  function newController() {
+  function newController(ownBlocker) {
     const { prefs, vault, bb, openRouter, profile, history } = ctx;
     voice = new Voice({ vault, player, log: (l) => ctx.log('voice: ' + l) });
     const choice = voiceChoice(prefs.get(HandsFree.VOICE, DEFAULT_VOICE.id));
@@ -235,7 +235,8 @@ function createCall({ ctx, audio, shell }) {
       tellTalkerSkill: () => ctx.skills.safelyTellTalker(),
       onChange: changed,
       onEnded: () => {
-        release();
+        if (!api.active()) audio.mediaButtons(null);
+        release(ownBlocker); // This call's own: a new call may hold another by now.
         changed();
         setTimeout(() => {
           if (!api.active() && bar && !bar.isDestroyed()) bar.hide();
@@ -264,7 +265,7 @@ function createCall({ ctx, audio, shell }) {
       webPreferences: { preload: path.join(RENDERER, 'preload.js'), contextIsolation: true, sandbox: true },
     });
     win.setAlwaysOnTop(true, 'floating');
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
     win.loadFile(path.join(RENDERER, 'callbar.html'));
     win.on('moved', () => {
       const [x, y] = win.getPosition();
@@ -310,9 +311,10 @@ function createCall({ ctx, audio, shell }) {
     start({ seed = null } = {}) {
       if (api.active()) return;
       const at = shell.panelPosition ? shell.panelPosition() : null;
-      controller = newController();
       blocker = powerSaveBlocker.start('prevent-app-suspension'); // Android's wake lock.
+      controller = newController(blocker);
       controller.start({ seed });
+      audio.mediaButtons(() => api.sendNow()); // The headset button sends, as on Android.
       showBar(seed ? at : null);
       changed();
     },
@@ -321,6 +323,7 @@ function createCall({ ctx, audio, shell }) {
       if (!controller) return;
       const id = blocker;
       const done = controller.finish();
+      audio.mediaButtons(null);
       ending = done;
       changed();
       await done;

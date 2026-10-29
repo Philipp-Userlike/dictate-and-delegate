@@ -19,6 +19,7 @@ function button(b) {
 
 function render(m) {
   root.innerHTML = '';
+  if (!m) m = { mode: 'hidden' };
   root.style.setProperty('--alpha', String(Math.max(0.35, Math.min(1, (m.opacity || 65) / 100 + 0.27))));
   if (!m || m.mode === 'hidden') {
     root.className = 'hidden';
