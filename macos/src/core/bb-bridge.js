@@ -549,7 +549,7 @@ class BbBridge {
    * With a talker, it goes to both at once, the same text and request ID (HandsFreeService.sendBoth):
    * throws when neither got it, PartlySent when only one did. Returns {took: {threadId: ms}}.
    */
-  async sendHandsFree(chiefId, said, request, talker = '') {
+  async sendHandsFree(chiefId, said, request, talker = '', events = null) {
     const msg = handsFreeMessage(said, request);
     if (!talker || talker === chiefId) {
       const start = Date.now();
@@ -560,8 +560,9 @@ class BbBridge {
     const failed = await this.tellEach(bothTo(chiefId, talker, msg, msg), took);
     const chiefWhy = failed[chiefId];
     const talkerWhy = failed[talker];
-    if (chiefWhy != null) this.log("the chief didn't get " + request + ': ' + chiefWhy);
-    if (talkerWhy != null) this.log('the talker (' + talker + ") didn't get " + request + ': ' + talkerWhy);
+    const note = events || this.log;
+    if (chiefWhy != null) note("the chief didn't get " + request + ': ' + chiefWhy);
+    if (talkerWhy != null) note('the talker (' + talker + ") didn't get " + request + ': ' + talkerWhy);
     if (chiefWhy != null && talkerWhy != null) throw new Error(tr('neither the chief nor the talker got it: %1$s', chiefWhy));
     if (chiefWhy != null) throw new PartlySent(request, true, chiefWhy);
     if (talkerWhy != null) throw new PartlySent(request, false, talkerWhy);

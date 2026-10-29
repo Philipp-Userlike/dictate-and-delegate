@@ -326,6 +326,7 @@ class HandsFreeCall {
     session.dropsOutdated = this.talker !== '';
     const live = this.startLive(sendWords, endWords);
     const choice = opts.voiceChoice || null;
+    if (voice != null && 'systemStatus' in voice) voice.systemStatus = (why) => call.event("the Mac's voice: " + why);
     if (voice != null && choice && choice.model && typeof voice.warm === 'function') voice.warm();
     this.callCost = decimal.of(0);
     if (opts.logFile) HandsFreeLog.append(opts.logFile, HandsFreeLog.callStarted(hhmm(new Date())));
@@ -467,14 +468,17 @@ class HandsFreeCall {
    * message that reached someone is kept as a note.
    */
   async sendMessage(said, request, model) {
+    // The chief as set now (Android reads it at each send), the talker fixed for the call.
+    this.chief = this.bb.chiefId() || this.chief;
+    const events = (line) => this.event(line);
     if (!this.talker) {
-      await this.bb.sendHandsFree(this.chief, said, request, '');
+      await this.bb.sendHandsFree(this.chief, said, request, '', events);
       await this.keepNote(said, request, model);
       return;
     }
     let r;
     try {
-      r = await this.bb.sendHandsFree(this.chief, said, request, this.talker);
+      r = await this.bb.sendHandsFree(this.chief, said, request, this.talker, events);
     } catch (ex) {
       if (isPartlySent(ex)) await this.keepNote(said, request, model);
       throw ex;

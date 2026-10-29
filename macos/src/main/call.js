@@ -54,7 +54,9 @@ function makePlayer(audio, prefs) {
       return { stop: () => handle.stop(), playedMs: () => handle.playedMs(), playing: () => handle.playing() };
     },
 
-    speak(text, { onStarted, onRange, onEnded, onError }) {
+    speak(text, callbacks) {
+      if (process.platform === 'darwin') return sayThrough(audio, text, prefs.get('macVoice', ''), callbacks);
+      const { onStarted, onRange, onEnded, onError } = callbacks;
       const h = audio.speak(
         text,
         {
@@ -84,6 +86,79 @@ function makePlayer(audio, prefs) {
   };
 }
 
+/**
+ * The Mac's voice for a reply: macOS's `say` renders it to audio, which plays in the audio window
+ * like the other voices, so the call's echo cancelling hears it and talking over it works (Web
+ * speechSynthesis would play it outside Chromium, where its echo would count as your speech).
+ * How far you heard follows the playback position.
+ */
+function sayThrough(audio, text, voiceName, { onStarted, onRange, onEnded, onError }) {
+  const fs = require('fs');
+  const os = require('os');
+  const { execFile } = require('child_process');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dd-say-'));
+  const input = path.join(dir, 'reply.txt');
+  const output = path.join(dir, 'reply.wav');
+  fs.writeFileSync(input, text);
+  let handle = null, stopped = false, timer = null, ended = false;
+  const cleanup = () => fs.rm(dir, { recursive: true, force: true }, () => {});
+  const finish = (played, why) => {
+    if (ended) return;
+    ended = true;
+    clearInterval(timer);
+    cleanup();
+    if (!played && why && onError) onError(why);
+    else onEnded && onEnded(!!played);
+  };
+  const render = (withVoice) =>
+    execFile('/usr/bin/say', [...(withVoice ? ['-v', withVoice] : []), '--data-format=LEI16@22050', '-o', output, '-f', input], { timeout: 30_000 }, (err) => {
+      if (stopped) return finish(false);
+      if (err && withVoice) return render(''); // A voice macOS doesn't have: its default one.
+      if (err) return finish(false, err.message);
+      let pcm, rate = 22050;
+      try {
+        ({ pcm, rate } = wavData(fs.readFileSync(output)));
+      } catch (e) {
+        return finish(false, e.message);
+      }
+      const durationMs = (pcm.length / 2 / rate) * 1000;
+      handle = audio.play(
+        { type: 'pcm', rate, channels: 1 },
+        {
+          onStarted: () => {
+            onStarted && onStarted();
+            timer = setInterval(() => onRange && onRange(Math.min(text.length, Math.floor((text.length * handle.playedMs()) / durationMs))), 100);
+          },
+          onEnded: (played) => finish(played),
+        },
+      );
+      handle.push(pcm);
+      handle.end();
+    });
+  render(voiceName);
+  return {
+    stop: () => {
+      stopped = true;
+      if (handle) handle.stop();
+    },
+    playing: () => !!handle && handle.playing(),
+  };
+}
+
+/** The samples of a WAV file (16-bit), and their rate. */
+function wavData(buf) {
+  if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WAVE') throw new Error('not a WAV file');
+  let rate = 22050;
+  for (let at = 12; at + 8 <= buf.length; ) {
+    const id = buf.toString('ascii', at, at + 4);
+    const size = buf.readUInt32LE(at + 4);
+    if (id === 'fmt ') rate = buf.readUInt32LE(at + 12);
+    if (id === 'data') return { pcm: buf.subarray(at + 8, Math.min(buf.length, at + 8 + size)), rate };
+    at += 8 + size + (size % 2);
+  }
+  throw new Error('no audio in the WAV file');
+}
+
 function createCall({ ctx, audio, shell }) {
   const listeners = new Set();
   const player = makePlayer(audio, ctx.prefs);
@@ -91,6 +166,14 @@ function createCall({ ctx, audio, shell }) {
   let voice = null;
   let bar = null;
   let blocker = -1;
+  /** The end of the last call, while it's still being told to the chief (quitting waits for it). */
+  let ending = null;
+
+  /** Android's wake lock: released however the call ends (End, "end the call", a failed microphone). */
+  function release(id = blocker) {
+    if (id >= 0 && powerSaveBlocker.isStarted(id)) powerSaveBlocker.stop(id);
+    if (id === blocker) blocker = -1;
+  }
 
   const changed = () => {
     const snap = api.snapshot();
@@ -144,7 +227,7 @@ function createCall({ ctx, audio, shell }) {
       },
       updateNote: async (request, fn) => {
         const e = history.all().find((n) => n.json.chiefRequest === request);
-        if (!e) return;
+        if (!e) throw new Error('no note for request ' + request);
         fn(e);
         history.save(e);
         ctx.emit('notes', e.json.id);
@@ -152,6 +235,7 @@ function createCall({ ctx, audio, shell }) {
       tellTalkerSkill: () => ctx.skills.safelyTellTalker(),
       onChange: changed,
       onEnded: () => {
+        release();
         changed();
         setTimeout(() => {
           if (!api.active() && bar && !bar.isDestroyed()) bar.hide();
@@ -235,12 +319,20 @@ function createCall({ ctx, audio, shell }) {
 
     async end() {
       if (!controller) return;
-      const c = controller;
-      const done = c.finish();
+      const id = blocker;
+      const done = controller.finish();
+      ending = done;
       changed();
       await done;
-      if (blocker >= 0 && powerSaveBlocker.isStarted(blocker)) powerSaveBlocker.stop(blocker);
-      blocker = -1;
+      release(id); // Only this call's: a new call may have started meanwhile.
+      if (ending === done) ending = null;
+    },
+
+    /** Resolves once the last call's end was told (or given up): quitting waits for it. */
+    settled() {
+      const c = controller;
+      if (c && c.ended) return c.ended;
+      return ending || Promise.resolve();
     },
 
     sendNow() {
@@ -266,4 +358,4 @@ function createCall({ ctx, audio, shell }) {
   return api;
 }
 
-module.exports = { createCall, makePlayer };
+module.exports = { createCall, makePlayer, wavData };

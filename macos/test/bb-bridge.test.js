@@ -7,7 +7,7 @@ const ChiefSkills = require('../src/core/chief-skills');
 /** HandsFree is ported elsewhere (hands-free.js); its checks run once it's there. */
 function handsFree() {
   try {
-    return require('../src/core/hands-free');
+    return require('../src/core/handsfree');
   } catch {
     return null;
   }

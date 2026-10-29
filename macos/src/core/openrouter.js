@@ -225,7 +225,8 @@ class OpenRouter {
   async decide(body, timeoutMs) {
     const key = this.key();
     try {
-      return await send(this.fetch, 'POST', decisionsUrl(this.baseUrl), body, key, timeoutMs);
+      // Android gives Jev a connect and a read timeout of timeoutMs each; fetch has one for both.
+      return await send(this.fetch, 'POST', decisionsUrl(this.baseUrl), body, key, timeoutMs * 2);
     } catch (ex) {
       if (ex instanceof Unauthorized) throw wrap(badKey(), ex);
       if (ex instanceof Busy) throw wrap(busy(), ex);

@@ -18,6 +18,8 @@ const { SerialQueue, withTimeout, TimeoutError, format } = require('./util');
 
 /** 16 kHz 16-bit mono (AudioFiles.BYTES_PER_SECOND). */
 const BYTES_PER_SECOND = 16000 * 2;
+/** More audio than this waiting to go out: the connection is stuck (Mac: see take()). */
+const STUCK_BYTES = BYTES_PER_SECOND * 2;
 
 const ASSEMBLYAI = 'assemblyai',
   ELEVENLABS = 'elevenlabs';
@@ -133,7 +135,7 @@ function openSocket(url, headers, listener, timeoutMs) {
           if (ended || ws.readyState !== WebSocket.OPEN) throw new Error('closed');
           ws.send(data, { binary: typeof data !== 'string' });
         },
-        open: () => !ended,
+        open: () => !ended && ws.readyState === WebSocket.OPEN,
         /** Closes it at once (that ends the provider's session); the listener hears "closed". */
         close() {
           // No close handshake, which could wait behind a full send buffer on a dead network.
@@ -414,6 +416,12 @@ class StreamingSpeech {
     const pending = this.live !== '';
     // Nothing live: the last final is the end of it (forcing would bring nothing).
     if (pending && ws && ws.open()) {
+      // Java's send blocks on a full socket, so a stuck connection times out the force below;
+      // Node's never blocks, so a backlog of unsent audio is the sign here.
+      if (ws.buffered && ws.buffered() > STUCK_BYTES) {
+        this.fail(`couldn't ask for the final text: ${Math.round(ws.buffered() / BYTES_PER_SECOND)} s of audio still waiting to go out`);
+        throw new Error(this._failure);
+      }
       try {
         await withTimeout(
           this.sender.run(() => this.force(ws)),

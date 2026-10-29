@@ -71,10 +71,19 @@ function start() {
     /* A menu-bar app keeps running without windows. */
   });
   app.on('will-quit', () => globalShortcut.unregisterAll());
-  app.on('before-quit', () => {
-    // The microphone and the audio window first: a renderer holding the microphone can hold up quitting.
+  let readyToQuit = false;
+  app.on('before-quit', (event) => {
+    // A call's end (your last words, then the end for the chief and the talker) is told first, as
+    // Android's service stays up until it's delivered: at most END_BUDGET_MS.
+    if (!readyToQuit && call) {
+      event.preventDefault();
+      readyToQuit = true;
+      const ending = call.active() ? call.end() : call.settled();
+      Promise.race([Promise.resolve(ending).catch(() => {}), new Promise((r) => setTimeout(r, 46_000))]).then(() => app.quit());
+      return;
+    }
+    // Then the microphone and the audio window: a renderer holding the microphone can hold up quitting.
     try {
-      if (call && call.active()) call.end();
       if (dictation && dictation.busy()) dictation.cancel();
       audio.micStop();
       audio.win.destroy();
@@ -498,11 +507,12 @@ function start() {
       openExternal(url);
       return { action: 'deny' };
     });
+    // Only the app's own page: a dropped file or a link mustn't replace it (or get its API).
+    const appPage = require('url').pathToFileURL(path.join(RENDERER, 'app.html')).href;
     mainWindow.webContents.on('will-navigate', (e, url) => {
-      if (!url.startsWith('file:')) {
-        e.preventDefault();
-        openExternal(url);
-      }
+      if (url.split(/[?#]/)[0] === appPage) return;
+      e.preventDefault();
+      if (!url.startsWith('file:')) openExternal(url);
     });
     mainWindow.on('closed', () => (mainWindow = null));
     return mainWindow;
@@ -557,6 +567,13 @@ function start() {
       startDictation: () => dictation.start(),
       toggleDictation: () => toggleDictation(),
       startCall: () => startCall(),
+      callAvailable: () => !!call,
+      // The shortcut recorder listens: the app's own shortcuts mustn't fire meanwhile.
+      suspendHotkeys: (on) => {
+        if (on) globalShortcut.unregisterAll();
+        else registerHotkeys();
+        return true;
+      },
       endCall: () => call && call.end(),
       sendNow: () => call && call.sendNow(),
       callSnapshot: () => (call ? call.snapshot() : null),
@@ -609,6 +626,22 @@ function start() {
       retryRecording: () => dictation.retry().then(() => true),
       discardRecording: () => dictation.discard().then(() => true),
       attach: () => attachMenu(),
+      // Redo with a smarter model (Android's COMPARE): the kept audio becomes the pending recording
+      // again, transcribed with the chosen model as a new version of the note.
+      redo: async (noteId, model) => {
+        if (dictation.busy() || dictation.hasSavedRecording()) throw new Error('Finish or discard the pending recording first.');
+        const note = ctx.history.load(noteId);
+        const recordingId = (note && note.recordingId) || noteId;
+        const saved = ctx.archive.get(recordingId);
+        if (!saved) throw new Error('Audio has expired or was deleted. Text is still saved.');
+        fs.copyFileSync(saved, ctx.files.recording);
+        ctx.prefs.set('recordingId', recordingId);
+        ctx.prefs.set('sessionModel', model);
+        ctx.prefs.set('sessionId', require('crypto').randomUUID());
+        ctx.prefs.set('sessionCreated', Date.now());
+        dictation.retry();
+        return true;
+      },
     };
   }
 }

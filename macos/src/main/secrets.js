@@ -66,15 +66,23 @@ class KeychainVault {
         this.sealed[name] = (await safeStorage.encryptStringAsync(value)).toString('base64');
         this.save();
       })
-      .catch((e) => this.log(`vault: ${name} not saved (${e.message})`));
+      .catch((e) => {
+        this.log(`vault: ${name} not saved (${e.message})`);
+        this.failure = e;
+      });
   }
 
   remove(name) {
     this.values.delete(name);
-    this.writes = this.writes.then(() => {
-      delete this.sealed[name];
-      this.save();
-    });
+    this.writes = this.writes
+      .then(() => {
+        delete this.sealed[name];
+        this.save();
+      })
+      .catch((e) => {
+        this.log(`vault: ${name} not removed (${e.message})`);
+        this.failure = e;
+      });
   }
 
   names() {
@@ -83,15 +91,23 @@ class KeychainVault {
 
   clear() {
     this.values.clear();
-    this.writes = this.writes.then(() => {
-      this.sealed = {};
-      this.save();
-    });
+    this.writes = this.writes
+      .then(() => {
+        this.sealed = {};
+        this.save();
+      })
+      .catch((e) => {
+        this.log(`vault: not cleared (${e.message})`);
+        this.failure = e;
+      });
   }
 
-  /** Resolves once everything set so far is on disk. */
-  flush() {
-    return this.writes;
+  /** Resolves once everything set so far is on disk; rejects (once) when a write failed. */
+  async flush() {
+    await this.writes;
+    const failure = this.failure;
+    this.failure = null;
+    if (failure) throw new Error('The key could not be saved in the Keychain: ' + failure.message);
   }
 
   save() {

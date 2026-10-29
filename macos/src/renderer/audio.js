@@ -9,9 +9,12 @@
 // ------------------------------------------------------------------ microphone
 
 let mic = null;
+/** Counts starts and stops: a stop that comes while a start still waits for the microphone wins. */
+let micTurn = 0;
 
 async function micStart({ call = false, deviceId = '' } = {}) {
   await micStop();
+  const turn = ++micTurn;
   const constraints = {
     channelCount: 1,
     // A call is like Android's VOICE_COMMUNICATION: echo cancelling, noise suppression and gain
@@ -22,6 +25,10 @@ async function micStart({ call = false, deviceId = '' } = {}) {
   };
   if (deviceId) constraints.deviceId = { exact: deviceId };
   const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
+  if (turn !== micTurn) {
+    stream.getTracks().forEach((t) => t.stop());
+    throw new Error('stopped');
+  }
   let ctx;
   let source;
   try {
@@ -38,11 +45,17 @@ async function micStart({ call = false, deviceId = '' } = {}) {
   source.connect(node);
   const track = stream.getAudioTracks()[0];
   track.onended = () => dd.send('mic:error', 'The microphone stopped (it was unplugged or taken by another app).');
+  if (turn !== micTurn) {
+    stream.getTracks().forEach((t) => t.stop());
+    ctx.close();
+    throw new Error('stopped');
+  }
   mic = { stream, ctx, node, source };
   return { rate: ctx.sampleRate, label: track.label, settings: track.getSettings() };
 }
 
 async function micStop() {
+  micTurn++;
   const m = mic;
   mic = null;
   if (!m) return;

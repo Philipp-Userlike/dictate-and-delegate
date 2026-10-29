@@ -15,7 +15,7 @@ export DISPLAY=":$(cat "$tmp/display")"
 # Output to a file, not a pipe: Chromium's helper processes can outlive the app and hold a pipe open.
 status=0
 DD_E2E="$PWD/test/e2e/$name.e2e.js" DD_USER_DATA="$tmp/data" DD_FAKE_MIC="$tmp/mic.wav" \
-  setsid node_modules/.bin/electron . --no-sandbox >"$tmp/out.log" 2>&1 || status=$?
+  setsid node_modules/.bin/electron "${DD_APP_DIR:-.}" --no-sandbox >"$tmp/out.log" 2>&1 || status=$?
 pkill -KILL -f -- "--user-data-dir=$tmp/data" 2>/dev/null || true
 grep -v -E "dbus|Fontconfig|libva|viz_main|gpu_init|Exiting GPU|sandbox_linux|command_buffer|GLES|angle|atom_cache|isEncryptionAvailable" "$tmp/out.log" || true
 grep -q "^E2E .*: OK" "$tmp/out.log" && [ "$status" -eq 0 ]

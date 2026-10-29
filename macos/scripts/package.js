@@ -38,6 +38,7 @@ function copy(from, to, filter = () => true) {
 
 /** The app as it goes into Resources/app.asar: code, assets, production modules only. */
 function stage() {
+  run('python3', [path.join(__dirname, 'make-icons.py'), path.join(ROOT, 'build')]);
   const dir = path.join(ROOT, 'build', 'stage');
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
@@ -142,6 +143,7 @@ function zip(app, file) {
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
   const dir = stage();
+  if (process.argv.includes('--stage-only')) return console.log('staged', dir);
   for (const arch of arches) {
     const app = await wrap(dir, arch);
     sign(app);
