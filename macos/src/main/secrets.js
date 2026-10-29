@@ -4,15 +4,21 @@
 // every build is signed with the same certificate, macOS lets each new version read that
 // Keychain item without asking again. The encrypted values sit in vault.json in the app's data
 // folder; nothing is stored in plain text on the Mac.
+//
+// The core reads secrets synchronously (as Android's Vault does), so load() decrypts everything
+// once at start; set() updates memory at once and writes the encrypted file right after.
 
 const fs = require('fs');
 const path = require('path');
 const { safeStorage } = require('electron');
 
 class KeychainVault {
-  constructor(file) {
+  constructor(file, { log = () => {} } = {}) {
     this.file = file;
-    this.cache = new Map();
+    this.log = log;
+    this.values = new Map();
+    this.writes = Promise.resolve();
+    this.available = false;
     try {
       this.sealed = JSON.parse(fs.readFileSync(file, 'utf8'));
     } catch {
@@ -20,53 +26,72 @@ class KeychainVault {
     }
   }
 
-  /** Off the Mac (development on Linux) there may be no keyring: values are then kept in memory only. */
-  available() {
+  /** Decrypts what's saved. Off the Mac (development on Linux) without a keyring, values stay in memory. */
+  async load() {
     try {
-      return safeStorage.isEncryptionAvailable();
+      this.available = await safeStorage.isAsyncEncryptionAvailable();
     } catch {
-      return false;
+      this.available = false;
+    }
+    if (!this.available) {
+      this.log('vault: the Keychain is not available; secrets are kept in memory only');
+      return;
+    }
+    for (const [name, sealed] of Object.entries(this.sealed)) {
+      try {
+        const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(Buffer.from(sealed, 'base64'));
+        this.values.set(name, result);
+        if (shouldReEncrypt) this.persist(name, result);
+      } catch (e) {
+        this.log(`vault: ${name} could not be decrypted (${e.message})`);
+      }
     }
   }
 
   get(name) {
-    if (this.cache.has(name)) return this.cache.get(name);
-    const sealed = this.sealed[name];
-    if (!sealed || !this.available()) return null;
-    try {
-      const value = safeStorage.decryptString(Buffer.from(sealed, 'base64'));
-      this.cache.set(name, value);
-      return value;
-    } catch {
-      return null;
-    }
+    return this.values.has(name) ? this.values.get(name) : null;
   }
 
   set(name, value) {
     if (value === null || value === undefined || value === '') return this.remove(name);
-    this.cache.set(name, value);
-    if (!this.available()) {
-      if (process.platform === 'darwin') throw new Error('The macOS Keychain is not available, so the key could not be saved.');
-      return;
-    }
-    this.sealed[name] = safeStorage.encryptString(String(value)).toString('base64');
-    this.save();
+    if (!this.available && process.platform === 'darwin') throw new Error('The macOS Keychain is not available, so the key could not be saved.');
+    this.values.set(name, String(value));
+    if (this.available) this.persist(name, String(value));
+  }
+
+  persist(name, value) {
+    this.writes = this.writes
+      .then(async () => {
+        if (this.values.get(name) !== value) return; // Changed or removed meanwhile.
+        this.sealed[name] = (await safeStorage.encryptStringAsync(value)).toString('base64');
+        this.save();
+      })
+      .catch((e) => this.log(`vault: ${name} not saved (${e.message})`));
   }
 
   remove(name) {
-    this.cache.delete(name);
-    delete this.sealed[name];
-    this.save();
+    this.values.delete(name);
+    this.writes = this.writes.then(() => {
+      delete this.sealed[name];
+      this.save();
+    });
   }
 
   names() {
-    return [...new Set([...Object.keys(this.sealed), ...this.cache.keys()])];
+    return [...this.values.keys()];
   }
 
   clear() {
-    this.cache.clear();
-    this.sealed = {};
-    this.save();
+    this.values.clear();
+    this.writes = this.writes.then(() => {
+      this.sealed = {};
+      this.save();
+    });
+  }
+
+  /** Resolves once everything set so far is on disk. */
+  flush() {
+    return this.writes;
   }
 
   save() {

@@ -28,6 +28,11 @@ class AudioBridge {
       },
     });
     this.win.loadFile(path.join(__dirname, '..', 'renderer', 'audio.html'));
+    this.win.webContents.on('console-message', (e) => {
+      const level = e.level !== undefined ? e.level : 'info';
+      if (level === 'warning' || level === 'error' || level === 2 || level === 3) log(`audio window: ${e.message}`);
+    });
+    this.win.webContents.on('render-process-gone', (_e, d) => log(`audio window gone: ${d.reason}`));
     const mine = (e) => e.sender === this.win.webContents;
     ipcMain.on('audio:ready', (e) => mine(e) && this.readyGate.resolve());
     ipcMain.on('mic:frame', (e, bytes) => {

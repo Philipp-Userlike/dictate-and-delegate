@@ -353,12 +353,13 @@ function framesToStop(f, amplitude, limit) {
   return -1;
 }
 
-/** A module another port provides, or null while it isn't there yet. */
-function optional(path) {
+/** A module another port provides (path as from test/), or null while it isn't there yet. */
+function optional(p) {
+  const full = require('path').resolve(__dirname, '..', p);
   try {
-    return require(path);
+    return require(full);
   } catch (ex) {
-    if (ex && ex.code === 'MODULE_NOT_FOUND' && String(ex.message).includes(path.replace(/^.*\//, ''))) return null;
+    if (ex && ex.code === 'MODULE_NOT_FOUND' && String(ex.message).includes(full)) return null;
     throw ex;
   }
 }

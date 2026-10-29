@@ -1,0 +1,33 @@
+:root { --teal: #0b7a5e; --amber: #d99a00; --red: #d93025; color-scheme: light dark; }
+/* A fixed canvas, so the panel lays out at its own size whatever the window is; main sizes the window to it. */
+html, body { width: 480px; height: 360px; margin: 0; padding: 0; background: transparent; overflow: hidden;
+  font: 13px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; user-select: none; }
+#panel { position: absolute; left: 0; top: 0; display: inline-flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 22px;
+  background: rgba(28, 32, 30, var(--alpha, 0.92)); color: #fff; -webkit-app-region: drag;
+  box-shadow: 0 6px 24px rgba(0,0,0,.28); max-width: 460px; box-sizing: border-box; }
+#panel.hidden { display: none; }
+.row { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
+button { -webkit-app-region: no-drag; border: 0; border-radius: 16px; height: 34px; min-width: 38px;
+  padding: 0 11px; font: inherit; font-size: 15px; color: #fff; background: rgba(255,255,255,.14);
+  cursor: default; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  box-sizing: border-box; white-space: nowrap; }
+button:hover { background: rgba(255,255,255,.24); }
+button:disabled { opacity: .45; }
+button.teal { background: var(--teal); }
+button.teal:hover { background: #0d8f6e; }
+button.red { background: var(--red); font-variant-numeric: tabular-nums; font-size: 14px; }
+button.ring-teal { box-shadow: inset 0 0 0 2px #3ad6a8; }
+button.ring-amber { box-shadow: inset 0 0 0 2px var(--amber); }
+.status { font-size: 12px; line-height: 1.35; color: rgba(255,255,255,.86); width: min-content; min-width: 100%; max-width: 420px; padding: 0 4px 2px; box-sizing: border-box; }
+.message { display: flex; align-items: center; gap: 8px; padding: 2px 6px 2px 2px; }
+.icon { width: 30px; height: 30px; border-radius: 15px; background: var(--teal); display: flex;
+  align-items: center; justify-content: center; font-size: 15px; flex: none; }
+.icon.error { background: var(--red); }
+.detail { font-size: 12.5px; max-width: 360px; line-height: 1.35; }
+@media (prefers-color-scheme: light) {
+  #panel { background: rgba(250, 252, 251, var(--alpha, 0.95)); color: #10201b; box-shadow: 0 6px 24px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.12); }
+  button { color: #10201b; background: rgba(0,0,0,.07); }
+  button:hover { background: rgba(0,0,0,.13); }
+  button.teal, button.red { color: #fff; }
+  .status { color: #3b4a45; }
+}

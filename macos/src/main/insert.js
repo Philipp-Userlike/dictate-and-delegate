@@ -33,7 +33,7 @@ function accessibility(prompt = false) {
 }
 
 function copy(text) {
-  clipboard.writeText(text);
+  return clipboard.writeText(text);
 }
 
 async function paste(mac, text, log) {
@@ -66,13 +66,13 @@ function insert(text, { method = 'paste', log = () => {} } = {}) {
   return queue.run(async () => {
     const mac = nativeMac.load();
     if (!mac || !accessibility()) {
-      copy(text);
+      await copy(text);
       return { how: 'copied', why: mac ? 'accessibility' : 'unavailable' };
     }
     const focus = mac.focus();
     const kind = target(focus);
     if (kind === 'none') {
-      copy(text);
+      await copy(text);
       return { how: 'copied', why: 'no-field' };
     }
     if (method === 'direct' && kind === 'text') {
@@ -89,23 +89,21 @@ function insert(text, { method = 'paste', log = () => {} } = {}) {
 
 /**
  * Insert refined: replaces `old` with `text` where it was inserted, if it's still there unchanged
- * right before the cursor (or selected); else inserts at the cursor. Resolves like insert(), plus
- * replaced: true|false.
+ * right before the cursor (or selected). Resolves like insert(), or to null when it isn't (the
+ * caller then inserts at the cursor, as Android does).
  */
 async function replace(old, text, opts = {}) {
   const mac = nativeMac.load();
-  if (mac && accessibility()) {
-    const selected = await queue.run(async () => {
-      const focus = mac.focus();
-      const range = replaceRange(focus.value, focus.selection, old);
-      if (!range) return false;
-      if (mac.select(range) !== 0) return false;
-      const now = mac.focus().selection;
-      return !!now && now.location === range.location && now.length === range.length;
-    });
-    if (selected) return { ...(await insert(text, opts)), replaced: true };
-  }
-  return { ...(await insert(text, opts)), replaced: false };
+  if (!mac || !accessibility()) return null;
+  const selected = await queue.run(async () => {
+    const focus = mac.focus();
+    const range = replaceRange(focus.value, focus.selection, old);
+    if (!range) return false;
+    if (mac.select(range) !== 0) return false;
+    const now = mac.focus().selection;
+    return !!now && now.location === range.location && now.length === range.length;
+  });
+  return selected ? insert(text, opts) : null;
 }
 
 module.exports = { insert, replace, copy, accessibility, RESTORE_MS };

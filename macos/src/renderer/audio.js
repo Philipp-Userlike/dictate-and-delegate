@@ -4,7 +4,7 @@
 // (speechSynthesis) and the hands-free sounds. Everything runs in one renderer, so Chromium's echo
 // cancellation hears the replies it plays and keeps them out of the microphone during calls.
 
-const dd = window.dd;
+// window.dd comes from preload.js.
 
 // ------------------------------------------------------------------ microphone
 
