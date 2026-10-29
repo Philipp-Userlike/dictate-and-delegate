@@ -67,6 +67,8 @@ const RUNTIME_PREFS = new Set([
   'historyRevision',
   'panelX',
   'panelY',
+  'hfPanelX',
+  'hfPanelY',
   'permissionsRequested',
   skillsLib.INSTALLED,
   skillsLib.CHECKED_VERSION,
@@ -185,6 +187,84 @@ function homeStats(entries, now = Date.now()) {
   return { spent, seconds, days };
 }
 
+/** The settings the window (and an imported file) may set, each with what it takes; throws for a bad value. */
+function validators() {
+  const bool = (v) => {
+    if (typeof v !== 'boolean') throw new Error('expected true or false');
+    return v;
+  };
+  const text = (max) => (v) => String(v == null ? '' : v).substring(0, max);
+  const int = (lo, hi) => (v) => {
+    const n = Math.round(Number(v));
+    if (!Number.isFinite(n) || n < lo || n > hi) throw new Error(tr('Enter a number between %1$s and %2$s.', lo, hi));
+    return n;
+  };
+  const num = (lo, hi) => (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < lo || n > hi) throw new Error(tr('Enter a number between %1$s and %2$s.', lo, hi));
+    return n;
+  };
+  const oneOf = (values) => (v) => {
+    if (!values.includes(v)) throw new Error('not one of the choices');
+    return v;
+  };
+  return {
+    onboarded: bool,
+    [profileLib.AUTO_REFINE]: bool,
+    [profileLib.AUTO_CHIEF]: bool,
+    retainAudio: bool,
+    model: oneOf([...profileLib.OFFERED]),
+    [textModel.PREF_CLAUDE]: oneOf(anthropic.MODELS.map((c) => c.id)),
+    [HandsFree.VOICE]: oneOf(voiceLib.CHOICES.map((c) => c.id)),
+    [HandsFree.SEND_WORDS]: text(400),
+    [HandsFree.END_WORDS]: text(400),
+    // Stored as typed (in range); the getters clamp, as on Android.
+    [HandsFree.PAUSE_MS]: int(0, 600_000),
+    [HandsFree.SILENCE_SEND_MS]: int(0, 3_600_000),
+    [HandsFree.GATE]: num(0, 100),
+    [HandsFree.TAKE_MS]: int(0, 60_000),
+    [HandsFree.SOUNDS]: bool,
+    [HandsFree.VOICE_WAIT_MS]: int(0, 600_000),
+    [HandsFree.OPEN_AUDIO]: bool,
+    [HandsFree.LIVE]: bool,
+    [HandsFree.LIVE_MODEL]: oneOf(streaming.CHOICES.map((c) => c.id)),
+    insertMethod: oneOf(['paste', 'direct']),
+    autoInsert: bool,
+    micDevice: text(300),
+    bubbleOpacity: int(20, 100),
+    macNotifications: bool,
+    [MAC_VOICE]: text(200),
+  };
+}
+
+/**
+ * Settings without a validator that an export carries, by their type: a value of another type is
+ * skipped on import. Anything not here or in validators() is skipped too.
+ */
+const STRING_PREFS = new Set([
+  'chiefName', 'processingPrompt', 'profileTopics', 'profileWords', 'profileAbout', 'templates',
+  textModel.PREF_MODEL, textModel.PREF_NAME, bridgeLib.MODE, bridgeLib.HANDLE, bridgeLib.URL, bridgeLib.LINK_BASE,
+  bridgeLib.CHIEF_ID, bridgeLib.CHIEF_NAME, bridgeLib.TALKER_ID, bridgeLib.NTFY_SERVER, skillsLib.USER_NAME,
+  skillsLib.TALKER_TOLD, 'hotkey', 'callHotkey',
+]);
+const BOOLEAN_PREFS = new Set([bridgeLib.TALKER_ON, skillsLib.CHIEF_TOLD]);
+/** Long values an export may hold (the file itself is capped at MAX_IMPORT_BYTES). */
+const LONG_PREFS = new Set(['templates']);
+
+/**
+ * Plain http:// only to this computer, as Android's network_security_config allows only 127.0.0.1
+ * (the Mac adds localhost and ::1); everything else must be https://.
+ */
+function plainHttpAllowed(url) {
+  if (!/^http:\/\//i.test(String(url))) return true;
+  try {
+    const host = new URL(String(url)).hostname.replace(/^\[|\]$/g, '');
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
 // ------------------------------------------------------------------ settings files (pure)
 
 /** The exported file: the app's settings and, confirmed by the user, its keys. */
@@ -222,21 +302,30 @@ function parseImport(text) {
   const inKeys = root.keys === undefined ? {} : root.keys;
   if (!inPrefs || typeof inPrefs !== 'object' || Array.isArray(inPrefs) || !inKeys || typeof inKeys !== 'object' || Array.isArray(inKeys))
     throw new Error(tr('The settings file is damaged.'));
+  // One bad entry doesn't stop the import: it's skipped, and the window says which.
   const prefs = {};
+  const skipped = [];
+  const check = validators();
   for (const [k, v] of Object.entries(inPrefs)) {
-    if (RUNTIME_PREFS.has(k) || !/^[A-Za-z0-9_.-]{1,80}$/.test(k)) continue;
-    const ok = typeof v === 'boolean' || typeof v === 'string' || (typeof v === 'number' && Number.isFinite(v));
-    if (!ok) throw new Error(tr('The settings file is damaged: %1$s has an unexpected value.', k));
-    if (typeof v === 'string' && v.length > 100_000) throw new Error(tr('The settings file is damaged: %1$s has an unexpected value.', k));
-    prefs[k] = v;
+    if (RUNTIME_PREFS.has(k)) continue;
+    try {
+      if (has(check, k)) prefs[k] = check[k](v);
+      else if (STRING_PREFS.has(k) && typeof v === 'string' && v.length <= (LONG_PREFS.has(k) ? MAX_IMPORT_BYTES : 100_000)) prefs[k] = v;
+      else if (BOOLEAN_PREFS.has(k) && typeof v === 'boolean') prefs[k] = v;
+      else skipped.push(k);
+    } catch {
+      skipped.push(k);
+    }
   }
   const keys = {};
   for (const [k, v] of Object.entries(inKeys)) {
-    if (!EXPORT_KEYS.includes(k)) continue;
-    if (typeof v !== 'string' || v.trim() === '' || v.length > 10_000) throw new Error(tr('The settings file is damaged: %1$s has an unexpected value.', k));
+    if (!EXPORT_KEYS.includes(k) || typeof v !== 'string' || v.trim() === '' || v.length > 10_000) {
+      skipped.push(k);
+      continue;
+    }
     keys[k] = v.trim();
   }
-  return { prefs, keys };
+  return { prefs, keys, skipped };
 }
 
 // ------------------------------------------------------------------ notes (pure, from MainActivity)
@@ -516,54 +605,8 @@ function createMethods(ctx, shell = {}, push = () => {}) {
     return bb.ntfyTopic();
   };
 
-  // ---- settings anyone may set from the window, with what each takes
-
-  const bool = (v) => {
-    if (typeof v !== 'boolean') throw new Error('expected true or false');
-    return v;
-  };
-  const text = (max) => (v) => String(v == null ? '' : v).substring(0, max);
-  const int = (lo, hi) => (v) => {
-    const n = Math.round(Number(v));
-    if (!Number.isFinite(n) || n < lo || n > hi) throw new Error(tr('Enter a number between %1$s and %2$s.', lo, hi));
-    return n;
-  };
-  const num = (lo, hi) => (v) => {
-    const n = Number(v);
-    if (!Number.isFinite(n) || n < lo || n > hi) throw new Error(tr('Enter a number between %1$s and %2$s.', lo, hi));
-    return n;
-  };
-  const oneOf = (values) => (v) => {
-    if (!values.includes(v)) throw new Error('not one of the choices');
-    return v;
-  };
-  const SETTABLE = {
-    onboarded: bool,
-    [profileLib.AUTO_REFINE]: bool,
-    [profileLib.AUTO_CHIEF]: bool,
-    retainAudio: bool,
-    model: oneOf([...profileLib.OFFERED]),
-    [textModel.PREF_CLAUDE]: oneOf(anthropic.MODELS.map((c) => c.id)),
-    [HandsFree.VOICE]: oneOf(voiceLib.CHOICES.map((c) => c.id)),
-    [HandsFree.SEND_WORDS]: text(400),
-    [HandsFree.END_WORDS]: text(400),
-    // Stored as typed (in range); the getters clamp, as on Android.
-    [HandsFree.PAUSE_MS]: int(0, 600_000),
-    [HandsFree.SILENCE_SEND_MS]: int(0, 3_600_000),
-    [HandsFree.GATE]: num(0, 100),
-    [HandsFree.TAKE_MS]: int(0, 60_000),
-    [HandsFree.SOUNDS]: bool,
-    [HandsFree.VOICE_WAIT_MS]: int(0, 600_000),
-    [HandsFree.OPEN_AUDIO]: bool,
-    [HandsFree.LIVE]: bool,
-    [HandsFree.LIVE_MODEL]: oneOf(streaming.CHOICES.map((c) => c.id)),
-    insertMethod: oneOf(['paste', 'direct']),
-    autoInsert: bool,
-    micDevice: text(300),
-    bubbleOpacity: int(20, 100),
-    macNotifications: bool,
-    [MAC_VOICE]: text(200),
-  };
+  // ---- settings anyone may set from the window, with what each takes (validators())
+  const SETTABLE = validators();
 
   const methods = {
     // ---------------------------------------------------------------- the whole picture
@@ -659,7 +702,7 @@ function createMethods(ctx, shell = {}, push = () => {}) {
         },
         retainAudio: prefs.get('retainAudio', true) !== false,
         dictation: (await call('dictationState')) || null,
-        handsFreeAvailable: typeof shell.startCall === 'function',
+        handsFreeAvailable: typeof shell.callAvailable === 'function' ? !!(await shell.callAvailable()) : typeof shell.startCall === 'function',
         attachmentsPending: (() => {
           try {
             return attachments.pending().length;
@@ -1191,6 +1234,7 @@ function createMethods(ctx, shell = {}, push = () => {}) {
       const address = String(url || '').trim();
       const base = String(linkBase || '').trim();
       if (!/^https?:\/\/\S+$/i.test(address)) return { ok: false, message: tr('Enter the MCP address, starting with https:// or http://') };
+      if (!plainHttpAllowed(address)) return { ok: false, message: tr('Plain HTTP is allowed only to 127.0.0.1. Use https://.') };
       if (base && !/^https?:\/\/\S+$/i.test(base)) return { ok: false, message: tr('The web address starts with https://') };
       return bbAction(async () => {
         // An unchanged (hidden) token field keeps the saved token.
@@ -1285,6 +1329,7 @@ function createMethods(ctx, shell = {}, push = () => {}) {
     async setNtfyServer(value) {
       const v = String(value || '').trim();
       if (v && !/^https?:\/\/\S+$/i.test(v)) return { ok: false, message: tr('The server address starts with https://') };
+      if (v && !plainHttpAllowed(v)) return { ok: false, message: tr('Plain HTTP is allowed only to 127.0.0.1. Use https://.') };
       return bbAction(async () => {
         bb.setNtfyServer(v);
         // The dictate-and-delegate skill holds the server: it's updated in bb.
@@ -1379,11 +1424,26 @@ function createMethods(ctx, shell = {}, push = () => {}) {
     },
     async setHotkey(accelerator) {
       if (typeof shell.setHotkey !== 'function') throw new Error(tr('Not available yet.'));
-      return (await shell.setHotkey(String(accelerator || ''))) || { ok: true };
+      const a = String(accelerator || '');
+      if (a && sameAccelerator(a, await call('callHotkey'))) return { ok: false, error: tr('Already used for the hands-free shortcut.') };
+      return (await shell.setHotkey(a)) || { ok: true };
     },
     async setCallHotkey(accelerator) {
       if (typeof shell.setCallHotkey !== 'function') throw new Error(tr('Not available yet.'));
-      return (await shell.setCallHotkey(String(accelerator || ''))) || { ok: true };
+      const a = String(accelerator || '');
+      if (a && sameAccelerator(a, await call('hotkey'))) return { ok: false, error: tr('Already used for the dictation shortcut.') };
+      return (await shell.setCallHotkey(a)) || { ok: true };
+    },
+    /** The shortcut recorder listens: the app's own shortcuts are off meanwhile, so they can be typed. */
+    async suspendHotkeys(on) {
+      await call('suspendHotkeys', on === true);
+      return true;
+    },
+    /** 📎 Add: paste what you copied, or attach a file, for the next dictation. */
+    async attach() {
+      if (typeof shell.attach !== 'function') throw new Error(tr('Not available yet.'));
+      await shell.attach();
+      return true;
     },
     permissions,
     async requestMicrophone() {
@@ -1438,6 +1498,13 @@ function createMethods(ctx, shell = {}, push = () => {}) {
           /* Continue with what can be removed. */
         }
       };
+      // A call still on would write notes and its log again.
+      try {
+        const snap = await call('callSnapshot');
+        if (snap && snap.active) await call('endCall');
+      } catch {
+        /* Ending the call is best effort. */
+      }
       tryTo(() => archive.deleteAll());
       tryTo(() => fs.rmSync(ctx.files.recording, { force: true }));
       tryTo(() => {
@@ -1468,6 +1535,7 @@ function createMethods(ctx, shell = {}, push = () => {}) {
       if (!file) return null;
       const data = buildExport(prefs.all(), vault, ctx.version);
       fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n', { mode: 0o600 });
+      fs.chmodSync(file, 0o600); // mode only applies to a new file, not one written over.
       ctx.log(`api: settings exported (${Object.keys(data.prefs).length} settings, ${Object.keys(data.keys).length} keys)`);
       return tr('Exported to %1$s', path.basename(file));
     },
@@ -1482,7 +1550,7 @@ function createMethods(ctx, shell = {}, push = () => {}) {
       } catch {
         throw new Error(tr("This file isn't a Dictate & Delegate settings file."));
       }
-      const { prefs: values, keys } = parseImport(raw);
+      const { prefs: values, keys, skipped } = parseImport(raw);
       for (const [k, v] of Object.entries(values)) prefs.set(k, v);
       for (const [k, v] of Object.entries(keys)) vault.set(k, v);
       await flush();
@@ -1491,10 +1559,27 @@ function createMethods(ctx, shell = {}, push = () => {}) {
       ctx.log(`api: settings imported (${Object.keys(values).length} settings, ${Object.keys(keys).length} keys)`);
       const n = Object.keys(values).length,
         m = Object.keys(keys).length;
-      return tr('Imported %1$d settings and %2$d keys.', n, m);
+      return (
+        tr('Imported %1$d settings and %2$d keys.', n, m) +
+        (skipped.length ? ' ' + tr('Skipped, as they had unexpected values: %1$s.', skipped.join(', ')) : '')
+      );
     },
   };
   return methods;
+}
+
+/** The same key combination, whatever the order of its modifiers ("Shift+Alt+A" = "Alt+Shift+A"). */
+function sameAccelerator(a, b) {
+  const norm = (x) => {
+    const alias = { Option: 'Alt', Cmd: 'Command', CommandOrControl: 'Command', CmdOrCtrl: 'Command', Ctrl: 'Control', Return: 'Enter' };
+    return String(x || '')
+      .split('+')
+      .map((k) => alias[k] || k)
+      .map((k) => k.toLowerCase())
+      .sort()
+      .join('+');
+  };
+  return !!a && !!b && norm(a) === norm(b);
 }
 
 /** The old check's answer in words ("Text · Apartment application"); null for an error. */
@@ -1518,9 +1603,21 @@ function checkDetail(detail) {
 /** Wires the API to IPC and pushes changes to the main window. Returns the method table. */
 function registerApi(ctx, shell = {}) {
   const { ipcMain, BrowserWindow } = require('electron');
+  const { pathToFileURL } = require('url');
+  const APP_URL = pathToFileURL(path.join(__dirname, '..', 'renderer', 'app.html')).href;
+  /** Exactly this window's page, whatever its query (?page=…) or hash. */
+  const bare = (url) => {
+    const u = String(url || '').replace(/[?#].*$/, '');
+    try {
+      return decodeURI(u);
+    } catch {
+      return u;
+    }
+  };
+  const isAppUrl = (url) => bare(url) === bare(APP_URL);
   const isAppWindow = (wc) => {
     try {
-      return /\/renderer\/app\.html(\?|#|$)/.test(wc.getURL());
+      return isAppUrl(wc.getURL());
     } catch {
       return false;
     }
@@ -1534,7 +1631,7 @@ function registerApi(ctx, shell = {}) {
   ipcMain.handle('api', async (event, method, ...args) => {
     // Only the main window may call: the panel and the audio window have their own channels.
     const url = (event.senderFrame && event.senderFrame.url) || '';
-    if (!/\/renderer\/app\.html(\?|#|$)/.test(url)) return { ok: false, error: 'not allowed' };
+    if (!isAppUrl(url)) return { ok: false, error: 'not allowed' };
     if (typeof method !== 'string' || !has(methods, method)) return { ok: false, error: 'Unknown method: ' + method };
     try {
       return { ok: true, value: await methods[method](...args) };
@@ -1588,6 +1685,9 @@ module.exports = {
   homeStats,
   buildExport,
   parseImport,
+  plainHttpAllowed,
+  sameAccelerator,
+  validators,
   money,
   amount,
   cost,

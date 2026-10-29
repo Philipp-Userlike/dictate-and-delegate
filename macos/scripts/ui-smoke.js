@@ -141,6 +141,16 @@ function stubShell(state) {
       for (const fn of listeners) fn({ active: false });
     },
     sendNow() {},
+    callAvailable: () => true,
+    suspendHotkeys(on) {
+      state.suspended = on;
+    },
+    attach() {
+      state.attached = (state.attached || 0) + 1;
+    },
+    async redo(noteId, model) {
+      state.redo = [noteId, model];
+    },
     callSnapshot: snapshot,
     onCallChange(fn) {
       listeners.add(fn);
@@ -283,6 +293,24 @@ async function main() {
     await js("document.querySelector('.dialog .btn.outline').click()");
   }
 
+  // The shortcut recorder turns the app's shortcuts off while it listens, and back on.
+  win.webContents.send('navigate', 'start');
+  await waitPage('start');
+  await js("document.querySelector('.keycap').click()");
+  await sleep(200);
+  const suspended = state.suspended;
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  await sleep(300);
+  if (suspended !== true || state.suspended !== false) problems.push(`recorder: hotkeys suspended ${suspended}, after Esc ${state.suspended}`);
+  // Many renders of Home leave one poller, not one each.
+  win.webContents.send('navigate', 'home');
+  await waitPage('home');
+  const pollers = await js("(async () => { for (let i = 0; i < 5; i++) { render(); await new Promise((r) => setTimeout(r, 120)); } return ui.timers.length; })()");
+  if (pollers !== 1) problems.push('Home pollers after 5 renders: ' + pollers);
+  // Redo reaches the shell with the note's id (the seeded note has no audio, so it's refused first).
+  const redo = await js("dd.invoke('api', 'redo', '11111111-1111-4111-8111-111111111111')");
+  if (!redo || (redo.ok && !state.redo)) problems.push('redo: ' + JSON.stringify(redo));
+
   // The API from the window: export (confirmed) and import back, usage, a pref, the shortcut.
   const r = await js(`(async () => {
     const call = (m, ...a) => dd.invoke('api', m, ...a);
@@ -293,6 +321,10 @@ async function main() {
     out.badPref = await call('setPref', 'bbUrl', 'http://evil');
     out.pref = await call('setPref', 'hfTurnPauseMs', 2500);
     out.hotkey = await call('setHotkey', 'Command+Shift+D');
+    out.sameHotkey = await call('setCallHotkey', 'Shift+Command+D');
+    out.plainHttp = await call('bbSaveCustom', 'http://bb.example.com/mcp', '', '');
+    out.plainServer = await call('setNtfyServer', 'http://ntfy.example.com');
+    out.attach = await call('attach');
     out.usage = await call('usage', 0);
     out.notes = await call('notes', 'invoice');
     out.copied = await call('copyHandsFreeLog', 1);
@@ -307,6 +339,10 @@ async function main() {
   expect(r.badPref.ok === false, 'setPref took a key outside the list');
   expect(r.pref.ok && ctx.prefs.get('hfTurnPauseMs') === 2500, 'setPref did not save');
   expect(r.hotkey.ok && state.hotkey === 'Command+Shift+D', 'setHotkey did not reach the shell');
+  expect(r.sameHotkey.ok && r.sameHotkey.value.ok === false && /dictation shortcut/.test(r.sameHotkey.value.error), 'same shortcut twice: ' + JSON.stringify(r.sameHotkey));
+  expect(r.plainHttp.ok && r.plainHttp.value.ok === false && /Plain HTTP/.test(r.plainHttp.value.message), 'plain http bb address taken');
+  expect(r.plainServer.ok && r.plainServer.value.ok === false, 'plain http ntfy server taken');
+  expect(r.attach.ok && state.attached === 1, '📎 Add did not reach the shell');
   expect(r.usage.ok && r.usage.value.byModel.length > 0, 'usage is empty');
   expect(r.notes.ok && r.notes.value.items.length === 1, 'search found ' + JSON.stringify(r.notes.value && r.notes.value.items.length));
   expect(/call started/.test(state.copied), 'Copy last call copied nothing');

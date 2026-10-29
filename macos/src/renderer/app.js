@@ -56,6 +56,15 @@ async function attempt(button, fn) {
   }
 }
 
+/** A click that calls the API: a failure toasts, then `then` runs (the page again, by default). */
+const openUrl = (url) => act(() => api('openExternal', url), null);
+
+async function act(fn, then = () => render()) {
+  const r = await attempt(null, fn);
+  if (then) then(r);
+  return r;
+}
+
 function h(tag, props, ...kids) {
   const el = document.createElement(tag);
   if (props)
@@ -284,10 +293,13 @@ function autosave(field, save, delay = 400) {
   return [field, saved];
 }
 
-/** A line under an action: what happened, in green or as a warning. */
-function resultLine() {
-  const el = h('div', { class: 'text gap-8 hidden' });
-  if (ui.bbNotice) {
+/**
+ * A line under an action: what happened, in green or as a warning. slot names the action, so an
+ * outcome shows under the button that ran it after the page is drawn again.
+ */
+function resultLine(slot) {
+  const el = h('div', { class: 'text gap-8 hidden', 'data-slot': slot });
+  if (ui.bbNotice && ui.bbNotice.slot === slot) {
     el.textContent = ui.bbNotice.message;
     el.className = 'text gap-8 ' + (ui.bbNotice.ok ? 'ok' : 'warn');
     ui.bbNotice = null;
@@ -312,7 +324,7 @@ async function bbAction(button, resultEl, working, fn) {
     r = { ok: false, message: e.message };
   }
   if (page !== ui.page) return toast(r.message);
-  ui.bbNotice = r;
+  ui.bbNotice = { ...r, slot: resultEl.dataset.slot };
   render();
 }
 
@@ -329,6 +341,7 @@ const SETUP = ['key1', 'allow1', 'how1', 'start1', 'insert1', 'try1', 'bb1', 'ch
 const SECTION = { home: 'home', usage: 'home', notes: 'notes', note: 'notes', handsfree: 'handsfree' };
 
 function leave() {
+  ui.noteShown = null;
   for (const t of ui.timers) clearInterval(t);
   ui.timers = [];
   ui.callArea = null;
@@ -390,6 +403,12 @@ function laterButton(root) {
 
 async function render(fresh = false) {
   const token = ++ui.renderToken;
+  // A shortcut recorder still listening stops (its shortcuts come back).
+  if (ui.recorderCancel) ui.recorderCancel();
+  // The page's pollers belong to this drawing of it: the old ones stop, a stale drawing's too.
+  for (const t of ui.timers) clearInterval(t);
+  const timers = [];
+  ui.timers = timers;
   const page = ui.page;
   const fn = PAGES[page] || PAGES.home;
   let state;
@@ -408,14 +427,20 @@ async function render(fresh = false) {
     console.warn('page ' + page + ': ' + e.message);
     add(root, p('Could not show this page: ' + e.message, 'warn gap-16'));
   }
-  if (token !== ui.renderToken) return;
+  if (token !== ui.renderToken) {
+    for (const t of timers) clearInterval(t);
+    return;
+  }
   const scroll = contentEl.scrollTop;
   contentEl.replaceChildren(root);
   contentEl.scrollTop = fresh ? 0 : scroll;
   document.body.classList.toggle('setup', page === 'welcome' || SETUP.includes(page));
   document.body.classList.toggle('soft', page === 'settings');
   const section = SECTION[page] || 'settings';
-  for (const b of document.querySelectorAll('#sidebar .nav')) b.classList.toggle('on', b.dataset.section === section);
+  // A file dropped on the window must not replace the app with it.
+for (const type of ['dragover', 'drop']) document.addEventListener(type, (e) => e.preventDefault());
+
+for (const b of document.querySelectorAll('#sidebar .nav')) b.classList.toggle('on', b.dataset.section === section);
   const foot = document.getElementById('sidebar-foot');
   foot.replaceChildren(
     S && S.hotkey ? h('div', null, 'Dictate: ', h('kbd', null, accelLabel(S.hotkey))) : null,
@@ -481,7 +506,7 @@ function pageKey(root, onboarding) {
   add(root, [
     h('div', { class: 'gap-16' }, field),
     result,
-    h('div', { class: 'btns gap-12' }, check, btn('Get a key on openrouter.ai', 'quiet', () => api('openExternal', 'https://openrouter.ai/keys'))),
+    h('div', { class: 'btns gap-12' }, check, btn('Get a key on openrouter.ai', 'quiet', () => openUrl('https://openrouter.ai/keys'))),
     p('Create a key there and copy it, then paste it above. Add a few dollars of credits on OpenRouter too: a one-minute note usually costs well under one cent.', 'muted small gap-8'),
   ]);
   if (onboarding) {
@@ -493,12 +518,11 @@ function pageKey(root, onboarding) {
     actions.append(
       btn('Remove key', 'quiet', async () => {
         if (await confirmDialog({ title: 'Remove your OpenRouter key?', message: "Dictate & Delegate can't dictate until you add a key again.", ok: 'Remove', cancel: 'Keep', danger: true })) {
-          await api('removeOpenRouterKey');
-          render();
+          act(() => api('removeOpenRouterKey'));
         }
       }, { danger: true }),
     );
-  actions.append(btn('Credits and usage on openrouter.ai', 'quiet', () => api('openExternal', 'https://openrouter.ai/settings/credits')));
+  actions.append(btn('Credits and usage on openrouter.ai', 'quiet', () => openUrl('https://openrouter.ai/settings/credits')));
   add(root, actions);
 }
 
@@ -522,7 +546,7 @@ function pageAnthropic(root) {
       showResult(result, { ok: false, message: e.message });
     }
   });
-  const actions = h('div', { class: 'btns gap-12' }, check, btn('Get a key on console.anthropic.com', 'quiet', () => api('openExternal', 'https://console.anthropic.com/settings/keys')));
+  const actions = h('div', { class: 'btns gap-12' }, check, btn('Get a key on console.anthropic.com', 'quiet', () => openUrl('https://console.anthropic.com/settings/keys')));
   add(root, [h('div', { class: 'gap-16' }, field), result, actions]);
   if (saved)
     add(
@@ -532,8 +556,7 @@ function pageAnthropic(root) {
         { class: 'btns gap-16' },
         btn('Remove key', 'quiet', async () => {
           if (await confirmDialog({ title: 'Remove your Anthropic key?', message: 'Refine goes through OpenRouter again.', ok: 'Remove', cancel: 'Keep', danger: true })) {
-            await api('removeAnthropicKey');
-            render();
+            act(() => api('removeAnthropicKey'));
           }
         }, { danger: true }),
       ),
@@ -547,7 +570,7 @@ function microphoneCard() {
   else if (mic === 'denied' || mic === 'restricted') {
     add(c, [
       p('macOS has the microphone turned off for Dictate & Delegate.', 'warn gap-8'),
-      h('div', { class: 'btns gap-8' }, btn('Open System Settings', 'primary', () => api('openPrivacySettings', 'microphone')), btn('Check again', 'quiet', () => render())),
+      h('div', { class: 'btns gap-8' }, btn('Open System Settings', 'primary', () => act(() => api('openPrivacySettings', 'microphone'), null)), btn('Check again', 'quiet', () => render())),
       p('System Settings → Privacy & Security → Microphone: turn on Dictate & Delegate.', 'muted small gap-8'),
     ]);
   } else
@@ -602,6 +625,8 @@ function recorder(kind) {
   const cap = h('button', { class: 'keycap', 'aria-label': 'Shortcut, click to change' }, accelLabel(current));
   let listening = false;
   const stop = () => {
+    if (listening) api('suspendHotkeys', false).catch(() => {});
+    if (ui.recorderCancel === cancel) ui.recorderCancel = null;
     listening = false;
     cap.classList.remove('recording');
     window.removeEventListener('keydown', onKey, true);
@@ -645,7 +670,11 @@ function recorder(kind) {
   };
   cap.addEventListener('click', () => {
     if (listening) return cancel();
+    if (ui.recorderCancel) ui.recorderCancel(); // The other recorder stops listening.
     listening = true;
+    ui.recorderCancel = cancel;
+    // The app's own shortcuts are off while it listens, so the current one can be typed too.
+    api('suspendHotkeys', true).catch(() => {});
     cap.classList.add('recording');
     cap.textContent = 'Type the shortcut…';
     msg.className = 'small gap-4 muted';
@@ -719,8 +748,8 @@ function recordControls(root, startLabel) {
     await attempt(null, () => api('toggleDictation'));
   }, { block: true, tall: true, attrs: { id: 'record' } });
   const status = h('div', { class: 'record-hint', id: 'record-status' }, S.hotkey ? ['or press ', h('kbd', null, accelLabel(S.hotkey)), ' in any app'] : '');
-  const recovery = h('div', { class: 'btns gap-8 hidden', id: 'recovery' }, btn('Retry saved recording', 'outline', () => api('retryRecording')), btn('Discard saved audio', 'quiet', async () => {
-    if (await confirmDialog({ title: 'Discard the saved audio?', message: 'Partial text and reported costs stay in your notes.', ok: 'Discard', cancel: 'Keep', danger: true })) api('discardRecording');
+  const recovery = h('div', { class: 'btns gap-8 hidden', id: 'recovery' }, btn('Retry saved recording', 'outline', () => act(() => api('retryRecording'), null)), btn('Discard saved audio', 'quiet', async () => {
+    if (await confirmDialog({ title: 'Discard the saved audio?', message: 'Partial text and reported costs stay in your notes.', ok: 'Discard', cancel: 'Keep', danger: true })) act(() => api('discardRecording'), null);
   }));
   add(root, [button, status, recovery]);
   const hint = status.cloneNode(true);
@@ -793,14 +822,14 @@ function connectCard(root, connected) {
   const bb = S.bb;
   if (connected) {
     add(root, card('gap-16', strong(fmt('✓  Signed in to %1$s.getbb.app', bb.handle))));
-    const result = resultLine();
+    const result = resultLine('connect');
     const test = btn('Test connection', 'outline', () => bbAction(test, result, 'Asking bb…', () => api('bbTest')));
     const out = btn('Sign out', 'quiet', () => bbAction(test, result, 'Signing out…', () => api('bbSignOut')), { danger: true });
     add(root, [result, h('div', { class: 'btns gap-12' }, test, out)]);
     return;
   }
   const handle = input({ value: bb.handle, placeholder: 'handle', id: 'bb-handle' });
-  const result = resultLine();
+  const result = resultLine('connect');
   const signIn = btn('Sign in with bb', 'primary', async () => {
     const value = handle.value.trim();
     if (!value) return toast('Enter your bb Connect handle');
@@ -837,19 +866,19 @@ function customCard(root, connected) {
     h('div', { class: 'gap-8' }, links),
     connected ? p('✓  Saved', 'ok gap-8') : null,
   ));
-  const result = resultLine();
+  const result = resultLine('custom');
   const save = btn('Save and test', connected ? 'outline' : 'primary', () => {
     const address = url.value.trim();
     const base = links.value.trim();
     if (!/^https?:\/\/\S+$/i.test(address)) return toast('Enter the MCP address, starting with https:// or http://');
+    if (!plainHttpAllowed(address)) return toast(PLAIN_HTTP);
     if (base && !/^https?:\/\/\S+$/i.test(base)) return toast('The web address starts with https://');
     bbAction(save, result, 'Asking bb…', () => api('bbSaveCustom', address, tokenTouched || !bb.hasToken ? token.value : null, base));
   });
   const actions = h('div', { class: 'btns gap-12' }, save);
   if (connected)
     actions.append(btn('Forget this address', 'quiet', async () => {
-      await api('bbForgetAddress');
-      render();
+      act(() => api('bbForgetAddress'));
     }, { danger: true }));
   add(root, [result, actions]);
 }
@@ -858,7 +887,7 @@ function customCard(root, connected) {
 function skillsCard(root) {
   const name = input({ value: S.bb.userName, placeholder: 'Optional: what your chief calls you', maxlength: 40, id: 'user-name' });
   const line = h('div', { class: 'text gap-12 ' + toneClass(S.skills.line.tone), id: 'skills-line' }, S.skills.line.text);
-  const result = resultLine();
+  const result = resultLine('skills');
   const adopt = btn('Take the topic and name from bb', 'quiet', () => bbAction(adopt, result, 'Reading the skills in bb…', () => api('adoptSkills')));
   add(root, [
     strong("Your chief's skills", 'gap-24'),
@@ -866,11 +895,23 @@ function skillsCard(root) {
     strong('Your name', 'gap-16'),
     h('div', { class: 'gap-8' }, autosave(name, (v) => api('setUserName', v))),
     line,
+    h('div', { class: 'btns gap-8' }, btn('Check the skills in bb', 'quiet', () => act(() => api('checkSkills', true), null)), adopt),
     result,
-    h('div', { class: 'btns gap-8' }, btn('Check the skills in bb', 'quiet', () => api('checkSkills', true)), adopt),
     p('Set bb up on your phone first? “Take the topic and name from bb” uses the ntfy topic, server and name the phone filled the skills with, so both get the same notifications.', 'muted small gap-4'),
   ]);
   api('checkSkills', false).catch(() => {});
+}
+
+/** Plain http:// only to this computer (api.js checks the same). */
+const PLAIN_HTTP = 'Plain HTTP is allowed only to 127.0.0.1. Use https://.';
+function plainHttpAllowed(url) {
+  if (!/^http:\/\//i.test(url)) return true;
+  try {
+    const host = new URL(url).hostname.replace(/^\[|\]$/g, '');
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  } catch {
+    return false;
+  }
 }
 
 const toneClass = (tone) => (tone === 'ok' ? 'ok' : tone === 'warn' ? 'warn' : 'muted');
@@ -898,20 +939,19 @@ function pageChief(root, onboarding) {
   }
   const id = bb.chiefId;
   if (id) {
-    add(root, card('tint gap-16', strong(bb.chiefTitle || 'Chief of staff'), h('div', { class: 'mono gap-4' }, id), bb.chiefLink ? h('div', { class: 'btns gap-8' }, btn('Open in bb ↗', 'quiet', () => api('openExternal', bb.chiefLink))) : null));
+    add(root, card('tint gap-16', strong(bb.chiefTitle || 'Chief of staff'), h('div', { class: 'mono gap-4' }, id), bb.chiefLink ? h('div', { class: 'btns gap-8' }, btn('Open in bb ↗', 'quiet', () => openUrl(bb.chiefLink))) : null));
     if (!ui.changingChief)
       add(root, h('div', { class: 'btns gap-12' }, btn('Change', 'outline', () => {
         ui.changingChief = true;
         render();
       }), btn('Forget this chief', 'quiet', async () => {
         if (await confirmDialog({ title: 'Forget your chief of staff?', message: 'The thread stays in bb. Dictate & Delegate stops sending tasks to it until you set a chief again.', ok: 'Forget', cancel: 'Keep', danger: true })) {
-          await api('forgetChief');
-          render();
+          act(() => api('forgetChief'));
         }
       }, { danger: true })));
     chiefNameField(root);
   }
-  const result = resultLine();
+  const result = resultLine('chief');
   root.append(result);
   if (!id || ui.changingChief) {
     const create = btn('Create chief of staff', id ? 'outline' : 'primary', () =>
@@ -951,19 +991,21 @@ async function pageNtfy(root, onboarding) {
     card('gap-16', label('Your topic'), h('div', { class: 'mono pre', style: 'font-size:14px;color:var(--ink);user-select:text' }, n.topic || '—'), h('div', { class: 'mono gap-4' }, n.server), p("Anyone who knows the topic can read these notifications, so it's long and random. Keep it to yourself.", 'muted small gap-8')),
     card('list gap-12', prefRow("Show the chief's notifications on this Mac", S.notifier ? states[S.notifier] || S.notifier : 'Text to paste comes with Insert and Copy', 'macNotifications', S.mac.macNotifications)),
   ]);
-  const result = resultLine();
+  const result = resultLine('ntfy');
   const test = btn('Send test', 'outline', () => bbAction(test, result, 'Sending…', () => api('ntfyTest')));
   add(root, [
-    h('div', { class: 'btns gap-16' }, btn('Open in the browser', 'primary', () => api('openNtfy')), test, n.topic ? btn('Copy topic', 'quiet', async () => toast(await api('copy', n.topic))) : null),
+    h('div', { class: 'btns gap-16' }, btn('Open in the browser', 'primary', () => act(() => api('openNtfy'), null)), test, n.topic ? btn('Copy topic', 'quiet', () => act(() => api('copy', n.topic), toast)) : null),
     result,
   ]);
   const server = input({ value: n.server, placeholder: S.bb.ntfyDefault });
+  const serverResult = resultLine('ntfy-server');
   const save = btn('Save server', 'quiet', () => {
     const v = server.value.trim();
     if (v && !/^https?:\/\/\S+$/i.test(v)) return toast('The server address starts with https://');
-    bbAction(save, result, 'Saving…', () => api('setNtfyServer', v));
+    if (v && !plainHttpAllowed(v)) return toast(PLAIN_HTTP);
+    bbAction(save, serverResult, 'Saving…', () => api('setNtfyServer', v));
   });
-  add(root, [strong('ntfy server', 'gap-24'), p('ntfy.sh, or your own ntfy server.', 'muted small gap-4'), h('div', { class: 'field-row gap-8' }, server, save)]);
+  add(root, [strong('ntfy server', 'gap-24'), p('ntfy.sh, or your own ntfy server.', 'muted small gap-4'), h('div', { class: 'field-row gap-8' }, server, save), serverResult]);
   if (onboarding) add(root, [h('div', { class: 'grow' }), btn('Done', 'primary', finishSetup, { block: true, tall: true })]);
 }
 
@@ -981,7 +1023,9 @@ async function pageHome(root) {
     const snap = await api('call').catch(() => null);
     add(root, h('div', { class: 'gap-12' }, btn(snap && snap.active ? '🎧 Hands-free is on' : '🎧 Hands-free with your chief', 'outline', () => go('handsfree'), { block: true })));
   }
-  add(root, p(S.attachmentsPending ? (S.attachmentsPending === 1 ? '1 attachment for this dictation' : fmt('%1$d attachments for this dictation', S.attachmentsPending)) : 'Talking about something? While you dictate, click 📎 on the panel to add it, like an offer you reply to.', 'muted small gap-8'));
+  add(root, h('div', { class: 'head-row gap-8' },
+    p(S.attachmentsPending ? (S.attachmentsPending === 1 ? '1 attachment for this dictation' : fmt('%1$d attachments for this dictation', S.attachmentsPending)) : 'Talking about something? Add it, like an offer you reply to.', 'muted small'),
+    btn('📎 Add', 'quiet', () => act(() => api('attach')), { attrs: { id: 'attach' } })));
   const data = await api('home');
   const max = Math.max(0, ...data.month.days);
   add(root, h(
@@ -1064,6 +1108,9 @@ function pageNotes(root) {
 
 async function pageNote(root) {
   const id = ui.params.id;
+  // Another note opens with its kept version, as Android's openNote.
+  if (ui.noteShown !== id) ui.showOriginal = false;
+  ui.noteShown = id;
   const n = await api('note', id);
   if (!n) {
     heading(root, 'Note not found');
@@ -1074,7 +1121,7 @@ async function pageNote(root) {
   if (n.chief) {
     if (n.chief.sent)
       add(root, [
-        h('div', { class: 'btns gap-16' }, btn('Sent to chief of staff ↗', 'primary', () => (n.chief.link ? api('openExternal', n.chief.link) : toast('Set the bb web address for links in Settings → bb.')))),
+        h('div', { class: 'btns gap-16' }, btn('Sent to chief of staff ↗', 'primary', () => (n.chief.link ? openUrl(n.chief.link) : toast('Set the bb web address for links in Settings → bb.')))),
         p("Your chief of staff works on it in bb and notifies you through ntfy when it's done or needs you. The button opens the thread.", 'muted small gap-8'),
       ]);
     else
@@ -1089,7 +1136,7 @@ async function pageNote(root) {
       ]);
   }
   if (n.chiefReply)
-    add(root, card('tint gap-16', label('From your chief of staff'), h('div', { class: 'text pre gap-4', style: 'font-size:15px;user-select:text' }, n.chiefReply), h('div', { class: 'btns gap-8' }, btn('Copy', 'quiet', async () => toast(await api('copy', n.chiefReply))))));
+    add(root, card('tint gap-16', label('From your chief of staff'), h('div', { class: 'text pre gap-4', style: 'font-size:15px;user-select:text' }, n.chiefReply), h('div', { class: 'btns gap-8' }, btn('Copy', 'quiet', () => act(() => api('copy', n.chiefReply), toast)))));
   if (n.processingFailed)
     add(root, [
       p(fmt("Couldn't refine this note: %1$s Below is what you said.", n.processingFailed), 'warn gap-12'),
@@ -1121,7 +1168,8 @@ async function pageNote(root) {
     if (now === base.trim()) return;
     base = now;
     try {
-      await api('editNote', id, { original, text: now });
+      // Edits belong to the version you are looking at, as Android's saveEdits decides it.
+      await api('editNote', id, { original: ui.showOriginal, text: now });
     } catch (e) {
       toast('Could not save your changes');
     }
@@ -1137,7 +1185,7 @@ async function pageNote(root) {
     h('div', { class: 'gap-12' }, editor),
     h('div', { class: 'btns gap-12' }, btn('Copy', 'primary', async () => {
       await saveEdits();
-      toast(await api('copy', editor.value));
+      act(() => api('copy', editor.value), toast);
     })),
   ]);
   if (n.files.length) add(root, p('📎 ' + n.files.join(', '), 'muted small gap-12'));
@@ -1160,8 +1208,7 @@ async function pageNote(root) {
       sub: v.model + ' · ' + dateTimeShort(v.created),
       control: v.shown ? h('span', { class: 'small ok' }, 'Shown') : btn('Keep this version', 'quiet', async () => {
         await saveEdits();
-        await api('preferVersion', v.id);
-        render();
+        act(() => api('preferVersion', v.id));
       }),
     }))));
   }
@@ -1249,7 +1296,7 @@ function pageSettings(root) {
     card('list',
       row({ title: 'Connection', sub: L.connection, onclick: () => open('bb') }),
       row({ title: 'Chief of staff', sub: L.chief, onclick: () => open('chief') }),
-      row({ title: 'Your name', sub: S.bb.userName || 'Optional: what your chief calls you', onclick: () => open('bb') }),
+      S.bb.connected ? row({ title: 'Your name', sub: S.bb.userName || 'Optional: what your chief calls you', onclick: () => open('bb') }) : null,
       row({ title: 'Notifications', sub: L.ntfy, onclick: () => open('ntfy') }),
       S.bb.connected ? row({ title: "Your chief's skills", sub: S.skills.line.text || 'chief-of-staff, dictate-and-delegate', onclick: () => open('bb') }) : null),
     label('Using Dictate & Delegate'),
@@ -1263,13 +1310,13 @@ function pageSettings(root) {
       row({ title: 'Delete saved audio', onclick: deleteAudio }),
       row({ title: 'Export settings', sub: 'Settings and keys as a file, to move to another Mac', onclick: exportSettings }),
       row({ title: 'Import settings', sub: 'From a file exported on another Mac', onclick: importSettings }),
-      row({ title: 'App log', sub: 'Copy it for a bug report', onclick: async () => toast(await api('copyAppLog')) }),
+      row({ title: 'App log', sub: 'Copy it for a bug report', onclick: () => act(() => api('copyAppLog'), toast) }),
       row({ title: 'Delete local data', sub: 'Notes, audio, templates, keys, bb sign-in and settings', onclick: deleteLocalData, warn: true })),
     label('About'),
     card('list',
       h('div', { class: 'row' }, p("Your voice and text go only to the providers you choose. There's no Dictate & Delegate server.", 'muted')),
-      row({ title: 'Source code', sub: 'Open source, MIT License · github.com/Philipp258/dictate-and-delegate', onclick: () => api('openExternal', S.sourceUrl) }),
-      row({ title: 'Report a problem', sub: 'On GitHub', onclick: () => api('openExternal', S.sourceUrl + '/issues') })),
+      row({ title: 'Source code', sub: 'Open source, MIT License · github.com/Philipp258/dictate-and-delegate', onclick: () => openUrl(S.sourceUrl) }),
+      row({ title: 'Report a problem', sub: 'On GitHub', onclick: () => openUrl(S.sourceUrl + '/issues') })),
     p('Dictate & Delegate ' + S.version, 'muted small center gap-16'),
   ]);
 }
@@ -1401,8 +1448,7 @@ function pageRefineModel(root) {
     if (!list.isConnected && !first) return;
     if (!openRouterTab) {
       list.replaceChildren(...data.claude.map((c) => modelCard(c, c.selected, async () => {
-        toast(await api('setClaudeModel', c.id));
-        render();
+        act(() => api('setClaudeModel', c.id), (r) => (toast(r), render()));
       })), p("Prices per million tokens in / out, Anthropic's list prices.", 'muted small gap-12'));
       return;
     }
@@ -1417,8 +1463,7 @@ function pageRefineModel(root) {
         if (!q && shown >= 40 && m.id !== data.selected) continue;
         shown++;
         out.push(modelCard(m, m.id === data.selected, async () => {
-          toast(await api('setRefineModel', m.id, m.name));
-          render();
+          act(() => api('setRefineModel', m.id, m.name), (r) => (toast(r), render()));
         }));
       }
       rows.replaceChildren(...(out.length ? out : [p('No models match.', 'muted gap-8')]));
@@ -1447,8 +1492,7 @@ function pageRefine(root) {
     p('About you, your words and the template you name are added automatically.', 'muted small gap-4'),
     h('div', { class: 'gap-8' }, autosave(prompt, (v) => api('setRefinePrompt', v))),
     h('div', { class: 'btns gap-8' }, btn('Reset to default', 'quiet', async () => {
-      await api('resetRefinePrompt');
-      render();
+      act(() => api('resetRefinePrompt'));
     })),
   ]);
 }
@@ -1501,12 +1545,13 @@ async function pageWords(root) {
   const field = input({ placeholder: 'Add a word or name', id: 'word-input' });
   const box = h('div');
   const draw = (words) => {
-    box.replaceChildren(label('Your words'), words.length ? h('div', { class: 'chips' }, words.map((w) => h('button', { class: 'chip word', 'aria-label': fmt('Remove %1$s', w), onclick: async () => draw(await api('removeWord', w)) }, w + '   ✕'))) : p('No words yet.', 'muted'));
+    box.replaceChildren(label('Your words'), words.length ? h('div', { class: 'chips' }, words.map((w) => h('button', { class: 'chip word', 'aria-label': fmt('Remove %1$s', w), onclick: () => act(() => api('removeWord', w), (r) => (r ? draw(r) : render())) }, w + '   ✕'))) : p('No words yet.', 'muted'));
   };
   const addWord = async () => {
     const w = field.value;
     field.value = '';
-    draw(await api('addWord', w));
+    const r = await attempt(null, () => api('addWord', w));
+    if (r) draw(r);
     field.focus();
   };
   field.addEventListener('keydown', (e) => e.key === 'Enter' && addWord());
@@ -1523,7 +1568,9 @@ async function pageAboutYou(root) {
     chip.addEventListener('click', async () => {
       selected = selected.includes(t) ? selected.filter((x) => x !== t) : [...selected, t];
       chip.classList.toggle('on', selected.includes(t));
-      selected = await api('setTopics', selected);
+      const r = await attempt(null, () => api('setTopics', selected));
+      if (r) selected = r;
+      else render();
     });
     return chip;
   }));
@@ -1652,7 +1699,7 @@ async function recentEvents(root) {
   add(root, strong('Recent events', 'gap-24'));
   if (log.empty) return add(root, p("No events yet. They appear here once you've made a hands-free call.", 'muted small gap-4'));
   add(root, [
-    h('div', { class: 'btns gap-8' }, btn('Copy last call', 'outline', async () => toast(await api('copyHandsFreeLog', 1))), btn('Copy last 3 calls', 'outline', async () => toast(await api('copyHandsFreeLog', 3)))),
+    h('div', { class: 'btns gap-8' }, btn('Copy last call', 'outline', () => act(() => api('copyHandsFreeLog', 1), toast)), btn('Copy last 3 calls', 'outline', () => act(() => api('copyHandsFreeLog', 3), toast))),
     h('div', { class: 'events gap-8', id: 'hf-events' }, log.lines),
   ]);
 }
@@ -1736,7 +1783,7 @@ function talkerSetting(root) {
   const field = input({ value: S.bb.talkerId, placeholder: 'Talker thread link or id (thr_…)' });
   const problem = p(S.bb.talkerProblem || '', 'muted small gap-4');
   const [f, saved] = autosave(field, async (v) => {
-    const why = await api('setTalker', v);
+    const why = await api('setTalker', v); // A failure shows under the field (autosave).
     problem.textContent = why;
     problem.className = 'text small gap-4 ' + (why ? 'warn' : 'muted');
   }, 600);
@@ -1774,9 +1821,8 @@ async function pageLive(root) {
       strong(k.label, 'gap-24'),
       k.saved ? p('✓  A key is saved on this Mac, encrypted in the Keychain.', 'ok small gap-4') : null,
       h('div', { class: 'gap-8' }, field),
-      h('div', { class: 'btns gap-8' }, save, btn('Get a key', 'quiet', () => api('openExternal', k.url)), k.saved ? btn('Remove key', 'quiet', async () => {
-        await api('removeLiveKey', k.provider);
-        render();
+      h('div', { class: 'btns gap-8' }, save, btn('Get a key', 'quiet', () => openUrl(k.url)), k.saved ? btn('Remove key', 'quiet', async () => {
+        act(() => api('removeLiveKey', k.provider));
       }, { danger: true }) : null),
     ]);
   }
@@ -1831,6 +1877,9 @@ function target(page) {
   return PAGES[page] ? page : 'home';
 }
 
+// A file dropped on the window must not replace the app with it.
+for (const type of ['dragover', 'drop']) document.addEventListener(type, (e) => e.preventDefault());
+
 for (const b of document.querySelectorAll('#sidebar .nav')) b.addEventListener('click', () => go(b.dataset.section));
 
 dd.on('navigate', (page) => go(target(page)));
@@ -1848,7 +1897,7 @@ dd.on('event', (name, payload) => {
       return;
     }
     case 'signin':
-      ui.bbNotice = payload && { ok: !!payload.ok, message: String(payload.message || '') };
+      ui.bbNotice = payload && { ok: !!payload.ok, message: String(payload.message || ''), slot: 'connect' };
       ui.bbModeShown = 'connect';
       if (!['bb', 'bb1'].includes(ui.page)) return go(target('bb'));
       return render();

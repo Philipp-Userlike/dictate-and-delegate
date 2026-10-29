@@ -122,6 +122,7 @@ test('importRoundTripsAnExport', () => {
   const r = api.parseImport(text);
   assert.deepEqual(r.prefs, { model: 'openai/whisper-1', hfTurnPauseMs: 2500 });
   assert.deepEqual(r.keys, { openrouterKey: 'sk-or', elevenlabsKey: 'el' });
+  assert.deepEqual(r.skipped, []);
 });
 
 test('importRejectsOtherFiles', () => {
@@ -132,14 +133,52 @@ test('importRejectsOtherFiles', () => {
   assert.throws(() => api.parseImport('x'.repeat(3_000_000)), /isn't a Dictate & Delegate settings file/);
 });
 
-test('importRejectsNestedValuesAndDropsUnknownKeys', () => {
-  assert.throws(() => api.parseImport(JSON.stringify({ app: 'dictate-and-delegate', prefs: { model: { evil: 1 } } })), /model has an unexpected value/);
-  assert.throws(() => api.parseImport(JSON.stringify({ app: 'dictate-and-delegate', keys: { openrouterKey: 42 } })), /openrouterKey/);
+test('importChecksEachSettingAndSkipsBadOnes', () => {
   const r = api.parseImport(
-    JSON.stringify({ app: 'dictate-and-delegate', prefs: { sessionId: 'x', 'bad key!': 1, ok: true }, keys: { bbAuth: 'tokens', transcript: 't', anthropicKey: ' sk-ant ' } }),
+    JSON.stringify({
+      app: 'dictate-and-delegate',
+      prefs: {
+        model: { evil: 1 }, // not a value: skipped
+        hfVoice: 'no-such-voice', // not one of the choices: skipped
+        bubbleOpacity: 500, // out of range: skipped
+        hfLive: 'yes', // a boolean setting: skipped
+        talkerOn: true,
+        bbUrl: 'https://x.getbb.app/mcp',
+        chiefTitle: 7, // a text setting given a number: skipped
+        somethingUnknown: 'x', // not a setting this app has: skipped
+        sessionId: 'runtime', // running state: dropped silently
+        autoRefine: false,
+        hfTurnPauseMs: 2500,
+      },
+      keys: { openrouterKey: 42, bbAuth: 'tokens', anthropicKey: ' sk-ant ' },
+    }),
   );
-  assert.deepEqual(r.prefs, { ok: true });
+  assert.deepEqual(r.prefs, { talkerOn: true, bbUrl: 'https://x.getbb.app/mcp', autoRefine: false, hfTurnPauseMs: 2500 });
   assert.deepEqual(r.keys, { anthropicKey: 'sk-ant' });
+  assert.deepEqual(r.skipped.sort(), ['bbAuth', 'bubbleOpacity', 'chiefTitle', 'hfLive', 'hfVoice', 'model', 'openrouterKey', 'somethingUnknown'].sort());
+});
+
+test('importTakesLongTemplates', () => {
+  const templates = JSON.stringify([{ id: '1', name: 'Long', text: 'x'.repeat(500_000) }]);
+  const r = api.parseImport(JSON.stringify({ app: 'dictate-and-delegate', prefs: { templates } }));
+  assert.equal(r.prefs.templates, templates);
+  assert.deepEqual(r.skipped, []);
+});
+
+test('plainHttpOnlyToThisComputer', () => {
+  assert.equal(api.plainHttpAllowed('https://bb.example.com/mcp'), true);
+  assert.equal(api.plainHttpAllowed('http://127.0.0.1:38886/api/v1/plugins/bb--mcp/http/mcp'), true);
+  assert.equal(api.plainHttpAllowed('http://localhost:8080'), true);
+  assert.equal(api.plainHttpAllowed('http://[::1]:8080'), true);
+  assert.equal(api.plainHttpAllowed('http://ntfy.example.com'), false);
+  assert.equal(api.plainHttpAllowed('http://127.0.0.1.evil.com'), false);
+});
+
+test('sameAcceleratorIgnoresModifierOrder', () => {
+  assert.equal(api.sameAccelerator('Shift+Alt+Space', 'Alt+Shift+Space'), true);
+  assert.equal(api.sameAccelerator('Cmd+Shift+D', 'Shift+Command+D'), true);
+  assert.equal(api.sameAccelerator('Alt+Space', 'Alt+Shift+Space'), false);
+  assert.equal(api.sameAccelerator('', ''), false);
 });
 
 test('routeAndBadgeLikeMainActivity', () => {
