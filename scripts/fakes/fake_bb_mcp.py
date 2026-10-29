@@ -11,6 +11,9 @@ Speaks MCP Streamable HTTP on POST /mcp and answers as an event stream, like bb 
                                 "thread","tell"   -> {"threadId": ..., "delivery": "sent"}
                                 "thread","show"   -> {"id": ..., "title": "Chief of staff", "status": "idle", "archived": false}
                                 "skill","list"    -> {"skills": {name: marker hash}} of the installed fake skills
+                                "skill","show" returning {contents} -> {"contents": {name: file}} of the
+                                                     installed fake skills ("" missing; the Mac app's
+                                                     adoptFromBb)
                                 spawn titled "Dictate & Delegate: install skills" -> installs the files in its
                                                      prompt at once (unless /test/skills says "stall"),
                                                      {"id": "thr_fakeinstall"}
@@ -36,7 +39,9 @@ Test control (not part of bb):
                       long (as over a slow connection), 0 turns it off
   POST /test/skills   {"installed": {"dictate-and-delegate": "abc", ...}} sets what bb has ("" missing,
                       "old" unmarked); {"stall": true} makes the install thread never install;
-                      {"skip": ["dictate-and-delegate-talker"]} makes it leave out those skills
+                      {"skip": ["dictate-and-delegate-talker"]} makes it leave out those skills;
+                      {"files": {name: content}} installs those files as they are (their markers
+                      count as installed), as if another device had installed them
   GET  /test/uploads  every upload: {"name", "mimeType", "size", "sha256", "via": "rest"|"mcp", "path"}
   GET  /test/skills   what's installed: {"installed": {...}, "files": {name: content}}
   POST /test/reset    empties failures, config, installed skills and the request log
@@ -75,6 +80,8 @@ requests = []
 
 def kind_of(code):
     flat = code.replace(" ", "")
+    if '"skill","show"' in flat and "return{contents}" in flat:
+        return "contents"
     if '"skill","list"' in flat:
         return "skills"
     if '"thread","archive"' in flat:
@@ -171,6 +178,10 @@ class Handler(BaseHTTPRequestHandler):
                     skills["stall"] = bool(body["stall"])
                 if "skip" in body:
                     skills["skip"] = list(body["skip"])
+                for name, content in (body.get("files") or {}).items():
+                    skills["files"][name] = content
+                    marker = re.search(r"<!-- [a-z-]+-skill: ([0-9a-f]+) -->", content)
+                    skills["installed"][name] = marker.group(1) if marker else "old"
             return self.send_json(200, {})
         if self.path == "/test/config":
             with lock:
@@ -267,6 +278,10 @@ class Handler(BaseHTTPRequestHandler):
             with lock:
                 value = {"skills": {n: skills["installed"].get(n, "")
                                     for n in ("chief-of-staff", "dictate-and-delegate", "dictate-and-delegate-talker", "talk-router")}}
+        elif kind == "contents":
+            with lock:
+                value = {"contents": {n: skills["files"].get(n, "") if skills["installed"].get(n) else ""
+                                      for n in ("dictate-and-delegate", "dictate-and-delegate-talker", "chief-of-staff")}}
         elif kind == "archive":
             value = {"archived": True}
         elif kind == "spawn" and "Dictate & Delegate: install skills" in code:

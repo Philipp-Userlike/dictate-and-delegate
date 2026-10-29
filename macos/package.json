@@ -1,0 +1,21 @@
+{
+  "name": "dictate-and-delegate-mac",
+  "productName": "Dictate & Delegate",
+  "version": "0.1.0",
+  "description": "Dictate & Delegate for macOS: dictate, refine, or hand to your chief of staff in bb.",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-concurrency=4 'test/*.test.js'",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "koffi": "^2.16.3",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^45.1.0"
+  }
+}
