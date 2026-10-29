@@ -1137,13 +1137,13 @@ test('aVoiceThatFailsSaysWhy', () => {
   }
   const f = new Fake();
   f.session.voiceFailed('Kokoro: no answer in 30.0 s', false);
-  assert.ok(reasons(f).startsWith('Voice failed (Kokoro: no answer in 30.0 s): this phone has no other voice'), reasons(f));
+  assert.ok(reasons(f).startsWith('Voice failed (Kokoro: no answer in 30.0 s): no other voice works on this Mac'), reasons(f));
   assert.equal(f.session.voiceError(), 'Kokoro: no answer in 30.0 s');
   assert.ok(f.logText().includes('Voice failed (Kokoro: no answer in 30.0 s)'));
   f.now.addAndGet(HandsFreeSession.VOICE_ERROR_MS);
   assert.equal(f.session.voiceError(), '', 'shown a while, then gone');
   f.session.voiceFailed('Kokoro: HTTP 503: No provider available', true);
-  assert.ok(reasons(f).startsWith('Voice failed (Kokoro: HTTP 503: No provider available): Android\'s voice reads the reply'), reasons(f));
+  assert.ok(reasons(f).startsWith('Voice failed (Kokoro: HTTP 503: No provider available): the Mac\'s voice reads the reply'), reasons(f));
 });
 
 test('liveTranscriptionWithoutItsKeySaysSoForAWhileOnTheCallBarAndAllCallOnScreen', () => {

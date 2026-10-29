@@ -819,8 +819,8 @@ class HandsFreeSession {
   voiceFailed(why, android) {
     this._voiceError = why;
     this.voiceErrorAt = this.clock();
-    if (android) this.reason('Voice failed (%1$s): Android\'s voice reads the reply', why);
-    else this.reason('Voice failed (%1$s): this phone has no other voice', why);
+    if (android) this.reason('Voice failed (%1$s): the Mac\'s voice reads the reply', why);
+    else this.reason('Voice failed (%1$s): no other voice works on this Mac', why);
   }
 
   /** Why the voice model failed, while it's shown; "" otherwise. */

@@ -5,7 +5,7 @@ set -eu -o pipefail
 cd "$(dirname "$0")/.."
 name=${1:-dictation}
 tmp=$(mktemp -d)
-python3 scripts/make-test-wav.py "$tmp/mic.wav"
+python3 scripts/make-test-wav.py "$tmp/mic.wav" "${DD_WAV_SECONDS:-6}" "${DD_WAV_PATTERN:-dictation}"
 exec 3>"$tmp/display"
 Xvfb -displayfd 3 -screen 0 1440x900x24 -nolisten tcp >/dev/null 2>&1 &
 xvfb=$!

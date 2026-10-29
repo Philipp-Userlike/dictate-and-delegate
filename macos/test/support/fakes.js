@@ -20,8 +20,23 @@ function freePort() {
   });
 }
 
+/**
+ * The fake OpenRouter's voice reply (scripts/fakes/reply.mp3, git-ignored): when it's missing, two
+ * seconds of valid silent MP3 frames like Kokoro's (MPEG-2 Layer III, 64 kbit/s, 24 kHz, mono;
+ * all-zero frames decode to silence).
+ */
+function ensureReplyMp3() {
+  const fs = require('fs');
+  const file = path.join(FAKES, 'reply.mp3');
+  if (fs.existsSync(file)) return;
+  const frame = Buffer.alloc(192);
+  Buffer.from([0xff, 0xf3, 0x84, 0xc4]).copy(frame);
+  fs.writeFileSync(file, Buffer.concat(Array.from({ length: 84 }, () => frame)));
+}
+
 /** Runs scripts/fakes/<script> and waits until it answers; {url, get, post, stop}. */
 async function startFake(script) {
+  if (script === 'fake_openrouter.py') ensureReplyMp3();
   for (let tries = 0; ; tries++) {
     const port = await freePort();
     const child = spawn('python3', ['-I', path.join(FAKES, script), '--port', String(port)], { stdio: ['ignore', 'ignore', 'pipe'] });

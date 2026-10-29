@@ -71,6 +71,15 @@ function start() {
     /* A menu-bar app keeps running without windows. */
   });
   app.on('will-quit', () => globalShortcut.unregisterAll());
+  app.on('before-quit', () => {
+    // The microphone and the audio window first: a renderer holding the microphone can hold up quitting.
+    try {
+      if (call && call.active()) call.end();
+      if (dictation && dictation.busy()) dictation.cancel();
+      audio.micStop();
+      audio.win.destroy();
+    } catch {}
+  });
 
   app.whenReady().then(async () => {
     if (app.dock) app.dock.hide();
@@ -88,9 +97,19 @@ function start() {
     });
     try {
       call = require('./call').createCall({ ctx, audio, shell: callShell() });
+      let mediaKey = false;
       call.onChange((snap) => {
         for (const fn of callListeners) fn(snap);
         updateTray();
+        // The headset's play/pause button sends, as on Android (macOS needs Accessibility for it).
+        const want = !!snap.active && insertion.accessibility(false);
+        if (want !== mediaKey) {
+          mediaKey = want;
+          try {
+            if (want) globalShortcut.register('MediaPlayPause', () => call.sendNow());
+            else globalShortcut.unregister('MediaPlayPause');
+          } catch {}
+        }
       });
     } catch (e) {
       ctx.log(`app: hands-free unavailable (${e.message})`);
@@ -584,6 +603,12 @@ function start() {
         return insertion.insert(text, { method: ctx.prefs.get(INSERT_METHOD, 'paste'), log: ctx.log });
       },
       notifierState: () => (notifier ? notifier.state : 'off'),
+      dictationState: () => ({ ...dictation.snapshot(), hasSavedRecording: dictation.hasSavedRecording(), recordingId: ctx.prefs.get('recordingId', '') }),
+      refineNote: (id, template) => dictation.refineNote(id, template),
+      sendNote: (id) => dictation.sendNote(id),
+      retryRecording: () => dictation.retry().then(() => true),
+      discardRecording: () => dictation.discard().then(() => true),
+      attach: () => attachMenu(),
     };
   }
 }

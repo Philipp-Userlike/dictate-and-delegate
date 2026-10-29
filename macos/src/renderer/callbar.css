@@ -1,0 +1,21 @@
+:root { --teal: #0b7a5e; --red: #d93025; color-scheme: light dark; }
+html, body { width: 420px; height: 120px; margin: 0; background: transparent; overflow: hidden;
+  font: 13px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; user-select: none; }
+#bar { position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 6px; padding: 6px;
+  border-radius: 22px; background: rgba(28, 32, 30, .93); color: #fff; -webkit-app-region: drag;
+  box-shadow: 0 6px 24px rgba(0,0,0,.28); }
+button { -webkit-app-region: no-drag; border: 0; height: 34px; border-radius: 17px; font: inherit; color: inherit;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: default; }
+.state { background: transparent; padding: 0 10px 0 8px; max-width: 250px; }
+.state:hover { background: rgba(255,255,255,.1); }
+#label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dot { width: 9px; height: 9px; border-radius: 5px; background: #8a958f; flex: none; }
+.dot.you { background: #3ad6a8; } .dot.chief { background: #6aa8ff; } .dot.busy { background: #e0b341; }
+.dot.failed { background: var(--red); }
+.send { width: 34px; background: var(--teal); color: #fff; }
+.send[hidden] { display: none; }
+.end { width: 44px; background: var(--red); color: #fff; }
+@media (prefers-color-scheme: light) {
+  #bar { background: rgba(250,252,251,.96); color: #10201b; box-shadow: 0 6px 24px rgba(0,0,0,.2), 0 0 0 .5px rgba(0,0,0,.12); }
+  .state:hover { background: rgba(0,0,0,.06); }
+}
