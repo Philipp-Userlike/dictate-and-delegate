@@ -15,6 +15,7 @@ const {
   Fake,
   reasons,
   verdict,
+  hear,
   LONG_REPLY,
   playingReply,
   framesToStop,
@@ -82,11 +83,11 @@ test('whileAReplysAudioIsFetchedTheFloorStaysOpenAndYouCanTalk', async () => {
   // Not read yet: the microphone is on and the floor open.
   assert.equal(f.session.state(), State.LISTENING);
   assert.equal(f.session.floor(), HandsFreeSession.Floor.OPEN);
-  f.speak(); // You take it meanwhile: a new turn, the reply is dropped.
+  f.speak(); // You take it meanwhile: a new turn, the reply waits until your message goes.
   fetched.countDown();
   await sleep(100);
   assert.equal(f.spoken.length, 0);
-  assert.equal(f.session.held(), 0);
+  assert.equal(f.session.held(), 1);
   f.quiet(1200);
   await until(() => f.sent.length === 1);
   assert.equal(f.sent[0], 'Wait, one more thing.\n\n[not played: "Here\'s the answer."]');
@@ -242,7 +243,7 @@ test('aReplyLongerThanItsEstimateIsNeverCutWhileItsAudioPlays', async () => {
 
 // ------------------------------------------------------------------ talking over a reply
 
-test('talkingOverAReplyStopsItDropsTheRestAndYourNextMessageSaysHowFarYouHeard', async () => {
+test('talkingOverAReplyPausesItAndYourMessageDropsTheRestAndSaysHowFarYouHeard', async () => {
   const f = await playingReply('Hold on, book the train instead.', 'Over.');
   f.heardChars = LONG_REPLY.indexOf('Lisbon');
   const frames = framesToStop(f, 8000, 40); // You, over the reply.
@@ -250,9 +251,10 @@ test('talkingOverAReplyStopsItDropsTheRestAndYourNextMessageSaysHowFarYouHeard',
   assert.equal(f.session.state(), State.LISTENING);
   assert.equal(f.transcriptions, 0, 'nothing had to be written down to stop it');
   const log = f.logText();
-  assert.ok(log.includes('barge-in: speech 300 ms → stopped'), log);
-  assert.ok(reasons(f).includes('Reply stopped: you talked over it; the chief will hear how far you got'), reasons(f));
-  assert.equal(f.session.held(), 0, 'the rest is dropped, not waiting');
+  assert.ok(log.includes('barge-in: speech 300 ms → paused'), log);
+  assert.ok(log.includes('it plays on from "The train to Lisbon costs'), log);
+  assert.ok(reasons(f).includes('Reply paused: you\'re talking. It\'s dropped once your message goes'), reasons(f));
+  assert.equal(f.session.held(), 1, 'the rest waits, from the sentence it stopped in');
   // You go on: all of it is your turn.
   for (let i = 0; i < 30; i++) f.session.frame(frame(8000));
   f.quiet(1200);
@@ -287,14 +289,47 @@ test('aReplyTalkedOverWithNoMessageAfterItIsNotedWithTheCallsEnd', async () => {
   assert.equal(f.sent.length, 0);
 });
 
-test('aReplyArrivingWhileYouTalkIsDroppedAndNeverPlays', async () => {
+test('aReplyPausedByNoiseOverItPlaysOnFromTheSentenceItStoppedIn', async () => {
+  const f = await playingReply(''); // What was heard over it has no words.
+  f.heardChars = LONG_REPLY.indexOf('Lisbon');
+  framesToStop(f, 8000, 40);
+  assert.equal(f.session.state(), State.LISTENING);
+  f.quiet(1200);
+  await until(() => f.spoken.length === 2);
+  assert.equal(f.spoken[1], 'The train to Lisbon costs about forty euros if you book today.');
+  f.done();
+  f.session.end();
+  assert.equal(f.session.endNote(), '', 'heard to its end: nothing to note');
+  assert.equal(f.sent.length, 0);
+});
+
+test('whenJevSaysYoureNotDoneAndYouStayQuietTheWaitingReplyPlaysAndYourWordsWait', async () => {
+  const f = new Fake('I\'m still thinking about', 'the hotel. Over.');
+  f.session.judge = async (said) => (said.endsWith('Over.') ? verdict('over', 0.95, 0) : verdict('unfinished', 0.1, 0));
+  f.quiet(1000);
+  f.speak();
+  f.session.reply('r0', 'Your table is booked.');
+  await sleep(100);
+  assert.equal(f.spoken.length, 0, 'not while you talk');
+  f.quiet(1200); // Jev: not done. You stay quiet: the reply plays.
+  await until(() => f.spoken.length === 1);
+  assert.equal(f.sent.length, 0);
+  await hear(f, 1);
+  f.quiet(500);
+  // You go on: your words from before go with it, and the reply was heard: nothing noted.
+  await f.talk();
+  await until(() => f.sent.length === 1);
+  assert.equal(f.sent[0], 'I\'m still thinking about the hotel.');
+});
+
+test('aReplyArrivingWhileYouTalkIsDroppedWhenYourMessageGoesAndNeverPlays', async () => {
   const f = new Fake('I was thinking about the trip');
   f.quiet(1000);
   f.speak();
   f.session.reply('r1', 'Your table is booked.');
   await sleep(150);
   assert.equal(f.spoken.length, 0, 'not while you talk');
-  assert.equal(f.session.held(), 0, 'dropped, not waiting');
+  assert.equal(f.session.held(), 1, 'waiting while you talk');
   f.quiet(1600);
   f.session.sendNow();
   await until(() => f.sent.length === 1);

@@ -11,7 +11,6 @@
     <string name="t_0255636d" formatted="false">OpenRouter-Schlüssel</string>
     <string name="t_02986d74" formatted="false">Zum Beispiel: Wohnungsbewerbung</string>
     <string name="t_02eb1806" formatted="false">Dictate &amp; Delegate zu Schnelleinstellungen hinzufügen</string>
-    <string name="t_0369ff1c" formatted="false">Antwort gestoppt: du hast dazwischengesprochen; der Chief erfährt, wie weit du sie gehört hast</string>
     <string name="t_039fff92" formatted="false">es ist nicht mit dem Schlüssel dieser App signiert</string>
     <string name="t_03f90e5e" formatted="false">Eine Antwort wurde nicht abgespielt: Du hast seitdem mehr gesagt. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_04577256" formatted="false">Keine Wörter erkannt: dein Zug endet</string>
@@ -62,6 +61,7 @@
     <string name="t_13f11ba3" formatted="false">Aus</string>
     <string name="t_14f38eda" formatted="false">Skills werden installiert und Thread in bb wird erstellt…</string>
     <string name="t_1515cfb6" formatted="false">Keine Treffer.</string>
+    <string name="t_156cdb08" formatted="false">%1$d Antworten wurden nicht abgespielt: deine neue Nachricht ist raus. Sie sagt es dem Chief</string>
     <string name="t_15f8ef12" formatted="false">Aktuell (%1$s)</string>
     <string name="t_16545ddd" formatted="false">Modell</string>
     <string name="t_16666fb3" formatted="false">keine Antwort in der Zeit</string>
@@ -313,6 +313,7 @@
     <string name="t_633eed3f" formatted="false">Du hast das Update abgebrochen.</string>
     <string name="t_6358935d" formatted="false">Schlüssel gespeichert</string>
     <string name="t_6361c341" formatted="false">die Verbindung brach ab; ist es ein MCP-Server (Streamable HTTP)?</string>
+    <string name="t_6408cdf0" formatted="false">Antwort pausiert: du sprichst. Sie entfällt, sobald deine Nachricht rausgeht</string>
     <string name="t_6418f0e2" formatted="false">Gib dein bb Connect-Handle ein</string>
     <string name="t_65211030" formatted="false">Die Serveradresse beginnt mit https://</string>
     <string name="t_653174a7" formatted="false">Mit klügerem Modell neu erstellt</string>
@@ -424,7 +425,6 @@
     <string name="t_8cb43c6e" formatted="false">Stimme fehlgeschlagen: %1$s</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Hinzufügen</string>
     <string name="t_8d8041f9" formatted="false">Deine Stimme muss um diesen Faktor lauter als der Hintergrund sein</string>
-    <string name="t_8e90258f" formatted="false">Eine Antwort wurde nicht abgespielt: Du hast angefangen zu sprechen. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_8edfe30e" formatted="false">erfordert Aufmerksamkeit</string>
     <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate schreibt</string>
     <string name="t_8f454c36" formatted="false">Richte deinen Chief of Staff in Dictate &amp; Delegate → Einstellungen → bb ein.</string>
@@ -492,6 +492,7 @@
     <string name="t_a43d1375" formatted="false">Speichere Texte, die du immer wieder schreibst – z. B. eine Wohnungsbewerbung. Diktiere dann einfach, welche Vorlage du nutzen willst und was sich diesmal ändert.</string>
     <string name="t_a475c571" formatted="false">Aufnahme nicht abgeschlossen (%1$s). Auf Startseite wiederholen.</string>
     <string name="t_a47dbae1" formatted="false">Diese Notiz hat bereits das genaueste Modell verwendet.</string>
+    <string name="t_a4af23b6" formatted="false">Eine Antwort wurde nicht abgespielt: deine neue Nachricht ist raus. Sie sagt es dem Chief</string>
     <string name="t_a4f48b05" formatted="false">Gesendet: du hast gesagt, dass du fertig bist (%1$d%%)</string>
     <string name="t_a5b51395" formatted="false">Anthropic hatte ein Problem (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">bb verbinden</string>
@@ -513,6 +514,7 @@
     <string name="t_ab247fbe" formatted="false">Deine Stimme und dein Text gehen nur an die Anbieter, die du wählst. Es gibt keinen Server von Dictate &amp; Delegate.</string>
     <string name="t_ab7143b8" formatted="false">Berechtigungen</string>
     <string name="t_ab754703" formatted="false">Höre dich</string>
+    <string name="t_ab7559e2" formatted="false">Antwort gestoppt: du hast dazwischengesprochen</string>
     <string name="t_ab93f81c" formatted="false">das Release hat keine Prüfsumme</string>
     <string name="t_abfd3b0d" formatted="false">Talker verwenden</string>
     <string name="t_ac224344" formatted="false">Gespeichert, verschlüsselt · Sprache, Entscheidungen und Verfeinern</string>
@@ -614,7 +616,6 @@
     <string name="t_c7b2a2f8" formatted="false">noch kein Schlüssel</string>
     <string name="t_c8210626" formatted="false">Sprachausgabe-Modell</string>
     <string name="t_c82c4a5b" formatted="false">Update auf %1$s</string>
-    <string name="t_c89bd39b" formatted="false">%1$d Antworten wurden nicht abgespielt: Du hast angefangen zu sprechen. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_c90e13f1" formatted="false">Nur an Talker gesendet. Der Chief hat es nicht erhalten: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Startet…</string>
     <string name="t_c997df74" formatted="false">bb hat die Anmeldung abgelehnt: %1$s</string>

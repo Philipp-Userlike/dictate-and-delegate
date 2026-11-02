@@ -11,7 +11,6 @@
     <string name="t_0255636d" formatted="false">Clave de OpenRouter</string>
     <string name="t_02986d74" formatted="false">Por ejemplo: Solicitud de piso</string>
     <string name="t_02eb1806" formatted="false">Añadir Dictate &amp; Delegate a Ajustes rápidos</string>
-    <string name="t_0369ff1c" formatted="false">Respuesta interrumpida: hablaste encima; el jefe escuchará hasta dónde llegaste</string>
     <string name="t_039fff92" formatted="false">no está firmada con la clave de esta app</string>
     <string name="t_03f90e5e" formatted="false">Eine Antwort wurde nicht abgespielt: Du hast seitdem mehr gesagt. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_04577256" formatted="false">El modelo no oyó palabras: termina tu turno</string>
@@ -62,6 +61,7 @@
     <string name="t_13f11ba3" formatted="false">Desactivado</string>
     <string name="t_14f38eda" formatted="false">Instalando las habilidades y creando el hilo en bb…</string>
     <string name="t_1515cfb6" formatted="false">No hay coincidencias.</string>
+    <string name="t_156cdb08" formatted="false">%1$d respuestas no se reprodujeron: tu nuevo mensaje se envió. Se lo dice al jefe</string>
     <string name="t_15f8ef12" formatted="false">Actualizada (%1$s)</string>
     <string name="t_16545ddd" formatted="false">Modelo</string>
     <string name="t_16666fb3" formatted="false">sin respuesta a tiempo</string>
@@ -314,6 +314,7 @@
     <string name="t_633eed3f" formatted="false">Has cancelado la actualización.</string>
     <string name="t_6358935d" formatted="false">Clave guardada</string>
     <string name="t_6361c341" formatted="false">se interrumpió la conexión; ¿es un servidor MCP (HTTP transmisible)?</string>
+    <string name="t_6408cdf0" formatted="false">Respuesta en pausa: estás hablando. Se descarta cuando se envíe tu mensaje</string>
     <string name="t_6418f0e2" formatted="false">Introduce tu usuario de bb Connect</string>
     <string name="t_65211030" formatted="false">La dirección del servidor empieza por https://</string>
     <string name="t_653174a7" formatted="false">Rehecho con un modelo más inteligente</string>
@@ -426,7 +427,6 @@
     <string name="t_8cb43c6e" formatted="false">Error de voz: %1$s</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Añadir</string>
     <string name="t_8d8041f9" formatted="false">Tu voz debe ser así de potente respecto al fondo</string>
-    <string name="t_8e90258f" formatted="false">Eine Antwort wurde nicht abgespielt: Du hast angefangen zu sprechen. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_8edfe30e" formatted="false">requiere atención</string>
     <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate escribe</string>
     <string name="t_8f454c36" formatted="false">Configura tu jefe de gabinete en Dictate &amp; Delegate → Ajustes → bb.</string>
@@ -495,6 +495,7 @@
     <string name="t_a43d1375" formatted="false">Guarda textos que escribes a menudo, como la solicitud de un piso. Luego dicta cuál quieres y qué cambia esta vez.</string>
     <string name="t_a475c571" formatted="false">Esta grabación no terminó (%1$s). Reinténtala desde Inicio.</string>
     <string name="t_a47dbae1" formatted="false">Esta nota ya usó el modelo más preciso.</string>
+    <string name="t_a4af23b6" formatted="false">Una respuesta no se reprodujo: tu nuevo mensaje se envió. Se lo dice al jefe</string>
     <string name="t_a4f48b05" formatted="false">Enviado: has dicho que has terminado (%1$d%%)</string>
     <string name="t_a5b51395" formatted="false">Anthropic tuvo un problema (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Conectar bb</string>
@@ -516,6 +517,7 @@
     <string name="t_ab247fbe" formatted="false">Tu voz y texto solo van a los proveedores que elijas. Dictate &amp; Delegate no tiene servidor.</string>
     <string name="t_ab7143b8" formatted="false">Permisos</string>
     <string name="t_ab754703" formatted="false">Te escucho</string>
+    <string name="t_ab7559e2" formatted="false">Respuesta detenida: hablaste por encima</string>
     <string name="t_ab93f81c" formatted="false">la versión no tiene suma de comprobación</string>
     <string name="t_abfd3b0d" formatted="false">Usar el interlocutor</string>
     <string name="t_ac224344" formatted="false">Guardada, cifrada · voz, decisiones y Pulir</string>
@@ -619,7 +621,6 @@
     <string name="t_c7b2a2f8" formatted="false">aún sin clave</string>
     <string name="t_c8210626" formatted="false">Modelo de texto a voz</string>
     <string name="t_c82c4a5b" formatted="false">Actualizar a %1$s</string>
-    <string name="t_c89bd39b" formatted="false">%1$d Antworten wurden nicht abgespielt: Du hast angefangen zu sprechen. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_c90e13f1" formatted="false">Enviado solo al interlocutor. El jefe no lo recibió: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Iniciando…</string>
     <string name="t_c997df74" formatted="false">bb rechazó el inicio de sesión: %1$s</string>

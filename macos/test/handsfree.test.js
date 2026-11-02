@@ -175,9 +175,9 @@ test('aReplyArrivingWhileYourMessageIsWrittenDownIsDroppedOneForItWaitsUntilItsS
   try {
     f.quiet(1000);
     await f.talk();
-    // From before your turn: dropped, never played.
+    // From before your turn: it waits, and is dropped when your message goes; never played.
     f.session.reply('r0', 'Here\'s what I found.');
-    assert.equal(f.session.held(), 0);
+    assert.equal(f.session.held(), 1);
     f.quiet(3000);
     f.session.tick();
     assert.equal(f.spoken.length, 0);
@@ -219,8 +219,9 @@ test('aReplyToAnOlderMessageIsntPlayedAndTheNextMessageSaysSo', async () => {
   assert.equal(f.session.endNote(), '');
 });
 
-test('whenYouTalkThePlayingReplyStopsAndEveryQueuedOneIsDropped', async () => {
-  // Philipp's design, 2 November 2026: "no queuing, just always canceled".
+test('whenYouTalkThePlayingReplyPausesAndYourMessageDropsItAndEveryQueuedOne', async () => {
+  // Philipp's design, 2 November 2026: "no queuing, just always canceled"; at 22:46: dropped once
+  // your message goes, not by talking alone.
   const f = new Fake('Is the table booked? Over.', 'Wait, and the train? Over.');
   f.quiet(1000);
   await sendTurn(f, 1);
@@ -232,12 +233,11 @@ test('whenYouTalkThePlayingReplyStopsAndEveryQueuedOneIsDropped', async () => {
   f.heardChars = 'One moment, I\'m checking'.length;
   for (let i = 0; i < 40 && f.session.state() === State.READING; i++) f.session.frame(frame(8000)); // You talk over it.
   assert.equal(f.session.state(), State.LISTENING, 'the playing reply stopped');
-  assert.equal(f.session.held(), 0, 'the queued ones are dropped');
-  assert.ok(reasons(f).includes('2 replies weren\'t played: you started talking. Your next message tells the chief'), reasons(f));
-  await until(() => f.dropped.length === 2);
+  assert.equal(f.session.held(), 3, 'its rest first, then the queued ones: waiting');
   for (let i = 0; i < 20; i++) f.session.frame(frame(8000));
   f.quiet(1200);
   await until(() => f.sent.length === 2);
+  assert.ok(reasons(f).includes('3 replies weren\'t played: your new message went. It tells the chief'), reasons(f));
   assert.equal(
     f.sent[1],
     'Wait, and the train?\n\n[heard up to: "One moment, I\'m checking"] [not played from there: "the booking for you now."]' +
@@ -255,11 +255,11 @@ test('aReplyForAnOldTurnArrivingWhileYouTalkIsNeverPlayedOnlyTheNewTurnsReplyPla
   f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
   f.speak(); // Your next turn starts; the answer to the first comes meanwhile.
   f.session.reply('r1', 'Yes, it\'s booked for eight.');
-  assert.equal(f.session.held(), 0);
-  assert.ok(f.logText().includes('chief message r1 dropped unplayed (27 characters): you\'ve started a new turn since your last message'), f.logText());
+  assert.equal(f.session.held(), 1, 'it waits while you talk');
   f.quiet(1200);
   await until(() => f.sent.length === 2);
   assert.equal(f.sent[1], 'And the train?\n\n[not played: "Yes, it\'s booked for eight."]');
+  assert.ok(f.logText().includes('chief message r1 dropped unplayed (27 characters): your new message went'), f.logText());
   // Late, after your turn ended: still the old turn's, never played.
   f.session.reply('r1', 'The window table, as you asked.');
   f.session.tick();
@@ -515,19 +515,23 @@ test('aCallEndingWithRepliesStillWaitingTellsTheChiefOnce', async () => {
   assert.equal(f.session.endNote(), '\n\n[not played: "The meeting moved to three."]');
 });
 
-test('aReplyDroppedByATurnThatComesToNothingIsNotPlayedAndTheEndSaysSo', async () => {
+test('aTurnThatComesToNothingLetsTheWaitingReplyPlay', async () => {
+  // Philipp, 2 November 2026, 22:46: noise started a turn that dropped the reply, and then he
+  // never heard anything. A reply is dropped only once your message goes.
   const f = new Fake('');
   f.quiet(1000);
   f.speak();
   f.session.reply('r0', 'Here\'s what I found.');
+  await sleep(100);
+  assert.equal(f.spoken.length, 0, 'not while you talk');
   f.quiet(1200);
   await until(() => f.transcriptions === 1);
-  f.session.tick();
-  await sleep(150);
-  assert.equal(f.spoken.length, 0);
+  await until(() => f.spoken.length === 1);
+  assert.deepEqual(f.spoken, ['Here\'s what I found.']);
   assert.equal(f.sent.length, 0);
+  f.done();
   f.session.end();
-  assert.equal(f.session.endNote(), '\n\n[not played: "Here\'s what I found."]');
+  assert.equal(f.session.endNote(), '');
 });
 
 test('noiseBelowTheThresholdsNeverTakesTheFloor', async () => {

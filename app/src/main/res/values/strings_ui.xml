@@ -11,7 +11,6 @@
     <string name="t_0255636d" formatted="false">OpenRouter key</string>
     <string name="t_02986d74" formatted="false">For example: Apartment application</string>
     <string name="t_02eb1806" formatted="false">Add Dictate &amp; Delegate to Quick Settings</string>
-    <string name="t_0369ff1c" formatted="false">Reply stopped: you talked over it; the chief will hear how far you got</string>
     <string name="t_039fff92" formatted="false">it isn\'t signed with this app\'s key</string>
     <string name="t_03f90e5e" formatted="false">A reply wasn\'t played: you\'ve said more since. Your next message tells the chief</string>
     <string name="t_04577256" formatted="false">The speech model heard no words: your turn ends</string>
@@ -62,6 +61,7 @@
     <string name="t_13f11ba3" formatted="false">Off</string>
     <string name="t_14f38eda" formatted="false">Installing the skills and creating the thread in bb…</string>
     <string name="t_1515cfb6" formatted="false">Nothing matches.</string>
+    <string name="t_156cdb08" formatted="false">%1$d replies weren\'t played: your new message went. It tells the chief</string>
     <string name="t_15f8ef12" formatted="false">Up to date (%1$s)</string>
     <string name="t_16545ddd" formatted="false">Model</string>
     <string name="t_16666fb3" formatted="false">no answer in time</string>
@@ -315,6 +315,7 @@
     <string name="t_633eed3f" formatted="false">You cancelled the update.</string>
     <string name="t_6358935d" formatted="false">Key saved</string>
     <string name="t_6361c341" formatted="false">the connection broke off; is it an MCP server (Streamable HTTP)?</string>
+    <string name="t_6408cdf0" formatted="false">Reply paused: you\'re talking. It\'s dropped once your message goes</string>
     <string name="t_6418f0e2" formatted="false">Enter your bb Connect handle</string>
     <string name="t_65211030" formatted="false">The server address starts with https://</string>
     <string name="t_653174a7" formatted="false">Redone with a smarter model</string>
@@ -428,7 +429,6 @@
     <string name="t_8cb43c6e" formatted="false">Voice failed: %1$s</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Add</string>
     <string name="t_8d8041f9" formatted="false">Your voice must be this many times louder than the background</string>
-    <string name="t_8e90258f" formatted="false">A reply wasn\'t played: you started talking. Your next message tells the chief</string>
     <string name="t_8edfe30e" formatted="false">needs attention</string>
     <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate writes</string>
     <string name="t_8f454c36" formatted="false">Set up your chief of staff in Dictate &amp; Delegate → Settings → bb.</string>
@@ -498,6 +498,7 @@
     <string name="t_a43d1375" formatted="false">Keep texts you write again and again, like an application for an apartment. Then dictate which one you want and what\'s different this time.</string>
     <string name="t_a475c571" formatted="false">This recording didn\'t finish (%1$s). Retry it from Home.</string>
     <string name="t_a47dbae1" formatted="false">This note already used the most accurate model.</string>
+    <string name="t_a4af23b6" formatted="false">A reply wasn\'t played: your new message went. It tells the chief</string>
     <string name="t_a4f48b05" formatted="false">Sent: you said you\'re done (%1$d%%)</string>
     <string name="t_a5b51395" formatted="false">Anthropic had a problem (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Connect bb</string>
@@ -519,6 +520,7 @@
     <string name="t_ab247fbe" formatted="false">Your voice and text go only to the providers you choose. There\'s no Dictate &amp; Delegate server.</string>
     <string name="t_ab7143b8" formatted="false">Permissions</string>
     <string name="t_ab754703" formatted="false">Hearing you</string>
+    <string name="t_ab7559e2" formatted="false">Reply stopped: you talked over it</string>
     <string name="t_ab93f81c" formatted="false">the release has no checksum</string>
     <string name="t_abfd3b0d" formatted="false">Use the talker</string>
     <string name="t_ac224344" formatted="false">Saved, encrypted · speech, decisions and Refine</string>
@@ -624,7 +626,6 @@
     <string name="t_c7b2a2f8" formatted="false">no key yet</string>
     <string name="t_c8210626" formatted="false">Text-to-speech model</string>
     <string name="t_c82c4a5b" formatted="false">Update to %1$s</string>
-    <string name="t_c89bd39b" formatted="false">%1$d replies weren\'t played: you started talking. Your next message tells the chief</string>
     <string name="t_c90e13f1" formatted="false">Sent to the talker only. The chief didn\'t get it: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Starting…</string>
     <string name="t_c997df74" formatted="false">bb refused the sign-in: %1$s</string>

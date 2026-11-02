@@ -11,7 +11,6 @@
     <string name="t_0255636d" formatted="false">Chiave OpenRouter</string>
     <string name="t_02986d74" formatted="false">Ad esempio: Richiesta appartamento</string>
     <string name="t_02eb1806" formatted="false">Aggiungi Dictate &amp; Delegate a Impostazioni rapide</string>
-    <string name="t_0369ff1c" formatted="false">Risposta interrotta: hai parlato sopra; il capo sentirà fin dove sei arrivato</string>
     <string name="t_039fff92" formatted="false">non è firmata con la chiave di questa app</string>
     <string name="t_03f90e5e" formatted="false">Eine Antwort wurde nicht abgespielt: Du hast seitdem mehr gesagt. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_04577256" formatted="false">Il modello vocale non ha rilevato parole: il tuo turno termina</string>
@@ -62,6 +61,7 @@
     <string name="t_13f11ba3" formatted="false">Disattivata</string>
     <string name="t_14f38eda" formatted="false">Installazione delle skill e creazione del thread in bb…</string>
     <string name="t_1515cfb6" formatted="false">Nessun risultato trovato.</string>
+    <string name="t_156cdb08" formatted="false">%1$d risposte non riprodotte: il tuo nuovo messaggio è partito. Lo dice al capo</string>
     <string name="t_15f8ef12" formatted="false">Aggiornata (%1$s)</string>
     <string name="t_16545ddd" formatted="false">Modello</string>
     <string name="t_16666fb3" formatted="false">nessuna risposta in tempo</string>
@@ -314,6 +314,7 @@
     <string name="t_633eed3f" formatted="false">Hai annullato l\'aggiornamento.</string>
     <string name="t_6358935d" formatted="false">Chiave salvata</string>
     <string name="t_6361c341" formatted="false">la connessione si è interrotta; è un server MCP (Streamable HTTP)?</string>
+    <string name="t_6408cdf0" formatted="false">Risposta in pausa: stai parlando. Viene scartata quando parte il tuo messaggio</string>
     <string name="t_6418f0e2" formatted="false">Inserisci il tuo handle bb Connect</string>
     <string name="t_65211030" formatted="false">L\'indirizzo del server inizia con https://</string>
     <string name="t_653174a7" formatted="false">Rielaborato con un modello più intelligente</string>
@@ -426,7 +427,6 @@
     <string name="t_8cb43c6e" formatted="false">Sintesi vocale non riuscita: %1$s</string>
     <string name="t_8cc9e4c3" formatted="false">📎 Aggiungi</string>
     <string name="t_8d8041f9" formatted="false">La tua voce deve superare il rumore di fondo di questo fattore</string>
-    <string name="t_8e90258f" formatted="false">Eine Antwort wurde nicht abgespielt: Du hast angefangen zu sprechen. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_8edfe30e" formatted="false">richiede attenzione</string>
     <string name="t_8f13ebdb" formatted="false">Dictate &amp; Delegate scrive</string>
     <string name="t_8f454c36" formatted="false">Configura il tuo chief of staff in Dictate &amp; Delegate → Impostazioni → bb.</string>
@@ -495,6 +495,7 @@
     <string name="t_a43d1375" formatted="false">Salva i testi che scrivi spesso, come la richiesta per un appartamento. Poi detta quale vuoi usare e cosa cambia questa volta.</string>
     <string name="t_a475c571" formatted="false">Questa registrazione non è terminata (%1$s). Riprovala dalla Home.</string>
     <string name="t_a47dbae1" formatted="false">Questa nota ha già usato il modello più accurato.</string>
+    <string name="t_a4af23b6" formatted="false">Una risposta non è stata riprodotta: il tuo nuovo messaggio è partito. Lo dice al capo</string>
     <string name="t_a4f48b05" formatted="false">Inviato: hai detto di aver finito (%1$d%%)</string>
     <string name="t_a5b51395" formatted="false">Si è verificato un problema con Anthropic (HTTP %1$d).</string>
     <string name="t_a5f9f49f" formatted="false">Connetti bb</string>
@@ -516,6 +517,7 @@
     <string name="t_ab247fbe" formatted="false">La tua voce e il tuo testo vanno solo ai fornitori scelti da te. Non c\'è alcun server di Dictate &amp; Delegate.</string>
     <string name="t_ab7143b8" formatted="false">Autorizzazioni</string>
     <string name="t_ab754703" formatted="false">In ascolto</string>
+    <string name="t_ab7559e2" formatted="false">Risposta interrotta: ci hai parlato sopra</string>
     <string name="t_ab93f81c" formatted="false">la versione non ha un checksum</string>
     <string name="t_abfd3b0d" formatted="false">Usa l\'interlocutore</string>
     <string name="t_ac224344" formatted="false">Salvata, crittografata · voce, decisioni e Perfeziona</string>
@@ -619,7 +621,6 @@
     <string name="t_c7b2a2f8" formatted="false">nessuna chiave</string>
     <string name="t_c8210626" formatted="false">Modello testo-voce</string>
     <string name="t_c82c4a5b" formatted="false">Aggiorna a %1$s</string>
-    <string name="t_c89bd39b" formatted="false">%1$d Antworten wurden nicht abgespielt: Du hast angefangen zu sprechen. Deine nächste Nachricht sagt es dem Chief</string>
     <string name="t_c90e13f1" formatted="false">Inviato solo all\'interlocutore. Il capo non l\'ha ricevuto: %1$s</string>
     <string name="t_c96b1a45" formatted="false">Avvio…</string>
     <string name="t_c997df74" formatted="false">bb ha rifiutato l\'accesso: %1$s</string>

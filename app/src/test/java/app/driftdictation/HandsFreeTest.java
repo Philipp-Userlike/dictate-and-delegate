@@ -332,15 +332,16 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void aReplyArrivingWhileYouTalkIsDroppedNeverPlaysAndYourMessageSaysSo() throws Exception {
-    // Philipp, 2 November 2026: "no queuing, just always canceled".
+  public void aReplyArrivingWhileYouTalkIsDroppedWhenYourMessageGoesNeverPlaysAndYourMessageSaysSo() throws Exception {
+    // Philipp, 2 November 2026: "no queuing, just always canceled"; at 22:46: dropped once your
+    // message goes, not by talking alone.
     Fake f = new Fake("Also check the train", "to Lisbon. Over.");
     f.quiet(1000);
     f.speak(); // You take the floor.
     assertEquals(HandsFreeSession.Floor.YOU, f.session.floor());
     f.session.reply("r0", "The flight leaves at nine in the morning and costs about two hundred euros, I think.");
-    assertEquals(0, f.session.held());
-    assertTrue(reasons(f), reasons(f).contains("A reply wasn't played: you've said more since. Your next message tells the chief"));
+    assertEquals("it waits while you talk", 1, f.session.held());
+    assertTrue(reasons(f), reasons(f).contains("Reply waits: you're talking"));
     f.quiet(1200); // A pause, with your words unsent: still your turn.
     Thread.sleep(150);
     f.talk();
@@ -360,7 +361,7 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void repliesWaitingWhenYouStartTalkingAreDroppedAndOneForAnOldTurnArrivingLaterToo() throws Exception {
+  public void repliesWaitingWhenYouStartTalkingAreDroppedOnceYourMessageGoesAndOneForAnOldTurnArrivingLaterToo() throws Exception {
     Fake f = new Fake("Book the hotel. Over.", "And the car. Over.");
     f.quiet(1000);
     sendTurn(f, 1);
@@ -377,21 +378,22 @@ public class HandsFreeTest {
     f.session.reply("r1", "Let me look at hotels.");
     f.session.reply("r1", "The Ritz has a room.");
     assertEquals(2, f.session.held());
-    f.speak(); // You start talking: both are dropped at once.
-    assertEquals(0, f.session.held());
-    assertTrue(reasons(f), reasons(f).contains("2 replies weren't played: you started talking. Your next message tells the chief"));
-    // A third answer to the old message, while you talk and after your turn ends: never played.
+    f.speak(); // You start talking: they wait.
+    assertEquals(2, f.session.held());
+    // A third answer to the old message while you talk waits too; your message drops all three.
     f.session.reply("r1", "It costs two hundred a night.");
+    assertEquals(3, f.session.held());
     fetching.countDown();
     f.quiet(1200);
     until(() -> f.sent.size() == 2);
     assertEquals("And the car.\n\n[not played: \"Let me look at hotels.\"]\n[not played: \"The Ritz has a room.\"]\n[not played: \"It costs two hundred a night.\"]", f.sent.get(1));
+    assertTrue(reasons(f), reasons(f).contains("3 replies weren't played: your new message went. It tells the chief"));
     f.session.reply("r1", "Breakfast is included.");
     f.session.tick();
     Thread.sleep(200);
     assertTrue(f.spoken.toString(), f.spoken.isEmpty());
     assertTrue(String.join("\n", f.log), String.join("\n", f.log).contains("chief message r1 dropped unplayed (22 characters): it answers an older message than your latest"));
-    until(() -> f.dropped.size() == 2); // Their voices let go once fetched.
+    until(() -> f.dropped.size() == 3); // Their voices let go once fetched.
     f.session.reply("r2", "Which car?");
     until(() -> f.spoken.size() == 1);
     assertEquals(List.of("Which car?"), f.spoken);
@@ -481,14 +483,14 @@ public class HandsFreeTest {
     f.session.reply("r1", "One moment, I'm checking the booking for you now.");
     f.session.reply("r1", "It's booked for eight.");
     f.session.reply(f.session.lastRequest(), "The chief says the window table is free.", 0, true);
-    assertEquals(0, f.session.held());
+    assertEquals("they wait while you talk", 3, f.session.held());
     f.quiet(1200);
     until(() -> f.sent.size() == 2);
     assertEquals("And the train?\n\n[not played: \"One moment, I'm checking the booking for you now.\"]\n[not played: \"It's booked for eight.\"]\n[not played: \"The chief says the window table is free.\"]", f.sent.get(1));
     Thread.sleep(200);
     assertTrue(f.spoken.toString(), f.spoken.isEmpty());
     String log = String.join("\n", f.log);
-    assertTrue(log, log.contains("chief message r1 dropped unplayed (22 characters): you've started a new turn since your last message"));
+    assertTrue(log, log.contains("chief message r1 dropped unplayed (22 characters): your new message went"));
     f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
     sendTurn(f, 3);
     assertEquals("Anything else?", f.sent.get(2));
@@ -518,7 +520,7 @@ public class HandsFreeTest {
     sendTurn(f, 1);
     f.speak(); // You ask again; the answer to the first comes meanwhile.
     f.session.reply("r1", "Yes, I hear you. Go ahead.");
-    assertEquals(0, f.session.held());
+    assertEquals("it waits while you talk", 1, f.session.held());
     f.quiet(1200);
     until(() -> f.sent.size() == 2);
     assertEquals("Hi, can you hear me?\n\n[not played: \"Yes, I hear you. Go ahead.\"]", f.sent.get(1));
@@ -733,7 +735,7 @@ public class HandsFreeTest {
     sendTurn(f, 1);
     f.speak();
     f.session.reply("r1", "Yes, it's booked for eight.");
-    assertEquals("dropped: you're talking", 0, f.session.held());
+    assertEquals("waits: you're talking", 1, f.session.held());
     f.bbDown = true;
     f.quiet(1200);
     for (int i = 0; i < 100 && !f.session.error().startsWith("Not sent"); i++) Thread.sleep(20);
@@ -826,19 +828,58 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void aTurnThatComesToNothingStillDropsTheReplyAndTheChiefHearsIt() throws Exception {
+  public void aTurnThatComesToNothingLetsTheWaitingReplyPlay() throws Exception {
+    // Philipp, 2 November 2026, 22:46: noise started a turn that dropped the reply, and then he
+    // never heard anything. A reply is dropped only once your message goes.
     Fake f = new Fake("");
     f.quiet(1000);
     f.speak();
     f.session.reply("r0", "Here's what I found.");
+    Thread.sleep(100);
+    assertTrue("not while you talk", f.spoken.isEmpty());
     f.quiet(1200);
     until(() -> f.transcriptions.get() == 1);
-    Thread.sleep(200);
-    assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
-    assertTrue(f.spoken.isEmpty());
+    until(() -> f.spoken.size() == 1);
+    assertEquals(List.of("Here's what I found."), f.spoken);
     assertTrue(f.sent.isEmpty());
+    f.done.run();
     f.session.end();
-    assertEquals("\n\n[not played: \"Here's what I found.\"]", f.session.endNote());
+    assertEquals("", f.session.endNote());
+  }
+
+  @Test
+  public void aReplyPausedByNoiseOverItPlaysOnFromTheSentenceItStoppedIn() throws Exception {
+    Fake f = playingReply(""); // What was heard over it has no words.
+    f.heardChars = LONG_REPLY.indexOf("Lisbon");
+    framesToStop(f, 8000, 40);
+    assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
+    f.quiet(1200);
+    until(() -> f.spoken.size() == 2);
+    assertEquals("The train to Lisbon costs about forty euros if you book today.", f.spoken.get(1));
+    f.done.run();
+    f.session.end();
+    assertEquals("heard to its end: nothing to note", "", f.session.endNote());
+    assertTrue(f.sent.isEmpty());
+  }
+
+  @Test
+  public void whenJevSaysYoureNotDoneAndYouStayQuietTheWaitingReplyPlaysAndYourWordsWait() throws Exception {
+    Fake f = new Fake("I'm still thinking about", "the hotel. Over.");
+    f.session.judge = said -> said.endsWith("Over.") ? verdict("over", 0.95, 0) : verdict("unfinished", 0.1, 0);
+    f.quiet(1000);
+    f.speak();
+    f.session.reply("r0", "Your table is booked.");
+    Thread.sleep(100);
+    assertTrue("not while you talk", f.spoken.isEmpty());
+    f.quiet(1200); // Jev: not done. You stay quiet: the reply plays.
+    until(() -> f.spoken.size() == 1);
+    assertTrue(f.sent.isEmpty());
+    hear(f, 1);
+    f.quiet(500);
+    // You go on: your words from before go with it, and the reply was heard: nothing noted.
+    f.talk();
+    until(() -> f.sent.size() == 1);
+    assertEquals("I'm still thinking about the hotel.", f.sent.get(0));
   }
 
   @Test
@@ -1119,11 +1160,13 @@ public class HandsFreeTest {
     // Not read yet: the microphone is on and the floor open.
     assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
     assertEquals(HandsFreeSession.Floor.OPEN, f.session.floor());
-    f.speak(); // You take it meanwhile: the reply is dropped, its voice let go once it comes.
+    f.speak(); // You take it meanwhile: the reply waits.
     fetched.countDown();
-    until(() -> f.dropped.size() == 1);
+    Thread.sleep(100);
+    assertTrue(f.spoken.isEmpty());
     f.quiet(1200);
-    until(() -> f.sent.size() == 1);
+    until(() -> f.sent.size() == 1); // Your message went: dropped, its voice let go.
+    until(() -> f.dropped.size() == 1);
     assertEquals("Wait, one more thing.\n\n[not played: \"Here's the answer.\"]", f.sent.get(0));
     f.session.tick();
     Thread.sleep(200);
@@ -1310,7 +1353,7 @@ public class HandsFreeTest {
   }
 
   @Test
-  public void talkingOverAReplyStopsItDropsTheRestAndYourNextMessageSaysHowFarYouHeard() throws Exception {
+  public void talkingOverAReplyPausesItAndYourMessageDropsTheRestAndSaysHowFarYouHeard() throws Exception {
     Fake f = playingReply("Hold on, book the train instead.", "Over.");
     f.heardChars = LONG_REPLY.indexOf("Lisbon");
     int frames = framesToStop(f, 8000, 40); // You, over the reply.
@@ -1318,9 +1361,10 @@ public class HandsFreeTest {
     assertEquals(HandsFreeSession.State.LISTENING, f.session.state());
     assertEquals("nothing had to be written down to stop it", 0, f.transcriptions.get());
     String log = String.join("\n", f.log);
-    assertTrue(log, log.contains("barge-in: speech 300 ms → stopped"));
-    assertTrue(reasons(f), reasons(f).contains("Reply stopped: you talked over it; the chief will hear how far you got"));
-    assertEquals("the rest is dropped, not waiting", 0, f.session.held());
+    assertTrue(log, log.contains("barge-in: speech 300 ms → paused"));
+    assertTrue(log, log.contains("it plays on from \"The train to Lisbon costs"));
+    assertTrue(reasons(f), reasons(f).contains("Reply paused: you're talking. It's dropped once your message goes"));
+    assertEquals("the rest waits, from the sentence it stopped in", 1, f.session.held());
     // You go on: all of it is your turn.
     for (int i = 0; i < 30; i++) f.session.frame(frame(8000));
     f.quiet(1200);
@@ -2007,7 +2051,8 @@ public class HandsFreeTest {
     f.session.tick();
     Thread.sleep(100);
     assertEquals(1, f.spoken.size());
-    assertTrue(reasons(f), reasons(f).contains("A reply wasn't played: you've said more since"));
+    assertEquals("it waits for your turn", 1, f.session.held());
+    assertTrue(reasons(f), reasons(f).contains("Reply waits: your turn (unsent words)"));
     assertTrue(String.join("\n", f.log).contains("new turn (you went on talking)"));
   }
 
