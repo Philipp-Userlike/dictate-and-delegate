@@ -1821,11 +1821,11 @@ function decimalField(root, title, save, value) {
 
 async function pageHfSettings(root) {
   const hf = S.handsFree;
-  heading(root, 'Hands-free settings', "At each longer pause Jev decides whether you're done; these words are clear cues for it (also used if Jev can't be asked). Separate several with commas.");
+  heading(root, 'Hands-free settings', "A send word or a longer pause asks Jev whether you're done; only a clear yes sends (the send word alone, without Jev). Separate several with commas.");
   wordsField(root, 'Send words', 'hfSendWords', hf.sendWords, hf.defaultSend);
   wordsField(root, 'End words (send what came before, then end hands-free)', 'hfEndWords', hf.endWords, hf.defaultEnd);
-  secondsField(root, "Pause after which it checks whether you're done (seconds)", 'hfTurnPauseMs', hf.pauseMs);
-  secondsField(root, 'Send anyway after this much silence (seconds)', 'hfSilenceSendMs', hf.silenceSendMs);
+  secondsField(root, "Pause after which it checks whether you're done (seconds)", 'hfEndOfTurnPauseMs', hf.pauseMs);
+  secondsField(root, 'End the call after this much silence (seconds)', 'hfSilenceEndMs', hf.silenceEndMs);
   add(root, [strong('Telling your voice from the background', 'gap-24'), p('Raise these if noise or other people take your turn; lower them if your quieter words are missed. The recent events below show each decision with its levels.', 'muted small gap-4')]);
   decimalField(root, 'Your voice must be this many times louder than the background', (v) => api('setPref', 'hfGate', v), hf.gate);
   decimalField(root, 'Speech needed to take your turn, within 1.5 seconds (seconds)', (v) => api('setPref', 'hfTakeMs', Math.round(v * 1000)), hf.takeMs / 1000);

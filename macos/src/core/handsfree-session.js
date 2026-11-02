@@ -7,13 +7,15 @@
 //
 //  - You take the floor by speaking (the segmenter's three layers decide what counts). You hold
 //    it while you talk, while your words are written down, and while you have unsent text,
-//    until the message goes (send word, Send now, long silence) or your turn comes to nothing.
+//    until the message goes (Jev says you're clearly done, or Send now) or your turn comes to
+//    nothing. Two minutes of silence end the call, sending nothing.
 //  - A chief message arriving on an open floor is read aloud; your speech over it stops it
 //    (BARGE_MS), and the microphone is off a moment after it.
-//  - A chief message arriving while you talk (or while what you said is written down) waits,
-//    and is read at your next pause, also when you have unsent words: your turn goes on after
-//    it. Sending never drops it. A reply you talk over stops and the rest of it is dropped;
-//    your next message (or the call's end) tells the chief how far you heard it.
+//  - No queue: once you start talking, every reply not played yet is dropped, also one arriving
+//    later for a message before your new turn; a reply you talk over stops and the rest of it is
+//    dropped. Only replies to your newest message play. Your next message (or the call's end)
+//    tells the chief how far you heard and what didn't play, so it says again what still matters
+//    (Philipp's design, 2 November 2026: "no queuing, just always canceled").
 //  - Every decision it makes is a reason on screen (reasons()), in plain words, and in the log;
 //    a few moments get a quiet sound (Cue).
 //
@@ -214,14 +216,20 @@ function tail(text) {
 
 const isLetterOrDigit = (c) => /[\p{L}\p{N}]/u.test(c);
 
+/** A text's first n words, with "…" when there are more. */
+function firstWords(text, n) {
+  const words = text.trim().split(/\s+/);
+  return words.slice(0, Math.min(n, words.length)).join(' ') + (words.length > n ? '…' : '');
+}
+
 class HandsFreeSession {
   /**
-   * options: { pauseMs, silenceSendMs, takeMs = DEFAULT_TAKE_MS, gate = DEFAULT_GATE,
+   * options: { pauseMs, silenceEndMs, takeMs = DEFAULT_TAKE_MS, gate = DEFAULT_GATE,
    * detector = LEVEL, sendWords, endWords, transcriber, sender, speaker, changed }.
    */
   constructor({
     pauseMs,
-    silenceSendMs,
+    silenceEndMs,
     takeMs = HandsFree.DEFAULT_TAKE_MS,
     gate = HandsFree.DEFAULT_GATE,
     detector = HandsFree.LEVEL,
@@ -232,7 +240,8 @@ class HandsFreeSession {
     speaker,
     changed = () => {},
   }) {
-    this.silenceSendMs = silenceSendMs;
+    /** This long without speech or a reply playing ends the call, sending nothing. */
+    this.silenceEndMs = silenceEndMs;
     this.pauseFrames = Math.max(1, Math.trunc(pauseMs / Segmenter.FRAME_MS));
     this.gate = gate;
     this.sendWords = sendWords;
@@ -267,11 +276,15 @@ class HandsFreeSession {
     this.turnSpeechAt = 0;
     /** When the stretch of speech going on started (each one). */
     this.stretchAt = 0;
-    /** When live transcription last gave you words: a reply waits HOLD_MAX_MS at most without them. */
-    this.liveWordsAt = 0;
-    /** Silence sends tried since you last spoke (each failure waits longer for the next). */
-    this.silenceTries = 0;
-    this.silenceNextAt = 0;
+    /** When you last spoke, a reply last played or a message last went: the long silence counts from it. */
+    this.activeAt = 0;
+    /**
+     * You started talking since your latest message was handed over (a new turn): every reply not
+     * played yet is dropped, and one arriving now is too. Cleared when your next message goes.
+     */
+    this.newTurn = false;
+    /** When the latest message was handed over. */
+    this.handedAt = -Infinity;
     this.firstWordsLogged = false;
     /**
      * Your turn: nothing is written down while you talk. Its audio is collected part by part (a
@@ -303,21 +316,16 @@ class HandsFreeSession {
     this.writingSince = 0;
     /** Messages handed to the outbox and not delivered yet. */
     this.outgoing = 0;
-    /** Chief messages waiting to be read: at your next pause, or once the one playing ends. */
+    /** Chief messages waiting to be read: once their voice is ready, the one playing ends, or your message went. */
     this._held = [];
     /** Notes about replies you didn't hear (their reading failed, or you talked over them). */
     this._unheard = [];
-    /**
-     * A call with a talker: a reply to an older message than your latest isn't played (it no
-     * longer fits what you said); your next message, or the call's end, says you didn't hear it.
-     */
-    this.dropsOutdated = false;
-    /** Outdated replies dropped (their texts), not yet noted in a delivered message. */
+    /** Replies dropped unplayed (their texts: you started a new turn), not yet noted in a delivered message. */
     this.outdatedNotes = [];
     /**
      * Messages handed to the outbox so far (each one's number), the numbers on their way, the
-     * latest delivered, and each sent request's number. Only a delivered message makes the
-     * replies before it outdated.
+     * latest delivered, and each sent request's number. A reply to an older message than the
+     * latest handed over is dropped.
      */
     this.handedOff = 0;
     this.latestSent = 0;
@@ -418,8 +426,10 @@ class HandsFreeSession {
           const taking = !session.takenByYou;
           session.takenByYou = true;
           session.stretchAt = session.clock();
-          session.silenceTries = 0;
-          session.silenceNextAt = 0;
+          session.activeAt = session.stretchAt;
+          // A new turn: over a reply (you interrupted it), or without live transcription.
+          // With it, your first words start it (liveText): a TV or a cough doesn't.
+          if (session._state === State.READING || !session.streaming()) session.startTurn('you started talking');
           if (taking) {
             session.log(format('floor: you (level %.0f, background %.0f)', level, background));
             session.cue(Cue.HEARD);
@@ -808,7 +818,10 @@ class HandsFreeSession {
     const w = part === '' ? [] : part.split(/\s+/);
     if (w.length < 2) return HandsFreeSession.missed(reply);
     const last = w.slice(Math.max(0, w.length - 8)).join(' ');
-    return '[heard up to: "' + (w.length > 8 ? '…' : '') + last + '"]';
+    const heard = '[heard up to: "' + (w.length > 8 ? '…' : '') + last + '"]';
+    // What wasn't played, from where it was cut: its first words.
+    const rest = reply.substring(Math.min(reply.length, reply.indexOf(part) + part.length)).trim();
+    return rest === '' ? heard : heard + ' [not played from there: "' + firstWords(rest, HandsFreeSession.MISSED_WORDS) + '"]';
   }
 
   /**
@@ -847,10 +860,11 @@ class HandsFreeSession {
     return this.liveOff !== '' && this.clock() - this.liveOffAt < HandsFreeSession.LIVE_OFF_MS;
   }
 
-  /** Once a second: a long silence sends anyway, a held reply may start, a hung voice is let go. */
+  /** Once a second: a long silence ends the call, a held reply may start, a hung voice is let go. */
   tick() {
     if (this._state === State.ENDED) return;
     const now = this.clock();
+    if (this.activeAt === 0) this.activeAt = now; // The call's first tick: the silence counts from here.
     this.liveCheck(now);
     const token = this.reading;
     let late = this._state === State.READING && now > this.readingDeadline;
@@ -868,18 +882,22 @@ class HandsFreeSession {
     }
     if (
       this._state === State.LISTENING &&
-      this.hasTurn() &&
       !this.segmenter.candidate() &&
       this.transcribing === 0 &&
       this.outgoing === 0 &&
-      this.segmenter.quietMs() >= this.silenceSendMs &&
-      now >= this.silenceNextAt
+      !this.sendPressed &&
+      this._held.length === 0 &&
+      now - this.activeAt >= this.silenceEndMs
     ) {
-      // Tried again later if it fails (bb unreachable, nothing written down): not every second.
-      const tries = this.silenceTries++;
-      this.silenceNextAt = now + Math.min(HandsFreeSession.SILENCE_RETRY_MAX_MS, HandsFreeSession.SILENCE_RETRY_MS * 2 ** Math.min(tries, 3));
-      if (tries > 0) this.log('silence send: trying again (' + (tries + 1) + ')');
-      this.check('silence');
+      // Nobody talked and nothing played for so long: the call is over. Nothing is sent, also no
+      // words of yours Jev didn't call done (Philipp's design, 2 November 2026).
+      this.log(
+        format('%d s of silence: ending the call, sending nothing%s', Math.trunc(this.silenceEndMs / 1000),
+          this.hasTurn() || this._pending !== '' ? ' (your unsent words "' + tail(this._pending) + '" are let go)' : ''),
+      );
+      this.reason('Call ended after %1$d s of silence; nothing was sent', Math.trunc(this.silenceEndMs / 1000));
+      this.end(false);
+      return;
     }
     // Words live transcription heard while nobody had the floor (noise, a TV, someone else) don't
     // start your next turn.
@@ -942,7 +960,10 @@ class HandsFreeSession {
     }
     const prefix = this.turnPrefix;
     this._pending = (prefix + ' ' + text).trim();
-    this.liveWordsAt = this.clock();
+    this.activeAt = this.clock();
+    // Words you said after your message went ("Over. And also…" in one breath): a new turn. Only
+    // with sound heard since (late words of the message just taken aren't you talking again).
+    if (this.clock() - this.segmenter.silentMs() > this.handedAt) this.startTurn('you went on talking');
     if (!this.firstWordsLogged && this.turnSpeechAt > 0) {
       this.firstWordsLogged = true;
       this.log(format('live text: first words %d ms after you started speaking', this.clock() - this.turnSpeechAt));
@@ -1007,6 +1028,7 @@ class HandsFreeSession {
    */
   sendNow() {
     if (this._state === State.ENDED) return;
+    this.activeAt = this.clock();
     if (this.sendPressed) {
       this.log('send pressed again: already sending');
       this.reason('Send ignored: already sending');
@@ -1057,11 +1079,40 @@ class HandsFreeSession {
     }
   }
 
-  /** Ends the call. What you said but didn't send yet is sent before the end. */
-  end() {
+  /**
+   * You started talking (a stretch counted as speech, or live words came after your message went):
+   * a new turn. Every reply not played yet is dropped (its voice let go), and while the turn lasts
+   * a reply arriving is dropped too; your next message tells the chief what didn't play. Once per
+   * turn; a reply playing stops by itself (barge-in).
+   */
+  startTurn(why) {
+    if (this.newTurn || this._state === State.ENDED) return;
+    this.newTurn = true;
+    const dropped = this._held;
+    for (const h of dropped) {
+      h.dropped = true;
+      this.outdatedNotes.push(new Note(h.text));
+    }
+    this._held = [];
+    this.log('new turn (' + why + '): no reply from before it plays');
+    if (dropped.length === 0) return;
+    for (const h of dropped) {
+      this.speakerDrop(h.prepared); // Let go when it comes, if it's still fetched.
+      this.log('chief message ' + h.request + ' dropped unplayed (' + h.text.length + ' characters): ' + why + '; your next message says it didn\'t play');
+    }
+    if (dropped.length === 1) this.reason('A reply wasn\'t played: you started talking. Your next message tells the chief');
+    else this.reason('%1$d replies weren\'t played: you started talking. Your next message tells the chief', dropped.length);
+    this.changed();
+  }
+
+  /**
+   * Ends the call. What you said but didn't send yet is sent before the end; sendWords false (a
+   * long silence): it isn't sent.
+   */
+  end(sendWords = true) {
     if (this._state === State.ENDED) return;
     // What you're saying right now is part of your last words.
-    if (this._state === State.LISTENING) this.segmenter.flush(true);
+    if (this._state === State.LISTENING && sendWords) this.segmenter.flush(true);
     const at = this._state === State.READING ? this.heardChars() : 0;
     let note = '';
     if (this._state === State.ENDED) return; // Ended once only (End and an end phrase at once).
@@ -1079,7 +1130,14 @@ class HandsFreeSession {
     for (const h of dropped) this.speakerDrop(h.prepared); // Not played: not fetched on.
     this._endNote = note;
     if (waiting > 0) this.log('ended with ' + waiting + ' reply(ies) still waiting: the chief is told');
-    this.sendUnsent();
+    if (sendWords) this.sendUnsent();
+    else {
+      // Let go: nothing goes after a silent end.
+      this.turnAudio = [];
+      this.written.clear();
+      this.turnPrefix = '';
+      this.turnVersion++;
+    }
     this.log('ended');
     this.speaker.stop();
     this._status = 'ended';
@@ -1120,11 +1178,13 @@ class HandsFreeSession {
       this.log(
         'chief message ' +
           request +
-          ' dropped (' +
+          ' dropped unplayed (' +
           text.length +
-          ' characters): it answers an older message than your latest; your next message says you didn\'t hear it',
+          ' characters): ' +
+          (this.newTurn ? 'you\'ve started a new turn since your last message' : 'it answers an older message than your latest') +
+          '; your next message says it didn\'t play',
       );
-      this.reason('An older reply wasn\'t played: you\'ve said more since. Your next message says so');
+      this.reason('A reply wasn\'t played: you\'ve said more since. Your next message tells the chief');
       this.changed();
       return;
     }
@@ -1147,13 +1207,13 @@ class HandsFreeSession {
   }
 
   /**
-   * Does this reply answer an older message than your latest delivered one? Only in a call with a
-   * talker. A reply before your first message is outdated once one is delivered. One that comes
-   * while your message is on its way waits (it's your turn) until it's delivered: then it's
-   * outdated if it answers an older one.
+   * Is this reply for a turn before your newest: it answers an older message than the latest
+   * handed over (also one still on its way; a reply without a request of ours counts as older
+   * once a message went), or you've started talking since that message went? Such a reply is
+   * never played. One answering the message on its way waits until it's delivered, then plays.
    */
   outdated(h) {
-    return this.dropsOutdated && h.answers < this.latestSent;
+    return this.newTurn || h.answers < this.handedOff;
   }
 
   /**
@@ -1219,7 +1279,7 @@ class HandsFreeSession {
       first.told = true;
       first.toldWhy = waits;
     } else if (first.told) {
-      plays = this.yourTurn(now) != null ? 'capped' : 'silence';
+      plays = 'silence';
     }
     if (waits != null) {
       switch (waits) {
@@ -1241,8 +1301,7 @@ class HandsFreeSession {
       this.readNext(); // It may play right away after all (it was told, so this doesn't repeat).
       return;
     }
-    if (plays === 'capped') this.reason('Reply plays: it waited %1$d s without new words from you', HandsFreeSession.HOLD_MAX_MS / 1000);
-    else if (plays != null) this.reason('Reply plays: your turn is over');
+    if (plays != null) this.reason('Reply plays: your message went');
     // A sound that hasn't counted as speech yet ends as noise (if it was you, talking on over the
     // reply interrupts it). Speech going on (a reply past its cap) ends as a part of your turn,
     // so the reset below doesn't lose it.
@@ -1302,21 +1361,8 @@ class HandsFreeSession {
    */
   holds(first, now) {
     const yours = this.yourTurn(now);
-    if (yours != null && !this.heldTooLong(first, now)) return yours;
+    if (yours != null) return yours;
     return first.ready ? null : 'voice';
-  }
-
-  /**
-   * Has it waited HOLD_MAX_MS, once ready, without new words from live transcription, and isn't
-   * a stretch of your speech going on that started less than LONG_STRETCH_MS ago?
-   */
-  heldTooLong(h, now) {
-    const waited = now - Math.max(h.readyAt, this.liveWordsAt);
-    if (!h.ready || waited < HandsFreeSession.HOLD_MAX_MS) return false;
-    if (this.segmenter.speaking()) return now - this.stretchAt >= HandsFreeSession.LONG_STRETCH_MS;
-    // A sound just starting may be your next sentence; past twice the cap it's noise that never
-    // becomes speech (road bumps, an indicator clicking).
-    return !this.segmenter.candidate() || waited >= 2 * HandsFreeSession.HOLD_MAX_MS;
   }
 
   /**
@@ -1428,6 +1474,7 @@ class HandsFreeSession {
     // You started talking over its last words: they're kept, the microphone stays on.
     if (tailMute && this.segmenter.candidate()) tailMute = false;
     this.current = null;
+    this.activeAt = this.clock();
     this.mutedUntil = tailMute ? this.clock() + HandsFreeSession.TAIL_MS : 0;
     this.tailHeard = false;
     if (tailMute) {
@@ -1914,15 +1961,21 @@ class HandsFreeSession {
         this.log(why + ': not ended, the turn goes on');
         return;
       }
-    } else if (v != null && v.send < HandsFreeSession.PHRASE_SEND_AT) {
-      // "Over" as a word of the sentence, not the send word: the turn goes on, and the same
+    } else if (v != null && v.send < HandsFreeSession.SEND_AT) {
+      // "Over" as a word of the sentence, or not clearly the end: the turn goes on, and the same
       // text doesn't ask again (the live text repeats it until you say more).
       this.heldPhrase = HandsFree.normalize(asked.said);
-      this.log(format('send phrase: Jev says you\'re not done (done %.2f): not sent, the turn goes on', v.send));
+      this.log(format('send phrase: Jev says you\'re not clearly done (done %.2f): not sent, the turn goes on', v.send));
       this.notDone(v);
       this.changed();
       return;
-    } else if (v == null) this.log('Jev couldn\'t tell whether you\'re done (' + asked.failed + '): the send word decides');
+    } else if (v == null && this.judge != null) {
+      // The send word only asks: without Jev's clear "done" nothing goes. Your pause asks again.
+      this.log('Jev couldn\'t tell whether you\'re done (' + asked.failed + '): not sent, your pause asks again');
+      this.reason('Couldn\'t ask whether you\'re done (%1$s): not sent; say %2$s again or press Send', asked.failed, '"' + this.sendWords[0] + '"');
+      this.changed();
+      return;
+    } else if (v == null) this.log('no Jev: the send word decides');
     const start = this.clock();
     this.writingSince = start;
     this._checkStep = 'writing';
@@ -2163,7 +2216,7 @@ class HandsFreeSession {
     }
     const ms = this.clock() - start;
     if (v != null) this.logVerdict('', ms, v);
-    else if (failed != null) this.log('Jev failed after ' + ms + ' ms (' + failed + '): the send and end words decide');
+    else if (failed != null) this.log('Jev failed after ' + ms + ' ms (' + failed + '): not sent, nothing ended');
     if (this._state === State.ENDED) return; // The call's end sent it.
     if (this.stale(version)) {
       this.log('you went on talking: checked again at your next pause');
@@ -2171,12 +2224,13 @@ class HandsFreeSession {
     }
     const ended = HandsFree.endsWith(text, this.endWords);
     const over = HandsFree.endsWith(text, this.sendWords);
-    const end = v != null ? v.end >= HandsFreeSession.END_AT : ended != null;
-    // Jev held this send word back a moment ago: Jev failing now doesn't make it the send word.
-    const done = v != null ? v.send >= HandsFreeSession.SEND_AT : over != null && HandsFree.normalize(text) !== this.heldPhrase;
+    // Only Jev's clear answer sends or ends; the words decide only without Jev at all.
+    const noJev = this.judge == null;
+    const end = v != null ? v.end >= HandsFreeSession.END_AT : noJev && ended != null;
+    const done = v != null ? v.send >= HandsFreeSession.SEND_AT : noJev && over != null && HandsFree.normalize(text) !== this.heldPhrase;
     if (failed != null)
       this.reason(
-        'Couldn\'t ask whether you\'re done (%1$s): say %2$s or press Send',
+        'Couldn\'t ask whether you\'re done (%1$s): not sent; say %2$s or press Send',
         failed,
         this.sendWords.length === 0 ? 'Send' : '"' + this.sendWords[0] + '"',
       );
@@ -2303,6 +2357,7 @@ class HandsFreeSession {
       if (this.turnPrefix === prefix) this.turnPrefix = '';
       this.turnVersion++;
       more = this.turnAudio.length !== 0 || this.turnPrefix !== '';
+      if (more) this.newTurn = true; // You went on talking: that's your next turn already.
     });
     if (h == null) {
       this.log('the call ended meanwhile: its end sends your words, not this check');
@@ -2328,6 +2383,8 @@ class HandsFreeSession {
    */
   handOff(last, consume = () => {}) {
     if (this._state === State.ENDED && !last) return null;
+    this.newTurn = false; // Your turn went; consume says if you went on meanwhile.
+    this.handedAt = this.clock();
     consume();
     const number = ++this.handedOff;
     this.onTheWay.add(number);
@@ -2347,14 +2404,6 @@ class HandsFreeSession {
         missedNow.push(n.text);
       }
     if (missedNow.length) notes += '\n\n' + HandsFreeSession.missed(missedNow);
-    // Without a talker, the chief's replies still waiting play once this message went: it hears
-    // so, and doesn't answer the same again (Philipp's call, 31 October 2026: "Hi, can you hear
-    // me?" asked again before the first answer played, answered again, and "Yes, I can hear you"
-    // heard twice).
-    if (!this.dropsOutdated && !last) {
-      const waiting = this._held.filter((w) => w.answers < number).map((w) => w.text);
-      if (waiting.length) notes += '\n\n' + HandsFreeSession.notPlayedYet(waiting);
-    }
     return { number, request, notes };
   }
 
@@ -2392,12 +2441,10 @@ class HandsFreeSession {
       }
       this.onTheWay.delete(number);
       this.latestSent = Math.max(this.latestSent, number);
-      this.silenceTries = 0;
-      this.silenceNextAt = 0;
-      // With a talker, the replies waiting that answer an older message no longer fit: not
-      // played; your next message, or the call's end, says so.
-      if (this.dropsOutdated)
-        this._held = this._held.filter((w) => {
+      this.activeAt = done;
+      // Replies waiting that are for an earlier turn (answering an older message, or you're
+      // talking again): never played; your next message, or the call's end, says so.
+      this._held = this._held.filter((w) => {
           if (!this.outdated(w)) return true;
           w.dropped = true;
           old.push(w);
@@ -2409,15 +2456,15 @@ class HandsFreeSession {
         this.log(
           'chief message ' +
             w.request +
-            ' dropped (' +
+            ' dropped unplayed (' +
             w.text.length +
             ' characters): it was waiting when your newer message ' +
             request +
-            ' went; your next message says you didn\'t hear it',
+            ' went; your next message says it didn\'t play',
         );
       }
-      if (old.length === 1) this.reason('An older reply wasn\'t played: you\'ve said more since');
-      else if (old.length > 1) this.reason('%1$d older replies weren\'t played: you\'ve said more since', old.length);
+      if (old.length === 1) this.reason('A reply wasn\'t played: you\'ve said more since. Your next message tells the chief');
+      else if (old.length > 1) this.reason('%1$d replies weren\'t played: you\'ve said more since. Your next message tells the chief', old.length);
       this._sent++;
       this.sentAt = done;
       this.deliveredAt = done;
@@ -2443,9 +2490,6 @@ class HandsFreeSession {
           case 'jev':
           case 'send phrase':
             this.reason('Sent ✓');
-            break;
-          case 'silence':
-            this.reason('Sent ✓ after %1$d s of silence', Math.trunc(this.silenceSendMs / 1000));
             break;
           case 'end phrase':
           case 'end of the call':
@@ -2498,32 +2542,12 @@ class HandsFreeSession {
   }
 
   /**
-   * The note about replies you didn't hear: one as "[didn't hear your reply: …]" with its first
-   * words; several (an array) as how many, the first one's first words and how many more.
+   * The note about replies that didn't play: for one (a string), its first words, so the chief
+   * knows which; for several (an array), one such note per reply.
    */
   static missed(replies) {
-    if (Array.isArray(replies)) {
-      if (replies.length === 1) return HandsFreeSession.missed(replies[0]);
-      const words = replies[0].trim().split(/\s+/);
-      const first = words.slice(0, Math.min(8, words.length)).join(' ');
-      return '[didn\'t hear ' + replies.length + ' replies: "' + first + (words.length > 8 ? '…' : '') + '" and ' + (replies.length - 1) + ' more]';
-    }
-    const words = replies.trim().split(/\s+/);
-    const first = words.slice(0, Math.min(12, words.length)).join(' ');
-    return '[didn\'t hear your reply: "' + first + (words.length > 12 ? '…' : '') + '"]';
-  }
-
-  /**
-   * The note in your message about the chief's replies still waiting (they play once it went):
-   * one by its first words; several as how many, the first one's first words and how many more.
-   */
-  static notPlayedYet(replies) {
-    const n = replies.length === 1 ? 12 : 8;
-    const words = replies[0].trim().split(/\s+/);
-    const quoted = '"' + words.slice(0, Math.min(n, words.length)).join(' ') + (words.length > n ? '…' : '') + '"';
-    return replies.length === 1
-      ? '[your reply hasn\'t played yet, it plays after this message: ' + quoted + ']'
-      : '[' + replies.length + ' replies haven\'t played yet, they play after this message: ' + quoted + ' and ' + (replies.length - 1) + ' more]';
+    if (Array.isArray(replies)) return replies.map((r) => HandsFreeSession.missed(r)).join('\n');
+    return '[not played: "' + firstWords(replies, HandsFreeSession.MISSED_WORDS) + '"]';
   }
 }
 
@@ -2540,20 +2564,8 @@ Object.assign(HandsFreeSession, {
    * most (the live text's delay for the first words): noise or a cough doesn't hold a reply.
    */
   WORDLESS_MS: 3000,
-  /**
-   * A reply whose voice is ready waits through your turn at most this long without new words from
-   * live transcription: a TV (without live transcription), a slow check or bb refusing your
-   * message can't hold it forever.
-   */
-  HOLD_MAX_MS: 60_000,
-  /**
-   * Past HOLD_MAX_MS a reply still never starts over a stretch of your speech younger than this:
-   * a sentence; a stretch this long without pause is a TV or the like.
-   */
-  LONG_STRETCH_MS: 20_000,
-  /** A silence send that failed is tried again after this, doubling each time, at most SILENCE_RETRY_MAX_MS. */
-  SILENCE_RETRY_MS: 15_000,
-  SILENCE_RETRY_MAX_MS: 60_000,
+  /** How many of a reply's first words a note quotes. */
+  MISSED_WORDS: 12,
   /** How long the screen says Sent ✓ after a message went. */
   SENT_SHOWN_MS: 3000,
   /** While a sound plays (and a moment after) the microphone can't start your speech with it. */
@@ -2598,7 +2610,11 @@ Object.assign(HandsFreeSession, {
   STALL_WORDS_PER_SECOND: 0.3,
   /** The floor open this long with no speech: words the live text has (noise, a TV) are dropped. */
   STRAY_MS: 3000,
-  /** At these probabilities a turn is sent, or the call ended, without a word from you. */
+  /**
+   * At these probabilities a turn is sent, or the call ended: Jev is clearly sure. A send word or
+   * a pause only asks; when Jev can't answer nothing is sent (the send word decides only without
+   * Jev).
+   */
   SEND_AT: 0.7,
   END_AT: 0.8,
   /** Writing down took this long: shown as slow. */
@@ -2617,11 +2633,6 @@ Object.assign(HandsFreeSession, {
   LIVE_CHECK_MS: 10_000,
   /** A reply that couldn't be played is tried once more before your message notes it. */
   RETRIES: 1,
-  /**
-   * Jev's answer on a send or end phrase, asked in the background: below this it holds a send
-   * phrase back (it's more likely a word of your sentence than the send word).
-   */
-  PHRASE_SEND_AT: 0.5,
   /** The longest Jev's answer on a phrase is waited for (Jev gives up after 3 s itself). */
   phraseJudgeMs: 3500,
 });

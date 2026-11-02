@@ -49,9 +49,10 @@ test('handsFreeMessagesAreTaggedAndTheSkillExplainsThem', () => {
   assert.ok(skill.includes('[hands-free]'));
   assert.ok(skill.includes('Tags: talkrouter-speak,req-<id>'));
   assert.ok(skill.includes('send one spoken reply, soon'));
-  assert.ok(skill.includes('[your reply hasn\'t played yet, it plays after this message: '));
+  assert.ok(!skill.includes("[your reply hasn't played yet"), 'no queue');
+  assert.ok(skill.includes('A discarded reply counts as unsaid'));
   assert.ok(skill.includes('[hands-free call started]') && skill.includes('[hands-free call ended]'));
-  assert.ok(skill.includes('[didn\'t hear your reply:'));
+  assert.ok(skill.includes('[not played: "…"]') && skill.includes('[not played from there: "…"]'));
   assert.ok(!skill.includes('quick spoken reaction'));
 });
 
@@ -81,15 +82,18 @@ test('whileAReplysAudioIsFetchedTheFloorStaysOpenAndYouCanTalk', async () => {
   // Not read yet: the microphone is on and the floor open.
   assert.equal(f.session.state(), State.LISTENING);
   assert.equal(f.session.floor(), HandsFreeSession.Floor.OPEN);
-  f.speak(); // You take it meanwhile.
+  f.speak(); // You take it meanwhile: a new turn, the reply is dropped.
   fetched.countDown();
   await sleep(100);
-  assert.equal(f.spoken.length, 0); // Held: the floor is yours.
+  assert.equal(f.spoken.length, 0);
+  assert.equal(f.session.held(), 0);
   f.quiet(1200);
   await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], `Wait, one more thing.\n\n[your reply hasn't played yet, it plays after this message: "Here's the answer."]`);
-  await until(() => f.spoken.length === 1); // Not dropped: it plays once your turn is over.
-  assert.equal(f.spoken[0], 'Here\'s the answer.');
+  assert.equal(f.sent[0], 'Wait, one more thing.\n\n[not played: "Here\'s the answer."]');
+  f.session.tick();
+  await sleep(150);
+  assert.equal(f.spoken.length, 0, 'never played after your turn either');
+  assert.ok(f.dropped.includes('Here\'s the answer.'), 'its voice let go');
 });
 
 test('audioThatNeverStartsIsGivenUpSoonAndNotedAsNotHeard', async () => {
@@ -114,7 +118,7 @@ test('audioThatNeverStartsIsGivenUpSoonAndNotedAsNotHeard', async () => {
   f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
   await f.talk();
   await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], 'What did you say?\n\n[didn\'t hear your reply: "The meeting moved to three."]');
+  assert.equal(f.sent[0], 'What did you say?\n\n[not played: "The meeting moved to three."]');
   assert.equal(f.session.unheard(), 0);
 });
 
@@ -205,7 +209,7 @@ test('aTranscriptionThatFailsKeepsYourWordsAndTheNextCheckTriesAgain', async () 
   f.quiet(1000);
   await f.talk();
   await until(() => f.session.error() !== '');
-  // Your turn is kept: a reply waits for it.
+  // Your turn is kept: a reply arriving now is for before it, and dropped.
   assert.equal(f.session.floor(), HandsFreeSession.Floor.YOU);
   f.session.reply('r0', 'Read now.');
   f.quiet(400);
@@ -214,8 +218,9 @@ test('aTranscriptionThatFailsKeepsYourWordsAndTheNextCheckTriesAgain', async () 
   f.transcripts.push('Book the hotel. Over.');
   await f.talk();
   await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], `Book the hotel.\n\n[your reply hasn't played yet, it plays after this message: "Read now."]`);
-  await until(() => f.spoken.length === 1); // Your turn is over.
+  assert.equal(f.sent[0], 'Book the hotel.\n\n[not played: "Read now."]');
+  await sleep(150);
+  assert.equal(f.spoken.length, 0);
 });
 
 test('aReplyLongerThanItsEstimateIsNeverCutWhileItsAudioPlays', async () => {
@@ -254,7 +259,10 @@ test('talkingOverAReplyStopsItDropsTheRestAndYourNextMessageSaysHowFarYouHeard',
   await until(() => f.session.pending() === 'Hold on, book the train instead.');
   await f.talk();
   await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], 'Hold on, book the train instead.\n\n[heard up to: "…the morning from gate twelve. The train to"]');
+  assert.equal(
+    f.sent[0],
+    'Hold on, book the train instead.\n\n[heard up to: "…the morning from gate twelve. The train to"] [not played from there: "Lisbon costs about forty euros if you book today."]',
+  );
   // Nothing of it plays again.
   f.quiet(3000);
   f.now.addAndGet(30_000);
@@ -272,26 +280,28 @@ test('aReplyTalkedOverWithNoMessageAfterItIsNotedWithTheCallsEnd', async () => {
   await until(() => f.transcriptions === 1);
   await sleep(100);
   f.session.end();
-  assert.equal(f.session.endNote(), '\n\n[heard up to: "…leaves at nine in the morning from gate"]');
+  assert.equal(
+    f.session.endNote(),
+    '\n\n[heard up to: "…leaves at nine in the morning from gate"] [not played from there: "twelve. The train to Lisbon costs about forty euros if you book…"]',
+  );
   assert.equal(f.sent.length, 0);
 });
 
-test('aReplyArrivingWhileYouTalkStillWaitsAndPlays', async () => {
+test('aReplyArrivingWhileYouTalkIsDroppedAndNeverPlays', async () => {
   const f = new Fake('I was thinking about the trip');
   f.quiet(1000);
   f.speak();
   f.session.reply('r1', 'Your table is booked.');
   await sleep(150);
-  assert.equal(f.spoken.length, 0, 'it waits while you talk');
-  f.quiet(1600); // Your pause: your words unsent, still your turn.
-  await sleep(150);
-  assert.equal(f.spoken.length, 0, 'it waits through your turn');
+  assert.equal(f.spoken.length, 0, 'not while you talk');
+  assert.equal(f.session.held(), 0, 'dropped, not waiting');
+  f.quiet(1600);
   f.session.sendNow();
   await until(() => f.sent.length === 1);
-  await until(() => f.spoken.length === 1);
-  assert.equal(f.spoken[0], 'Your table is booked.');
-  f.done();
-  assert.equal(f.session.unheard(), 0);
+  assert.equal(f.sent[0], 'I was thinking about the trip\n\n[not played: "Your table is booked."]');
+  f.session.tick();
+  await sleep(150);
+  assert.equal(f.spoken.length, 0, 'not after your turn either');
 });
 
 test('clattersAndItsOwnEchoNeverStopAReply', async () => {
@@ -310,11 +320,18 @@ test('clattersAndItsOwnEchoNeverStopAReply', async () => {
 });
 
 test('theNotesSayHowMuchOfAReplyWasHeard', () => {
-  assert.equal(HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf('twelve')), '[heard up to: "…leaves at nine in the morning from gate"]');
+  assert.equal(
+    HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf('twelve')),
+    '[heard up to: "…leaves at nine in the morning from gate"] [not played from there: "twelve. The train to Lisbon costs about forty euros if you book…"]',
+  );
   // A word cut in the middle isn't counted as heard.
-  assert.equal(HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf('leaves') + 3), '[heard up to: "The flight"]');
-  // Hardly anything heard: as if not heard at all.
-  assert.ok(HandsFreeSession.heardUpTo(LONG_REPLY, 3).startsWith('[didn\'t hear your reply:'));
+  assert.ok(HandsFreeSession.heardUpTo(LONG_REPLY, LONG_REPLY.indexOf('leaves') + 3).startsWith('[heard up to: "The flight"] [not played from there: "leaves at nine'));
+  // Played to its end: nothing left out.
+  assert.equal(HandsFreeSession.heardUpTo('Yes, booked for eight.', 22), '[heard up to: "Yes, booked for eight."]');
+  // Hardly anything heard: as if not played at all.
+  assert.ok(HandsFreeSession.heardUpTo(LONG_REPLY, 3).startsWith('[not played: "The flight leaves'));
+  // Several replies not played: one note each.
+  assert.equal(HandsFreeSession.missed(['One.', 'Two.']), '[not played: "One."]\n[not played: "Two."]');
 });
 
 // ------------------------------------------------------------------ taking the turn, and the send word
@@ -494,7 +511,7 @@ test('aReplyThatStopsPartWayIsNotPlayedAgainAndYourNextMessageSaysHowFar', async
   f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
   await f.talk();
   await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], 'Thanks.\n\n[heard up to: "…the morning from gate twelve. The train to"]');
+  assert.equal(f.sent[0], 'Thanks.\n\n[heard up to: "…the morning from gate twelve. The train to"] [not played from there: "Lisbon costs about forty euros if you book today."]');
 });
 
 test('wordsChangedCountsWordsAddedDroppedOrChanged', () => {

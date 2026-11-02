@@ -3348,11 +3348,11 @@ public final class MainActivity extends Activity {
 
   /** Settings → Hands-free: the words, the timing and the voice. */
   private void handsFreeSettingsPage() {
-    heading(tr("Hands-free"), tr("Hands-free settings"), tr("At each longer pause Jev decides whether you're done; these words are clear cues for it (also used if Jev can't be asked). Separate several with commas."));
+    heading(tr("Hands-free"), tr("Hands-free settings"), tr("A send word or a longer pause asks Jev whether you're done; only a clear yes sends (the send word alone, without Jev). Separate several with commas."));
     wordsField(tr("Send words"), HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND);
     wordsField(tr("End words (send what came before, then end hands-free)"), HandsFree.END_WORDS, HandsFree.DEFAULT_END);
     secondsField(tr("Pause after which it checks whether you're done (seconds)"), HandsFree.PAUSE_MS, HandsFree.pauseMs(prefs));
-    secondsField(tr("Send anyway after this much silence (seconds)"), HandsFree.SILENCE_SEND_MS, HandsFree.silenceSendMs(prefs));
+    secondsField(tr("End the call after this much silence (seconds)"), HandsFree.SILENCE_END_MS, HandsFree.silenceEndMs(prefs));
     ui.add(content, ui.strong(tr("Telling your voice from the background"), 15), 24);
     ui.add(
         content,

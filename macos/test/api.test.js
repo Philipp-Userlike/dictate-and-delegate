@@ -118,9 +118,9 @@ test('exportCarriesSettingsAndKeysButNoRuntimeState', () => {
 
 test('importRoundTripsAnExport', () => {
   const vault = new MemoryVault({ openrouterKey: 'sk-or', elevenlabsKey: 'el' });
-  const text = JSON.stringify(api.buildExport({ model: 'openai/whisper-1', hfTurnPauseMs: 2500 }, vault));
+  const text = JSON.stringify(api.buildExport({ model: 'openai/whisper-1', hfEndOfTurnPauseMs: 2500 }, vault));
   const r = api.parseImport(text);
-  assert.deepEqual(r.prefs, { model: 'openai/whisper-1', hfTurnPauseMs: 2500 });
+  assert.deepEqual(r.prefs, { model: 'openai/whisper-1', hfEndOfTurnPauseMs: 2500 });
   assert.deepEqual(r.keys, { openrouterKey: 'sk-or', elevenlabsKey: 'el' });
   assert.deepEqual(r.skipped, []);
 });
@@ -148,12 +148,12 @@ test('importChecksEachSettingAndSkipsBadOnes', () => {
         somethingUnknown: 'x', // not a setting this app has: skipped
         sessionId: 'runtime', // running state: dropped silently
         autoRefine: false,
-        hfTurnPauseMs: 2500,
+        hfEndOfTurnPauseMs: 2500,
       },
       keys: { openrouterKey: 42, bbAuth: 'tokens', anthropicKey: ' sk-ant ' },
     }),
   );
-  assert.deepEqual(r.prefs, { talkerOn2: true, bbUrl: 'https://x.getbb.app/mcp', autoRefine: false, hfTurnPauseMs: 2500 });
+  assert.deepEqual(r.prefs, { talkerOn2: true, bbUrl: 'https://x.getbb.app/mcp', autoRefine: false, hfEndOfTurnPauseMs: 2500 });
   assert.deepEqual(r.keys, { anthropicKey: 'sk-ant' });
   assert.deepEqual(r.skipped.sort(), ['bbAuth', 'bubbleOpacity', 'chiefTitle', 'hfLive', 'hfVoice', 'model', 'openrouterKey', 'somethingUnknown'].sort());
 });

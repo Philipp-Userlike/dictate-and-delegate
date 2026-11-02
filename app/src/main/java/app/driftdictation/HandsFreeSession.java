@@ -17,14 +17,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <ul>
  *   <li>You take the floor by speaking (the segmenter's three layers decide what counts). You hold
  *       it while you talk, while your words are written down, and while you have unsent text,
- *       until the message goes (send word, Send now, long silence) or your turn comes to nothing.
+ *       until the message goes (Jev says you're clearly done, or Send now) or your turn comes to
+ *       nothing. Two minutes of silence end the call, sending nothing.
  *   <li>A chief message arriving on an open floor is read aloud, as call audio the phone's echo
  *       cancellation removes from the microphone; your speech over it stops it (BARGE_MS), and the
  *       microphone is off a moment after it.
- *   <li>A chief message arriving while you talk (or while what you said is written down) waits,
- *       and is read at your next pause, also when you have unsent words: your turn goes on after
- *       it. Sending never drops it. A reply you talk over stops and the rest of it is dropped;
- *       your next message (or the call's end) tells the chief how far you heard it.
+ *   <li>No queue: once you start talking, every reply not played yet is dropped, also one arriving
+ *       later for a message before your new turn; a reply you talk over stops and the rest of it
+ *       is dropped. Only replies to your newest message play. Your next message (or the call's
+ *       end) tells the chief how far you heard and what didn't play, so it says again what still
+ *       matters (Philipp's design, 2 November 2026: "no queuing, just always canceled").
  *   <li>Every decision it makes is a reason on screen ({@link #reasons}), in plain words, and in
  *       the log; a few moments get a quiet sound ({@link Cue}).
  * </ul>
@@ -88,22 +90,6 @@ final class HandsFreeSession {
    * most (the live text's delay for the first words): noise or a cough doesn't hold a reply.
    */
   static final long WORDLESS_MS = 3000;
-
-  /**
-   * A reply whose voice is ready waits through your turn at most this long without new words from
-   * live transcription: a TV (without live transcription), a slow check or bb refusing your
-   * message can't hold it forever.
-   */
-  static final long HOLD_MAX_MS = 60_000;
-
-  /**
-   * Past HOLD_MAX_MS a reply still never starts over a stretch of your speech younger than this:
-   * a sentence; a stretch this long without pause is a TV or the like.
-   */
-  static final long LONG_STRETCH_MS = 20_000;
-
-  /** A silence send that failed is tried again after this, doubling each time, at most SILENCE_RETRY_MAX_MS. */
-  static final long SILENCE_RETRY_MS = 15_000, SILENCE_RETRY_MAX_MS = 60_000;
 
   /** How long the screen says Sent ✓ after a message went. */
   static final long SENT_SHOWN_MS = 3000;
@@ -216,7 +202,11 @@ final class HandsFreeSession {
    */
   record Verdict(String choice, double send, double end, java.math.BigDecimal cost) {}
 
-  /** At these probabilities a turn is sent, or the call ended, without a word from you. */
+  /**
+   * At these probabilities a turn is sent, or the call ended: Jev is clearly sure. A send word or
+   * a pause only asks; when Jev can't answer nothing is sent (the send word decides only without
+   * Jev).
+   */
   static final double SEND_AT = 0.7, END_AT = 0.8;
 
   interface Sender {
@@ -312,7 +302,8 @@ final class HandsFreeSession {
   }
 
   final List<String> sendWords, endWords;
-  final int silenceSendMs;
+  /** This long without speech or a reply playing ends the call, sending nothing. */
+  final int silenceEndMs;
   private final Transcriber transcriber;
   private final Sender sender;
   private final Speaker speaker;
@@ -341,11 +332,13 @@ final class HandsFreeSession {
   private volatile long turnSpeechAt;
   /** When the stretch of speech going on started (each one). */
   private volatile long stretchAt;
-  /** When live transcription last gave you words: a reply waits HOLD_MAX_MS at most without them. */
-  private volatile long liveWordsAt;
-  /** Silence sends tried since you last spoke (each failure waits longer for the next). */
-  private volatile int silenceTries;
-  private volatile long silenceNextAt;
+  /** When you last spoke, a reply last played or a message last went: the long silence counts from it. */
+  private volatile long activeAt;
+  /**
+   * You started talking since your latest message was handed over (a new turn): every reply not
+   * played yet is dropped, and one arriving now is too. Cleared when your next message goes.
+   */
+  private volatile boolean newTurn;
   private volatile boolean firstWordsLogged;
   private static final byte[] SILENCE = new byte[640];
 
@@ -399,7 +392,7 @@ final class HandsFreeSession {
   private volatile long writingSince;
   /** Messages handed to the outbox and not delivered yet. */
   private final AtomicInteger outgoing = new AtomicInteger();
-  /** Chief messages waiting to be read: at your next pause, or once the one playing ends. */
+  /** Chief messages waiting to be read: once their voice is ready, the one playing ends, or your message went. */
   private final ArrayDeque<Held> held = new ArrayDeque<>();
   /**
    * A note for your next message; claimedBy is the number of the message on its way with it (0:
@@ -416,19 +409,16 @@ final class HandsFreeSession {
 
   /** Notes about replies you didn't hear (their reading failed, or you talked over them). */
   private final List<Note> unheard = new ArrayList<>();
-  /**
-   * A call with a talker: a reply to an older message than your latest isn't played (it no
-   * longer fits what you said); your next message, or the call's end, says you didn't hear it.
-   */
-  volatile boolean dropsOutdated;
-  /** Outdated replies dropped (their texts), not yet noted in a delivered message. */
+  /** Replies dropped unplayed (their texts: you started a new turn), not yet noted in a delivered message. */
   private final List<Note> outdated = new ArrayList<>();
   /**
    * Messages handed to the outbox so far (each one's number), the numbers on their way, the
-   * latest delivered, and each sent request's number. Only a delivered message makes the
-   * replies before it outdated.
+   * latest delivered, and each sent request's number. A reply to an older message than the
+   * latest handed over is dropped.
    */
   private int handedOff, latestSent;
+  /** When the latest message was handed over. */
+  private volatile long handedAt = Long.MIN_VALUE / 2;
   private final java.util.TreeSet<Integer> onTheWay = new java.util.TreeSet<>();
   private final java.util.Map<String, Integer> requestNumber = new java.util.HashMap<>();
   /** The latest decisions with their reasons, oldest first (under its own lock). */
@@ -472,19 +462,19 @@ final class HandsFreeSession {
 
   HandsFreeSession(
       int pauseMs,
-      int silenceSendMs,
+      int silenceEndMs,
       List<String> sendWords,
       List<String> endWords,
       Transcriber transcriber,
       Sender sender,
       Speaker speaker,
       Listener listener) {
-    this(pauseMs, silenceSendMs, HandsFree.DEFAULT_TAKE_MS, HandsFree.DEFAULT_GATE, HandsFree.LEVEL, sendWords, endWords, transcriber, sender, speaker, listener);
+    this(pauseMs, silenceEndMs, HandsFree.DEFAULT_TAKE_MS, HandsFree.DEFAULT_GATE, HandsFree.LEVEL, sendWords, endWords, transcriber, sender, speaker, listener);
   }
 
   HandsFreeSession(
       int pauseMs,
-      int silenceSendMs,
+      int silenceEndMs,
       int takeMs,
       double gate,
       HandsFree.Detector detector,
@@ -494,7 +484,7 @@ final class HandsFreeSession {
       Sender sender,
       Speaker speaker,
       Listener listener) {
-    this.silenceSendMs = silenceSendMs;
+    this.silenceEndMs = silenceEndMs;
     this.pauseFrames = Math.max(1, pauseMs / HandsFree.Segmenter.FRAME_MS);
     this.gate = gate;
     this.sendWords = sendWords;
@@ -530,8 +520,10 @@ final class HandsFreeSession {
                 boolean taking = !takenByYou;
                 takenByYou = true;
                 stretchAt = clock.getAsLong();
-                silenceTries = 0;
-                silenceNextAt = 0;
+                activeAt = stretchAt;
+                // A new turn: over a reply (you interrupted it), or without live transcription.
+                // With it, your first words start it (liveText): a TV or a cough doesn't.
+                if (state == State.READING || !streaming()) startTurn("you started talking");
                 if (taking) {
                   log(String.format(java.util.Locale.ROOT, "floor: you (level %.0f, background %.0f)", level, background));
                   cue(Cue.HEARD);
@@ -945,7 +937,10 @@ final class HandsFreeSession {
     if (w.length < 2) return missed(reply);
     StringBuilder last = new StringBuilder();
     for (int i = Math.max(0, w.length - 8); i < w.length; i++) last.append(last.length() == 0 ? "" : " ").append(w[i]);
-    return "[heard up to: \"" + (w.length > 8 ? "…" : "") + last + "\"]";
+    String heard = "[heard up to: \"" + (w.length > 8 ? "…" : "") + last + "\"]";
+    // What wasn't played, from where it was cut: its first words.
+    String rest = reply.substring(Math.min(reply.length(), reply.indexOf(part) + part.length())).trim();
+    return rest.isEmpty() ? heard : heard + " [not played from there: \"" + firstWords(rest, MISSED_WORDS) + "\"]";
   }
 
   /** How long the call bar and screen say the voice model failed. */
@@ -998,12 +993,13 @@ final class HandsFreeSession {
     return !liveOff.isEmpty() && clock.getAsLong() - liveOffAt < LIVE_OFF_MS;
   }
 
-  /** Once a second: a long silence sends anyway, a held reply may start, a hung voice is let go. */
+  /** Once a second: a long silence ends the call, a held reply may start, a hung voice is let go. */
   void tick() {
     if (state == State.ENDED) return;
     int token;
     boolean late;
     long now = clock.getAsLong();
+    if (activeAt == 0) activeAt = now; // The call's first tick: the silence counts from here.
     liveCheck(now);
     synchronized (this) {
       token = reading;
@@ -1024,13 +1020,15 @@ final class HandsFreeSession {
       finishReading(token, false, started ? tr("it played far too long") : tr("its audio didn't start"));
       return;
     }
-    if (state == State.LISTENING && hasTurn() && !segmenter.candidate() && transcribing.get() == 0 && outgoing.get() == 0
-        && segmenter.quietMs() >= silenceSendMs && now >= silenceNextAt) {
-      // Tried again later if it fails (bb unreachable, nothing written down): not every second.
-      int tries = silenceTries++;
-      silenceNextAt = now + Math.min(SILENCE_RETRY_MAX_MS, SILENCE_RETRY_MS << Math.min(tries, 3));
-      if (tries > 0) log("silence send: trying again (" + (tries + 1) + ")");
-      check("silence");
+    if (state == State.LISTENING && !segmenter.candidate() && transcribing.get() == 0 && outgoing.get() == 0 && !sendPressed
+        && held() == 0 && now - activeAt >= silenceEndMs) {
+      // Nobody talked and nothing played for so long: the call is over. Nothing is sent, also no
+      // words of yours Jev didn't call done (Philipp's design, 2 November 2026).
+      log(String.format(java.util.Locale.ROOT, "%d s of silence: ending the call, sending nothing%s", silenceEndMs / 1000,
+          hasTurn() || !pending.isEmpty() ? " (your unsent words \"" + tail(pending) + "\" are let go)" : ""));
+      reason("Call ended after %1$d s of silence; nothing was sent", silenceEndMs / 1000);
+      end(false);
+      return;
     }
     // Words live transcription heard while nobody had the floor (noise, a TV, someone else) don't
     // start your next turn.
@@ -1078,7 +1076,10 @@ final class HandsFreeSession {
     }
     String prefix = turnPrefix;
     pending = (prefix + " " + text).trim();
-    liveWordsAt = clock.getAsLong();
+    activeAt = clock.getAsLong();
+    // Words you said after your message went ("Over. And also…" in one breath): a new turn. Only
+    // with sound heard since (late words of the message just taken aren't you talking again).
+    if (clock.getAsLong() - segmenter.silentMs() > handedAt) startTurn("you went on talking");
     if (!firstWordsLogged && turnSpeechAt > 0) {
       firstWordsLogged = true;
       log(String.format(java.util.Locale.ROOT, "live text: first words %d ms after you started speaking", clock.getAsLong() - turnSpeechAt));
@@ -1156,6 +1157,7 @@ final class HandsFreeSession {
    */
   void sendNow() {
     if (state == State.ENDED) return;
+    activeAt = clock.getAsLong();
     if (sendPressed) {
       log("send pressed again: already sending");
       reason("Send ignored: already sending");
@@ -1205,11 +1207,45 @@ final class HandsFreeSession {
     }
   }
 
-  /** Ends the call. What you said but didn't send yet isn't sent. */
+  /**
+   * You started talking (a stretch counted as speech, or live words came after your message went):
+   * a new turn. Every reply not played yet is dropped (its voice let go), and while the turn lasts
+   * a reply arriving is dropped too; your next message tells the chief what didn't play. Once per
+   * turn; a reply playing stops by itself (barge-in).
+   */
+  private void startTurn(String why) {
+    List<Held> dropped;
+    synchronized (this) {
+      if (newTurn || state == State.ENDED) return;
+      newTurn = true;
+      dropped = new ArrayList<>(held);
+      for (Held h : held) {
+        h.dropped = true;
+        outdated.add(new Note(h.text));
+      }
+      held.clear();
+    }
+    log("new turn (" + why + "): no reply from before it plays");
+    if (dropped.isEmpty()) return;
+    for (Held h : dropped) {
+      speaker.drop(h.prepared); // Let go when it comes, if it's still fetched.
+      log("chief message " + h.request + " dropped unplayed (" + h.text.length() + " characters): " + why + "; your next message says it didn't play");
+    }
+    if (dropped.size() == 1) reason("A reply wasn't played: you started talking. Your next message tells the chief");
+    else reason("%1$d replies weren't played: you started talking. Your next message tells the chief", dropped.size());
+    listener.changed();
+  }
+
+  /** Ends the call. What you said but didn't send yet is sent first. */
   void end() {
+    end(true);
+  }
+
+  /** Ends the call; sendWords false (a long silence): what you said but didn't send isn't sent. */
+  void end(boolean sendWords) {
     if (state == State.ENDED) return;
     // What you're saying right now is part of your last words.
-    if (state == State.LISTENING) segmenter.flush(true);
+    if (state == State.LISTENING && sendWords) segmenter.flush(true);
     int at = state == State.READING ? speaker.heardChars() : 0;
     StringBuilder note = new StringBuilder();
     int waiting;
@@ -1231,7 +1267,14 @@ final class HandsFreeSession {
     for (Held h : dropped) speaker.drop(h.prepared); // Not played: not fetched on.
     endNote = note.toString();
     if (waiting > 0) log("ended with " + waiting + " reply(ies) still waiting: the chief is told");
-    sendUnsent();
+    if (sendWords) sendUnsent();
+    else
+      synchronized (turnAudio) { // Let go: nothing goes after a silent end.
+        turnAudio.clear();
+        written.clear();
+        turnPrefix = "";
+        turnVersion++;
+      }
     log("ended");
     speaker.stop();
     status = "ended";
@@ -1289,8 +1332,10 @@ final class HandsFreeSession {
       else held.addLast(h);
     }
     if (old) {
-      log("chief message " + request + " dropped (" + text.length() + " characters): it answers an older message than your latest; your next message says you didn't hear it");
-      reason("An older reply wasn't played: you've said more since. Your next message says so");
+      log("chief message " + request + " dropped unplayed (" + text.length() + " characters): "
+          + (newTurn ? "you've started a new turn since your last message" : "it answers an older message than your latest")
+          + "; your next message says it didn't play");
+      reason("A reply wasn't played: you've said more since. Your next message tells the chief");
       listener.changed();
       return;
     }
@@ -1304,13 +1349,13 @@ final class HandsFreeSession {
   }
 
   /**
-   * Does this reply answer an older message than your latest delivered one? Only in a call with a
-   * talker. A reply before your first message is outdated once one is delivered. One that comes
-   * while your message is on its way waits (it's your turn) until it's delivered: then it's
-   * outdated if it answers an older one.
+   * Is this reply for a turn before your newest: it answers an older message than the latest
+   * handed over (also one still on its way; a reply without a request of ours counts as older
+   * once a message went), or you've started talking since that message went? Such a reply is
+   * never played. One answering the message on its way waits until it's delivered, then plays.
    */
   private synchronized boolean outdated(Held h) {
-    return dropsOutdated && h.answers < latestSent;
+    return newTurn || h.answers < handedOff;
   }
 
   /**
@@ -1377,7 +1422,7 @@ final class HandsFreeSession {
         first.told = true;
         first.toldWhy = waits;
       } else if (first.told) {
-        plays = yourTurn(now) != null ? "capped" : "silence";
+        plays = "silence";
       }
     }
     if (waits != null) {
@@ -1394,8 +1439,7 @@ final class HandsFreeSession {
       readNext(); // It may play right away after all (it was told, so this doesn't repeat).
       return;
     }
-    if ("capped".equals(plays)) reason("Reply plays: it waited %1$d s without new words from you", HOLD_MAX_MS / 1000);
-    else if (plays != null) reason("Reply plays: your turn is over");
+    if (plays != null) reason("Reply plays: your message went");
     // A sound that hasn't counted as speech yet ends as noise (if it was you, talking on over the
     // reply interrupts it). Speech going on (a reply past its cap) ends as a part of your turn,
     // so the reset below doesn't lose it.
@@ -1457,21 +1501,8 @@ final class HandsFreeSession {
    */
   private String holds(Held first, long now) {
     String yours = yourTurn(now);
-    if (yours != null && !heldTooLong(first, now)) return yours;
+    if (yours != null) return yours;
     return first.ready ? null : "voice";
-  }
-
-  /**
-   * Has it waited HOLD_MAX_MS, once ready, without new words from live transcription, and isn't
-   * a stretch of your speech going on that started less than LONG_STRETCH_MS ago?
-   */
-  private boolean heldTooLong(Held h, long now) {
-    long waited = now - Math.max(h.readyAt, liveWordsAt);
-    if (!h.ready || waited < HOLD_MAX_MS) return false;
-    if (segmenter.speaking()) return now - stretchAt >= LONG_STRETCH_MS;
-    // A sound just starting may be your next sentence; past twice the cap it's noise that never
-    // becomes speech (road bumps, an indicator clicking).
-    return !segmenter.candidate() || waited >= 2 * HOLD_MAX_MS;
   }
 
   /**
@@ -1587,6 +1618,7 @@ final class HandsFreeSession {
       // You started talking over its last words: they're kept, the microphone stays on.
       if (tail && segmenter.candidate()) tail = false;
       current = null;
+      activeAt = clock.getAsLong();
       mutedUntil = tail ? clock.getAsLong() + TAIL_MS : 0;
       tailHeard = false;
       if (tail) {
@@ -2082,15 +2114,21 @@ final class HandsFreeSession {
         log(why + ": not ended, the turn goes on");
         return;
       }
-    } else if (v != null && v.send() < PHRASE_SEND_AT) {
-      // "Over" as a word of the sentence, not the send word: the turn goes on, and the same
+    } else if (v != null && v.send() < SEND_AT) {
+      // "Over" as a word of the sentence, or not clearly the end: the turn goes on, and the same
       // text doesn't ask again (the live text repeats it until you say more).
       heldPhrase = HandsFree.normalize(asked.said);
-      log(String.format(java.util.Locale.ROOT, "send phrase: Jev says you're not done (done %.2f): not sent, the turn goes on", v.send()));
+      log(String.format(java.util.Locale.ROOT, "send phrase: Jev says you're not clearly done (done %.2f): not sent, the turn goes on", v.send()));
       notDone(v);
       listener.changed();
       return;
-    } else if (v == null) log("Jev couldn't tell whether you're done (" + asked.failed() + "): the send word decides");
+    } else if (v == null && judge != null) {
+      // The send word only asks: without Jev's clear "done" nothing goes. Your pause asks again.
+      log("Jev couldn't tell whether you're done (" + asked.failed() + "): not sent, your pause asks again");
+      reason("Couldn't ask whether you're done (%1$s): not sent; say %2$s again or press Send", asked.failed(), "\"" + sendWords.get(0) + "\"");
+      listener.changed();
+      return;
+    } else if (v == null) log("no Jev: the send word decides");
     long start = clock.getAsLong();
     writingSince = start;
     checkStep = "writing";
@@ -2151,12 +2189,6 @@ final class HandsFreeSession {
     reason("Sent: you said %1$s", "\"" + sendWords.get(0) + "\"");
     send(rest, "send phrase", audio.size(), prefix);
   }
-
-  /**
-   * Jev's answer on a send or end phrase, asked in the background: below this it holds a send
-   * phrase back (it's more likely a word of your sentence than the send word).
-   */
-  static final double PHRASE_SEND_AT = 0.5;
 
   /** The longest Jev's answer on a phrase is waited for (Jev gives up after 3 s itself). */
   static volatile long phraseJudgeMs = 3500;
@@ -2358,17 +2390,18 @@ final class HandsFreeSession {
     }
     long ms = clock.getAsLong() - start;
     if (v != null) logVerdict("", ms, v);
-    else if (failed != null) log("Jev failed after " + ms + " ms (" + failed + "): the send and end words decide");
+    else if (failed != null) log("Jev failed after " + ms + " ms (" + failed + "): not sent, nothing ended");
     if (state == State.ENDED) return; // The call's end sent it.
     if (stale(version)) {
       log("you went on talking: checked again at your next pause");
       return;
     }
     String ended = HandsFree.endsWith(text, endWords), over = HandsFree.endsWith(text, sendWords);
-    boolean end = v != null ? v.end() >= END_AT : ended != null;
-    // Jev held this send word back a moment ago: Jev failing now doesn't make it the send word.
-    boolean done = v != null ? v.send() >= SEND_AT : over != null && !HandsFree.normalize(text).equals(heldPhrase);
-    if (failed != null) reason("Couldn't ask whether you're done (%1$s): say %2$s or press Send", failed, sendWords.isEmpty() ? "Send" : "\"" + sendWords.get(0) + "\"");
+    // Only Jev's clear answer sends or ends; the words decide only without Jev at all.
+    boolean noJev = judge == null;
+    boolean end = v != null ? v.end() >= END_AT : noJev && ended != null;
+    boolean done = v != null ? v.send() >= SEND_AT : noJev && over != null && !HandsFree.normalize(text).equals(heldPhrase);
+    if (failed != null) reason("Couldn't ask whether you're done (%1$s): not sent; say %2$s or press Send", failed, sendWords.isEmpty() ? "Send" : "\"" + sendWords.get(0) + "\"");
     if (end) {
       log("end of the call");
       reason("Ending the call: you said goodbye");
@@ -2496,6 +2529,7 @@ final class HandsFreeSession {
                 turnVersion++;
                 more[0] = !turnAudio.isEmpty() || !turnPrefix.isEmpty();
               }
+              if (more[0]) newTurn = true; // You went on talking: that's your next turn already.
             });
     if (h == null) {
       log("the call ended meanwhile: its end sends your words, not this check");
@@ -2535,6 +2569,8 @@ final class HandsFreeSession {
   /** As above; consume takes the message's words from your turn, at once with the handover. */
   private synchronized Handoff handOff(boolean last, Runnable consume) {
     if (state == State.ENDED && !last) return null;
+    newTurn = false; // Your turn went; consume says if you went on meanwhile.
+    handedAt = clock.getAsLong();
     consume.run();
     int number = ++handedOff;
     onTheWay.add(number);
@@ -2554,15 +2590,6 @@ final class HandsFreeSession {
         missedNow.add(n.text);
       }
     if (!missedNow.isEmpty()) notes.append("\n\n").append(missed(missedNow));
-    // Without a talker, the chief's replies still waiting play once this message went: it hears
-    // so, and doesn't answer the same again (Philipp's call, 31 October 2026: "Hi, can you hear
-    // me?" asked again before the first answer played, answered again, and "Yes, I can hear you"
-    // heard twice).
-    if (!dropsOutdated && !last) {
-      List<String> waiting = new ArrayList<>();
-      for (Held w : held) if (w.answers < number) waiting.add(w.text);
-      if (!waiting.isEmpty()) notes.append("\n\n").append(notPlayedYet(waiting));
-    }
     return new Handoff(number, request, notes.toString());
   }
 
@@ -2603,12 +2630,10 @@ final class HandsFreeSession {
         }
         onTheWay.remove(number);
         latestSent = Math.max(latestSent, number);
-        silenceTries = 0;
-        silenceNextAt = 0;
-        // With a talker, the replies waiting that answer an older message no longer fit: not
-        // played; your next message, or the call's end, says so.
-        if (dropsOutdated)
-          for (java.util.Iterator<Held> it = held.iterator(); it.hasNext(); ) {
+        activeAt = done;
+        // Replies waiting that are for an earlier turn (answering an older message, or you're
+        // talking again): never played; your next message, or the call's end, says so.
+        for (java.util.Iterator<Held> it = held.iterator(); it.hasNext(); ) {
             Held w = it.next();
             if (!outdated(w)) continue;
             it.remove();
@@ -2619,10 +2644,10 @@ final class HandsFreeSession {
       }
       for (Held w : old) {
         speaker.drop(w.prepared); // Its voice no longer fetched on (let go when it comes).
-        log("chief message " + w.request + " dropped (" + w.text.length() + " characters): it was waiting when your newer message " + request + " went; your next message says you didn't hear it");
+        log("chief message " + w.request + " dropped unplayed (" + w.text.length() + " characters): it was waiting when your newer message " + request + " went; your next message says it didn't play");
       }
-      if (old.size() == 1) reason("An older reply wasn't played: you've said more since");
-      else if (old.size() > 1) reason("%1$d older replies weren't played: you've said more since", old.size());
+      if (old.size() == 1) reason("A reply wasn't played: you've said more since. Your next message tells the chief");
+      else if (old.size() > 1) reason("%1$d replies weren't played: you've said more since. Your next message tells the chief", old.size());
       sent++;
       sentAt = done;
       deliveredAt = done;
@@ -2636,7 +2661,6 @@ final class HandsFreeSession {
         else reason("Sent ✓ to the chief. The talker didn't get it: %1$s", partly.getMessage());
       } else switch (why) {
         case "jev", "send phrase" -> reason("Sent ✓");
-        case "silence" -> reason("Sent ✓ after %1$d s of silence", silenceSendMs / 1000);
         case "end phrase", "end of the call" -> reason("Sent ✓ before the call ended");
         default -> reason("Sent ✓ by the Send button");
       }
@@ -2682,38 +2706,28 @@ final class HandsFreeSession {
     }
   }
 
-  /**
-   * The note about outdated replies you didn't hear: one as missed(reply); several as how many,
-   * the first one's first words and how many more.
-   */
+  /** The note about replies that didn't play: one note per reply, each as missed(reply). */
   static String missed(List<String> replies) {
-    if (replies.size() == 1) return missed(replies.get(0));
-    String[] words = replies.get(0).trim().split("\\s+");
-    StringBuilder first = new StringBuilder();
-    for (int i = 0; i < Math.min(8, words.length); i++) first.append(i == 0 ? "" : " ").append(words[i]);
-    return "[didn't hear " + replies.size() + " replies: \"" + first + (words.length > 8 ? "…" : "") + "\" and " + (replies.size() - 1) + " more]";
-  }
-
-  /** The note in your message about a chief message you didn't hear: its first words. */
-  static String missed(String reply) {
-    String[] words = reply.trim().split("\\s+");
-    StringBuilder first = new StringBuilder();
-    for (int i = 0; i < Math.min(12, words.length); i++) first.append(i == 0 ? "" : " ").append(words[i]);
-    return "[didn't hear your reply: \"" + first + (words.length > 12 ? "…" : "") + "\"]";
+    StringBuilder all = new StringBuilder();
+    for (String r : replies) all.append(all.length() == 0 ? "" : "\n").append(missed(r));
+    return all.toString();
   }
 
   /**
-   * The note in your message about the chief's replies still waiting (they play once it went):
-   * one by its first words; several as how many, the first one's first words and how many more.
+   * The note in your message about a chief message you didn't hear at all (dropped when you
+   * talked, or its voice failed): its first words, so the chief knows which.
    */
-  static String notPlayedYet(List<String> replies) {
-    int n = replies.size() == 1 ? 12 : 8;
-    String[] words = replies.get(0).trim().split("\\s+");
+  static String missed(String reply) {
+    return "[not played: \"" + firstWords(reply, MISSED_WORDS) + "\"]";
+  }
+
+  /** How many of a reply's first words a note quotes. */
+  static final int MISSED_WORDS = 12;
+
+  private static String firstWords(String text, int n) {
+    String[] words = text.trim().split("\\s+");
     StringBuilder first = new StringBuilder();
     for (int i = 0; i < Math.min(n, words.length); i++) first.append(i == 0 ? "" : " ").append(words[i]);
-    String quoted = "\"" + first + (words.length > n ? "…" : "") + "\"";
-    return replies.size() == 1
-        ? "[your reply hasn't played yet, it plays after this message: " + quoted + "]"
-        : "[" + replies.size() + " replies haven't played yet, they play after this message: " + quoted + " and " + (replies.size() - 1) + " more]";
+    return first + (words.length > n ? "…" : "");
   }
 }

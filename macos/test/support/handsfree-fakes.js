@@ -122,7 +122,7 @@ class Fake {
     let ids = 0;
     this.session = new HandsFreeSession({
       pauseMs: 1000,
-      silenceSendMs: 8000,
+      silenceEndMs: 120_000,
       takeMs: HandsFree.DEFAULT_TAKE_MS,
       gate: HandsFree.DEFAULT_GATE,
       detector: HandsFree.LEVEL,

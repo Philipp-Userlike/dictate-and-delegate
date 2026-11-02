@@ -47,8 +47,8 @@ test('theTalkerSkillIsFilledInWithTheAppsNtfyAndNothingPersonal', () => {
   assert.ok(t.includes('use no tools except speaking'));
   assert.ok(t.includes('A briefing, background the chief sends you'));
   assert.ok(t.includes('Answer their new message first.'));
-  assert.ok(t.includes('`[didn\'t hear your reply: "…"]`'));
-  assert.ok(t.includes('`[heard up to: "…"]`'));
+  assert.ok(t.includes('`[not played: "…"]`'));
+  assert.ok(t.includes('`[heard up to: "…"] [not played from there: "…"]`'));
   assert.ok(t.includes('Never invent it.'));
   assert.ok(t.includes('say in one short sentence what is being checked, in their words, e.g. "Checking Kleinanzeigen for clearance services."'));
   assert.ok(t.includes("Don't guess the answer and don't add advice or warnings of your own"));
@@ -104,9 +104,13 @@ test('theChiefSkillStatesTheTalkerContractAndTheTurnRule', () => {
   const cos = ChiefSkills.fill(ChiefSkills.CHIEF, template(ChiefSkills.CHIEF), 'Alex', 't', '', '');
   assert.ok(cos.includes('do the quick ones yourself (a lookup, one command; one that runs longer or fails goes to a child thread'));
   assert.ok(r.includes('[chief] <what Alex needs to know or decide'));
-  assert.ok(r.includes("A reply never plays while it's Alex's turn"));
+  // No queue (0.3.0): a reply not played is discarded and counts as unsaid; the chief resends what matters.
+  assert.ok(r.includes("Nothing you say is queued. A spoken reply plays only while Alex is quiet, and only if it's for their newest message."));
+  assert.ok(r.includes('A discarded reply counts as unsaid.'));
+  assert.ok(r.includes("Then resend, in the same reply, whatever is still relevant from what didn't play"));
+  assert.ok(r.includes("tag every spoken reply with the request ID of Alex's latest message, also a child thread's result"));
   assert.ok(!r.includes("plays at their next pause, even if they haven't sent"), 'the old pause rule is gone');
-  assert.ok(r.includes('it was dropped because Alex had already sent a newer message'));
+  assert.ok(!r.includes('it plays after this message'), "3.3.5's held replies are gone");
 });
 
 test('withoutANameItSaysTheUser', () => {

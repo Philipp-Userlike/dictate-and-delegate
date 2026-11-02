@@ -341,15 +341,8 @@ test('withLiveTranscriptionYourTurnIsYourUnsentWordsNotLoudness', async () => {
   // Speech without words yet: your turn a moment (the live text's delay), then not.
   f.speak();
   assert.equal(f.session.yourTurn(f.now.get()), 'speaking');
-  f.session.reply('r1', 'Your table is booked.');
-  await sleep(100);
-  assert.equal(f.spoken.length, 0);
   f.now.addAndGet(HandsFreeSession.WORDLESS_MS);
   assert.equal(f.session.yourTurn(f.now.get()), null, 'loud, but no words: not your turn');
-  f.session.tick();
-  await until(() => f.spoken.length === 1);
-  f.done();
-  f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
   f.quiet(1200);
   await sleep(150);
   // Words: your turn, however quiet you are.
@@ -357,12 +350,10 @@ test('withLiveTranscriptionYourTurnIsYourUnsentWordsNotLoudness', async () => {
   live.say('Book the hotel');
   f.quiet(1500);
   await until(() => f.session.yourTurn(f.now.get()) === 'unsent words'); // Once its check is done.
-  f.session.reply('r2', 'Anything else?');
   f.quiet(5000);
   f.session.tick();
   await sleep(100);
-  assert.equal(f.spoken.length, 1);
-  assert.ok(reasons(f).includes('Reply waits: your turn (unsent words)'), reasons(f));
+  assert.equal(f.session.yourTurn(f.now.get()), 'unsent words');
   assert.ok(f.logText().includes('turn: yours (unsent words)'));
 });
 
@@ -408,7 +399,7 @@ test('overThatsAWordOfTheSentenceIsHeldBackByJevAndTheTurnGoesOn', async () => {
   assert.equal(f.sent.length, 0);
   assert.equal(f.session.floor(), Floor.YOU);
   assert.equal(live.text(), sentence, 'the live text wasn\'t taken: it goes on');
-  assert.ok(f.logText().includes('send phrase: Jev says you\'re not done (done 0.20): not sent, the turn goes on'));
+  assert.ok(f.logText().includes('send phrase: Jev says you\'re not clearly done (done 0.20): not sent, the turn goes on'));
   // The live text repeats it (its final): not asked again.
   live.say(sentence);
   await sleep(100);
@@ -445,7 +436,8 @@ test('jevIsAskedAtOnceOnTheSendWordWhileTheQuietAfterItIsWaitedFor', async () =>
   assert.ok(reasons(f).includes('Sent: you said "over"'), reasons(f));
 });
 
-test('whenJevCantTellOnASendWordTheSendWordSends', async () => {
+test('whenJevCantTellOnASendWordNothingIsSent', async () => {
+  // Only Jev's clear "done" ends your turn: the send word only asks (Philipp's design, 2 November 2026).
   const f = new Fake();
   const live = new FakeLive(f);
   f.session.judge = async () => {
@@ -455,10 +447,12 @@ test('whenJevCantTellOnASendWordTheSendWordSends', async () => {
   f.speak();
   live.say('Book the table. Over.');
   f.quiet(400);
-  await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], 'Book the table.');
-  assert.ok(f.logText().includes('Jev couldn\'t tell whether you\'re done (HTTP 502): the send word decides'));
-  // Too slow: given up after phraseJudgeMs, and sent.
+  await until(() => f.logText().includes('Jev couldn\'t tell whether you\'re done (HTTP 502): not sent, your pause asks again'));
+  await sleep(100);
+  assert.equal(f.sent.length, 0);
+  assert.ok(reasons(f).includes('Couldn\'t ask whether you\'re done (HTTP 502): not sent; say "over" again or press Send'), reasons(f));
+  assert.equal(f.session.floor(), Floor.YOU);
+  // Too slow: given up after phraseJudgeMs, and not sent either.
   const was = HandsFreeSession.phraseJudgeMs;
   HandsFreeSession.phraseJudgeMs = 200;
   try {
@@ -472,12 +466,25 @@ test('whenJevCantTellOnASendWordTheSendWordSends', async () => {
     g.speak();
     l.say('Book the train. Over.');
     g.quiet(400);
-    await until(() => g.sent.length === 1);
-    assert.equal(g.sent[0], 'Book the train.');
-    assert.ok(g.logText().includes('Jev couldn\'t tell whether you\'re done (no answer in 200 ms)'));
+    await until(() => g.logText().includes('Jev couldn\'t tell whether you\'re done (no answer in 200 ms)'));
+    await sleep(100);
+    assert.equal(g.sent.length, 0);
   } finally {
     HandsFreeSession.phraseJudgeMs = was;
   }
+});
+
+test('onTheSendWordJevMustBeClearlySureNotJustLikely', async () => {
+  const f = new Fake();
+  const live = new FakeLive(f);
+  f.session.judge = async () => verdict('over', 0.6, 0); // Likely done, not clearly.
+  f.quiet(1000);
+  f.speak();
+  live.say('Book the table. Over.');
+  f.quiet(400);
+  await until(() => f.logText().includes('send phrase: Jev says you\'re not clearly done (done 0.60)'));
+  await sleep(100);
+  assert.equal(f.sent.length, 0);
 });
 
 // ------------------------------------------------------------------ words before and after a send word
@@ -847,17 +854,21 @@ test('talkingOnWhileJevIsAskedMeansNoDecision', async () => {
   assert.equal(f.sent[0], 'Book the hotel and the car');
 });
 
-test('whenJevCantBeAskedTheSendWordStillWorks', async () => {
+test('whenJevCantBeAskedAtThePauseNothingIsSentButSendStillWorks', async () => {
   const f = new Fake('Book the table.', 'Over.');
   f.session.judge = async () => {
     throw new Error('timeout');
   };
   await f.talk();
-  await until(() => reasons(f).includes('Couldn\'t ask whether you\'re done (timeout)'));
+  await until(() => reasons(f).includes('Couldn\'t ask whether you\'re done (timeout): not sent; say "over" or press Send'));
   assert.equal(f.sent.length, 0);
   await f.talk();
+  await until(() => f.logText().includes('Jev failed after') && count(f.logText(), 'Jev failed after') === 2);
+  await sleep(100);
+  assert.equal(f.sent.length, 0, 'the send word only asks Jev');
+  f.session.sendNow();
   await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], 'Book the table.');
+  assert.equal(f.sent[0], 'Book the table. Over.');
 });
 
 test('jevsAnswerIsReadAsDoneAndEnd', () => {
@@ -994,7 +1005,7 @@ test('householdBurstsInAQuietRoomNeverOpenATurnButYourVoiceDoes', () => {
   feed(s, 6000, 600); // You, close to the microphone.
   assert.equal(started.length, 1);
   feed(s, 6000, 120);
-  feed(s, 140, 2000);
+  feed(s, 140, HandsFree.DEFAULT_PAUSE_MS + 200);
   assert.equal(out.length, 1);
 });
 

@@ -285,7 +285,7 @@ class HandsFreeCall {
     const call = this;
     const session = new HandsFreeSession({
       pauseMs: HandsFree.pauseMs(prefs),
-      silenceSendMs: HandsFree.silenceSendMs(prefs),
+      silenceEndMs: HandsFree.silenceEndMs(prefs),
       takeMs: HandsFree.takeMs(prefs),
       gate: HandsFree.gate(prefs),
       detector: HandsFree.LEVEL,
@@ -329,8 +329,6 @@ class HandsFreeCall {
         return v;
       };
     session.cues = (c) => !!prefs.get(HandsFree.SOUNDS, true) && !!opts.playCue && !!opts.playCue(c);
-    // With a talker, a reply to an older message than your latest isn't played: it no longer fits.
-    session.dropsOutdated = this.talker !== '';
     const live = this.startLive(sendWords, endWords);
     const choice = opts.voiceChoice || null;
     if (voice != null && 'systemStatus' in voice) voice.systemStatus = (why) => call.event("the Mac's voice: " + why);

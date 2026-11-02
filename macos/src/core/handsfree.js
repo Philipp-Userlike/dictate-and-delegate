@@ -3,8 +3,8 @@
 //
 // Hands-free mode: talking with the chief of staff without touching the computer. It listens
 // (voice activity, no model), transcribes each stretch of speech once when you pause, and sends the
-// message when it ends with one of your send words ("over") and Jev agrees you're done, or after a
-// long silence; an end word ends the mode. The chief's spoken replies are read aloud; talking over
+// message only when Jev says you're clearly done, asked when you say a send word ("over") or pause
+// a few seconds; an end word ends the mode, and so does a long silence (sending nothing). The chief's spoken replies are read aloud; talking over
 // one stops it. These are the settings and the pure parts: keyword matching and the voice activity
 // segmenter.
 
@@ -29,8 +29,8 @@ function callStarted(talker) {
 /** Prefs keys. */
 const SEND_WORDS = 'hfSendWords';
 const END_WORDS = 'hfEndWords';
-const PAUSE_MS = 'hfTurnPauseMs';
-const SILENCE_SEND_MS = 'hfSilenceSendMs';
+const PAUSE_MS = 'hfEndOfTurnPauseMs';
+const SILENCE_END_MS = 'hfSilenceEndMs';
 const VOICE = 'hfVoice';
 
 /**
@@ -42,10 +42,12 @@ const DEFAULT_SEND = 'over';
 const DEFAULT_END = 'end the call';
 /**
  * A pause this long ends a part of your turn: then the whole turn so far is written down and
- * Jev asked whether you're done.
+ * Jev asked whether you're done; only a clear yes sends it (a new key: the old setting's 1.8 s
+ * sent while Philipp was still thinking). A call with this long of silence, nobody talking and
+ * no reply playing, ends without sending anything.
  */
-const DEFAULT_PAUSE_MS = 1800;
-const DEFAULT_SILENCE_SEND_MS = 15_000;
+const DEFAULT_PAUSE_MS = 5000;
+const DEFAULT_SILENCE_END_MS = 120_000;
 
 const clamp = (lo, hi, v) => Math.max(lo, Math.min(hi, v));
 const int = (v, fallback) => {
@@ -88,8 +90,8 @@ function voiceWaitMs(prefs) {
   return clamp(500, 60_000, int(prefs.get(VOICE_WAIT_MS, DEFAULT_VOICE_WAIT_MS), DEFAULT_VOICE_WAIT_MS));
 }
 
-function silenceSendMs(prefs) {
-  return clamp(5_000, 300_000, int(prefs.get(SILENCE_SEND_MS, DEFAULT_SILENCE_SEND_MS), DEFAULT_SILENCE_SEND_MS));
+function silenceEndMs(prefs) {
+  return clamp(30_000, 3_600_000, int(prefs.get(SILENCE_END_MS, DEFAULT_SILENCE_END_MS), DEFAULT_SILENCE_END_MS));
 }
 
 /** "over, send ,  senden" → [over, send, senden]: comma- or line-separated, blanks dropped. */
@@ -468,12 +470,12 @@ module.exports = {
   SEND_WORDS,
   END_WORDS,
   PAUSE_MS,
-  SILENCE_SEND_MS,
+  SILENCE_END_MS,
   VOICE,
   DEFAULT_SEND,
   DEFAULT_END,
   DEFAULT_PAUSE_MS,
-  DEFAULT_SILENCE_SEND_MS,
+  DEFAULT_SILENCE_END_MS,
   words,
   endSetting,
   pauseMs,
@@ -484,7 +486,7 @@ module.exports = {
   OPEN_AUDIO,
   DEFAULT_VOICE_WAIT_MS,
   voiceWaitMs,
-  silenceSendMs,
+  silenceEndMs,
   list,
   normalize,
   endsWith,

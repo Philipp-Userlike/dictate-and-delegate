@@ -32,6 +32,18 @@ test('wordListsComeFromTheSetting', () => {
   assert.deepEqual(HandsFree.list(''), []);
 });
 
+test('theEndOfTurnPauseIsFiveSecondsAndALongSilenceTwoMinutesBothConfigurable', () => {
+  const prefs = (values) => ({ get: (k, d) => (k in values ? values[k] : d) });
+  // A pause only asks Jev whether you're done: long enough to think (1.8 s cut Philipp off).
+  assert.equal(HandsFree.DEFAULT_PAUSE_MS, 5000);
+  assert.equal(HandsFree.pauseMs(prefs({})), 5000);
+  assert.equal(HandsFree.pauseMs(prefs({ hfEndOfTurnPauseMs: 3000 })), 3000);
+  assert.equal(HandsFree.pauseMs(prefs({ hfTurnPauseMs: 1800 })), 5000, 'the old 1.8 s setting no longer applies');
+  assert.equal(HandsFree.silenceEndMs(prefs({})), 120_000);
+  assert.equal(HandsFree.silenceEndMs(prefs({ hfSilenceEndMs: 300_000 })), 300_000);
+  assert.equal(HandsFree.silenceEndMs(prefs({ hfSilenceEndMs: 1000 })), 30_000);
+});
+
 test('aSendWordCountsOnlyAtTheEnd', () => {
   assert.equal(HandsFree.endsWith('Book a table for Friday. Over.', send), 'Book a table for Friday.');
   assert.equal(HandsFree.endsWith('book a table, over!', send), 'book a table');
@@ -138,60 +150,6 @@ test('chiefFirstOnAnOpenFloorIsReadAndItsEchoIsNeverYourTurn', async () => {
   assert.equal(f.sent[0], 'Next question.');
 });
 
-test('aReplyWaitsWhileYouTalkIsNotDroppedBySendingAndPlaysAtThePause', async () => {
-  const f = new Fake('Also check the train', 'to Lisbon. Over.');
-  f.quiet(1000);
-  f.speak(); // You take the floor.
-  assert.equal(f.session.floor(), Floor.YOU);
-  f.session.reply('r0', 'The flight leaves at nine in the morning and costs about two hundred euros, I think.');
-  await sleep(100);
-  assert.equal(f.spoken.length, 0);
-  assert.equal(f.session.held(), 1);
-  assert.ok(reasons(f).includes('Reply waits: you\'re talking'), reasons(f));
-  assert.equal(f.session.liveState(), Live.HEARING);
-  f.quiet(1200); // A pause, with your words unsent: still your turn, it waits.
-  await sleep(150);
-  assert.equal(f.spoken.length, 0);
-  await f.talk();
-  await until(() => f.sent.length === 1);
-  // Your message as said: nothing about the reply, which isn't dropped.
-  assert.equal(f.sent[0], `Also check the train to Lisbon.\n\n[your reply hasn't played yet, it plays after this message: "The flight leaves at nine in the morning and costs about two…"]`);
-  // Your turn is over: it plays now.
-  await until(() => f.spoken.length === 1);
-  assert.equal(f.spoken[0], 'The flight leaves at nine in the morning and costs about two hundred euros, I think.');
-  f.done();
-  assert.equal(f.session.unheard(), 0);
-  assert.equal(f.session.endNote(), '');
-});
-
-test('aReplyNeverPlaysInALongThinkingPauseWithUnsentWordsOnlyOnceTheyreSent', async () => {
-  const f = new Fake('Book the hotel');
-  f.quiet(1000);
-  f.speak();
-  f.session.reply('r0', 'Here\'s what I found.');
-  f.quiet(1200);
-  await until(() => f.session.pending() === 'Book the hotel');
-  // You think, quiet, your words unsent (no Jev here to say you're done): your turn goes on.
-  f.quiet(6000);
-  f.session.tick();
-  await sleep(100);
-  assert.equal(f.spoken.length, 0);
-  assert.equal(f.session.liveState(), Live.REPLY_WAITING);
-  assert.ok(reasons(f).includes('Reply waits: your turn (unsent words)'), reasons(f));
-  // The silence send (8 s here) ends your turn: your words go, then it plays.
-  f.quiet(2000);
-  f.session.tick();
-  await until(() => f.sent.length === 1);
-  assert.equal(f.sent[0], `Book the hotel\n\n[your reply hasn't played yet, it plays after this message: "Here's what I found."]`);
-  await until(() => f.spoken.length === 1);
-  assert.ok(reasons(f).includes('Reply plays: your turn is over'), reasons(f));
-  const log = f.logText();
-  const yours = log.indexOf('turn: yours (unsent words)');
-  const silence = log.indexOf('turn: silence (sent)');
-  const ours = log.indexOf('turn: ours (a reply plays)');
-  assert.ok(yours >= 0 && silence > yours && ours > silence, log);
-});
-
 test('aReplyPlaysAtOnceInSilenceAndRightAfterYourMessageWent', async () => {
   const f = new Fake('Is the table booked? Over.');
   f.quiet(1000);
@@ -208,7 +166,7 @@ test('aReplyPlaysAtOnceInSilenceAndRightAfterYourMessageWent', async () => {
   await until(() => f.spoken.length === 2);
 });
 
-test('aReplyArrivingWhileYourMessageIsWrittenDownOrSentWaitsUntilItsGone', async () => {
+test('aReplyArrivingWhileYourMessageIsWrittenDownIsDroppedOneForItWaitsUntilItsSent', async () => {
   const f = new Fake('Is the table booked? Over.');
   const slow = latch();
   f.slow = slow;
@@ -217,28 +175,32 @@ test('aReplyArrivingWhileYourMessageIsWrittenDownOrSentWaitsUntilItsGone', async
   try {
     f.quiet(1000);
     await f.talk();
+    // From before your turn: dropped, never played.
     f.session.reply('r0', 'Here\'s what I found.');
-    await until(() => reasons(f).includes('Reply waits: checking whether you\'re done'));
+    assert.equal(f.session.held(), 0);
     f.quiet(3000);
     f.session.tick();
     assert.equal(f.spoken.length, 0);
     f.slowBb = latch();
     slow.countDown(); // Written down: now it's being sent.
+    await until(() => f.session.phase() === Phase.SENDING);
+    f.session.reply('r1', 'The table is booked.'); // An answer to the message on its way.
     await until(() => reasons(f).includes('Reply waits: your message is being sent'));
     f.session.tick();
     assert.equal(f.spoken.length, 0);
     f.slowBb.countDown();
     await until(() => f.sent.length === 1);
+    assert.equal(f.sent[0], 'Is the table booked?\n\n[not played: "Here\'s what I found."]');
     await until(() => f.spoken.length === 1);
+    assert.deepEqual(f.spoken, ['The table is booked.']);
   } finally {
     slow.countDown();
     HandsFreeSession.writeTimeoutMs = timeout;
   }
 });
 
-test('withATalkerAReplyToAnOlderMessageIsntPlayedAndTheNextMessageSaysSo', async () => {
+test('aReplyToAnOlderMessageIsntPlayedAndTheNextMessageSaysSo', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   await sendTurn(f, 1);
   await sendTurn(f, 2);
@@ -248,132 +210,101 @@ test('withATalkerAReplyToAnOlderMessageIsntPlayedAndTheNextMessageSaysSo', async
   await hear(f, 1);
   assert.deepEqual(f.spoken, ['The train leaves at nine.']);
   const log = f.logText();
-  assert.ok(log.includes('chief message r1 dropped (27 characters): it answers an older message than your latest'), log);
-  assert.ok(reasons(f).includes('An older reply wasn\'t played: you\'ve said more since. Your next message says so'), reasons(f));
+  assert.ok(log.includes('chief message r1 dropped unplayed (27 characters): it answers an older message than your latest'), log);
+  assert.ok(reasons(f).includes('A reply wasn\'t played: you\'ve said more since. Your next message tells the chief'), reasons(f));
   await sendTurn(f, 3);
-  assert.equal(f.sent[2], 'Anything else?\n\n[didn\'t hear your reply: "Yes, it\'s booked for eight."]');
+  assert.equal(f.sent[2], 'Anything else?\n\n[not played: "Yes, it\'s booked for eight."]');
   // Noted once.
   f.session.end();
   assert.equal(f.session.endNote(), '');
 });
 
-test('withATalkerRepliesStillWaitingWhenYourMessageGoesArentPlayedAndTheNextMessageSaysSo', async () => {
-  const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.');
-  f.session.dropsOutdated = true;
+test('whenYouTalkThePlayingReplyStopsAndEveryQueuedOneIsDropped', async () => {
+  // Philipp's design, 2 November 2026: "no queuing, just always canceled".
+  const f = new Fake('Is the table booked? Over.', 'Wait, and the train? Over.');
   f.quiet(1000);
   await sendTurn(f, 1);
-  // You talk on; three answers to the first message (one an update without a request) wait.
-  f.speak();
   f.session.reply('r1', 'One moment, I\'m checking the booking for you now.');
+  await until(() => f.spoken.length === 1);
   f.session.reply('r1', 'It\'s booked for eight.');
-  f.session.reply(f.session.lastRequest(), 'The chief says the window table is free.', 0, true);
-  assert.equal(f.session.held(), 3);
+  f.session.reply(f.session.lastRequest(), 'The window table is free.', 0, true);
+  assert.equal(f.session.held(), 2, 'queued behind the one playing');
+  f.heardChars = 'One moment, I\'m checking'.length;
+  for (let i = 0; i < 40 && f.session.state() === State.READING; i++) f.session.frame(frame(8000)); // You talk over it.
+  assert.equal(f.session.state(), State.LISTENING, 'the playing reply stopped');
+  assert.equal(f.session.held(), 0, 'the queued ones are dropped');
+  assert.ok(reasons(f).includes('2 replies weren\'t played: you started talking. Your next message tells the chief'), reasons(f));
+  await until(() => f.dropped.length === 2);
+  for (let i = 0; i < 20; i++) f.session.frame(frame(8000));
   f.quiet(1200);
   await until(() => f.sent.length === 2);
-  // Dropped once your message was delivered; that message didn't know of it yet.
-  assert.equal(f.sent[1], 'And the train?');
-  await until(() => f.session.held() === 0);
-  await sleep(200);
-  assert.equal(f.spoken.length, 0, String(f.spoken));
-  assert.equal(f.dropped.length, 3, 'their voices let go');
-  assert.ok(reasons(f).includes('3 older replies weren\'t played: you\'ve said more since'), reasons(f));
-  const log = f.logText();
-  assert.ok(log.includes('chief message r1 dropped (22 characters): it was waiting when your newer message r2 went'), log);
-  f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
-  await sendTurn(f, 3);
-  assert.equal(f.sent[2], 'Anything else?\n\n[didn\'t hear 3 replies: "One moment, I\'m checking the booking for you…" and 2 more]');
-  f.session.end();
-  assert.equal(f.session.endNote(), '');
+  assert.equal(
+    f.sent[1],
+    'Wait, and the train?\n\n[heard up to: "One moment, I\'m checking"] [not played from there: "the booking for you now."]' +
+      '\n\n[not played: "It\'s booked for eight."]\n[not played: "The window table is free."]',
+  );
+  f.session.tick();
+  await sleep(150);
+  assert.equal(f.spoken.length, 1, 'nothing of before your turn plays afterwards');
 });
 
-test('withATalkerACallEndingWithDroppedRepliesNotYetNotedSaysSoAtItsEnd', async () => {
+test('aReplyForAnOldTurnArrivingWhileYouTalkIsNeverPlayedOnlyTheNewTurnsReplyPlays', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.');
-  f.session.dropsOutdated = true;
+  f.quiet(1000);
+  await sendTurn(f, 1);
+  f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
+  f.speak(); // Your next turn starts; the answer to the first comes meanwhile.
+  f.session.reply('r1', 'Yes, it\'s booked for eight.');
+  assert.equal(f.session.held(), 0);
+  assert.ok(f.logText().includes('chief message r1 dropped unplayed (27 characters): you\'ve started a new turn since your last message'), f.logText());
+  f.quiet(1200);
+  await until(() => f.sent.length === 2);
+  assert.equal(f.sent[1], 'And the train?\n\n[not played: "Yes, it\'s booked for eight."]');
+  // Late, after your turn ended: still the old turn's, never played.
+  f.session.reply('r1', 'The window table, as you asked.');
+  f.session.tick();
+  await sleep(150);
+  assert.equal(f.spoken.length, 0);
+  // The new turn's reply plays.
+  f.session.reply('r2', 'The train leaves at nine.');
+  await until(() => f.spoken.length === 1);
+  assert.deepEqual(f.spoken, ['The train leaves at nine.']);
+});
+
+test('aCallEndingWithDroppedRepliesNotYetNotedSaysSoAtItsEnd', async () => {
+  const f = new Fake('Is the table booked? Over.', 'And the train? Over.');
   f.quiet(1000);
   await sendTurn(f, 1);
   await sendTurn(f, 2);
   f.session.reply('r1', 'Yes, it\'s booked for eight.');
   f.session.reply('r1', 'The window table, as you asked.');
   f.session.end();
-  assert.equal(f.session.endNote(), '\n\n[didn\'t hear 2 replies: "Yes, it\'s booked for eight." and 1 more]');
+  assert.equal(f.session.endNote(), '\n\n[not played: "Yes, it\'s booked for eight."]\n[not played: "The window table, as you asked."]');
   assert.equal(f.spoken.length, 0);
 });
 
-test('withoutATalkerAReplyToAnOlderMessageStillPlays', async () => {
-  const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.');
-  f.quiet(1000);
-  await sendTurn(f, 1);
-  await sendTurn(f, 2);
-  f.session.reply('r1', 'Yes, it\'s booked for eight.');
-  await hear(f, 1);
-  await sendTurn(f, 3);
-  assert.equal(f.sent[2], 'Anything else?');
-  assert.ok(!f.logText().includes('dropped'));
-});
-
-test('withoutATalkerAReplyStillWaitingWhenYourNextMessageGoesIsNotedInItAndStillPlays', async () => {
-  // Philipp's call, 31 October 2026: "Hi, can you hear me?" asked again before the first answer
-  // played; the chief answered it again, and he heard "Yes, I can hear you" twice.
-  const f = new Fake('Hi, can you hear me? Over.', 'Hi, can you hear me? Over.', 'Book the table. Over.');
-  f.quiet(1000);
-  await sendTurn(f, 1);
-  f.speak(); // You ask again; the answer to the first comes meanwhile and waits.
-  f.session.reply('r1', 'Yes, I hear you. Go ahead.');
-  assert.equal(f.session.held(), 1);
-  f.quiet(1200);
-  await until(() => f.sent.length === 2);
-  // The chief hears that its answer is still to play: it doesn't answer the same again.
-  assert.equal(f.sent[1], 'Hi, can you hear me?\n\n[your reply hasn\'t played yet, it plays after this message: "Yes, I hear you. Go ahead."]');
-  await hear(f, 1);
-  assert.deepEqual(f.spoken, ['Yes, I hear you. Go ahead.']);
-  await sendTurn(f, 3);
-  assert.equal(f.sent[2], 'Book the table.', 'played: not noted again');
-  assert.ok(!f.logText().includes('dropped'));
-});
-
-test('withATalkerNoMessageSaysAReplyHasntPlayedYet', async () => {
+test('aReplyArrivingWhileYourNewMessageIsOnItsWayIsDroppedButOneForItPlaysOnceItsDelivered', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.');
-  f.session.dropsOutdated = true;
-  f.quiet(1000);
-  await sendTurn(f, 1);
-  f.speak();
-  f.session.reply('r1', 'Yes, it\'s booked for eight.');
-  f.quiet(1200);
-  await until(() => f.sent.length === 2);
-  assert.equal(f.sent[1], 'And the train?');
-});
-
-test('severalRepliesNotPlayedYetAreNotedAsOne', () => {
-  assert.equal(
-    HandsFreeSession.notPlayedYet(['One moment, I\'m checking the booking for you now.', 'It\'s booked.']),
-    '[2 replies haven\'t played yet, they play after this message: "One moment, I\'m checking the booking for you…" and 1 more]',
-  );
-});
-
-test('withATalkerAReplyArrivingWhileYourNewMessageIsOnItsWayWaitsAndIsOutdatedOnceItsDelivered', async () => {
-  const f = new Fake('Is the table booked? Over.', 'And the train? Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   await sendTurn(f, 1);
   f.slowBb = latch();
   await f.talk();
   await until(() => f.session.phase() === Phase.SENDING);
   f.session.reply('r1', 'Yes, it\'s booked for eight.'); // Tagged: an answer to the first message.
-  // The talker's update without a request, while your message is on its way: it answers that one.
+  // An update without a request, while your message is on its way: it answers that one.
   f.session.reply(f.session.lastRequest(), 'Let me check the trains.', 0, true);
-  assert.equal(f.session.held(), 2);
+  assert.equal(f.session.held(), 1);
   await sleep(100);
   assert.equal(f.spoken.length, 0);
   f.slowBb.countDown();
   await until(() => f.sent.length === 2);
   await until(() => f.spoken.length === 1);
   assert.deepEqual(f.spoken, ['Let me check the trains.']);
-  assert.ok(f.logText().includes('chief message r1 dropped (27 characters): it was waiting when your newer message r2 went'));
+  assert.ok(f.logText().includes('chief message r1 dropped unplayed (27 characters): it answers an older message than your latest'));
 });
 
-test('withATalkerAReplyToTheMessageOnItsWayIsOursAndPlaysOnceItsDelivered', async () => {
+test('aReplyToTheMessageOnItsWayIsOursAndPlaysOnceItsDelivered', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   // The first message of the call: the talker answers before bb is done with the chief.
   f.slowBb = latch();
@@ -401,14 +332,13 @@ test('withATalkerAReplyToTheMessageOnItsWayIsOursAndPlaysOnceItsDelivered', asyn
 
 test('notesOfAMessageTheChiefMissedGoAgainButNotWhenOnlyTheTalkerMissedIt', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.', 'Thanks. Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   await sendTurn(f, 1);
   await sendTurn(f, 2);
   f.session.reply('r1', 'Yes, it\'s booked for eight.');
   f.missedBy = 'chief';
   await sendTurn(f, 3);
-  const note = '[didn\'t hear your reply: "Yes, it\'s booked for eight."]';
+  const note = '[not played: "Yes, it\'s booked for eight."]';
   assert.ok(f.sent[2].endsWith(note), f.sent[2]);
   // The chief didn't get it: the note goes with the next message.
   f.missedBy = 'talker';
@@ -422,7 +352,6 @@ test('notesOfAMessageTheChiefMissedGoAgainButNotWhenOnlyTheTalkerMissedIt', asyn
 
 test('aMessageThatFailsAfterTheEndLeavesItsWordsAndNotesForTheEnd', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   await sendTurn(f, 1);
   await sendTurn(f, 2);
@@ -435,7 +364,7 @@ test('aMessageThatFailsAfterTheEndLeavesItsWordsAndNotesForTheEnd', async () => 
   f.slowBb.countDown();
   assert.ok(await f.session.awaitDelivered(5000));
   assert.equal(f.sent.length, 2);
-  const note = '[didn\'t hear your reply: "Yes, it\'s booked for eight."]';
+  const note = '[not played: "Yes, it\'s booked for eight."]';
   assert.ok(f.session.endNote().includes(note), 'its note is free again');
   // Settled: its words go now, with the note; the end then has nothing left to say.
   f.bbDown = false;
@@ -447,7 +376,6 @@ test('aMessageThatFailsAfterTheEndLeavesItsWordsAndNotesForTheEnd', async () => 
 
 test('aMessageThatFailsAfterTheEndSettledSendsItsWordsItselfTryingAgain', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.');
-  f.session.dropsOutdated = true;
   const retry = HandsFreeSession.leftoverRetryMs;
   HandsFreeSession.leftoverRetryMs = 300;
   try {
@@ -470,7 +398,7 @@ test('aMessageThatFailsAfterTheEndSettledSendsItsWordsItselfTryingAgain', async 
     await sleep(100);
     f.bbDown = false;
     for (let i = 0; i < 100 && f.sent.length < 3; i++) await sleep(20);
-    assert.equal(f.sent[2], 'Anything else?\n\n[didn\'t hear your reply: "Yes, it\'s booked for eight."]', f.logText());
+    assert.equal(f.sent[2], 'Anything else?\n\n[not played: "Yes, it\'s booked for eight."]', f.logText());
   } finally {
     HandsFreeSession.leftoverRetryMs = retry;
   }
@@ -518,86 +446,14 @@ test('aReplyAfterTheEndIsNotedWithTheEndWhileItsStillToGo', async () => {
   f.quiet(1000);
   f.session.end();
   f.session.reply('r1', 'The table is booked.');
-  assert.equal(f.session.endNote(), '\n\n[didn\'t hear your reply: "The table is booked."]');
+  assert.equal(f.session.endNote(), '\n\n[not played: "The table is booked."]');
   f.session.reply('r1', 'And the train too.');
   assert.ok(f.logText().includes('chief message r1 after the call\'s end (18 characters): not played, and the end was already sent'));
   assert.equal(f.spoken.length, 0);
 });
 
-test('pastAMinuteAReplyStillWaitsForASentenceButNotForEndlessSpeech', async () => {
-  const f = new Fake('Book the hotel');
-  f.quiet(1000);
-  await f.talk();
-  await until(() => f.session.pending() === 'Book the hotel');
-  f.session.reply('r0', 'Here\'s what I found.');
-  await until(() => f.log.some((l) => l.startsWith('voice ready for r0')));
-  f.session.tick();
-  f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS);
-  f.speak(); // You start a sentence just as the minute is up.
-  f.now.addAndGet(1000);
-  f.session.tick();
-  await sleep(100);
-  assert.equal(f.spoken.length, 0, 'not over your sentence');
-  // Speech going on without a pause for 20 s: a TV, not you.
-  f.now.addAndGet(HandsFreeSession.LONG_STRETCH_MS);
-  f.speak();
-  for (let i = 0; i < 50 && f.spoken.length === 0; i++) {
-    f.session.tick();
-    await sleep(20);
-  }
-  assert.equal(f.spoken.length, 1, f.logText());
-});
-
-test('pastTwiceTheCapASoundThatNeverBecomesSpeechNoLongerHoldsAReply', async () => {
-  const f = new Fake('Book the hotel');
-  f.quiet(1000);
-  await f.talk();
-  await until(() => f.session.pending() === 'Book the hotel');
-  f.session.reply('r0', 'Here\'s what I found.');
-  await until(() => f.log.some((l) => l.startsWith('voice ready for r0')));
-  // In the car: a click again and again, gaps shorter than a pause, never speech.
-  f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS + 1000);
-  for (let i = 0; i < 6; i++) {
-    clatter(f.session, 2100, 3);
-    clatter(f.session, 50, 22);
-    f.session.tick();
-  }
-  await sleep(100);
-  assert.equal(f.spoken.length, 0, 'a sound just starting still holds it');
-  f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS);
-  for (let i = 0; i < 50 && f.spoken.length === 0; i++) {
-    clatter(f.session, 2100, 3);
-    clatter(f.session, 50, 22);
-    f.session.tick();
-    await sleep(20);
-  }
-  assert.deepEqual(f.spoken, ['Here\'s what I found.'], f.logText());
-  assert.equal(f.transcriptions - 1, 0); // The clicks were never written down.
-});
-
-test('speechAReplyStartsOverPastItsCapIsKeptInYourTurn', async () => {
-  const f = new Fake('Book the hotel', 'and the train');
-  f.quiet(1000);
-  await f.talk();
-  await until(() => f.session.pending() === 'Book the hotel');
-  f.session.reply('r0', 'Here\'s what I found.');
-  await until(() => f.log.some((l) => l.startsWith('voice ready for r0')));
-  f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS);
-  f.speak(); // Speech going on, then on past 20 s.
-  f.now.addAndGet(HandsFreeSession.LONG_STRETCH_MS);
-  f.speak();
-  for (let i = 0; i < 50 && f.spoken.length === 0; i++) {
-    f.session.tick();
-    await sleep(20);
-  }
-  assert.equal(f.spoken.length, 1);
-  // What was said up to the reply is a part of your turn, written down, not lost.
-  await until(() => f.session.pending() === 'Book the hotel and the train');
-});
-
-test('withATalkerAnUpdateWithoutARequestWhenNothingIsOnItsWayPlays', async () => {
+test('anUpdateWithoutARequestWhenNothingIsOnItsWayPlays', async () => {
   const f = new Fake('Is the table booked? Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   await sendTurn(f, 1);
   await until(() => f.session.yourTurn(f.now.get()) == null);
@@ -605,28 +461,8 @@ test('withATalkerAnUpdateWithoutARequestWhenNothingIsOnItsWayPlays', async () =>
   await until(() => f.spoken.length === 1);
 });
 
-test('withATalkerASendThatFailsDropsNoWaitingReply', async () => {
-  const f = new Fake('Is the table booked? Over.', 'And the train? Over.');
-  f.session.dropsOutdated = true;
-  f.quiet(1000);
-  await sendTurn(f, 1);
-  f.speak();
-  f.session.reply('r1', 'Yes, it\'s booked for eight.');
-  f.bbDown = true;
-  f.quiet(1200);
-  for (let i = 0; i < 100 && !f.session.error().startsWith('Not sent'); i++) await sleep(20);
-  assert.ok(f.session.error().startsWith('Not sent'), f.logText());
-  assert.equal(f.session.held(), 1, 'still waiting, not dropped');
-  assert.equal(f.dropped.length, 0);
-  assert.ok(!f.logText().includes('dropped'));
-  // The call ends: it was never heard, and says so as a reply still waiting.
-  f.session.end();
-  assert.equal(f.session.endNote(), '\n\n[didn\'t hear your reply: "Yes, it\'s booked for eight."]');
-});
-
 test('notesOfAMessageThatCouldntBeSentGoWithTheCallsEnd', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   await sendTurn(f, 1);
   await sendTurn(f, 2);
@@ -637,12 +473,11 @@ test('notesOfAMessageThatCouldntBeSentGoWithTheCallsEnd', async () => {
   assert.ok(f.session.error().startsWith('Not sent'));
   f.session.end(); // Your kept words go as your last words, and fail too.
   assert.ok(await f.session.awaitDelivered(5000));
-  assert.ok(f.session.endNote().includes('[didn\'t hear your reply: "Yes, it\'s booked for eight."]'), f.session.endNote());
+  assert.ok(f.session.endNote().includes('[not played: "Yes, it\'s booked for eight."]'), f.session.endNote());
 });
 
 test('aNoteGoesWithOneMessageOnlyWhenTheNextGoesBeforeItsDelivered', async () => {
   const f = new Fake('Is the table booked? Over.', 'And the train? Over.', 'Anything else? Over.', 'Thanks. Over.');
-  f.session.dropsOutdated = true;
   f.quiet(1000);
   await sendTurn(f, 1);
   await sendTurn(f, 2);
@@ -654,7 +489,7 @@ test('aNoteGoesWithOneMessageOnlyWhenTheNextGoesBeforeItsDelivered', async () =>
   await sleep(300);
   f.slowBb.countDown();
   await until(() => f.sent.length === 4);
-  assert.equal(f.sent[2], 'Anything else?\n\n[didn\'t hear your reply: "Yes, it\'s booked for eight."]');
+  assert.equal(f.sent[2], 'Anything else?\n\n[not played: "Yes, it\'s booked for eight."]');
   assert.equal(f.sent[3], 'Thanks.');
 });
 
@@ -671,83 +506,28 @@ test('withLiveTranscriptionEachStretchOfSpeechHoldsTheTurnAfreshForItsFirstWords
   assert.equal(f.session.yourTurn(f.now.get()), 'speaking');
 });
 
-test('aSilenceSendThatFailsIsTriedAgainLaterNotEverySecond', async () => {
-  const f = new Fake('Remind me to call Jana');
-  f.quiet(1000);
-  await f.talk();
-  await until(() => f.session.pending() !== '');
-  f.bbDown = true;
-  f.quiet(8000);
-  f.session.tick();
-  await until(() => f.logText().includes('not sent (silence)'));
-  for (let i = 0; i < 10; i++) {
-    f.quiet(1000);
-    f.now.addAndGet(1000);
-    f.session.tick();
-  }
-  await sleep(200);
-  assert.equal(count(f.logText(), 'not sent (silence)'), 1);
-  f.now.addAndGet(HandsFreeSession.SILENCE_RETRY_MS);
-  f.bbDown = false;
-  f.session.tick();
-  await until(() => f.sent.length === 1);
-  assert.ok(f.logText().includes('silence send: trying again (2)'));
-});
-
-test('aReadyReplyWaitsAMinuteAtMostThroughATurnWithoutNewWords', async () => {
-  const f = new Fake('Book the hotel');
-  f.quiet(1000);
-  await f.talk();
-  await until(() => f.session.pending() === 'Book the hotel');
-  f.session.reply('r0', 'Here\'s what I found.');
-  await until(() => f.log.some((l) => l.startsWith('voice ready for r0')));
-  f.session.tick();
-  await sleep(100);
-  assert.equal(f.spoken.length, 0);
-  f.now.addAndGet(HandsFreeSession.HOLD_MAX_MS - 1000);
-  f.session.tick();
-  await sleep(100);
-  assert.equal(f.spoken.length, 0);
-  f.now.addAndGet(1000);
-  f.session.tick();
-  await until(() => f.spoken.length === 1);
-  assert.ok(reasons(f).includes('Reply plays: it waited 60 s without new words from you'), reasons(f));
-});
-
-test('withATalkerAMessageThatCouldntBeSentDoesntMakeTheRepliesBeforeItOutdated', async () => {
-  const f = new Fake('Is the table booked? Over.', 'And the train? Over.');
-  f.session.dropsOutdated = true;
-  f.quiet(1000);
-  await sendTurn(f, 1);
-  f.bbDown = true;
-  await f.talk();
-  for (let i = 0; i < 100 && !f.session.error().startsWith('Not sent'); i++) await sleep(20);
-  assert.ok(f.session.error().startsWith('Not sent'), f.logText());
-  // Your words are kept (your turn): the reply waits, but isn't dropped.
-  f.session.reply('r1', 'Yes, it\'s booked for eight.');
-  assert.equal(f.session.held(), 1);
-  assert.ok(!f.logText().includes('dropped'));
-});
-
 test('aCallEndingWithRepliesStillWaitingTellsTheChiefOnce', async () => {
   const f = new Fake('Hold on');
   f.quiet(1000);
   f.speak();
   f.session.reply('r0', 'The meeting moved to three.');
   f.session.end();
-  assert.equal(f.session.endNote(), '\n\n[didn\'t hear your reply: "The meeting moved to three."]');
+  assert.equal(f.session.endNote(), '\n\n[not played: "The meeting moved to three."]');
 });
 
-test('aTurnThatComesToNothingReleasesTheFloorAndTheHeldMessageIsRead', async () => {
+test('aReplyDroppedByATurnThatComesToNothingIsNotPlayedAndTheEndSaysSo', async () => {
   const f = new Fake('');
   f.quiet(1000);
   f.speak();
   f.session.reply('r0', 'Here\'s what I found.');
-  assert.equal(f.spoken.length, 0);
   f.quiet(1200);
-  await until(() => f.spoken.length === 1);
-  assert.equal(f.spoken[0], 'Here\'s what I found.');
+  await until(() => f.transcriptions === 1);
+  f.session.tick();
+  await sleep(150);
+  assert.equal(f.spoken.length, 0);
   assert.equal(f.sent.length, 0);
+  f.session.end();
+  assert.equal(f.session.endNote(), '\n\n[not played: "Here\'s what I found."]');
 });
 
 test('noiseBelowTheThresholdsNeverTakesTheFloor', async () => {
@@ -807,8 +587,9 @@ test('thePhaseIsListeningWorkingOrReading', async () => {
   assert.equal(f.session.error(), '');
 });
 
-test('theButtonSendsAndALongSilenceSendsToo', async () => {
+test('theButtonSendsAndALongSilenceEndsTheCallSendingNothing', async () => {
   const f = new Fake('Remind me to call Jana', 'and buy milk');
+  f.session.tick(); // The call's first tick: the silence counts from here.
   await f.talk();
   await until(() => f.session.pending() !== '');
   f.session.sendNow();
@@ -816,10 +597,42 @@ test('theButtonSendsAndALongSilenceSendsToo', async () => {
   assert.equal(f.sent[0], 'Remind me to call Jana');
   await f.talk();
   await until(() => f.session.pending() !== '');
+  // Quiet: your words aren't sent, however long (no Jev here to call them done).
+  f.now.addAndGet(HandsFreeSession.TAIL_MS + 1);
   f.quiet(8000);
   f.session.tick();
-  await until(() => f.sent.length === 2);
-  assert.equal(f.sent[1], 'and buy milk');
+  await sleep(150);
+  assert.equal(f.sent.length, 1);
+  assert.equal(f.session.state(), State.LISTENING);
+  f.now.addAndGet(f.session.silenceEndMs - 1000);
+  f.session.tick();
+  assert.equal(f.session.state(), State.LISTENING, 'not yet');
+  f.now.addAndGet(1000);
+  f.session.tick();
+  assert.equal(f.session.state(), State.ENDED);
+  assert.ok(await f.session.awaitDelivered(5000));
+  await sleep(100);
+  assert.deepEqual(f.sent, ['Remind me to call Jana'], 'nothing sent at the end');
+  assert.ok(reasons(f).includes('Call ended after 120 s of silence; nothing was sent'), reasons(f));
+  assert.ok(f.logText().includes('120 s of silence: ending the call, sending nothing (your unsent words "and buy milk" are let go)'), f.logText());
+});
+
+test('aReplyPlayingOrAMessageGoingResetsTheLongSilence', async () => {
+  const f = new Fake('Book it. Over.');
+  f.quiet(1000);
+  f.session.tick();
+  f.now.addAndGet(f.session.silenceEndMs - 1000);
+  f.session.reply('r0', 'Good morning.');
+  await until(() => f.spoken.length === 1);
+  f.now.addAndGet(5000); // Still reading: no end.
+  f.session.tick();
+  f.done();
+  f.now.addAndGet(f.session.silenceEndMs - 1000);
+  f.session.tick();
+  assert.equal(f.session.state(), State.LISTENING, 'counted from the reply\'s end');
+  f.now.addAndGet(1000);
+  f.session.tick();
+  assert.equal(f.session.state(), State.ENDED);
 });
 
 test('theButtonPressedWhileTheLastPartIsBeingWrittenDownSendsIt', async () => {

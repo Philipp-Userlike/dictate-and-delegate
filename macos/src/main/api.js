@@ -223,7 +223,7 @@ function validators() {
     [HandsFree.END_WORDS]: text(400),
     // Stored as typed (in range); the getters clamp, as on Android.
     [HandsFree.PAUSE_MS]: int(0, 600_000),
-    [HandsFree.SILENCE_SEND_MS]: int(0, 3_600_000),
+    [HandsFree.SILENCE_END_MS]: int(0, 3_600_000),
     [HandsFree.GATE]: num(0, 100),
     [HandsFree.TAKE_MS]: int(0, 60_000),
     [HandsFree.SOUNDS]: bool,
@@ -702,7 +702,7 @@ function createMethods(ctx, shell = {}, push = () => {}) {
           sendList: HandsFree.words(prefs, HandsFree.SEND_WORDS, HandsFree.DEFAULT_SEND),
           endList: HandsFree.list(HandsFree.endSetting(prefs)),
           pauseMs: HandsFree.pauseMs(prefs),
-          silenceSendMs: HandsFree.silenceSendMs(prefs),
+          silenceEndMs: HandsFree.silenceEndMs(prefs),
           gate: HandsFree.gate(prefs),
           takeMs: HandsFree.takeMs(prefs),
           sounds: prefs.get(HandsFree.SOUNDS, true) !== false,

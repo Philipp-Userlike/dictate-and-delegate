@@ -55,8 +55,8 @@ public class ChiefSkillsTest {
     assertTrue(t.contains("use no tools except speaking"));
     assertTrue(t.contains("A briefing, background the chief sends you"));
     assertTrue(t.contains("Answer their new message first."));
-    assertTrue(t.contains("`[didn't hear your reply: \"…\"]`"));
-    assertTrue(t.contains("`[heard up to: \"…\"]`"));
+    assertTrue(t.contains("`[not played: \"…\"]`"));
+    assertTrue(t.contains("`[heard up to: \"…\"] [not played from there: \"…\"]`"));
     assertTrue(t.contains("Never invent it."));
     assertTrue(t.contains("say in one short sentence what is being checked, in their words, e.g. \"Checking Kleinanzeigen for clearance services.\""));
     assertTrue(t.contains("Don't guess the answer and don't add advice or warnings of your own"));
@@ -115,9 +115,13 @@ public class ChiefSkillsTest {
     String cos = ChiefSkills.fill(ChiefSkills.CHIEF, template(ChiefSkills.CHIEF), "Alex", "t", "", "");
     assertTrue(cos.contains("do the quick ones yourself (a lookup, one command; one that runs longer or fails goes to a child thread"));
     assertTrue(r.contains("[chief] <what Alex needs to know or decide"));
-    assertTrue(r.contains("A reply never plays while it's Alex's turn"));
+    // No queue (3.4.0): a reply not played is discarded and counts as unsaid; the chief resends what matters.
+    assertTrue(r.contains("Nothing you say is queued. A spoken reply plays only while Alex is quiet, and only if it's for their newest message."));
+    assertTrue(r.contains("A discarded reply counts as unsaid."));
+    assertTrue(r.contains("Then resend, in the same reply, whatever is still relevant from what didn't play"));
+    assertTrue(r.contains("tag every spoken reply with the request ID of Alex's latest message, also a child thread's result"));
     assertFalse("the old pause rule is gone", r.contains("plays at their next pause, even if they haven't sent"));
-    assertTrue(r.contains("it was dropped because Alex had already sent a newer message"));
+    assertFalse("3.3.5's held replies are gone", r.contains("it plays after this message"));
   }
 
   @Test

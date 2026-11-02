@@ -9,8 +9,8 @@ import java.util.Locale;
 /**
  * Hands-free mode: talking with the chief of staff without touching the phone. The phone listens
  * (voice activity, no model), transcribes each stretch of speech once when you pause, and sends the
- * message when it ends with one of your send words ("over") and Jev agrees you're done, or after a long silence; an end word
- * ends the mode. The chief's spoken replies are read aloud as call audio; talking over one stops it. These are the
+ * message only when Jev says you're clearly done, asked when you say a send word ("over") or pause
+ * a few seconds; an end word ends the mode, and so does a long silence (sending nothing). The chief's spoken replies are read aloud as call audio; talking over one stops it. These are the
  * settings and the pure parts: keyword matching and the voice activity segmenter.
  */
 final class HandsFree {
@@ -33,8 +33,8 @@ final class HandsFree {
   /** Prefs keys. */
   static final String SEND_WORDS = "hfSendWords",
       END_WORDS = "hfEndWords",
-      PAUSE_MS = "hfTurnPauseMs",
-      SILENCE_SEND_MS = "hfSilenceSendMs",
+      PAUSE_MS = "hfEndOfTurnPauseMs",
+      SILENCE_END_MS = "hfSilenceEndMs",
       VOICE = "hfVoice";
 
   /**
@@ -46,10 +46,11 @@ final class HandsFree {
   static final String DEFAULT_SEND = "over", DEFAULT_END = "end the call";
   /**
    * A pause this long ends a part of your turn: then the whole turn so far is written down and
-   * Jev asked whether you're done (a new key: the old setting was the much shorter pause after
-   * which each part was written down on its own).
+   * Jev asked whether you're done; only a clear yes sends it (a new key: the old setting's 1.8 s
+   * sent while Philipp was still thinking). A call with this long of silence, nobody talking and
+   * no reply playing, ends without sending anything.
    */
-  static final int DEFAULT_PAUSE_MS = 1800, DEFAULT_SILENCE_SEND_MS = 15_000;
+  static final int DEFAULT_PAUSE_MS = 5000, DEFAULT_SILENCE_END_MS = 120_000;
 
   static List<String> words(SharedPreferences prefs, String key, String fallback) {
     return list(prefs.getString(key, fallback));
@@ -83,8 +84,8 @@ final class HandsFree {
     return Math.max(500, Math.min(60_000, prefs.getInt(VOICE_WAIT_MS, DEFAULT_VOICE_WAIT_MS)));
   }
 
-  static int silenceSendMs(SharedPreferences prefs) {
-    return Math.max(5_000, Math.min(300_000, prefs.getInt(SILENCE_SEND_MS, DEFAULT_SILENCE_SEND_MS)));
+  static int silenceEndMs(SharedPreferences prefs) {
+    return Math.max(30_000, Math.min(3_600_000, prefs.getInt(SILENCE_END_MS, DEFAULT_SILENCE_END_MS)));
   }
 
   /** "over, send ,  senden" → [over, send, senden]: comma- or line-separated, blanks dropped. */

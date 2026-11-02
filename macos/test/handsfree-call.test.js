@@ -99,7 +99,6 @@ test('aCallTellsTheChiefItStartedSendsATurnKeepsItsNoteReadsTheReplyAndTellsTheE
   try {
     const call = new HandsFreeCall(w.opts);
     const session = call.start();
-    assert.equal(session.dropsOutdated, false);
     await until(() => w.told.length === 1);
     assert.deepEqual(w.told[0], [['thr_chief', HandsFree.CALL_STARTED]]);
     talk(call);
@@ -161,7 +160,6 @@ test('withATalkerBothHearTheStartTheMessagesAndTheEnd', async () => {
   w.opts.tellTalkerSkill = async () => skillTold++;
   const call = new HandsFreeCall(w.opts);
   const session = call.start();
-  assert.equal(session.dropsOutdated, true);
   await until(() => w.told.length === 1);
   assert.equal(skillTold, 1);
   assert.deepEqual(w.told[0], [
