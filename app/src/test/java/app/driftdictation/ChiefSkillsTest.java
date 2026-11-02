@@ -104,6 +104,9 @@ public class ChiefSkillsTest {
     assertTrue(r.contains("bb thread spawn --parent-self --project \"$BB_PROJECT_ID\" --model claude-opus-5-5 --permission-mode full"));
     assertTrue(r.contains("Spawn it first, then say so in one sentence"));
     assertTrue(r.contains("No fillers"));
+    assertTrue(r.contains("In a call you're Alex's personal assistant"));
+    assertTrue(r.contains("say what you mean in a way they'll recognise"));
+    assertTrue(r.contains("don't answer an unfinished bit at length"));
     assertTrue(r.contains("Normally there is no talker and you do the talking"));
     assertTrue(r.contains("Each fact goes to the talker once"));
     assertTrue(r.contains("If something you started yourself fails, hand it off instead of retrying in place."));

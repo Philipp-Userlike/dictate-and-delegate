@@ -93,6 +93,9 @@ test('theChiefSkillStatesTheTalkerContractAndTheTurnRule', () => {
   assert.ok(r.includes('bb thread spawn --parent-self --project "$BB_PROJECT_ID" --model claude-opus-5-5 --permission-mode full'));
   assert.ok(r.includes('Spawn it first, then say so in one sentence'));
   assert.ok(r.includes('No fillers'));
+  assert.ok(r.includes("In a call you're Alex's personal assistant"));
+  assert.ok(r.includes("say what you mean in a way they'll recognise"));
+  assert.ok(r.includes("don't answer an unfinished bit at length"));
   assert.ok(r.includes('Normally there is no talker and you do the talking'));
   assert.ok(r.includes('Each fact goes to the talker once'));
   assert.ok(r.includes('If something you started yourself fails, hand it off instead of retrying in place.'));
