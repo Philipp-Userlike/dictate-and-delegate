@@ -2099,6 +2099,71 @@ public class HandsFreeTest {
   }
 
   @Test
+  public void overSaidAgainWhileJevIsAskedAboutTheFirstIsCheckedAfterIt() throws Exception {
+    // Philipp's call, 2 November 2026, 22:36 (3.4.0): "…let's see what happens. Over. Over. Oh,
+    // it's just stuck." The second "over" came while Jev was still asked about the first and was
+    // never checked: only the next 5 s pause could send.
+    String first = "So I will say something else and then let's see what happens. Over.";
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    List<String> asked = new CopyOnWriteArrayList<>();
+    java.util.concurrent.CountDownLatch answer = new java.util.concurrent.CountDownLatch(1);
+    f.session.judge = said -> {
+      asked.add(said);
+      if (said.equals(first)) {
+        answer.await();
+        return verdict("more", 0.4, 0);
+      }
+      return verdict("over", 0.95, 0);
+    };
+    f.quiet(1000);
+    f.speak();
+    live.say(first);
+    until(() -> asked.size() == 1);
+    f.speak();
+    live.say(first + " Over.");
+    f.quiet(400);
+    Thread.sleep(100);
+    assertEquals(0, f.sent.size());
+    answer.countDown();
+    until(() -> f.sent.size() == 1);
+    assertEquals("So I will say something else and then let's see what happens. Over.", f.sent.get(0));
+    assertEquals(List.of(first, first + " Over."), asked);
+    String log = String.join("\n", f.log);
+    assertTrue(log, log.contains("a phrase is being checked already; checked again after it"));
+    // Held back a second time, the same text isn't asked again.
+    Thread.sleep(200);
+    assertEquals(2, asked.size());
+  }
+
+  @Test
+  public void overSaidAgainWhileJevFailsIsAskedAgain() throws Exception {
+    String first = "Book the table. Over.";
+    Fake f = new Fake();
+    FakeLive live = new FakeLive(f);
+    List<String> asked = new CopyOnWriteArrayList<>();
+    java.util.concurrent.CountDownLatch answer = new java.util.concurrent.CountDownLatch(1);
+    f.session.judge = said -> {
+      asked.add(said);
+      if (said.equals(first)) {
+        answer.await();
+        throw new java.io.IOException("HTTP 502");
+      }
+      return verdict("over", 0.95, 0);
+    };
+    f.quiet(1000);
+    f.speak();
+    live.say(first);
+    until(() -> asked.size() == 1);
+    f.speak();
+    live.say(first + " Over.");
+    f.quiet(400);
+    answer.countDown();
+    until(() -> f.sent.size() == 1);
+    assertEquals("Book the table. Over.", f.sent.get(0));
+  }
+
+  @Test
   public void whenJevCantTellOnASendWordNothingIsSent() throws Exception {
     // Only a clear "done" from Jev ends your turn: the send word only asks.
     Fake f = new Fake();

@@ -326,6 +326,11 @@ final class HandsFreeSession {
   /** A send phrase heard in the live text is being acted on (and when it was heard, for the log). */
   private volatile boolean keyword;
   private volatile long keywordAt;
+  /**
+   * A phrase came while one was being checked ("Over. Over." while Jev was still asked about the
+   * first): once that check ends without a send, the live text as it is then is checked again.
+   */
+  private volatile boolean phraseAgain;
   /** The stretch of speech going on when a send phrase sent the turn: its audio was in that message. */
   private volatile boolean dropStretch;
   /** When you started speaking in this turn, and whether its first live words were logged. */
@@ -1092,7 +1097,8 @@ final class HandsFreeSession {
       return;
     }
     if (keyword) {
-      phraseSkipped(phrase, text, "a phrase is being checked already");
+      phraseAgain = true;
+      phraseSkipped(phrase, text, "a phrase is being checked already; checked again after it");
       return;
     }
     keyword = true;
@@ -2041,12 +2047,24 @@ final class HandsFreeSession {
             return toSend(t, all, before);
           });
     } finally {
-      if (why.endsWith(" phrase")) keyword = false;
+      boolean again = false;
+      if (why.endsWith(" phrase")) {
+        keyword = false;
+        again = phraseAgain;
+        phraseAgain = false;
+      }
       writingSince = 0;
       checkStep = "";
       transcribing.decrementAndGet();
       listener.changed();
       readNext();
+      // A phrase said again while this one was checked: the live text now decides (a text Jev
+      // just held back isn't asked again; one this check sent was taken, so it's empty).
+      LiveText l = live;
+      if (again && l != null) {
+        String t = l.text();
+        if (!t.isEmpty()) liveText(t);
+      }
     }
   }
 

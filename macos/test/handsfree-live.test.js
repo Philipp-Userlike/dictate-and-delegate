@@ -436,6 +436,67 @@ test('jevIsAskedAtOnceOnTheSendWordWhileTheQuietAfterItIsWaitedFor', async () =>
   assert.ok(reasons(f).includes('Sent: you said "over"'), reasons(f));
 });
 
+test('overSaidAgainWhileJevIsAskedAboutTheFirstIsCheckedAfterIt', async () => {
+  // Philipp's call, 2 November 2026, 22:36 (Android 3.4.0): "…let's see what happens. Over. Over.
+  // Oh, it's just stuck." The second "over" came while Jev was still asked about the first and was
+  // never checked: only the next 5 s pause could send.
+  const first = "So I will say something else and then let's see what happens. Over.";
+  const f = new Fake();
+  const live = new FakeLive(f);
+  const asked = [];
+  const answer = latch();
+  f.session.judge = async (said) => {
+    asked.push(said);
+    if (said === first) {
+      await answer.promise;
+      return verdict('more', 0.4, 0);
+    }
+    return verdict('over', 0.95, 0);
+  };
+  f.quiet(1000);
+  f.speak();
+  live.say(first);
+  await until(() => asked.length === 1);
+  f.speak();
+  live.say(first + ' Over.');
+  f.quiet(400);
+  await sleep(100);
+  assert.equal(f.sent.length, 0);
+  answer.countDown();
+  await until(() => f.sent.length === 1);
+  assert.equal(f.sent[0], first);
+  assert.deepEqual(asked, [first, first + ' Over.']);
+  assert.ok(f.logText().includes('a phrase is being checked already; checked again after it'), f.logText());
+  await sleep(200);
+  assert.equal(asked.length, 2, 'the same text isn\'t asked again');
+});
+
+test('overSaidAgainWhileJevFailsIsAskedAgain', async () => {
+  const first = 'Book the table. Over.';
+  const f = new Fake();
+  const live = new FakeLive(f);
+  const asked = [];
+  const answer = latch();
+  f.session.judge = async (said) => {
+    asked.push(said);
+    if (said === first) {
+      await answer.promise;
+      throw new Error('HTTP 502');
+    }
+    return verdict('over', 0.95, 0);
+  };
+  f.quiet(1000);
+  f.speak();
+  live.say(first);
+  await until(() => asked.length === 1);
+  f.speak();
+  live.say(first + ' Over.');
+  f.quiet(400);
+  answer.countDown();
+  await until(() => f.sent.length === 1);
+  assert.equal(f.sent[0], first);
+});
+
 test('whenJevCantTellOnASendWordNothingIsSent', async () => {
   // Only Jev's clear "done" ends your turn: the send word only asks (Philipp's design, 2 November 2026).
   const f = new Fake();

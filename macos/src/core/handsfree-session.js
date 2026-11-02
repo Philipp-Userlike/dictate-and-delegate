@@ -269,6 +269,7 @@ class HandsFreeSession {
     this.batchTurn = false;
     /** A send phrase heard in the live text is being acted on (and when it was heard, for the log). */
     this.keyword = false;
+    this.phraseAgain = false;
     this.keywordAt = 0;
     /** The stretch of speech going on when a send phrase sent the turn: its audio was in that message. */
     this.dropStretch = false;
@@ -976,7 +977,10 @@ class HandsFreeSession {
       return;
     }
     if (this.keyword) {
-      this.phraseSkipped(phrase, text, 'a phrase is being checked already');
+      // Checked again once the running check ends without sending ("Over. Over." while Jev was
+      // still asked about the first).
+      this.phraseAgain = true;
+      this.phraseSkipped(phrase, text, 'a phrase is being checked already; checked again after it');
       return;
     }
     this.keyword = true;
@@ -1878,12 +1882,24 @@ class HandsFreeSession {
         return this.toSend(t, all, before);
       });
     } finally {
-      if (original.endsWith(' phrase')) this.keyword = false;
+      let again = false;
+      if (original.endsWith(' phrase')) {
+        this.keyword = false;
+        again = this.phraseAgain;
+        this.phraseAgain = false;
+      }
       this.writingSince = 0;
       this._checkStep = '';
       this.transcribing--;
       this.changed();
       this.readNext();
+      // A phrase said again while this one was checked: the live text now decides (a text Jev
+      // just held back isn't asked again; one this check sent was taken, so it's empty).
+      const l = this.live;
+      if (again && l) {
+        const t = l.text();
+        if (t) this.liveText(t);
+      }
     }
   }
 
