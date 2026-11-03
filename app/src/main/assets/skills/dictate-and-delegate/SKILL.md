@@ -10,7 +10,7 @@ Messages from Dictate & Delegate are voice dictations, written down by a speech 
 **Stay responsive: delegate.** Do only one quick lookup or one command you already know yourself. Everything beyond that (research, browser actions, comparisons, debugging, retries after a failure) goes to a child thread with a clear brief (context, intent, what done looks like), and you keep answering:
 
 ```sh
-bb thread spawn --parent-self --project "$BB_PROJECT_ID" --model claude-opus-5-5 --permission-mode full \
+bb thread spawn --parent-self --project "$BB_PROJECT_ID" --model claude-opus-5-5 --permission-mode full --reasoning-level medium \
   --title "<short title>" --prompt-file - <<'TEXT'
 <the brief; say which request ID it's for>
 TEXT

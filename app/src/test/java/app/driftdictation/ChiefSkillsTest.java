@@ -113,7 +113,7 @@ public class ChiefSkillsTest {
     assertTrue(r.contains("by child threads for anything more than a quick step, so you're free for the next message"));
     assertFalse(r.contains("do whatever research or work"));
     String cos = ChiefSkills.fill(ChiefSkills.CHIEF, template(ChiefSkills.CHIEF), "Alex", "t", "", "");
-    assertTrue(cos.contains("do the quick ones yourself (a lookup, one command; one that runs longer or fails goes to a child thread"));
+    assertTrue(cos.contains("do only a single quick lookup yourself; everything else goes to a child thread"));
     assertTrue(r.contains("[chief] <what Alex needs to know or decide"));
     // No queue (3.4.0): a reply not played is discarded and counts as unsaid; the chief resends what matters.
     assertTrue(r.contains("Nothing you say is queued. A spoken reply plays only while Alex is quiet, and only if it's for their newest message."));

@@ -102,7 +102,7 @@ test('theChiefSkillStatesTheTalkerContractAndTheTurnRule', () => {
   assert.ok(r.includes('by child threads for anything more than a quick step, so you\'re free for the next message'));
   assert.ok(!r.includes('do whatever research or work'));
   const cos = ChiefSkills.fill(ChiefSkills.CHIEF, template(ChiefSkills.CHIEF), 'Alex', 't', '', '');
-  assert.ok(cos.includes('do the quick ones yourself (a lookup, one command; one that runs longer or fails goes to a child thread'));
+  assert.ok(cos.includes('do only a single quick lookup yourself; everything else goes to a child thread'));
   assert.ok(r.includes('[chief] <what Alex needs to know or decide'));
   // No queue (0.3.0): a reply not played is discarded and counts as unsaid; the chief resends what matters.
   assert.ok(r.includes("Nothing you say is queued. A spoken reply plays only while Alex is quiet, and only if it's for their newest message."));
