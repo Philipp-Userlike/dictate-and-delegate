@@ -106,6 +106,7 @@ function start() {
       const mac = nativeMac.load();
       if (activation.opensWindow() || !mac || !mac.appActive()) return;
       mac.deactivate();
+      // deactivate() is queued on the run loop: log once it has run, so activeNow() shows the result.
       setTimeout(() => wlog('app: activated by the panel or a notification; gave the focus back', activeNow()), 100);
     }, 150);
   });

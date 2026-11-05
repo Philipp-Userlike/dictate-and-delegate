@@ -244,9 +244,9 @@ function bind(koffi) {
 
     /**
      * Gives the focus back to the app that was in front before, without hiding the panel. Queued
-     * on the main run loop instead of called here: deactivating resigns the key window, AppKit's
-     * notifications for that call into Electron's JavaScript, and doing so while this FFI call
-     * was still on the stack crashed the app (a V8 trap). appActive() turns false once it ran.
+     * on the main run loop: deactivating resigns the key window, AppKit's notifications for that
+     * call into Electron's JavaScript, and running that while this FFI call is still on the stack
+     * crashes the app (a V8 trap). appActive() turns false once it has run.
      */
     deactivate() {
       const pool = objc.poolPush();

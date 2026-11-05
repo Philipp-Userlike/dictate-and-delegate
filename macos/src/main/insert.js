@@ -75,7 +75,7 @@ function insert(text, { method = 'paste', log = () => {} } = {}) {
   return queue.run(async () => {
     const mac = nativeMac.load();
     if (!mac) {
-      log(`insert: the macOS calls couldn't be loaded (${nativeMac.loadError}); copied instead`);
+      log(`insert: the native macOS bindings (koffi) couldn't be loaded (${nativeMac.loadError}); copied instead`);
       await copy(text);
       return { how: 'copied', why: 'unavailable' };
     }
