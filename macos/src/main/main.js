@@ -106,7 +106,7 @@ function start() {
       const mac = nativeMac.load();
       if (activation.opensWindow() || !mac || !mac.appActive()) return;
       mac.deactivate();
-      wlog('app: activated by the panel or a notification; gave the focus back', activeNow());
+      setTimeout(() => wlog('app: activated by the panel or a notification; gave the focus back', activeNow()), 100);
     }, 150);
   });
   app.on('did-resign-active', () => wlog('macOS: app no longer active'));

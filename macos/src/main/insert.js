@@ -74,13 +74,21 @@ async function paste(mac, text, log) {
 function insert(text, { method = 'paste', log = () => {} } = {}) {
   return queue.run(async () => {
     const mac = nativeMac.load();
-    if (!mac || !accessibility()) {
+    if (!mac) {
+      log(`insert: the macOS calls couldn't be loaded (${nativeMac.loadError}); copied instead`);
       await copy(text);
-      return { how: 'copied', why: mac ? 'accessibility' : 'unavailable' };
+      return { how: 'copied', why: 'unavailable' };
+    }
+    if (!accessibility()) {
+      log("insert: macOS says this app doesn't have the Accessibility permission; copied instead");
+      await copy(text);
+      return { how: 'copied', why: 'accessibility' };
     }
     const focus = mac.focus(method === 'direct');
     const kind = target(focus);
+    const where = `${mac.frontApp()}, focus ${focus.error !== undefined ? `error ${focus.error}` : `${focus.role}${focus.editable ? ' (editable)' : ''}`}`;
     if (kind === 'none') {
+      log(`insert: nothing has the keyboard focus (${where}); copied instead`);
       await copy(text);
       return { how: 'copied', why: 'no-field' };
     }
@@ -92,6 +100,7 @@ function insert(text, { method = 'paste', log = () => {} } = {}) {
       log(`insert: direct insert didn't land (AXError ${err}, role ${focus.role}); pasting`);
     }
     await paste(mac, text, log);
+    log(`insert: pressed ⌘V (${where})`);
     return { how: 'pasted' };
   });
 }
