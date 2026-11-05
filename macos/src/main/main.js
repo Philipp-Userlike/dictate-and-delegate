@@ -292,7 +292,7 @@ function start() {
       insert: async (text) => {
         await focusBack();
         const r = await insertion.insert(text, { method: ctx.prefs.get(INSERT_METHOD, 'paste'), log: ctx.log });
-        if (r.how === 'copied') return { how: 'copied', reason: r.why === 'no-field' ? undefined : 'permission' };
+        if (r.how === 'copied') return { how: 'copied', reason: 'permission' };
         return { how: r.how, clipboard: false };
       },
       replaceInPlace: async (oldText, newText) => {

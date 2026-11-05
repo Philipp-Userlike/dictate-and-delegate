@@ -69,7 +69,7 @@ async function paste(mac, text, log) {
 /**
  * Inserts text at the cursor. method: 'paste' (default) or 'direct'. Resolves to
  * {how: 'inserted'|'pasted'|'copied', why} — 'copied' with why 'accessibility' (no permission) or
- * 'no-field' (nothing has the focus).
+ * 'unavailable' (the native macOS bindings couldn't be loaded).
  */
 function insert(text, { method = 'paste', log = () => {} } = {}) {
   return queue.run(async () => {
@@ -87,11 +87,6 @@ function insert(text, { method = 'paste', log = () => {} } = {}) {
     const focus = mac.focus(method === 'direct');
     const kind = target(focus);
     const where = `${mac.frontApp()}, focus ${focus.error !== undefined ? `error ${focus.error}` : `${focus.role}${focus.editable ? ' (editable)' : ''}`}`;
-    if (kind === 'none') {
-      log(`insert: nothing has the keyboard focus (${where}); copied instead`);
-      await copy(text);
-      return { how: 'copied', why: 'no-field' };
-    }
     if (method === 'direct' && kind === 'text') {
       const err = mac.setSelectedText(text);
       await sleep(80);
